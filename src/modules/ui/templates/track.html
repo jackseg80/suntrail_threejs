@@ -4,7 +4,7 @@
     </div>
     <div class="sheet-header">
         <span class="sheet-title" data-i18n="track.title">Parcours</span>
-        <div class="sheet-close" id="close-track">
+        <button type="button" class="sheet-close" id="close-track">
             <svg
                 width="16"
                 height="16"
@@ -19,8 +19,17 @@
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-        </div>
+        </button>
     </div>
+    <p
+        id="track-library-scope"
+        class="track-library-scope"
+        data-i18n="track.libraryScope"
+        hidden
+    >
+        Traces récentes : imports GPX et sorties enregistrées sur cet appareil.
+        Les itinéraires manuels ne sont pas encore sauvegardés.
+    </p>
     <div class="track-stats">
         <div class="stat-card">
             <div class="stat-card-label" data-i18n="track.stats.distance">

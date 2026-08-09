@@ -68,6 +68,9 @@ export default defineConfig({
             registerType: 'autoUpdate',
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,bin}'],
+                // SunTrail is multi-page: a navigation to app.html/login.html
+                // must never be rewritten to the landing page index.html.
+                navigateFallback: null,
                 // Exclure le chunk Three.js du précache (trop lourd, en runtime cache à la demande)
                 globIgnores: [
                     '**/three-*.js',

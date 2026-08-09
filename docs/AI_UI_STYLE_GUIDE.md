@@ -1,6 +1,30 @@
-# AI UI Style Guide (v5.57.0)
+# AI UI Style Guide (v5.82.0)
+
+> Référence du worktree v5.82.0 finalisé ; publication externe non exécutée.
 
 This guide defines the standardized UI patterns for SunTrail to ensure visual consistency across all panels (Expert Sheets, Settings, etc.).
+
+## 0. Interaction contract (v5.82.0)
+
+- Use native `button`, `input`, `select` and `details/summary` elements for interactive
+  controls. A clickable `div` is not accepted for a critical action.
+- Touch targets are at least 48 × 48 px. Keep a visible `:focus-visible` outline and an
+  accessible name; dynamic choices synchronize `aria-selected`/`aria-pressed`.
+- Sheets use the shared focus trap and Escape behavior. Standalone dialogs must implement
+  both and declare `role="dialog"`, `aria-modal` and `aria-labelledby`.
+- Respect `prefers-reduced-motion`; state changes must remain understandable without
+  animation. Use semantic live regions only for useful status updates.
+- Public labels describe the hiking outcome (map detail, local archive, fallback route),
+  not implementation terms. LOD, PMTiles and routing-provider keys belong only in the
+  Developer lab.
+- Mobile uses four primary destinations. From 900 px, reuse the same functions in side
+  rails/panels; never create a desktop-only preparation feature.
+
+### Settings information architecture
+
+The sticky category navigation targets **Essentials**, **Advanced hiking** and
+**Developer lab**. The optional account/RGPD section stays visible, but sign-in and Google
+link controls remain hidden until authentication is production-ready.
 
 ## 1. The "Expert" Grid (2x2 Pattern)
 
@@ -62,5 +86,5 @@ Always use CSS variables for consistent look & feel:
 ## 6. Mobile Optimizations
 
 - **Short Labels**: Prefer "Elev. Max" over "Maximum Elevation".
-- **Click Targets**: Buttons must be full-width or clearly identified as Pro upgrades (`PRO ↗`).
+- **Click Targets**: Buttons must be full-width or at least 48 × 48 px, and Pro upgrades remain clearly identified (`PRO ↗`).
 - **Touch Fix**: `touch-action: none` on interaction containers to prevent browser scroll interference.

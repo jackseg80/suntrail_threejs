@@ -2,7 +2,7 @@
  * onboardingTutorial.ts — Tutoriel d'onboarding immersif v6.0
  *
  * Affiché au PREMIER lancement après l'acceptance wall.
- * 6 slides plein écran avec flou d'arrière-plan.
+ * 3 slides plein écran avec flou d'arrière-plan.
  * Optimisé pour mobile (Portrait/Paysage) et Desktop.
  *
  * Storage key : 'suntrail_onboarding_v2'
@@ -28,29 +28,14 @@ const SLIDES: Slide[] = [
         descKey: 'onboarding.slide1.desc',
     },
     {
-        type: 'solar',
+        type: 'track',
         titleKey: 'onboarding.slide2.title',
         descKey: 'onboarding.slide2.desc',
     },
     {
-        type: 'track',
+        type: 'safety',
         titleKey: 'onboarding.slide3.title',
         descKey: 'onboarding.slide3.desc',
-    },
-    {
-        type: 'solar-analysis',
-        titleKey: 'onboarding.slide4.title',
-        descKey: 'onboarding.slide4.desc',
-    },
-    {
-        type: 'expert',
-        titleKey: 'onboarding.slide5.title',
-        descKey: 'onboarding.slide5.desc',
-    },
-    {
-        type: 'safety',
-        titleKey: 'onboarding.slide6.title',
-        descKey: 'onboarding.slide6.desc',
         special: 'final-menu',
     },
 ];
@@ -202,6 +187,10 @@ function _show(resolve: () => void): void {
 
     const overlay = document.createElement('div');
     overlay.id = 'onboarding-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'ob-title');
+    overlay.setAttribute('tabindex', '-1');
     overlay.innerHTML = `
         <style>
             #onboarding-overlay {
@@ -335,9 +324,15 @@ function _show(resolve: () => void): void {
                 background: rgba(255,255,255,0.08); padding: 16px; border-radius: 12px;
                 display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
                 border: 1px solid rgba(255,255,255,0.1);
+                color: #fff; width: 100%; min-height: 48px; font: inherit;
             }
             .ob-menu-item:hover { background: rgba(255,255,255,0.12); }
+            .ob-menu-item:focus-visible, .ob-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
             .ob-menu-icon { font-size: 1.5rem; }
+
+            @media (prefers-reduced-motion: reduce) {
+                .anim-tilt-hand, .anim-track-path, .anim-pulse, .anim-solar-sun { animation: none !important; }
+            }
 
             /* Animations */
             @keyframes tilt-hand { 0%, 100% { transform: translateY(10px); } 50% { transform: translateY(-20px); } }
@@ -427,24 +422,24 @@ function _show(resolve: () => void): void {
             const grid = document.createElement('div');
             grid.className = 'ob-menu-grid';
             grid.innerHTML = `
-                <div class="ob-menu-item" data-action="explore">
+                <button type="button" class="ob-menu-item" data-action="explore">
                     <span class="ob-menu-icon">🌍</span>
                     <div>
                         <strong>${i18n.t('onboarding.explore')}</strong>
                     </div>
-                </div>
-                <div class="ob-menu-item" data-action="import">
+                </button>
+                <button type="button" class="ob-menu-item" data-action="prepare">
+                    <span class="ob-menu-icon">📍</span>
+                    <div>
+                        <strong>${i18n.t('onboarding.prepareRoute')}</strong>
+                    </div>
+                </button>
+                <button type="button" class="ob-menu-item" data-action="import">
                     <span class="ob-menu-icon">📥</span>
                     <div>
                         <strong>${i18n.t('onboarding.importGpx')}</strong>
                     </div>
-                </div>
-                <div class="ob-menu-item" data-action="search">
-                    <span class="ob-menu-icon">🏔️</span>
-                    <div>
-                        <strong>${i18n.t('onboarding.searchPeak')}</strong>
-                    </div>
-                </div>
+                </button>
             `;
             special.appendChild(grid);
 
@@ -463,19 +458,24 @@ function _show(resolve: () => void): void {
         if (action === 'import') {
             document.querySelector<HTMLElement>('[data-tab="track"]')?.click();
             setTimeout(() => {
-                document.getElementById('import-gpx-btn')?.click();
+                document.getElementById('import-gpx-sheet')?.click();
             }, 500);
-        } else if (action === 'search') {
+        } else if (action === 'prepare') {
+            document
+                .querySelector<HTMLElement>('[data-tab="prepare"]')
+                ?.click();
+        } else if (action === 'explore') {
             document.querySelector<HTMLElement>('[data-tab="search"]')?.click();
             setTimeout(() => {
                 document
-                    .querySelector<HTMLInputElement>('#search-sheet input')
+                    .querySelector<HTMLInputElement>('#search input')
                     ?.focus();
             }, 500);
         }
     }
 
     function close(): void {
+        overlay.removeEventListener('keydown', onKeyDown);
         overlay.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
         overlay.style.opacity = '0';
         overlay.style.transform = 'scale(1.05)';
@@ -499,6 +499,29 @@ function _show(resolve: () => void): void {
         close();
     });
 
+    const onKeyDown = (event: KeyboardEvent): void => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const focusable = Array.from(
+            overlay.querySelectorAll<HTMLElement>('button:not([disabled])')
+        ).filter((element) => element.offsetParent !== null);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    };
+    overlay.addEventListener('keydown', onKeyDown);
+
     // Swipe handling
     let startX = 0;
     overlay.addEventListener(
@@ -519,4 +542,5 @@ function _show(resolve: () => void): void {
     });
 
     renderSlide();
+    nextBtn.focus();
 }

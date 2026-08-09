@@ -16,6 +16,25 @@ export async function openFreshApp(
     page: Page,
     initialStorage: InitialStorage = {}
 ): Promise<void> {
+    const diagnostics: string[] = [];
+    page.on('console', (message) => {
+        if (message.type() === 'error' || message.type() === 'warning') {
+            diagnostics.push(`console:${message.type()} ${message.text()}`);
+        }
+    });
+    page.on('pageerror', (error) => {
+        diagnostics.push(`pageerror ${error.message}`);
+    });
+    page.on('requestfailed', (request) => {
+        diagnostics.push(
+            `requestfailed ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`
+        );
+    });
+    page.on('framenavigated', (frame) => {
+        if (frame === page.mainFrame())
+            diagnostics.push(`navigation ${frame.url()}`);
+    });
+
     await page.addInitScript((storage: InitialStorage) => {
         localStorage.clear();
         sessionStorage.clear();
@@ -24,8 +43,17 @@ export async function openFreshApp(
         }
     }, initialStorage);
 
-    await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => (window as { suntrailReady?: boolean }).suntrailReady === true);
+    try {
+        await page.goto(APP_TEST_URL, { waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(
+            () => (window as { suntrailReady?: boolean }).suntrailReady === true
+        );
+    } catch (error) {
+        console.error(
+            `SunTrail E2E navigation diagnostics:\n${diagnostics.join('\n')}`
+        );
+        throw error;
+    }
 }
 
 /** Completes the mandatory first-launch UI in tests that need the app shell. */
@@ -40,5 +68,7 @@ export async function waitForSheet(
     page: Page,
     selector: string
 ): Promise<void> {
-    await page.locator(selector).waitFor({ state: 'attached', timeout: 15_000 });
+    await page
+        .locator(selector)
+        .waitFor({ state: 'attached', timeout: 15_000 });
 }

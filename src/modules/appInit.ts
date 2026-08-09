@@ -30,6 +30,8 @@ import {
     removeWaypointAt,
     scheduleAutoCompute,
     clearRoute,
+    reverseRoute,
+    setRoutePlanningMode,
 } from './routeManager';
 import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
@@ -543,6 +545,12 @@ async function handleMapClick(e: MouseEvent) {
         return;
     }
 
+    // v5.82: a simple terrain tap only creates a waypoint in explicit planning mode.
+    if (state.isRoutePlanningMode) {
+        placeWaypointAt(e.clientX, e.clientY, true);
+        return;
+    }
+
     const gpxHit = intersects.find(
         (hit) => hit.object.userData?.type === 'gpx-track'
     );
@@ -985,7 +993,11 @@ function setupLongPress() {
     });
 }
 
-function placeWaypointAt(clientX: number, clientY: number): void {
+function placeWaypointAt(
+    clientX: number,
+    clientY: number,
+    allowTrackHit = false
+): void {
     if (!state.renderer || !state.camera || !state.scene || !state.originTile)
         return;
 
@@ -993,11 +1005,10 @@ function placeWaypointAt(clientX: number, clientY: number): void {
 
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
-    const blockedHit = intersects.find(
-        (h) =>
-            h.object.userData?.type === 'waypoint-marker' ||
-            h.object.userData?.type === 'gpx-track'
-    );
+    const blockedHit = intersects.find((h) => {
+        if (h.object.userData?.type === 'waypoint-marker') return true;
+        return !allowTrackHit && h.object.userData?.type === 'gpx-track';
+    });
     if (blockedHit) return;
 
     let hit: { x: number; z: number } | null;
@@ -1043,6 +1054,10 @@ function setupRouteBar(): void {
         ?.addEventListener('click', () => clearRoute());
 
     document
+        .getElementById('rb-reverse-btn')
+        ?.addEventListener('click', () => reverseRoute());
+
+    document
         .getElementById('rb-settings-btn')
         ?.addEventListener('click', () => {
             document
@@ -1072,5 +1087,20 @@ function setupRouteBar(): void {
     loopChk?.addEventListener('change', () => {
         state.routeLoopEnabled = loopChk.checked;
         if (state.routeWaypoints.length >= 2) scheduleAutoCompute();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        const panel = document.getElementById('route-settings');
+        if (panel && !panel.classList.contains('hidden')) {
+            event.preventDefault();
+            panel.classList.add('hidden');
+            document.getElementById('rb-settings-btn')?.focus();
+            return;
+        }
+        if (state.isRoutePlanningMode) {
+            event.preventDefault();
+            setRoutePlanningMode(false);
+        }
     });
 }

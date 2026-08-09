@@ -1,7 +1,13 @@
 import { BaseComponent } from '../core/BaseComponent';
 import { state } from '../../state';
 import { autoSelectMapSource, refreshTerrain } from '../../terrain';
-import { lngLatToTile, lngLatToWorld } from '../../geo';
+import {
+    COUNTRY_NAMES,
+    getCountryCode,
+    haversineDistance,
+    lngLatToTile,
+    lngLatToWorld,
+} from '../../geo';
 import { flyTo, forceImmediateLODUpdate } from '../../scene';
 import { fetchWeather } from '../../weather';
 import { i18n } from '../../../i18n/I18nService';
@@ -62,12 +68,6 @@ export class SearchSheet extends BaseComponent {
                 i18n.t('search.aria.input')
             );
             this.geoInput.placeholder = i18n.t('search.placeholder');
-            const onLocale = () => {
-                if (this.geoInput)
-                    this.geoInput.placeholder = i18n.t('search.placeholder');
-            };
-            eventBus.on('localeChanged', onLocale);
-            this.addSubscription(() => eventBus.off('localeChanged', onLocale));
 
             this.geoResults.setAttribute('role', 'listbox');
             this.geoResults.setAttribute('aria-live', 'polite');
@@ -115,13 +115,22 @@ export class SearchSheet extends BaseComponent {
     }
 
     private createFilterChips(): void {
-        const searchEl = this.element?.querySelector('#search');
+        const searchEl = this.element?.matches('#search')
+            ? this.element
+            : this.element?.querySelector('#search');
         if (!searchEl || !this.geoInput) return;
 
         const chipContainer = document.createElement('div');
         chipContainer.className = 'search-filter-chips';
         chipContainer.setAttribute('role', 'radiogroup');
-        chipContainer.setAttribute('aria-label', 'Filtres de recherche');
+        chipContainer.setAttribute(
+            'aria-label',
+            i18n.t('search.filter.ariaLabel')
+        );
+        chipContainer.setAttribute(
+            'data-i18n-aria-label',
+            'search.filter.ariaLabel'
+        );
 
         const filters: FilterKey[] = [
             'all',
@@ -133,6 +142,7 @@ export class SearchSheet extends BaseComponent {
             const chip = document.createElement('button');
             chip.className = `search-chip${key === 'all' ? ' search-chip-active' : ''}`;
             chip.textContent = i18n.t(`search.filter.${key}`);
+            chip.setAttribute('data-i18n', `search.filter.${key}`);
             chip.dataset.filter = key;
             chip.setAttribute('role', 'radio');
             chip.setAttribute('aria-checked', key === 'all' ? 'true' : 'false');
@@ -182,6 +192,21 @@ export class SearchSheet extends BaseComponent {
         if (this.activeFilter === 'all' || this.activeFilter === 'mountains') {
             localMatches = state.localPeaks
                 .filter((p) => p.name.toLowerCase().includes(q))
+                .sort(
+                    (a, b) =>
+                        haversineDistance(
+                            state.TARGET_LAT,
+                            state.TARGET_LON,
+                            a.lat,
+                            a.lon
+                        ) -
+                        haversineDistance(
+                            state.TARGET_LAT,
+                            state.TARGET_LON,
+                            b.lat,
+                            b.lon
+                        )
+                )
                 .slice(0, 5);
             if (localMatches.length > 0) {
                 localMatches.forEach((p) => {
@@ -192,7 +217,19 @@ export class SearchSheet extends BaseComponent {
                             p.name,
                             CLASSIFICATIONS.peak,
                             p.name,
-                            p.ele
+                            p.ele,
+                            {
+                                country:
+                                    COUNTRY_NAMES[
+                                        getCountryCode(p.lat, p.lon) || ''
+                                    ],
+                                distanceKm: haversineDistance(
+                                    state.TARGET_LAT,
+                                    state.TARGET_LON,
+                                    p.lat,
+                                    p.lon
+                                ),
+                            }
                         )
                     );
                 });
@@ -217,7 +254,14 @@ export class SearchSheet extends BaseComponent {
 
                 const [locations, overpassPeaks] = await Promise.all([
                     shouldSearchGeo
-                        ? searchLocations(q, signal)
+                        ? searchLocations(q, signal, {
+                              lat: state.TARGET_LAT,
+                              lon: state.TARGET_LON,
+                              countryCode: getCountryCode(
+                                  state.TARGET_LAT,
+                                  state.TARGET_LON
+                              ),
+                          })
                         : Promise.resolve([]),
                     shouldSearchPeaks
                         ? searchPeaksByName(q)
@@ -241,7 +285,20 @@ export class SearchSheet extends BaseComponent {
                                     p.name,
                                     CLASSIFICATIONS.peak,
                                     p.name,
-                                    p.ele
+                                    p.ele,
+                                    {
+                                        country:
+                                            COUNTRY_NAMES[
+                                                getCountryCode(p.lat, p.lon) ||
+                                                    ''
+                                            ],
+                                        distanceKm: haversineDistance(
+                                            state.TARGET_LAT,
+                                            state.TARGET_LON,
+                                            p.lat,
+                                            p.lon
+                                        ),
+                                    }
                                 )
                             );
                         });
@@ -256,7 +313,10 @@ export class SearchSheet extends BaseComponent {
                                 res.lat,
                                 res.lon,
                                 res.label,
-                                res.classification
+                                res.classification,
+                                res.name,
+                                res.ele,
+                                res
                             )
                         );
                     });
@@ -293,7 +353,9 @@ export class SearchSheet extends BaseComponent {
 
     private createEmptyStates(): void {
         if (!this.element) return;
-        const searchEl = this.element.querySelector('#search');
+        const searchEl = this.element.matches('#search')
+            ? this.element
+            : this.element.querySelector('#search');
         if (!searchEl) return;
 
         const initialDiv = document.createElement('div');
@@ -338,11 +400,19 @@ export class SearchSheet extends BaseComponent {
         label: string,
         classification: ResultClassification,
         name = '',
-        ele = 0
+        ele = 0,
+        metadata: {
+            region?: string;
+            country?: string;
+            distanceKm?: number;
+        } = {}
     ): HTMLElement {
         const isPeak = classification.type === 'peak';
-        const div = document.createElement('div');
+        const div = document.createElement('button');
+        div.type = 'button';
         div.className = `geo-item ${isPeak ? 'peak-item' : 'remote-item'} srch-geo-item`;
+        div.setAttribute('role', 'option');
+        div.setAttribute('aria-selected', 'false');
         div.dataset.lat = lat.toString();
         div.dataset.lon = lon.toString();
         div.dataset.resultType = classification.type;
@@ -371,7 +441,22 @@ export class SearchSheet extends BaseComponent {
 
         const sub = document.createElement('div');
         sub.classList.add('srch-peak-sub');
-        sub.textContent = i18n.t(`search.type.${classification.type}`);
+        const metaParts = [
+            i18n.t(`search.type.${classification.type}`),
+            metadata.region,
+            metadata.country,
+        ].filter(Boolean);
+        if (metadata.distanceKm !== undefined) {
+            metaParts.push(
+                i18n.t('search.meta.distance', {
+                    distance:
+                        metadata.distanceKm < 10
+                            ? metadata.distanceKm.toFixed(1)
+                            : Math.round(metadata.distanceKm).toString(),
+                })
+            );
+        }
+        sub.textContent = metaParts.join(' · ');
         contentDiv.appendChild(sub);
 
         leftSide.appendChild(contentDiv);

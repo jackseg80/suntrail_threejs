@@ -1,7 +1,11 @@
-# SunTrail — Guide IA (v5.81.4)
+# SunTrail — Guide IA (version source v5.82.0)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-02 — v5.81.4 : section Compte RGPD visible, contrôles invité/Google masqués et couverts par smoke E2E. 1473 tests.
+> Mis à jour le 2026-08-09 — v5.82.0 finalisée : 1 491 tests unitaires, six smoke Chromium,
+> build PWA, budget bundle, audit i18n et bundle Android signé passent. Validation terrain Galaxy
+> S23 clôturée sans anomalie bloquante signalée. Play Console confirme `896` comme versionCode
+> maximal : `897` est valide pour cette release. Git, CI de release et upload Play restent à faire
+> avant d'ouvrir v5.83.
 
 ## Projet
 
@@ -26,7 +30,9 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 
 - **Modernisation** : Icônes SVG vectorielles dual-tone remplaçant les emojis dans les contrôles critiques.
 - **Icon Module** : `src/modules/ui/icons.ts` centralise les SVGs standards.
-- **Consistance** : UpgradeSheet, AcceptanceWall et SettingsSheet refondus.
+- **Consistance** : UpgradeSheet, AcceptanceWall et SettingsSheet refondus ; catégories Réglages et compte/RGPD isolés en composants dédiés.
+- **Navigation (v5.82.0)** : quatre destinations principales ; `data-tab="track"` reste l'adaptateur de Sortie et `library` ouvre le même sheet en ciblant les traces récentes.
+- **Planification (v5.82.0)** : `state.isRoutePlanningMode` rend l'ajout par tap explicite ; hors mode, le tap sélectionne et l'appui long reste un raccourci expert.
 - **Réglages (v5.60.1)** : Clé MapTiler, Clé ORS, GPU/CPU/Preset, ID Testeur déplacés dans `⚙️ Paramètres Avancés`. Les clés API ont disparu de "Système & Données" et du panneau itinéraire.
 - Guide de style complet : [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md).
 
@@ -50,6 +56,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Design & UI** | [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md) | Grilles, Icônes, Variables CSS. |
 | **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Offline limits. |
 | **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, Offline interaction, Modules. |
+| **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 
 ### Monétisation & Gates (v5.57.0)

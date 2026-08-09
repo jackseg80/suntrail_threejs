@@ -49,14 +49,17 @@ class I18nService {
      * Updates state.lang, emits 'localeChanged', sets document lang attribute.
      */
     setLocale(locale: Locale): void {
-        if (locale === this.currentLocale) return;
-        this.currentLocale = locale;
-        this.translations = allTranslations[locale] || allTranslations.fr;
-        state.lang = locale;
-        eventBus.emit('localeChanged', { locale });
+        const changed = locale !== this.currentLocale;
+        if (changed) {
+            this.currentLocale = locale;
+            this.translations = allTranslations[locale] || allTranslations.fr;
+            state.lang = locale;
+        }
         if (typeof document !== 'undefined') {
             document.documentElement.lang = locale;
+            this.applyToDOM(document.body);
         }
+        if (changed) eventBus.emit('localeChanged', { locale });
     }
 
     /** Returns the current active locale. */

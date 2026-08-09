@@ -10,7 +10,7 @@ import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { runBenchmark } from '../../benchmark';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { ICON_CHECK, ICON_LOG_OUT, ICON_USER } from '../icons';
+import { ICON_CHECK } from '../icons';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 import { i18n } from '../../../i18n/I18nService';
@@ -24,11 +24,13 @@ import { showUpgradePrompt, isProActive } from '../../iap';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import { SharedAPIKeyComponent } from './SharedAPIKeyComponent';
 import { STORAGE_KEYS } from '../../../constants/storage';
-import { authService } from '../../authService';
+import { bindSettingsAccountSection } from './settings/SettingsAccountSection';
+import { SettingsCategoryNavigation } from './settings/SettingsCategoryNavigation';
 import templateHTML from '../templates/settings.html?raw';
 
 export class SettingsSheet extends BaseComponent {
     private settingTooltips: TooltipHandle[] = [];
+    private categoryNavigation: SettingsCategoryNavigation | null = null;
     constructor() {
         super('template-settings', 'sheet-container', templateHTML);
     }
@@ -37,7 +39,9 @@ export class SettingsSheet extends BaseComponent {
         if (!this.element) return;
 
         // Account management (Web + Native — requis Play Store RGPD)
-        this.updateAccountSection();
+        bindSettingsAccountSection(this.element);
+        this.categoryNavigation = new SettingsCategoryNavigation(this.element);
+        this.categoryNavigation.hydrate();
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
@@ -350,6 +354,8 @@ export class SettingsSheet extends BaseComponent {
     public override dispose(): void {
         this.settingTooltips.forEach((t) => t.dispose());
         this.settingTooltips = [];
+        this.categoryNavigation?.dispose();
+        this.categoryNavigation = null;
         super.dispose();
     }
 
@@ -369,105 +375,6 @@ export class SettingsSheet extends BaseComponent {
         if (cpu) cpu.textContent = results.cpuScore.toString();
         if (gpu) gpu.textContent = results.gpuScore.toString();
         if (total) total.textContent = results.totalScore.toString();
-    }
-
-    /**
-     * Google OAuth is kept in authService but hidden until its mobile return
-     * flow is reliable. Existing authenticated users still retain logout and
-     * account deletion controls.
-     */
-    private updateAccountSection(): void {
-        if (!this.element) return;
-        const sectionLabel = this.element.querySelector(
-            '[data-i18n="settings.section.account"]'
-        ) as HTMLElement | null;
-        const accountSection = this.element.querySelector(
-            '#account-section'
-        ) as HTMLElement | null;
-        const statusEl = this.element.querySelector('#account-status');
-        const emailEl = this.element.querySelector('#account-email');
-        const avatarEl = this.element.querySelector(
-            '#account-avatar'
-        ) as HTMLElement | null;
-        const btn = this.element.querySelector(
-            '#account-action-btn'
-        ) as HTMLButtonElement;
-
-        if (!statusEl || !emailEl || !btn || !accountSection) return;
-
-        // Keep the RGPD account area visible without exposing the unavailable
-        // guest / Google sign-in flows.
-        if (!authService.isAuthenticated) {
-            accountSection.style.display = 'block';
-            if (sectionLabel) sectionLabel.style.display = 'block';
-            if (avatarEl) avatarEl.innerHTML = ICON_USER;
-            statusEl.textContent =
-                i18n.t('settings.account.unavailable') ||
-                'Connexion indisponible';
-            emailEl.textContent =
-                i18n.t('settings.account.unavailableHint') ||
-                'La connexion sera disponible prochainement';
-            btn.style.display = 'none';
-            btn.onclick = null;
-            const deleteBtn = this.element.querySelector(
-                '#account-delete-btn'
-            ) as HTMLButtonElement | null;
-            const linkGoogleBtn = this.element.querySelector(
-                '#account-link-google-btn'
-            ) as HTMLButtonElement | null;
-            if (deleteBtn) deleteBtn.style.display = 'none';
-            if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
-            return;
-        }
-
-        accountSection.style.display = 'block';
-        if (sectionLabel) sectionLabel.style.display = 'block';
-
-        const deleteBtn = this.element.querySelector(
-            '#account-delete-btn'
-        ) as HTMLButtonElement | null;
-        const linkGoogleBtn = this.element.querySelector(
-            '#account-link-google-btn'
-        ) as HTMLButtonElement | null;
-
-        if (avatarEl) avatarEl.innerHTML = ICON_CHECK;
-        btn.style.background = 'var(--surface-subtle)';
-        btn.style.color = 'var(--text-2)';
-        btn.style.borderTop = '1px solid var(--border)';
-        btn.style.display = 'flex';
-        statusEl.textContent =
-            i18n.t('settings.account.loggedInAs') || 'Connecté';
-        emailEl.textContent = authService.user?.email || '';
-        btn.innerHTML = `${ICON_LOG_OUT}<span>${i18n.t('settings.account.logout') || 'Se déconnecter'}</span>`;
-        btn.onclick = async () => {
-            await authService.signOut();
-            window.location.reload();
-        };
-        if (deleteBtn) {
-            deleteBtn.style.display = 'block';
-            deleteBtn.textContent =
-                i18n.t('settings.account.deleteAccount') ||
-                'Supprimer mon compte';
-            deleteBtn.onclick = async () => {
-                const confirmed = confirm(
-                    i18n.t('settings.account.deleteConfirmMsg') ||
-                        'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.'
-                );
-                if (!confirmed) return;
-                const { error } = await authService.deleteAccount();
-                if (error) {
-                    showToast(
-                        i18n.t('settings.account.deleteError') ||
-                            'Erreur lors de la suppression.',
-                        4000
-                    );
-                } else {
-                    window.location.reload();
-                }
-            };
-        }
-        // The Google identity-linking button remains deliberately hidden.
-        if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
     }
 
     private bindSlider(

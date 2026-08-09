@@ -1,8 +1,32 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.57.0)
+# SunTrail — Navigation & Modules Fonctionnels (v5.82.0)
 
-> Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
+> Référence du worktree v5.82.0 finalisé. Point d'entrée :
+> [CLAUDE.md](../CLAUDE.md).
 
 ---
+
+## Parcours principal v5.82.0
+
+- **Explorer** ouvre la recherche ; **Préparer** active un mode explicite ; **Sortie**
+  regroupe l'enregistrement/import ; **Bibliothèque** cible la liste locale dans le même
+  `TrackSheet`. Réglages, aide et compte restent secondaires.
+- `data-tab="search|prepare|track|library|settings"` constitue le contrat courant.
+  `track` et les IDs historiques du sheet sont conservés pour les modules et tests existants.
+- En mode `state.isRoutePlanningMode`, un tap terrain ajoute un waypoint. Hors de ce mode,
+  le même tap conserve la sélection carte/POI/GPX ; l'appui long de 500 ms reste disponible
+  comme raccourci expert avec une astuce affichée une seule fois.
+- La barre de route reste visible à vide en mode Préparer, expose chargement, erreur ou
+  statistiques, et conserve inversion, réordonnancement, suppression et effacement.
+- À partir de 900 px, les sheets deviennent un rail droit et le panneau de route un atelier
+  latéral. Les fonctions restent identiques à Android/mobile.
+- L'onboarding comporte trois écrans et mène vers Explorer, Planifier ou Importer. Il est
+  fermable avec Échap et piège le focus dans le dialogue.
+
+### Recherche contextualisée
+
+`rankSearchResults()` pondère correspondance du nom, pays de la vue et distance à la cible.
+Chaque résultat affiche son type, sa région, son pays, son altitude si disponible et sa
+distance. L'ordre fournisseur reste stable en cas d'égalité.
 
 ## Mouvements de Caméra
 

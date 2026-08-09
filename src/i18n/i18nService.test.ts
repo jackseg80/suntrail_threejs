@@ -25,9 +25,15 @@ describe('I18nService', () => {
         expect(result).toBe('Profil appliqué : ULTRA');
     });
 
-    it('should support multiple interpolation variables', () => {
-        expect(i18n.t('topbar.lod.swiss')).toBe('SWISS');
-        expect(i18n.t('topbar.lod.world')).toBe('WORLD');
+    it('should expose localized map-source labels without technical jargon', () => {
+        expect(i18n.t('topbar.lod.swiss')).toBe('Carte suisse');
+        expect(i18n.t('topbar.lod.world')).toBe('Carte mondiale');
+        expect(
+            i18n.t('topbar.mapDetail', {
+                source: 'Carte suisse',
+                detail: '14',
+            })
+        ).toBe('Carte suisse · détail 14');
     });
 
     it('should fallback to fr when key missing in current locale', () => {
@@ -68,6 +74,18 @@ describe('I18nService', () => {
         i18n.setLocale('fr'); // same locale, no event
         expect(spy).not.toHaveBeenCalled();
         eventBus.off('localeChanged', spy);
+    });
+
+    it('should translate static DOM even when the locale is already active', () => {
+        const button = document.createElement('button');
+        button.setAttribute('data-i18n-aria-label', 'common.close');
+        button.setAttribute('aria-label', 'stale');
+        document.body.appendChild(button);
+
+        i18n.setLocale('fr');
+
+        expect(button.getAttribute('aria-label')).toBe('Fermer');
+        button.remove();
     });
 
     it('should update document.documentElement.lang', () => {

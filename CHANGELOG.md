@@ -1,3 +1,43 @@
+## [5.82.0] - 2026-08-08
+
+### État
+- Fondations UX finalisées dans le worktree ; Play Console vérifiée le 2026-08-09 : le maximum
+  enregistré est `896`, donc le `versionCode 897` est validé pour v5.82.0.
+- `npm run check`, 1 491 tests unitaires, build PWA, budget bundle, audit i18n et les six
+  smoke Chromium repassent au vert le 2026-08-09 ; le bundle Android signé est généré.
+- Le scénario débutant Planifier passe isolément ; la synchronisation Capacitor, les tests,
+  le lint et l'APK Android debug passent également.
+- Validation terrain Galaxy S23 clôturée le 2026-08-09 sans anomalie bloquante signalée.
+  L'observation Sortie/Bibliothèque est une transition UX P2 documentée pour v5.83. Aucun tag,
+  CI de release ni upload Play Store n'est encore déclaré effectué.
+
+### Ajouté
+- **Mode Planifier explicite** : un tap terrain ajoute un waypoint uniquement dans ce mode ; l'appui long hors mode reste le raccourci expert, annoncé une seule fois sans bloquer.
+- **Navigation par intention** : Explorer, Préparer, Sortie et Bibliothèque sur mobile ; mêmes fonctions dans un atelier latéral à partir de 900 px. Les hooks `data-tab`/IDs historiques restent compatibles.
+- **Recherche contextualisée** : classement par nom, pays et distance à la vue ; résultats enrichis avec type, région, pays, altitude et distance.
+- **Réglages structurés** : navigation Essentiels/Randonnée avancée/Laboratoire développeur, compte/RGPD et catégories extraits de `SettingsSheet`.
+
+### Modifié
+- **Onboarding** réduit à trois écrans cohérents avec Explorer/Planifier/Importer, avec dialogue accessible, piège de focus, Échap et mouvement réduit.
+- **Interface grand public** : termes techniques remplacés par des libellés randonnée ; contrôles critiques convertis en boutons sémantiques et cibles tactiles portées à 48 px.
+- **Promesses de précision** : fiche Store, landing, SOS, GPS et solaire décrivent des estimations et les limites des données/appareils.
+
+### Corrigé
+- **Démarrage E2E Vite 8** : Playwright valide désormais un build servi par `vite preview` ;
+  les erreurs console, navigation et réseau restent collectées en cas d'échec.
+- **PWA multi-page** : le fallback SPA Workbox est désactivé afin qu'un rechargement de
+  `app.html` ne redirige plus vers la landing page.
+- **Recherche réelle** : filtres, états vide/chargement/erreur et libellés localisés sont
+  correctement hydratés lorsque `#search` est lui-même la racine du composant.
+- **Responsive et accessibilité** : la barre de route reste centrée lorsque le panneau desktop
+  est ouvert ; les libellés ARIA statiques et les distances traduites sont appliqués même si la
+  locale active ne change pas.
+- **Bibliothèque honnête** : elle annonce les GPX importés et sorties enregistrées récentes, et
+  précise que les itinéraires manuels ne sont pas encore sauvegardés.
+
+### Portée
+- Aucun modèle `PreparedRoute`, compte/synchronisation ou guidage n'est inclus.
+
 ## [5.81.4] - 2026-08-02
 
 ### Fixed

@@ -1,534 +1,791 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>SunTrail 3D — La Montagne sous un nouveau jour</title>
-    <script>
-        // OAuth token handling — Supabase redirige TOUJOURS ici avec tokens en hash
-        const hash = window.location.hash.substring(1);
-        if (hash && hash.includes('access_token')) {
-            try {
-                // Stocker les tokens en localStorage pour app.html
-                localStorage.setItem('__oauth_hash', hash);
-            } catch (e) {
-                console.warn('Failed to store OAuth hash:', e);
-            }
-            // Nettoyer l'URL et aller à app.html
-            window.history.replaceState({}, '', window.location.pathname + window.location.search);
-            window.location.href = 'app.html';
-        } else if (window.hasOwnProperty('Capacitor') || /Capacitor/i.test(navigator.userAgent)) {
-            // Mobile native — aller à app.html
-            window.location.href = 'app.html';
-        }
-        // Sinon : page de démarrage (landing page)
-    </script>
-    <meta name="description" content="Carte topographique 3D haute performance avec simulation solaire, analyse de trail et sécurité montagne.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap">
-    <style>
-        :root {
-            --bg: #030712;
-            --surface: #111827;
-            --surface-accent: #1f2937;
-            --accent: #f97316;
-            --accent-glow: rgba(249, 115, 22, 0.3);
-            --gold: #fbc02d;
-            --text: #f9fafb;
-            --text-dim: #9ca3af;
-            --border: rgba(255, 255, 255, 0.08);
-            --nav-bg: rgba(3, 7, 18, 0.8);
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            font-family: 'DM Sans', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* --- Navigation --- */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            height: 70px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 5%;
-            background: var(--nav-bg);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            z-index: 1000;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            font-size: 1.2rem;
-            text-decoration: none;
-            color: var(--text);
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent), #ea580c);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .nav-links { display: flex; gap: 30px; }
-        .nav-links a { 
-            text-decoration: none; 
-            color: var(--text-dim); 
-            font-size: 0.95rem; 
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        .nav-links a:hover { color: var(--accent); }
-
-        /* --- Hero Section --- */
-        .hero {
-            position: relative;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 120px 20px 80px;
-            background: radial-gradient(circle at 50% 30%, #1e293b 0%, #030712 70%);
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 20%;
-            width: 600px;
-            height: 400px;
-            background: var(--accent);
-            filter: blur(180px);
-            opacity: 0.08;
-            pointer-events: none;
-        }
-
-        .hero h1 {
-            font-size: clamp(2.8rem, 8vw, 5.5rem);
-            line-height: 1.1;
-            margin: 0;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(to bottom, #fff 40%, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero p {
-            font-size: clamp(1.1rem, 3vw, 1.4rem);
-            color: var(--text-dim);
-            max-width: 750px;
-            margin: 25px auto 45px;
-        }
-
-        .cta-group {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 16px 36px;
-            border-radius: 14px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 10px 30px -10px rgba(249, 115, 22, 0.5);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            background: #fb923c;
-            box-shadow: 0 15px 40px -10px rgba(249, 115, 22, 0.6);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.03);
-            color: #fff;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* --- Feature Grid --- */
-        .section-title {
-            text-align: center;
-            margin-bottom: 60px;
-            padding: 0 20px;
-        }
-
-        .section-title h2 { font-size: 2.5rem; margin-bottom: 15px; }
-        .section-title p { color: var(--text-dim); max-width: 600px; margin: 0 auto; }
-
-        .features {
-            max-width: 1200px;
-            margin: 0 auto 100px;
-            padding: 0 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 30px;
-        }
-
-        .feature-card {
-            background: var(--surface);
-            padding: 40px;
-            border-radius: 32px;
-            border: 1px solid var(--border);
-            transition: transform 0.3s, border-color 0.3s;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .feature-card:hover {
-            border-color: rgba(249, 115, 22, 0.3);
-            transform: translateY(-5px);
-        }
-
-        .feature-visual {
-            width: 100%;
-            height: 160px;
-            background: var(--surface-accent);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 10px;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .feature-visual::after {
-            content: '';
-            position: absolute;
-            width: 150%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            transform: rotate(25deg);
-            top: -20%;
-            left: -20%;
-        }
-
-        .feature-card h3 { margin: 0; font-size: 1.4rem; color: #fff; }
-        .feature-card p { margin: 0; color: var(--text-dim); font-size: 0.95rem; line-height: 1.5; }
-
-        /* --- Pricing Table --- */
-        .pricing {
-            max-width: 1000px;
-            margin: 0 auto 150px;
-            padding: 0 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .price-card {
-            background: var(--surface);
-            padding: 50px;
-            border-radius: 32px;
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .price-card.pro {
-            border: 2px solid var(--accent);
-            background: linear-gradient(180deg, rgba(249, 115, 22, 0.05) 0%, var(--surface) 100%);
-        }
-
-        .badge {
-            position: absolute;
-            top: 25px;
-            right: -35px;
-            background: var(--accent);
-            color: #fff;
-            padding: 8px 45px;
-            transform: rotate(45deg);
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        .price-card h4 { font-size: 1.25rem; margin: 0 0 10px; }
-        .price-value { font-size: 3rem; font-weight: 700; margin-bottom: 30px; }
-        .price-value span { font-size: 1.1rem; color: var(--text-dim); font-weight: 400; }
-
-        .price-features {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .price-features li {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.95rem;
-        }
-
-        .price-features li::before {
-            content: '✓';
-            color: #22c55e;
-            font-weight: 900;
-        }
-
-        .price-features li.off { opacity: 0.4; }
-        .price-features li.off::before { content: '×'; color: #ef4444; }
-
-        /* --- Footer --- */
-        footer {
-            padding: 80px 5% 40px;
-            background: #020617;
-            border-top: 1px solid var(--border);
-        }
-
-        .footer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 60px;
-            margin-bottom: 60px;
-        }
-
-        .footer-col h5 { font-size: 1.1rem; margin: 0 0 20px; }
-        .footer-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
-        .footer-col a { color: var(--text-dim); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
-        .footer-col a:hover { color: var(--text); }
-
-        .footer-bottom {
-            padding-top: 40px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--text-dim);
-            font-size: 0.85rem;
-        }
-
-        /* --- Animations --- */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate {
-            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @media (max-width: 768px) {
-            .nav-links { display: none; }
-            .hero h1 { font-size: 3.5rem; }
-            .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
-        }
-    </style>
-</head>
-<body>
-    <nav>
-        <a href="#" class="logo">
-            <div class="logo-icon">⛰️</div>
-            SunTrail 3D
-        </a>
-        <div class="nav-links">
-            <a href="#features">Fonctionnalités</a>
-            <a href="#pricing">Tarifs</a>
-            <!-- <a href="./login.html">Connexion</a> CACHÉ v5.54.4 -->
-        </div>
-        <a href="./app.html" class="btn btn-primary" style="padding: 10px 20px; border-radius: 10px; font-size: 0.9rem;">Essayer</a>
-    </nav>
-
-    <header class="hero">
-        <h1 class="animate">Explorez la montagne<br>en 3D absolue.</h1>
-        <p class="animate" style="animation-delay: 0.1s;">La seule plateforme combinant rendu 3D haute performance, simulation solaire et données cartographiques officielles (SwissTopo, IGN France, basemap.at Autriche, BKG Allemagne, IGN España, Kartverket Norvège).</p>
-        <div class="cta-group animate" style="animation-delay: 0.2s;">
-            <a href="./app.html" class="btn btn-primary">
-                Lancer l'application
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-            </a>
-            <a href="https://play.google.com/store/apps/details?id=com.suntrail.threejs" class="btn btn-secondary" target="_blank" rel="noopener">
-                Version Android (Pro)
-            </a>
-        </div>
-    </header>
-
-    <section id="features" style="padding: 100px 0;">
-        <div class="section-title">
-            <h2>Précision & Performance</h2>
-            <p>Conçu pour les montagnards exigeants, SunTrail offre des outils d'analyse uniques pour vos sorties.</p>
-        </div>
-        <div class="features">
-            <!-- Solaire -->
-            <div class="feature-card animate">
-                <div class="feature-visual" style="background: linear-gradient(135deg, #fbc02d, #f97316);">
-                    <div style="font-size: 40px;">☀️</div>
-                </div>
-                <h3>Simulation Solaire</h3>
-                <p>La fonction signature : tapez n'importe où pour obtenir un rapport d'ensoleillement complet. Indispensable pour vos bivouacs et sorties hivernales.</p>
-            </div>
-            <!-- 3D -->
-            <div class="feature-card animate" style="animation-delay: 0.1s;">
-                <div class="feature-visual" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
-                    <div style="font-size: 40px;">⛰️</div>
-                </div>
-                <h3>Moteur 3D Haute Précision</h3>
-                <p>Découvrez la montagne en 3D réelle. Un rendu fluide utilisant Three.js pour une visualisation topographique réaliste au centimètre près.</p>
-            </div>
-            <!-- Cartes -->
-            <div class="feature-card animate" style="animation-delay: 0.2s;">
-                <div class="feature-visual" style="background: linear-gradient(135deg, #10b981, #047857);">
-                    <div style="font-size: 40px;">🗺️</div>
-                </div>
-                <h3>Données Officielles</h3>
-                <p>Accédez aux fonds de carte officiels les plus précis : <strong>SwissTopo</strong> (Suisse), <strong>IGN France</strong>, <strong>basemap.at</strong> (Autriche), <strong>BKG</strong> (Allemagne), <strong>IGN España</strong> et <strong>Kartverket</strong> (Norvège).</p>
-            </div>
-            <!-- Profil -->
-            <div class="feature-card animate">
-                <div class="feature-visual" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
-                    <div style="font-size: 40px;">📈</div>
-                </div>
-                <h3>Analyse de Profil</h3>
-                <p>Graphique d'élévation dynamique avec bande solaire intégrée pour savoir exactement quand vous serez à l'ombre durant votre rando.</p>
-            </div>
-            <!-- Offline -->
-            <div class="feature-card animate" style="animation-delay: 0.1s;">
-                <div class="feature-visual" style="background: linear-gradient(135deg, #f43f5e, #be123c);">
-                    <div style="font-size: 40px;">📶</div>
-                </div>
-                <h3>Mode Hors-ligne</h3>
-                <p>Téléchargez des packs pays complets (CH, FR) pour garder une cartographie fluide même sans aucun réseau en haute montagne.</p>
-            </div>
-            <!-- Sécurité -->
-            <div class="feature-card animate" style="animation-delay: 0.2s;">
-                <div class="feature-visual" style="background: linear-gradient(135deg, #fbbf24, #d97706);">
-                    <div style="font-size: 40px;">🛡️</div>
-                </div>
-                <h3>Sécurité & SOS</h3>
-                <p>Indicateurs de pente critique (>30°) pour le risque avalanche et bouton SOS affichant vos coordonnées exactes pour les secours.</p>
-            </div>
-        </div>
-    </section>
-
-    <section id="pricing" style="padding: 50px 0 100px;">
-        <div class="section-title">
-            <h2>Choisissez votre aventure</h2>
-            <p>Commencez gratuitement ou passez à Pro pour une autonomie totale.</p>
-        </div>
-        <div class="pricing">
-            <div class="price-card">
-                <h4>Gratuit</h4>
-                <div class="price-value">0€ <span>/mois</span></div>
-                <ul class="price-features">
-                    <li>Cartes Topo Mondiales</li>
-                    <li>Solaire (Temps Réel)</li>
-                    <li>Enregistrement GPS Illimité</li>
-                    <li class="off">Vue Satellite HD</li>
-                    <li class="off">Hors-ligne Illimité</li>
-                    <li class="off">Analyse Solaire Complète</li>
-                </ul>
-                <a href="./app.html" class="btn btn-secondary" style="width: 100%; justify-content: center;">Commencer</a>
-            </div>
-            <div class="price-card pro">
-                <div class="badge">Recommandé</div>
-                <h4>SunTrail Pro</h4>
-                <div class="price-value">29,99€ <span>/an</span></div>
-                <ul class="price-features">
-                    <li>Tout ce qui est dans Gratuit</li>
-                    <li><strong>Simulation Solaire Pro (Calendrier)</strong></li>
-                    <li><strong>Satellite HD & Bâtiments 3D</strong></li>
-                    <li><strong>Hors-ligne Illimité</strong></li>
-                    <li>Inclinomètre de Pente</li>
-                    <li>Export GPX & Statistiques</li>
-                </ul>
-                <a href="./app.html" class="btn btn-primary" style="width: 100%; justify-content: center;">Démarrer l'essai</a>
-            </div>
-        </div>
-    </section>
-
-    <footer>
-        <div class="footer-grid">
-            <div class="footer-col" style="grid-column: span 2;">
-                <div class="logo" style="margin-bottom: 20px;">
-                    <div class="logo-icon">⛰️</div>
-                    SunTrail 3D
-                </div>
-                <p style="color: var(--text-dim); max-width: 300px;">La cartographie 3D réinventée pour la montagne. Made in Alps.</p>
-            </div>
-            <div class="footer-col">
-                <h5>Application</h5>
-                <ul>
-                    <li><a href="./app.html">Lancer la carte</a></li>
-                    <li><a href="https://play.google.com/store/apps/details?id=com.suntrail.threejs" target="_blank" rel="noopener">Android (Play Store)</a></li>
-                    <li><a href="#features">Fonctionnalités</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h5>Légal</h5>
-                <ul>
-                    <li><a href="./privacy.html">Confidentialité</a></li>
-                    <li><a href="./legal.html">Mentions légales</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <div>© 2026 SunTrail 3D. Tous droits réservés.</div>
-            <div style="display: flex; gap: 20px;">
-                <a href="#" style="color: var(--text-dim); text-decoration: none;">Twitter</a>
-                <a href="#" style="color: var(--text-dim); text-decoration: none;">GitHub</a>
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        // Intersection Observer pour les animations au scroll
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate');
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        />
+        <title>SunTrail 3D — La Montagne sous un nouveau jour</title>
+        <script>
+            // OAuth token handling — Supabase redirige TOUJOURS ici avec tokens en hash
+            const hash = window.location.hash.substring(1);
+            if (hash && hash.includes('access_token')) {
+                try {
+                    // Stocker les tokens en localStorage pour app.html
+                    localStorage.setItem('__oauth_hash', hash);
+                } catch (e) {
+                    console.warn('Failed to store OAuth hash:', e);
                 }
-            });
-        }, { threshold: 0.1 });
+                // Nettoyer l'URL et aller à app.html
+                window.history.replaceState(
+                    {},
+                    '',
+                    window.location.pathname + window.location.search
+                );
+                window.location.href = 'app.html';
+            } else if (
+                window.hasOwnProperty('Capacitor') ||
+                /Capacitor/i.test(navigator.userAgent)
+            ) {
+                // Mobile native — aller à app.html
+                window.location.href = 'app.html';
+            }
+            // Sinon : page de démarrage (landing page)
+        </script>
+        <meta
+            name="description"
+            content="Carte topographique 3D haute performance avec simulation solaire, analyse de trail et sécurité montagne."
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap"
+        />
+        <style>
+            :root {
+                --bg: #030712;
+                --surface: #111827;
+                --surface-accent: #1f2937;
+                --accent: #f97316;
+                --accent-glow: rgba(249, 115, 22, 0.3);
+                --gold: #fbc02d;
+                --text: #f9fafb;
+                --text-dim: #9ca3af;
+                --border: rgba(255, 255, 255, 0.08);
+                --nav-bg: rgba(3, 7, 18, 0.8);
+            }
 
-        document.querySelectorAll('.feature-card, .price-card, .hero h1, .hero p, .hero .cta-group').forEach(el => {
-            observer.observe(el);
-        });
-    </script>
-</body>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: 'DM Sans', sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                line-height: 1.6;
+                overflow-x: hidden;
+                -webkit-font-smoothing: antialiased;
+            }
+
+            /* --- Navigation --- */
+            nav {
+                position: fixed;
+                top: 0;
+                width: 100%;
+                height: 70px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 5%;
+                background: var(--nav-bg);
+                backdrop-filter: blur(12px);
+                border-bottom: 1px solid var(--border);
+                z-index: 1000;
+            }
+
+            .logo {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 700;
+                font-size: 1.2rem;
+                text-decoration: none;
+                color: var(--text);
+            }
+
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, var(--accent), #ea580c);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 15px var(--accent-glow);
+            }
+
+            .nav-links {
+                display: flex;
+                gap: 30px;
+            }
+            .nav-links a {
+                text-decoration: none;
+                color: var(--text-dim);
+                font-size: 0.95rem;
+                font-weight: 500;
+                transition: color 0.2s;
+            }
+            .nav-links a:hover {
+                color: var(--accent);
+            }
+
+            /* --- Hero Section --- */
+            .hero {
+                position: relative;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                padding: 120px 20px 80px;
+                background: radial-gradient(
+                    circle at 50% 30%,
+                    #1e293b 0%,
+                    #030712 70%
+                );
+            }
+
+            .hero::before {
+                content: '';
+                position: absolute;
+                top: 20%;
+                width: 600px;
+                height: 400px;
+                background: var(--accent);
+                filter: blur(180px);
+                opacity: 0.08;
+                pointer-events: none;
+            }
+
+            .hero h1 {
+                font-size: clamp(2.8rem, 8vw, 5.5rem);
+                line-height: 1.1;
+                margin: 0;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                background: linear-gradient(to bottom, #fff 40%, #94a3b8);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .hero p {
+                font-size: clamp(1.1rem, 3vw, 1.4rem);
+                color: var(--text-dim);
+                max-width: 750px;
+                margin: 25px auto 45px;
+            }
+
+            .cta-group {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .btn {
+                padding: 16px 36px;
+                border-radius: 14px;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 1rem;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .btn-primary {
+                background: var(--accent);
+                color: #fff;
+                box-shadow: 0 10px 30px -10px rgba(249, 115, 22, 0.5);
+            }
+
+            .btn-primary:hover {
+                transform: translateY(-3px);
+                background: #fb923c;
+                box-shadow: 0 15px 40px -10px rgba(249, 115, 22, 0.6);
+            }
+
+            .btn-secondary {
+                background: rgba(255, 255, 255, 0.03);
+                color: #fff;
+                border: 1px solid var(--border);
+                backdrop-filter: blur(10px);
+            }
+
+            .btn-secondary:hover {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+
+            /* --- Feature Grid --- */
+            .section-title {
+                text-align: center;
+                margin-bottom: 60px;
+                padding: 0 20px;
+            }
+
+            .section-title h2 {
+                font-size: 2.5rem;
+                margin-bottom: 15px;
+            }
+            .section-title p {
+                color: var(--text-dim);
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            .features {
+                max-width: 1200px;
+                margin: 0 auto 100px;
+                padding: 0 20px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+                gap: 30px;
+            }
+
+            .feature-card {
+                background: var(--surface);
+                padding: 40px;
+                border-radius: 32px;
+                border: 1px solid var(--border);
+                transition:
+                    transform 0.3s,
+                    border-color 0.3s;
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .feature-card:hover {
+                border-color: rgba(249, 115, 22, 0.3);
+                transform: translateY(-5px);
+            }
+
+            .feature-visual {
+                width: 100%;
+                height: 160px;
+                background: var(--surface-accent);
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 10px;
+                position: relative;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .feature-visual::after {
+                content: '';
+                position: absolute;
+                width: 150%;
+                height: 100%;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.05),
+                    transparent
+                );
+                transform: rotate(25deg);
+                top: -20%;
+                left: -20%;
+            }
+
+            .feature-card h3 {
+                margin: 0;
+                font-size: 1.4rem;
+                color: #fff;
+            }
+            .feature-card p {
+                margin: 0;
+                color: var(--text-dim);
+                font-size: 0.95rem;
+                line-height: 1.5;
+            }
+
+            /* --- Pricing Table --- */
+            .pricing {
+                max-width: 1000px;
+                margin: 0 auto 150px;
+                padding: 0 20px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 30px;
+            }
+
+            .price-card {
+                background: var(--surface);
+                padding: 50px;
+                border-radius: 32px;
+                border: 1px solid var(--border);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .price-card.pro {
+                border: 2px solid var(--accent);
+                background: linear-gradient(
+                    180deg,
+                    rgba(249, 115, 22, 0.05) 0%,
+                    var(--surface) 100%
+                );
+            }
+
+            .badge {
+                position: absolute;
+                top: 25px;
+                right: -35px;
+                background: var(--accent);
+                color: #fff;
+                padding: 8px 45px;
+                transform: rotate(45deg);
+                font-size: 0.75rem;
+                font-weight: 800;
+                text-transform: uppercase;
+            }
+
+            .price-card h4 {
+                font-size: 1.25rem;
+                margin: 0 0 10px;
+            }
+            .price-value {
+                font-size: 3rem;
+                font-weight: 700;
+                margin-bottom: 30px;
+            }
+            .price-value span {
+                font-size: 1.1rem;
+                color: var(--text-dim);
+                font-weight: 400;
+            }
+
+            .price-features {
+                list-style: none;
+                padding: 0;
+                margin: 0 0 40px;
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .price-features li {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 0.95rem;
+            }
+
+            .price-features li::before {
+                content: '✓';
+                color: #22c55e;
+                font-weight: 900;
+            }
+
+            .price-features li.off {
+                opacity: 0.4;
+            }
+            .price-features li.off::before {
+                content: '×';
+                color: #ef4444;
+            }
+
+            /* --- Footer --- */
+            footer {
+                padding: 80px 5% 40px;
+                background: #020617;
+                border-top: 1px solid var(--border);
+            }
+
+            .footer-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 60px;
+                margin-bottom: 60px;
+            }
+
+            .footer-col h5 {
+                font-size: 1.1rem;
+                margin: 0 0 20px;
+            }
+            .footer-col ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .footer-col a {
+                color: var(--text-dim);
+                text-decoration: none;
+                font-size: 0.9rem;
+                transition: color 0.2s;
+            }
+            .footer-col a:hover {
+                color: var(--text);
+            }
+
+            .footer-bottom {
+                padding-top: 40px;
+                border-top: 1px solid var(--border);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                color: var(--text-dim);
+                font-size: 0.85rem;
+            }
+
+            /* --- Animations --- */
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .animate {
+                animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            }
+
+            @media (max-width: 768px) {
+                .nav-links {
+                    display: none;
+                }
+                .hero h1 {
+                    font-size: 3.5rem;
+                }
+                .footer-bottom {
+                    flex-direction: column;
+                    gap: 20px;
+                    text-align: center;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <nav>
+            <a href="#" class="logo">
+                <div class="logo-icon">⛰️</div>
+                SunTrail 3D
+            </a>
+            <div class="nav-links">
+                <a href="#features">Fonctionnalités</a>
+                <a href="#pricing">Tarifs</a>
+                <!-- <a href="./login.html">Connexion</a> CACHÉ v5.54.4 -->
+            </div>
+            <a
+                href="./app.html"
+                class="btn btn-primary"
+                style="
+                    padding: 10px 20px;
+                    border-radius: 10px;
+                    font-size: 0.9rem;
+                "
+                >Essayer</a
+            >
+        </nav>
+
+        <header class="hero">
+            <h1 class="animate">Explorez la montagne<br />en 3D absolue.</h1>
+            <p class="animate" style="animation-delay: 0.1s">
+                La seule plateforme combinant rendu 3D haute performance,
+                simulation solaire et données cartographiques officielles
+                (SwissTopo, IGN France, basemap.at Autriche, BKG Allemagne, IGN
+                España, Kartverket Norvège).
+            </p>
+            <div class="cta-group animate" style="animation-delay: 0.2s">
+                <a href="./app.html" class="btn btn-primary">
+                    Lancer l'application
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a
+                    href="https://play.google.com/store/apps/details?id=com.suntrail.threejs"
+                    class="btn btn-secondary"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Version Android (Pro)
+                </a>
+            </div>
+        </header>
+
+        <section id="features" style="padding: 100px 0">
+            <div class="section-title">
+                <h2>Précision & Performance</h2>
+                <p>
+                    Conçu pour les montagnards exigeants, SunTrail offre des
+                    outils d'analyse uniques pour vos sorties.
+                </p>
+            </div>
+            <div class="features">
+                <!-- Solaire -->
+                <div class="feature-card animate">
+                    <div
+                        class="feature-visual"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #fbc02d,
+                                #f97316
+                            );
+                        "
+                    >
+                        <div style="font-size: 40px">☀️</div>
+                    </div>
+                    <h3>Simulation Solaire</h3>
+                    <p>
+                        La fonction signature : tapez n'importe où pour obtenir
+                        un rapport d'ensoleillement complet. Indispensable pour
+                        vos bivouacs et sorties hivernales.
+                    </p>
+                </div>
+                <!-- 3D -->
+                <div class="feature-card animate" style="animation-delay: 0.1s">
+                    <div
+                        class="feature-visual"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #3b82f6,
+                                #1d4ed8
+                            );
+                        "
+                    >
+                        <div style="font-size: 40px">⛰️</div>
+                    </div>
+                    <h3>Relief 3D documenté</h3>
+                    <p>
+                        Explorez la montagne sous tous les angles. Le relief est
+                        issu de modèles numériques dont la résolution varie
+                        généralement de 5 à 25 m selon la zone.
+                    </p>
+                </div>
+                <!-- Cartes -->
+                <div class="feature-card animate" style="animation-delay: 0.2s">
+                    <div
+                        class="feature-visual"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #10b981,
+                                #047857
+                            );
+                        "
+                    >
+                        <div style="font-size: 40px">🗺️</div>
+                    </div>
+                    <h3>Données Officielles</h3>
+                    <p>
+                        Accédez aux fonds de carte officiels les plus précis :
+                        <strong>SwissTopo</strong> (Suisse),
+                        <strong>IGN France</strong>,
+                        <strong>basemap.at</strong> (Autriche),
+                        <strong>BKG</strong> (Allemagne),
+                        <strong>IGN España</strong> et
+                        <strong>Kartverket</strong> (Norvège).
+                    </p>
+                </div>
+                <!-- Profil -->
+                <div class="feature-card animate">
+                    <div
+                        class="feature-visual"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #8b5cf6,
+                                #6d28d9
+                            );
+                        "
+                    >
+                        <div style="font-size: 40px">📈</div>
+                    </div>
+                    <h3>Analyse de Profil</h3>
+                    <p>
+                        Graphique d'élévation dynamique avec bande solaire
+                        intégrée pour estimer les passages au soleil ou à
+                        l'ombre durant votre randonnée.
+                    </p>
+                </div>
+                <!-- Offline -->
+                <div class="feature-card animate" style="animation-delay: 0.1s">
+                    <div
+                        class="feature-visual"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #f43f5e,
+                                #be123c
+                            );
+                        "
+                    >
+                        <div style="font-size: 40px">📶</div>
+                    </div>
+                    <h3>Mode Hors-ligne</h3>
+                    <p>
+                        Téléchargez des packs pays complets (CH, FR) pour garder
+                        une cartographie fluide même sans aucun réseau en haute
+                        montagne.
+                    </p>
+                </div>
+                <!-- Sécurité -->
+                <div class="feature-card animate" style="animation-delay: 0.2s">
+                    <div
+                        class="feature-visual"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #fbbf24,
+                                #d97706
+                            );
+                        "
+                    >
+                        <div style="font-size: 40px">🛡️</div>
+                    </div>
+                    <h3>Sécurité & SOS</h3>
+                    <p>
+                        Indicateurs de pente critique (&gt;30°) et bouton SOS
+                        affichant la position GPS estimée, avec la précision
+                        fournie par l'appareil.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" style="padding: 50px 0 100px">
+            <div class="section-title">
+                <h2>Choisissez votre aventure</h2>
+                <p>
+                    Commencez gratuitement ou passez à Pro pour une autonomie
+                    totale.
+                </p>
+            </div>
+            <div class="pricing">
+                <div class="price-card">
+                    <h4>Gratuit</h4>
+                    <div class="price-value">0€ <span>/mois</span></div>
+                    <ul class="price-features">
+                        <li>Cartes Topo Mondiales</li>
+                        <li>Solaire (Temps Réel)</li>
+                        <li>Enregistrement GPS Illimité</li>
+                        <li class="off">Vue Satellite HD</li>
+                        <li class="off">Hors-ligne Illimité</li>
+                        <li class="off">Analyse Solaire Complète</li>
+                    </ul>
+                    <a
+                        href="./app.html"
+                        class="btn btn-secondary"
+                        style="width: 100%; justify-content: center"
+                        >Commencer</a
+                    >
+                </div>
+                <div class="price-card pro">
+                    <div class="badge">Recommandé</div>
+                    <h4>SunTrail Pro</h4>
+                    <div class="price-value">29,99€ <span>/an</span></div>
+                    <ul class="price-features">
+                        <li>Tout ce qui est dans Gratuit</li>
+                        <li>
+                            <strong>Simulation Solaire Pro (Calendrier)</strong>
+                        </li>
+                        <li><strong>Satellite HD & Bâtiments 3D</strong></li>
+                        <li><strong>Hors-ligne Illimité</strong></li>
+                        <li>Inclinomètre de Pente</li>
+                        <li>Export GPX & Statistiques</li>
+                    </ul>
+                    <a
+                        href="./app.html"
+                        class="btn btn-primary"
+                        style="width: 100%; justify-content: center"
+                        >Démarrer l'essai</a
+                    >
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-grid">
+                <div class="footer-col" style="grid-column: span 2">
+                    <div class="logo" style="margin-bottom: 20px">
+                        <div class="logo-icon">⛰️</div>
+                        SunTrail 3D
+                    </div>
+                    <p style="color: var(--text-dim); max-width: 300px">
+                        La cartographie 3D réinventée pour la montagne. Made in
+                        Alps.
+                    </p>
+                </div>
+                <div class="footer-col">
+                    <h5>Application</h5>
+                    <ul>
+                        <li><a href="./app.html">Lancer la carte</a></li>
+                        <li>
+                            <a
+                                href="https://play.google.com/store/apps/details?id=com.suntrail.threejs"
+                                target="_blank"
+                                rel="noopener"
+                                >Android (Play Store)</a
+                            >
+                        </li>
+                        <li><a href="#features">Fonctionnalités</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h5>Légal</h5>
+                    <ul>
+                        <li><a href="./privacy.html">Confidentialité</a></li>
+                        <li><a href="./legal.html">Mentions légales</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div>© 2026 SunTrail 3D. Tous droits réservés.</div>
+                <div style="display: flex; gap: 20px">
+                    <a
+                        href="#"
+                        style="color: var(--text-dim); text-decoration: none"
+                        >Twitter</a
+                    >
+                    <a
+                        href="#"
+                        style="color: var(--text-dim); text-decoration: none"
+                        >GitHub</a
+                    >
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            // Intersection Observer pour les animations au scroll
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate');
+                        }
+                    });
+                },
+                { threshold: 0.1 }
+            );
+
+            document
+                .querySelectorAll(
+                    '.feature-card, .price-card, .hero h1, .hero p, .hero .cta-group'
+                )
+                .forEach((el) => {
+                    observer.observe(el);
+                });
+        </script>
+    </body>
 </html>

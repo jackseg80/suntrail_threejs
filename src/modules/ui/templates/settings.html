@@ -4,7 +4,7 @@
     </div>
     <div class="sheet-header">
         <span class="sheet-title" data-i18n="settings.title">Réglages</span>
-        <div class="sheet-close" id="close-panel">
+        <button type="button" class="sheet-close" id="close-panel">
             <svg
                 width="16"
                 height="16"
@@ -19,11 +19,18 @@
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-        </div>
+        </button>
     </div>
 
     <!-- La section reste visible pour l'accès RGPD au compte. -->
-    <div class="section-label" data-i18n="settings.section.account">Compte</div>
+    <div
+        id="settings-essentials-heading"
+        class="section-label"
+        data-i18n="settings.section.account"
+        tabindex="-1"
+    >
+        Compte
+    </div>
     <div
         id="account-section"
         style="
@@ -224,7 +231,12 @@
         </button>
     </div>
 
-    <div class="control-group" style="margin-top: 20px">
+    <div
+        id="settings-hiking-group"
+        class="control-group"
+        style="margin-top: 20px"
+        tabindex="-1"
+    >
         <div class="section-label" data-i18n="settings.section.rendering">
             Rendu 3D & Détails
         </div>
@@ -686,7 +698,7 @@
                         class="setting-label"
                         data-i18n="settings.pro.lodLabel"
                     >
-                        Zoom LOD 18 + Satellite
+                        Détail cartographique maximal + Satellite
                     </div>
                     <div
                         style="font-size: 10px; color: var(--text-3)"
@@ -830,7 +842,12 @@
         </button>
     </div>
 
-    <details class="control-group" style="margin-top: 15px">
+    <details
+        id="settings-developer-lab"
+        class="control-group"
+        style="margin-top: 15px"
+        tabindex="-1"
+    >
         <summary
             style="
                 font-size: 11px;

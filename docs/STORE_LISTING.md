@@ -31,7 +31,7 @@ Ne vous demandez plus si vous serez à l'ombre à l'arrivée au col.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ LE MOTEUR 3D LE PLUS AVANCÉ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Cartographie Haute Précision : SwissTopo (Suisse), IGN (France), basemap.at (Autriche), BKG (Allemagne), IGN (Espagne), Kartverket (Norvège), Satellite HD.
+• Cartographie officielle détaillée : SwissTopo (Suisse), IGN (France), basemap.at (Autriche), BKG (Allemagne), IGN (Espagne), Kartverket (Norvège), Satellite HD.
 • Immersion totale : Visualisez le relief sous tous les angles avec une fluidité exceptionnelle.
 • Météo en direct : Particules de pluie et neige animées directement sur la carte 3D.
 • Inclinomètre Numérique : Mesurez les pentes en direct pour votre sécurité (anti-avalanche).
@@ -40,14 +40,14 @@ Ne vous demandez plus si vous serez à l'ombre à l'arrivée au col.
 📍 GPX & NAVIGATION
 ━━━━━━━━━━━━━━━━━━━━━━━
 • Importez vos tracés GPX : Visualisez-les "drapés" sur le relief réel.
-• Enregistrement robuste : Suivi GPS haute précision qui fonctionne même écran éteint.
+• Enregistrement robuste : Suivi GPS continu, même écran éteint. La précision dépend de l'appareil, du relief et du signal.
 • Profil d'élévation intelligent : Stats de distance, D+/D-, pente et VAM.
 • Mode Hors-ligne : Téléchargez vos cartes avant de partir pour une autonomie totale en montagne.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 🛡️ SÉCURITÉ & CONFIDENTIALITÉ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Bouton SOS : Partagez votre position exacte et votre altitude en un tap.
+• Bouton SOS : Partagez votre position GPS estimée et votre altitude, avec l'indication de précision disponible.
 • Zéro Compte : Aucun compte requis, aucune donnée personnelle collectée.
 • Respect total : Vos tracés restent sur votre téléphone.
 • Indépendance : Application développée avec passion, sans trackers publicitaires.
@@ -93,7 +93,7 @@ Stop guessing if you'll be in the sun when you reach that mountain pass.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ ADVANCED 3D ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• High-Precision Maps: SwissTopo (Switzerland), IGN (France), basemap.at (Austria), BKG (Germany), IGN (Spain), Kartverket (Norway), HD Satellite.
+• Detailed Official Maps: SwissTopo (Switzerland), IGN (France), basemap.at (Austria), BKG (Germany), IGN (Spain), Kartverket (Norway), HD Satellite.
 • Total Immersion: Visualize terrain from any angle with exceptional smoothness.
 • Live Weather: Animated rain and snow particles directly on the 3D map.
 • Digital Inclinometer: Measure slopes in real-time for your safety (avalanche risk).
@@ -102,14 +102,14 @@ Stop guessing if you'll be in the sun when you reach that mountain pass.
 📍 GPX & NAVIGATION
 ━━━━━━━━━━━━━━━━━━━━━━━
 • Import GPX Tracks: See them "draped" over the actual 3D relief.
-• Robust Recording: High-precision GPS tracking that works even with the screen off.
+• Robust Recording: Continuous GPS tracking, even with the screen off. Accuracy depends on the device, terrain, and signal.
 • Smart Elevation Profile: Distance, elevation gain/loss, slope, and VAM stats.
 • Offline Mode: Download maps before you go for total autonomy in the mountains.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 🛡️ SAFETY & PRIVACY
 ━━━━━━━━━━━━━━━━━━━━━━━
-• SOS Button: Share your exact coordinates and altitude in one tap.
+• SOS Button: Share your estimated GPS position and altitude together with the available accuracy reading.
 • No Account Needed: No login required, no personal data collected.
 • Complete Privacy: Your tracks stay on your device.
 • Independent: Developed with passion, zero ad trackers.
@@ -155,7 +155,7 @@ Fragen Sie sich nicht mehr, ob Sie bei der Ankunft am Pass im Schatten stehen we
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ DIE FORTSCHRITTLICHSTE 3D-ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Hochpräzise Karten: SwissTopo (Schweiz), IGN (Frankreich), basemap.at (Österreich), BKG (Deutschland), IGN (Spanien), Kartverket (Norwegen), HD-Satellit.
+• Detaillierte offizielle Karten: SwissTopo (Schweiz), IGN (Frankreich), basemap.at (Österreich), BKG (Deutschland), IGN (Spanien), Kartverket (Norwegen), HD-Satellit.
 • Volle Immersion: Visualisieren Sie das Gelände aus jedem Winkel mit außergewöhnlicher Flüssigkeit.
 • Live-Wetter: Animierte Regen- und Schneepartikel direkt auf der 3D-Karte.
 • Digitaler Neigungsmesser: Messen Sie Hangneigungen live für Ihre Sicherheit (Lawinenprävention).
@@ -164,14 +164,14 @@ Fragen Sie sich nicht mehr, ob Sie bei der Ankunft am Pass im Schatten stehen we
 📍 GPX & NAVIGATION
 ━━━━━━━━━━━━━━━━━━━━━━━
 • GPX-Tracks importieren: Sehen Sie Ihre Routen direkt auf dem realen 3D-Relief.
-• Robuste Aufzeichnung: Hochpräzises GPS-Tracking, das auch bei ausgeschaltetem Bildschirm funktioniert.
+• Robuste Aufzeichnung: Kontinuierliches GPS-Tracking, auch bei ausgeschaltetem Bildschirm. Die Genauigkeit hängt von Gerät, Gelände und Signal ab.
 • Intelligentes Höhenprofil: Statistiken zu Distanz, Höhenmetern, Neigung und VAM.
 • Offline-Modus: Laden Sie Ihre Karten vorab herunter für volle Autonomie in den Bergen.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 🛡️ SICHERHEIT & DATENSCHUTZ
 ━━━━━━━━━━━━━━━━━━━━━━━
-• SOS-Knopf: Teilen Sie Ihre exakte Position und Höhe mit einem Fingertipp.
+• SOS-Knopf: Teilen Sie Ihre geschätzte GPS-Position und Höhe zusammen mit der verfügbaren Genauigkeitsangabe.
 • Kein Account nötig: Keine Anmeldung erforderlich, keine persönlichen Daten werden gesammelt.
 • Volle Privatsphäre: Ihre Tracks bleiben auf Ihrem Telefon.
 • Unabhängig: Mit Leidenschaft entwickelte App, ohne Werbe-Tracker.
@@ -216,7 +216,7 @@ Non chiederti più se sarai all'ombra quando arriverai al colle.
 ━━━━━━━━━━━━━━━━━━━━━━━
 🏔️ IL MOTORE 3D PIÙ AVANZATO
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Cartografia ad Alta Precisione: SwissTopo (Svizzera), IGN (Francia), basemap.at (Austria), BKG (Germania), IGN (Spagna), Kartverket (Norvegia), Satellite HD.
+• Cartografia ufficiale dettagliata: SwissTopo (Svizzera), IGN (Francia), basemap.at (Austria), BKG (Germania), IGN (Spagna), Kartverket (Norvegia), Satellite HD.
 • Immersione totale: Visualizza il rilievo da ogni angolazione con una fluidità eccezionale.
 • Meteo in diretta: Particelle di pioggia e neve animate direttamente sulla mappa 3D.
 • Inclinometro Digitale: Misura le pendenze in tempo reale per la tua sicurezza (prevenzione valanghe).
@@ -225,14 +225,14 @@ Non chiederti più se sarai all'ombra quando arriverai al colle.
 📍 GPX & NAVIGAZIONE
 ━━━━━━━━━━━━━━━━━━━━━━━
 • Importa tracce GPX: Visualizzale "adagiate" sul rilievo reale in 3D.
-• Registrazione robusta: Tracking GPS ad alta precisione che funciona anche a schermo spento.
+• Registrazione robusta: Tracking GPS continuo, anche a schermo spento. La precisione dipende dal dispositivo, dal rilievo e dal segnale.
 • Profilo altimetrico intelligente: Statistiche di distanza, dislivello, pendenza e VAM.
 • Modalità Offline: Scarica le tue mappe prima di partire per una totale autonomia in montagna.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 🛡️ SICUREZZA & PRIVACY
 ━━━━━━━━━━━━━━━━━━━━━━━
-• Pulsante SOS: Condividi la tua posizione esatta e altitudine con un tocco.
+• Pulsante SOS: Condividi la posizione GPS stimata e l'altitudine insieme all'indicazione di precisione disponibile.
 • Nessun Account: Nessun login richiesto, nessun dato personale raccolto.
 • Privacy totale: I tuoi percorsi rimangono sul tuo telefono.
 • Indipendente: App sviluppata con passione, senza tracker pubblicitari.

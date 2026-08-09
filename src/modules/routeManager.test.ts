@@ -5,6 +5,8 @@ vi.mock('./state', () => ({
         routeWaypoints: [] as any[],
         routeLoading: false,
         routeError: null,
+        isRoutePlanningMode: false,
+        gpxLayers: [] as any[],
         activeRouteProfile: 'foot-hiking',
         routeLoopEnabled: false,
         ORS_KEY: '',
@@ -39,8 +41,22 @@ vi.mock('./geocodingService', () => ({
     getPlaceName: vi.fn(() => Promise.resolve('Mürren')),
 }));
 
+vi.mock('./solarRoute', () => ({
+    scheduleRouteSolarAnalysis: vi.fn(),
+    invalidateRouteCache: vi.fn(),
+}));
+
+vi.mock('./toast', () => ({
+    showToast: vi.fn(),
+}));
+
 import { state } from './state';
-import { computeRoute, clearRouteWaypoints } from './routingService';
+import {
+    computeRoute,
+    clearRouteWaypoints,
+    reverseWaypoints,
+} from './routingService';
+import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
 import {
@@ -48,12 +64,16 @@ import {
     removeWaypointAt,
     clearRoute,
     scheduleGeocodeNames,
+    setRoutePlanningMode,
+    reverseRoute,
 } from './routeManager';
 
 const mockComputeRoute = computeRoute as ReturnType<typeof vi.fn>;
 const mockClearRouteWaypoints = clearRouteWaypoints as ReturnType<typeof vi.fn>;
 const mockI18nT = i18n.t as ReturnType<typeof vi.fn>;
 const mockGetPlaceName = getPlaceName as ReturnType<typeof vi.fn>;
+const mockReverseWaypoints = reverseWaypoints as ReturnType<typeof vi.fn>;
+const mockShowToast = showToast as ReturnType<typeof vi.fn>;
 
 describe('routeManager', () => {
     beforeEach(() => {
@@ -61,6 +81,9 @@ describe('routeManager', () => {
         state.routeWaypoints = [];
         state.routeLoading = false;
         state.routeError = null;
+        state.isRoutePlanningMode = false;
+        state.gpxLayers = [];
+        localStorage.clear();
         document.body.className = '';
         document.body.innerHTML = `
             <div id="route-bar">
@@ -80,6 +103,56 @@ describe('routeManager', () => {
                 'routeLoading',
                 expect.any(Function)
             );
+            expect(state.subscribe).toHaveBeenCalledWith(
+                'isRoutePlanningMode',
+                expect.any(Function)
+            );
+        });
+    });
+
+    describe('explicit planning mode', () => {
+        it('keeps the route bar visible with an empty-route instruction', () => {
+            setRoutePlanningMode(true, { announceHint: false });
+            initRouteManager();
+
+            expect(state.isRoutePlanningMode).toBe(true);
+            expect(
+                document.body.classList.contains('route-planning-mode')
+            ).toBe(true);
+            expect(
+                document.body.classList.contains('route-planner-active')
+            ).toBe(true);
+            expect(document.getElementById('rb-info')?.textContent).toBe(
+                'planning.tapToAddStart'
+            );
+        });
+
+        it('announces the long-press shortcut once without blocking', () => {
+            setRoutePlanningMode(true);
+            setRoutePlanningMode(false);
+            setRoutePlanningMode(true);
+
+            expect(mockShowToast).toHaveBeenCalledTimes(1);
+            expect(
+                localStorage.getItem('suntrail_planning_long_press_hint_v1')
+            ).toBe('1');
+        });
+    });
+
+    describe('reverseRoute()', () => {
+        it('delegates inversion when at least two waypoints exist', () => {
+            state.routeWaypoints = [
+                { lat: 46, lon: 7 },
+                { lat: 47, lon: 8 },
+            ];
+            reverseRoute();
+            expect(mockReverseWaypoints).toHaveBeenCalledOnce();
+        });
+
+        it('does nothing with fewer than two waypoints', () => {
+            state.routeWaypoints = [{ lat: 46, lon: 7 }];
+            reverseRoute();
+            expect(mockReverseWaypoints).not.toHaveBeenCalled();
         });
     });
 
@@ -243,6 +316,21 @@ describe('routeManager', () => {
                 expect(infoEl?.textContent).toBe('routeBar.onePoint');
                 expect(mockI18nT).toHaveBeenCalledWith('routeBar.onePoint');
             }
+        });
+
+        it("affiche l'erreur de calcul sans masquer les points", () => {
+            state.routeWaypoints = [
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ];
+            state.routeError = 'offline';
+            initRouteManager();
+            expect(document.getElementById('rb-info')?.textContent).toBe(
+                'routeBar.error'
+            );
+            expect(document.querySelectorAll('#rb-dots .rb-dot')).toHaveLength(
+                2
+            );
         });
     });
 

@@ -46,6 +46,7 @@ export class TopStatusBar extends BaseComponent {
         // LOD tooltip icon on the LOD pill
         const centerWidgets = this.element.querySelector('.top-center-widgets');
         const lodInfoIcon = document.createElement('span');
+        lodInfoIcon.className = 'lod-info-trigger';
         lodInfoIcon.textContent = 'ⓘ';
         lodInfoIcon.style.cssText =
             'font-size:var(--text-xs);opacity:0.4;cursor:pointer;margin-left:2px;align-self:center;';
@@ -113,6 +114,11 @@ export class TopStatusBar extends BaseComponent {
         );
         this.addSubscription(
             state.subscribe('TARGET_LAT', () => this.updateLOD(state.ZOOM))
+        );
+        const onViewportResize = () => this.updateLOD(state.ZOOM);
+        window.addEventListener('resize', onViewportResize);
+        this.addSubscription(() =>
+            window.removeEventListener('resize', onViewportResize)
         );
         this.addSubscription(
             state.subscribe('weatherData', (val: any) =>
@@ -262,7 +268,15 @@ export class TopStatusBar extends BaseComponent {
             const pack = packManager.findPackContaining(lat, lon);
             const ps = pack ? packManager.getPackState(pack.id) : null;
 
-            let badgeText = `${country} · LVL ${Math.floor(zoom)}`;
+            this.lodBadge.dataset.lod = String(Math.floor(zoom));
+            const badgeTextKey =
+                window.innerWidth <= 500
+                    ? 'topbar.mapDetailCompact'
+                    : 'topbar.mapDetail';
+            let badgeText = i18n.t(badgeTextKey, {
+                source: country,
+                detail: String(Math.floor(zoom)),
+            });
             if (
                 ps?.status === 'installed' ||
                 ps?.status === 'update_available'

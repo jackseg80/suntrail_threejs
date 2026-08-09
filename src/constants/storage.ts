@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
     ACCEPTANCE_V1: 'suntrail_acceptance_v1',
     GPS_DISCLOSURE_V1: 'suntrail_gps_disclosure_v1',
     ONBOARDING_V2: 'suntrail_onboarding_v2',
+    PLANNING_LONG_PRESS_HINT: 'suntrail_planning_long_press_hint_v1',
     RECORDED_POINTS: 'suntrail_recorded_points',
     CURRENT_COURSE_ID: 'suntrail_current_course_id',
     RECORDING_START_TIME: 'suntrail_recording_start_time',

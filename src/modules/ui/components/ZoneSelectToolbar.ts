@@ -244,7 +244,7 @@ export class ZoneSelectToolbar extends BaseComponent {
                 ? `${this.minLod}→${this.maxLod}`
                 : `${this.minLod}`;
             totalInfoEl.textContent = sel
-                ? `${i18n.t('zoneSelect.totalLODs') || 'Total (LOD'} ${lodInfo}) : ${sel.totalTiles} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${sel.totalSizeMB}${zonesUsed}`
+                ? `${i18n.t('zoneSelect.totalLODs') || 'Total (détails'} ${lodInfo}) : ${sel.totalTiles} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${sel.totalSizeMB}${zonesUsed}`
                 : '';
         }
 
@@ -252,8 +252,8 @@ export class ZoneSelectToolbar extends BaseComponent {
         if (maxLabel) maxLabel.textContent = `LOD ${this.maxLod}`;
         if (currentLabel)
             currentLabel.textContent = isProActive()
-                ? i18n.t('zoneSelect.lodRange') || 'Plage LOD'
-                : i18n.t('zoneSelect.lodSingle') || 'LOD unique';
+                ? i18n.t('zoneSelect.lodRange') || 'Niveaux de détail'
+                : i18n.t('zoneSelect.lodSingle') || 'Détail unique';
 
         if (warningEl && sel) {
             if (sel.tooLarge) {

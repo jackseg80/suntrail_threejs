@@ -4,6 +4,7 @@ const { mockState } = vi.hoisted(() => {
     const state: Record<string, any> = {
         IS_2D_MODE: false,
         ZOOM: 14,
+        isRoutePlanningMode: false,
         MAP_SOURCE: 'swisstopo',
         hasManualSource: false,
         subscribe: vi.fn(() => vi.fn()),
@@ -40,6 +41,15 @@ vi.mock('../../toast', () => ({
     showToast: vi.fn(),
 }));
 
+vi.mock('../../routeManager', () => ({
+    setRoutePlanningMode: vi.fn((active: boolean) => {
+        mockState.isRoutePlanningMode = active;
+    }),
+    toggleRoutePlanningMode: vi.fn(() => {
+        mockState.isRoutePlanningMode = !mockState.isRoutePlanningMode;
+    }),
+}));
+
 vi.mock('../../terrain', () => ({
     rebuildActiveTiles: vi.fn(),
     updateVisibleTiles: vi.fn(),
@@ -61,16 +71,22 @@ vi.mock('../../analysis', () => ({
 
 vi.mock('../templates/nav-bar.html?raw', () => ({
     default: `
-        <nav id="nav-bar">
-            <div class="nav-tab" data-tab="search"><span class="nav-label">Search</span></div>
-            <div class="nav-tab" data-tab="layers"><span class="nav-label">Layers</span></div>
-            <div class="nav-tab" data-tab="tracks"><span class="nav-label">Tracks</span></div>
-        </nav>`,
+        <div class="nav-bar-content">
+            <button class="nav-tab" data-tab="search" data-label-key="nav.tab.explore"><span class="nav-label">Explore</span></button>
+            <button class="nav-tab" id="nav-plan-tab" data-tab="prepare"><span class="nav-label">Prepare</span></button>
+            <button class="nav-tab" data-tab="track"><span class="nav-label">Outing</span></button>
+            <button class="nav-tab" data-tab="library"><span class="nav-label">Library</span></button>
+            <button class="nav-tab nav-tab-secondary" data-tab="settings" data-label-key="nav.tab.more"><span class="nav-label">More</span></button>
+        </div>`,
 }));
 
 import { NavigationBar } from './NavigationBar';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
+import {
+    setRoutePlanningMode,
+    toggleRoutePlanningMode,
+} from '../../routeManager';
 
 describe('NavigationBar', () => {
     let container: HTMLElement;
@@ -79,6 +95,8 @@ describe('NavigationBar', () => {
         vi.clearAllMocks();
         mockState.IS_2D_MODE = false;
         mockState.ZOOM = 14;
+        mockState.isRoutePlanningMode = false;
+        delete document.body.dataset.trackDestination;
         container = document.createElement('div');
         container.id = 'nav-bar';
         document.body.appendChild(container);
@@ -96,8 +114,9 @@ describe('NavigationBar', () => {
     it('sets role=tablist on the element', () => {
         const nav = new NavigationBar();
         nav.hydrate();
-        const el = container.querySelector('#nav-bar') as HTMLElement;
-        expect(el.getAttribute('role')).toBe('tablist');
+        expect(
+            container.querySelector('.nav-bar-content')?.getAttribute('role')
+        ).toBe('tablist');
     });
 
     it('sets ARIA attributes on tabs', () => {
@@ -108,6 +127,16 @@ describe('NavigationBar', () => {
             expect(tab.getAttribute('role')).toBe('tab');
             expect(tab.getAttribute('aria-selected')).toBe('false');
         });
+    });
+
+    it('exposes four primary destinations as semantic buttons', () => {
+        const nav = new NavigationBar();
+        nav.hydrate();
+        const primary = container.querySelectorAll(
+            '.nav-tab:not(.nav-tab-secondary)'
+        );
+        expect(primary).toHaveLength(4);
+        primary.forEach((tab) => expect(tab.tagName).toBe('BUTTON'));
     });
 
     it('opens sheet on tab click', () => {
@@ -121,14 +150,48 @@ describe('NavigationBar', () => {
     });
 
     it('closes sheet when clicking active tab', () => {
-        vi.mocked(sheetManager.getActiveSheetId).mockReturnValue('layers');
+        vi.mocked(sheetManager.getActiveSheetId).mockReturnValue('track');
         const nav = new NavigationBar();
         nav.hydrate();
         const tab = container.querySelector(
-            '[data-tab="layers"]'
+            '[data-tab="track"]'
         ) as HTMLElement;
         tab.click();
         expect(sheetManager.close).toHaveBeenCalled();
+    });
+
+    it('toggles the explicit planning mode without opening a sheet', () => {
+        const nav = new NavigationBar();
+        nav.hydrate();
+        const tab = container.querySelector(
+            '[data-tab="prepare"]'
+        ) as HTMLButtonElement;
+        tab.click();
+        expect(toggleRoutePlanningMode).toHaveBeenCalledOnce();
+        expect(sheetManager.open).not.toHaveBeenCalled();
+        expect(tab.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('keeps the library destination on the legacy track sheet adapter', async () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<div id="track"><span class="sheet-title"></span><p id="track-library-scope" hidden></p><div id="gpx-layers-list"></div></div>'
+        );
+        const nav = new NavigationBar();
+        nav.hydrate();
+        const tab = container.querySelector(
+            '[data-tab="library"]'
+        ) as HTMLButtonElement;
+        tab.click();
+        expect(setRoutePlanningMode).toHaveBeenCalledWith(false);
+        expect(sheetManager.open).toHaveBeenCalledWith('track');
+        expect(document.body.dataset.trackDestination).toBe('library');
+        await vi.waitFor(() => {
+            expect(
+                (document.getElementById('track-library-scope') as HTMLElement)
+                    .hidden
+            ).toBe(false);
+        });
     });
 
     it('ignores tab without data-tab attribute', () => {
@@ -168,7 +231,7 @@ describe('NavigationBar', () => {
         const searchTab = container.querySelector(
             '[data-tab="search"]'
         ) as HTMLElement;
-        expect(searchTab.getAttribute('aria-label')).toBe('nav.tab.search');
+        expect(searchTab.getAttribute('aria-label')).toBe('nav.tab.explore');
     });
 
     it('setActiveTab highlights the correct tab', () => {
@@ -178,12 +241,12 @@ describe('NavigationBar', () => {
         const searchTab = container.querySelector(
             '[data-tab="search"]'
         ) as HTMLElement;
-        const layersTab = container.querySelector(
-            '[data-tab="layers"]'
+        const trackTab = container.querySelector(
+            '[data-tab="track"]'
         ) as HTMLElement;
         expect(searchTab.classList.contains('active')).toBe(true);
         expect(searchTab.getAttribute('aria-selected')).toBe('true');
-        expect(layersTab.getAttribute('aria-selected')).toBe('false');
+        expect(trackTab.getAttribute('aria-selected')).toBe('false');
     });
 
     it('setActiveTab with null deactivates all tabs', () => {

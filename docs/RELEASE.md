@@ -8,7 +8,9 @@
 
 ### Étape 1 — Incrémenter le versionCode (OBLIGATOIRE)
 
-> ⚠️ **Toujours consulter le tableau historique ci-dessous** pour connaître le dernier versionCode utilisé et incrémenter de 1.
+> ⚠️ **Toujours consulter Play Console**, puis le tableau historique ci-dessous, pour connaître
+> le plus grand `versionCode` réellement utilisé. Attribuer le prochain code seulement à
+> l'artefact qui va être téléversé ; un code présent uniquement dans un worktree est provisoire.
 
 Dans `android/app/build.gradle` :
 
@@ -18,8 +20,10 @@ versionName "5.13.1"   // ← version sémantique visible par l'utilisateur (ex:
 ```
 
 > ⚠️ **Règles strictes :**
-> - Play Store refuse tout AAB avec un versionCode déjà utilisé — **même si l'upload a échoué**
-> - versionCode = entier **strictement croissant**, jamais de gap, jamais de réutilisation
+> - Play Store refuse tout AAB avec un `versionCode` déjà enregistré ; après un upload en erreur,
+>   vérifier Play Console avant de décider si le code est réutilisable
+> - `versionCode` = entier **strictement supérieur au maximum Play**, jamais de réutilisation ;
+>   un saut est permis si nécessaire pour éviter une collision
 > - versionName = version lisible (ex: `5.13.0`) — ne doit **pas** inclure de suffixe (-ct, -fix)
 > - Le tag git **peut** avoir un suffixe (ex: `v5.13.0-ct`) mais versionName reste propre
 
@@ -148,6 +152,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **894** | **5.81.2** | **v5.81.2** | **Démarrage carte progressif : première tuile 3D visible sans attendre la vague complète ; RevenueCat différé, cache/packs/Gist optimisés.** | **2026-08-02** |
 | **895** | **5.81.3** | **v5.81.3** | **Parcours invité/Google Web masqués et achat invité suspendu jusqu'à fiabilisation OAuth/restauration ; Android natif inchangé.** | **2026-08-02** |
 | **896** | **5.81.4** | **v5.81.4** | **Section Compte RGPD conservée visible ; contrôles invité/Google masqués, smoke E2E Chromium corrigé et renforcé.** | **2026-08-02** |
+| **897** | **5.82.0** | **—** | **Maximum Play vérifié à 896 ; bundle Android signé généré, validation Galaxy S23 acceptée sans P0/P1. CI et upload Play à exécuter.** | **2026-08-09** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.
@@ -158,7 +163,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 
 | Concept | Format | Exemple | Règle |
 |---|---|---|---|
-| `versionCode` | Entier séquentiel | `520` | +1 à chaque upload Play Console, jamais réutilisé |
+| `versionCode` | Entier croissant | `520` | prochain entier supérieur au maximum Play au moment de l'upload |
 | `versionName` | `X.Y.Z` | `5.13.0` | Version lisible, sans suffixe, visible dans l'app |
 | Tag git | `vX.Y.Z` ou `vX.Y.Z-suffix` | `v5.13.0`, `v5.12.9-ct` | Doit commencer par `v` pour déclencher le CI |
 | Branch | `main` | — | Toujours pusher sur main avant de tagger |

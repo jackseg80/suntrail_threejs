@@ -1,6 +1,11 @@
 {
     "nav": {
         "tab": {
+            "explore": "Explore",
+            "prepare": "Prepare",
+            "outing": "Outing",
+            "library": "Library",
+            "more": "More",
             "search": "Search",
             "layers": "Layers",
             "track": "Track",
@@ -13,6 +18,7 @@
     },
     "track": {
         "title": "Track",
+        "libraryScope": "Recent tracks: GPX imports and outings recorded on this device. Manual routes are not saved yet.",
         "manual": {
             "title": "Manual route"
         },
@@ -60,7 +66,7 @@
             "tooltipDplus": "<b>Elevation gain (D+)</b>: cumulative ascent over the route. Indicates total climbing effort.",
             "tooltipDminus": "<b>Elevation loss (D-)</b>: cumulative descent over the route.",
             "tooltipDuration": "<b>Estimated time</b>: based on an average speed of 4 km/h in the mountains, adjusted for elevation changes.",
-            "tooltipPoints": "<b>GPS Points</b>: number of positions recorded during tracking. More points means a more accurate trace."
+            "tooltipPoints": "<b>GPS Points</b>: number of positions recorded during tracking. Accuracy mainly depends on signal, terrain, and device quality."
         },
         "imported": {
             "title": "Imported tracks",
@@ -94,7 +100,7 @@
     "routePlanner": {
         "title": "Route Planner",
         "hint": {
-            "orsSwiss": "For Swiss hiking trails, add an OpenRouteService key"
+            "orsSwiss": "The backup route may favor general roads. A hiking source can be configured in the Developer lab."
         },
         "profile": "Profile",
         "profiles": {
@@ -145,7 +151,28 @@
     },
     "routeBar": {
         "computing": "Computing…",
-        "onePoint": "1 point · add a 2nd"
+        "onePoint": "Start A set · tap the map for B",
+        "error": "Route unavailable · adjust the points"
+    },
+    "planning": {
+        "tapToAddStart": "Tap the map to place start A",
+        "loop": "Loop",
+        "hint": {
+            "longPress": "Expert tip: outside Prepare mode, a long press also adds a point."
+        },
+        "aria": {
+            "region": "Route planning mode",
+            "settings": "Route settings",
+            "settingsDialog": "Route settings",
+            "reverse": "Reverse start and finish",
+            "clear": "Clear route"
+        },
+        "profile": {
+            "hiking": "Hiking",
+            "walking": "Walking",
+            "cycling": "Cycling",
+            "mountainBike": "Mountain bike"
+        }
     },
     "benchmark": {
         "running": "Optimizing for your device...",
@@ -185,13 +212,19 @@
             "presets": "Performance profile",
             "rendering": "3D Rendering & Details",
             "density": "Detail Density",
-            "advanced": "⚙️ Advanced Settings",
+            "advanced": "Developer lab",
             "dataManagement": "Data management",
             "language": "Language",
             "account": "Account",
             "sources": "Data Sources & Legal",
             "pro": "PRO Features",
             "theme": "Theme"
+        },
+        "category": {
+            "ariaLabel": "Settings categories",
+            "essentials": "Essentials",
+            "hiking": "Advanced hiking",
+            "developer": "Developer lab"
         },
         "pro": {
             "description": "Unlock all premium features with SunTrail Pro",
@@ -206,7 +239,7 @@
             "solarCalBtn": "Buy Pro",
             "solarAnalLabel": "Pro solar analysis",
             "solarAnalDesc": "Azimuth, elevation, 24h chart, moon phase",
-            "lodLabel": "LOD 18 zoom + Satellite",
+            "lodLabel": "Maximum map detail + Satellite",
             "lodDesc": "Maximum detail — trails, buildings, vegetation",
             "gpxLabel": "Multi-tracks + GPX export",
             "gpxDesc": "Import and export as many hikes as you want",
@@ -214,10 +247,10 @@
             "offlineDesc": "Download as many regions as you want"
         },
         "preset": {
-            "eco": "Eco",
-            "balanced": "Std",
-            "performance": "High",
-            "ultra": "Ultra",
+            "eco": "Endurance",
+            "balanced": "Balanced",
+            "performance": "Smooth",
+            "ultra": "Maximum",
             "custom": "Custom"
         },
         "theme": {
@@ -256,7 +289,7 @@
         "storage": {
             "clearCache": "Clear Cache",
             "downloadZone": "Download Zone",
-            "pmtiles": "Load .pmtiles file"
+            "pmtiles": "Load a local map archive"
         },
         "lang": {
             "label": "Language",
@@ -321,10 +354,14 @@
             "poi": "Place"
         },
         "filter": {
+            "ariaLabel": "Search filters",
             "all": "All",
             "cities": "Cities",
             "mountains": "Mountains",
             "countries": "Countries"
+        },
+        "meta": {
+            "distance": "{{distance}} km from map"
         }
     },
     "layers": {
@@ -356,22 +393,24 @@
             "recording": "Recording in progress",
             "sos": "SOS emergency"
         },
+        "mapDetail": "{{source}} · detail {{detail}}",
+        "mapDetailCompact": "Map · {{detail}}",
         "lod": {
-            "swiss": "SWISS",
-            "ign": "IGN FR",
-            "italy": "ITALY",
-            "germany": "GERMANY",
-            "spain": "SPAIN",
-            "austria": "AUSTRIA",
-            "norway": "KARTVERK",
-            "opentopo": "OPENTOPO",
-            "world": "WORLD",
-            "sat": "SAT"
+            "swiss": "Swiss map",
+            "ign": "France map",
+            "italy": "Italy map",
+            "germany": "Germany map",
+            "spain": "Spain map",
+            "austria": "Austria map",
+            "norway": "Norway map",
+            "opentopo": "Hiking map",
+            "world": "World map",
+            "sat": "Satellite"
         },
-        "tooltipLOD": "<b>Detail level</b>: current zoom level and map source. Swiss = Swisstopo (Switzerland), IGN = Geoportail (France), Italy = Italian mapping, Germany = BKG (Germany), Spain = IGN Spain, Austria = basemap.at (Austria), Kartverket = Norway, Opentopo = OpenTopoMap (world). LVL = zoom level (1-18)."
+        "tooltipLOD": "<b>Current map</b>: shows the map source and visible detail. Tap to manage available maps."
     },
     "upsell": {
-        "lod": "🔍 Maximum detail reached — upgrade to Pro for LOD 18",
+        "lod": "Maximum map detail reached — upgrade to Pro to go further",
         "timeline": "📅 Access any date with Pro"
     },
     "connectivity": {
@@ -398,7 +437,7 @@
             "offlineHint": "Force cache-only usage",
             "gpsAccuracy": "GPS Signal",
             "network": "Network",
-            "pmtiles": "Local storage (.pmtiles)",
+            "pmtiles": "Local map archive",
             "packAvailable": "Pack available",
             "zonesUsed": "zone used",
             "tiles": "tiles"
@@ -418,10 +457,10 @@
     "zoneSelect": {
         "currentZone": "Visible area",
         "total": "Tiles to download",
-        "totalLODs": "Total (LOD",
-        "lodRange": "LOD range",
-        "lodSingle": "Single LOD",
-        "freeSingle": "Free: 1 single LOD",
+        "totalLODs": "Total (details",
+        "lodRange": "Detail levels",
+        "lodSingle": "Single detail level",
+        "freeSingle": "Free: 1 detail level",
         "cancel": "Cancel",
         "download": "Download",
         "warning": "Over 500 tiles - long download",
@@ -621,7 +660,7 @@
     },
     "sos": {
         "title": "SOS EMERGENCY",
-        "subtitle": "Here are your exact coordinates to pass on to the rescue services.",
+        "subtitle": "Here is your estimated GPS position and available accuracy to share with emergency services.",
         "locating": "⌛ Locating...",
         "copy": "Copy message",
         "sms": "📱 Send SMS",
@@ -681,19 +720,20 @@
         "next": "Next",
         "start": "Start",
         "explore": "Explore the map",
+        "prepareRoute": "Plan a route",
         "importGpx": "Import GPX",
         "searchPeak": "Search for a peak",
         "slide1": {
-            "title": "Immersion & Freedom",
-            "desc": "Discover the mountains in real 3D. Use the 2D/3D button at the bottom right to toggle. Tilt the view with 2 fingers to activate relief."
+            "title": "Explore the terrain",
+            "desc": "Search for a place, then use the 2D map or 3D relief and sunlight to understand the terrain."
         },
         "slide2": {
-            "title": "Master the Light",
-            "desc": "Predict sunlight with the time bar at the bottom (3D only). Cast shadows follow the actual sun time."
+            "title": "Prepare with simple taps",
+            "desc": "Open Prepare, then tap the map to place start A and finish B. SunTrail then calculates the route and its statistics."
         },
         "slide3": {
-            "title": "Trace your Adventure",
-            "desc": "Plan your route (map click or manual entry), import GPX files via the 'Track' tab or record your GPS track live."
+            "title": "Head out with confidence",
+            "desc": "Find GPS recording under Outing and your GPX files under Library. GPS and terrain models have limits: always check conditions on site."
         },
         "slide4": {
             "title": "Solar Analysis",
@@ -712,10 +752,10 @@
         "title": "Go Pro",
         "hero": {
             "title": "World's only solar terrain simulation",
-            "subtitle": "See exactly when the sun hits your trail. Real shadows cast on 3D terrain — for any day of the year."
+            "subtitle": "Estimate when the sun hits your trail. Shadows simulated on 3D terrain — for any day of the year."
         },
         "feature": {
-            "maxDetail": "LOD 18 maximum zoom",
+            "maxDetail": "Maximum map detail",
             "satellite": "HD Satellite view",
             "buildings": "Realistic 3D buildings",
             "solarCalendar": "Unlimited solar calendar",
@@ -829,7 +869,8 @@
         "storage": "Storage",
         "storageEmpty": "No packs installed",
         "free": "available",
-        "lodInfo": "Pro: LOD 12-14 · Free: LOD 12",
+        "lodInfo": "Pro: several detail levels · Free: standard detail",
+        "detailRange": "Details {{min}}–{{max}}",
         "btn": {
             "buy": "Buy",
             "download": "Download",

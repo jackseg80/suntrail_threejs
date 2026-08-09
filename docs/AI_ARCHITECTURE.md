@@ -1,4 +1,6 @@
-# AI Architecture Guide (v5.57.0)
+# AI Architecture Guide (v5.82.0)
+
+> Référence du worktree v5.82.0 finalisé ; publication externe non exécutée.
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -12,7 +14,8 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `recordingService`| Orchestration of GPS recording, permissions, and file saving. | `toggleRecording`, `stopRecording`, `saveToFile` |
 | `gpxService` | GPX data handling, parsing, and string generation. | `handleGPXImport`, `buildGPXStringFromLayer` |
 | `gpxLayers` | (v5.56.2) 3D rendering and management of GPX track layers. | `addGPXLayer`, `updateAllGPXMeshes` |
-| `geocodingService` | Reverse/forward geocoding via MapTiler + Nominatim fallback. | `getPlaceName`, `searchLocations`, `classifyFeature` |
+| `geocodingService` | Reverse/forward geocoding via MapTiler + Nominatim fallback, metadata and contextual ranking. | `getPlaceName`, `searchLocations`, `classifyFeature`, `rankSearchResults` |
+| `routeManager` | Explicit planning mode, waypoint/bar UI, route recompute and legacy-compatible controls. | `setRoutePlanningMode`, `reverseRoute`, `clearRoute` |
 | `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
 | `ZoneSelector` | (v5.57.0) Logic for visual offline zone selection. | `getViewportBBox`, `getTilesForBBox` |
@@ -71,6 +74,19 @@ The terrain uses `MeshStandardMaterial` modified via `onBeforeCompile` for perfo
 Use `state.subscribe(key, callback)` for reactive updates.
 - **Persistent Keys**: `IS_2D_MODE`, `PERFORMANCE_PRESET`, `UNIT_SYSTEM`.
 - **Volatile Keys**: `weatherData`, `simDate`, `lastClickedCoords`.
+- **Planning key**: `isRoutePlanningMode` is volatile and governs only tap semantics/UI.
+  Waypoints remain in the existing `routeWaypoints`; v5.82.0 deliberately adds no
+  `PreparedRoute` persistence model.
+
+### UI compatibility adapters (v5.82.0)
+
+- `NavigationBar` maps the visible Bibliothèque destination to the existing `track` sheet.
+- Existing DOM IDs (`#route-bar`, `#rb-clear-btn`, `#gpx-layers-list`, settings/account IDs)
+  remain stable.
+- `SettingsAccountSection` owns optional-account/RGPD bindings and
+  `SettingsCategoryNavigation` owns category focus/scroll, reducing `SettingsSheet` coupling.
+- No release feature flag was required: the change is isolated behind the navigation adapter
+  and the explicit false-by-default state key; rollback can remove the adapter without data migration.
 
 ## 4. Internationalization (i18n) Workflow
 

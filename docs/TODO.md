@@ -1,6 +1,9 @@
 # SunTrail 3D — TODO (v5.50.x)
 
 > Guide IA : [CLAUDE.md](../CLAUDE.md) | Historique : [COMPLETED_HISTORY.md](archives/COMPLETED_HISTORY.md)
+>
+> **Document historique.** Les priorités actives sont maintenues dans
+> [../TODO.md](../TODO.md) et [../ROADMAP.md](../ROADMAP.md).
 
 ---
 

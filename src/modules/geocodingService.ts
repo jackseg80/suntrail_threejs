@@ -1,5 +1,6 @@
 import { i18n } from '../i18n/I18nService';
 import { fetchGeocoding } from './utils';
+import { getCountryCode, haversineDistance } from './geo';
 
 // ── Result classification ─────────────────────────────────────────────
 export interface ResultClassification {
@@ -92,6 +93,110 @@ export interface GeocodingResult {
     classification: ResultClassification;
     name?: string;
     ele?: number;
+    region?: string;
+    country?: string;
+    countryCode?: string;
+    distanceKm?: number;
+}
+
+export interface SearchContext {
+    lat: number;
+    lon: number;
+    countryCode?: string | null;
+}
+
+function normalizeCountryCode(value: unknown): string | undefined {
+    if (typeof value !== 'string' || !value.trim()) return undefined;
+    return value.trim().split('-')[0].toUpperCase();
+}
+
+function contextEntry(feature: any, prefix: string): any | undefined {
+    return feature.context?.find((entry: any) =>
+        String(entry?.id || '').startsWith(`${prefix}.`)
+    );
+}
+
+function extractResultContext(feature: any): {
+    region?: string;
+    country?: string;
+    countryCode?: string;
+    ele?: number;
+} {
+    const countryEntry = contextEntry(feature, 'country');
+    const regionEntry = contextEntry(feature, 'region');
+    const address = feature.address || {};
+    const properties = feature.properties || {};
+    const rawElevation =
+        feature.ele ?? properties.ele ?? properties.elevation ?? undefined;
+    const ele = Number.parseFloat(String(rawElevation));
+
+    return {
+        region:
+            address.state ||
+            address.region ||
+            regionEntry?.text_fr ||
+            regionEntry?.text ||
+            properties.region,
+        country:
+            address.country ||
+            countryEntry?.text_fr ||
+            countryEntry?.text ||
+            properties.country,
+        countryCode: normalizeCountryCode(
+            address.country_code ||
+                countryEntry?.short_code ||
+                properties.short_code ||
+                properties.country_code
+        ),
+        ele: Number.isFinite(ele) && ele > 0 ? ele : undefined,
+    };
+}
+
+export function rankSearchResults(
+    results: GeocodingResult[],
+    query: string,
+    context?: SearchContext
+): GeocodingResult[] {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const contextCountry = normalizeCountryCode(
+        context?.countryCode ||
+            (context ? getCountryCode(context.lat, context.lon) : undefined)
+    );
+
+    return results
+        .map((result, index) => {
+            const distanceKm = context
+                ? haversineDistance(
+                      context.lat,
+                      context.lon,
+                      result.lat,
+                      result.lon
+                  )
+                : undefined;
+            const primaryName = result.label
+                .split(',')[0]
+                .trim()
+                .toLocaleLowerCase();
+            let score = 0;
+            if (primaryName === normalizedQuery) score += 80;
+            else if (primaryName.startsWith(normalizedQuery)) score += 45;
+            if (
+                contextCountry &&
+                normalizeCountryCode(result.countryCode) === contextCountry
+            ) {
+                score += 55;
+            }
+            if (distanceKm !== undefined) {
+                score += Math.max(0, 40 - Math.log10(distanceKm + 1) * 14);
+            }
+            return {
+                result: { ...result, distanceKm },
+                index,
+                score,
+            };
+        })
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map(({ result }) => result);
 }
 
 /**
@@ -138,7 +243,8 @@ export async function getPlaceName(
  */
 export async function searchLocations(
     query: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    context?: SearchContext
 ): Promise<GeocodingResult[]> {
     const geoData = await fetchGeocoding({ query }, signal);
     if (!geoData) return [];
@@ -167,13 +273,15 @@ export async function searchLocations(
 
         if (isNaN(lat) || isNaN(lon)) return;
 
+        const metadata = extractResultContext(f);
         results.push({
             lat,
             lon,
             label,
             classification: classifyFeature(f),
+            ...metadata,
         });
     });
 
-    return results;
+    return rankSearchResults(results, query, context);
 }

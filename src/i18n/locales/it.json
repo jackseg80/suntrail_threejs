@@ -1,6 +1,11 @@
 {
     "nav": {
         "tab": {
+            "explore": "Esplora",
+            "prepare": "Prepara",
+            "outing": "Uscita",
+            "library": "Biblioteca",
+            "more": "Altro",
             "search": "Ricerca",
             "layers": "Livelli",
             "track": "Percorso",
@@ -13,12 +18,13 @@
     },
     "track": {
         "title": "Percorso",
+        "libraryScope": "Tracce recenti: importazioni GPX e uscite registrate su questo dispositivo. Gli itinerari manuali non vengono ancora salvati.",
         "manual": {
             "title": "Itinerario manuale"
         },
         "empty": {
             "title": "Nessun percorso",
-            "subtitle": "Importa un file GPX or avvia la registrazione GPS"
+            "subtitle": "Importa un file GPX o avvia la registrazione GPS"
         },
         "btn": {
             "rec": "REC",
@@ -59,7 +65,7 @@
             "tooltipDplus": "<b>Dislivello positivo (D+)</b>: cumulo delle salite sul percorso. Indica lo sforzo totale in salita.",
             "tooltipDminus": "<b>Dislivello negativo (D-)</b>: cumulo delle discese sul percorso.",
             "tooltipDuration": "<b>Tempo stimato</b>: basato su una velocità media di 4 km/h in montagna, regolata in base al dislivello.",
-            "tooltipPoints": "<b>Punti GPS</b>: numero di posizioni registrate durante il tracciamento. Più punti significano una traccia più precisa."
+            "tooltipPoints": "<b>Punti GPS</b>: numero di posizioni registrate durante il tracciamento. La precisione dipende soprattutto da segnale, rilievo e dispositivo."
         },
         "imported": {
             "title": "Tracce importate",
@@ -93,7 +99,7 @@
     "routePlanner": {
         "title": "Pianificatore di itinerario",
         "hint": {
-            "orsSwiss": "Per i sentieri svizzeri, aggiungi una chiave OpenRouteService"
+            "orsSwiss": "Il percorso di riserva può preferire strade generiche. Una fonte escursionistica può essere configurata nel Laboratorio sviluppatore."
         },
         "profile": "Profilo",
         "profiles": {
@@ -144,7 +150,28 @@
     },
     "routeBar": {
         "computing": "Calcolo…",
-        "onePoint": "1 punto · aggiungine un 2º"
+        "onePoint": "Partenza A inserita · tocca la mappa per B",
+        "error": "Itinerario non disponibile · modifica i punti"
+    },
+    "planning": {
+        "tapToAddStart": "Tocca la mappa per inserire la partenza A",
+        "loop": "Anello",
+        "hint": {
+            "longPress": "Suggerimento esperto: fuori dalla modalità Prepara, una pressione lunga aggiunge comunque un punto."
+        },
+        "aria": {
+            "region": "Modalità di pianificazione itinerario",
+            "settings": "Impostazioni itinerario",
+            "settingsDialog": "Impostazioni itinerario",
+            "reverse": "Inverti partenza e arrivo",
+            "clear": "Cancella itinerario"
+        },
+        "profile": {
+            "hiking": "Escursionismo",
+            "walking": "Camminata",
+            "cycling": "Bicicletta",
+            "mountainBike": "Mountain bike"
+        }
     },
     "benchmark": {
         "running": "Ottimizzazione per il tuo dispositivo...",
@@ -184,13 +211,19 @@
             "presets": "Profilo prestazioni",
             "rendering": "Rendering 3D & Dettagli",
             "density": "Densità dettagli",
-            "advanced": "⚙️ Impostazioni avanzate",
+            "advanced": "Laboratorio sviluppatore",
             "dataManagement": "Gestione dati",
             "language": "Lingua",
             "account": "Account",
             "sources": "Fonti dati & Legale",
             "pro": "Funzionalità PRO",
             "theme": "Tema"
+        },
+        "category": {
+            "ariaLabel": "Categorie delle impostazioni",
+            "essentials": "Essenziali",
+            "hiking": "Escursionismo avanzato",
+            "developer": "Laboratorio sviluppatore"
         },
         "pro": {
             "description": "Sblocca tutte le funzionalità premium con SunTrail Pro",
@@ -204,7 +237,7 @@
             "solarCalDesc": "Ombre per qualsiasi giorno dell'anno",
             "solarAnalLabel": "Analisi solare Pro",
             "solarAnalDesc": "Azimut, elevazione, grafico 24h, fase lunare",
-            "lodLabel": "Zoom LOD 18 + Satellite",
+            "lodLabel": "Massimo dettaglio cartografico + Satellite",
             "lodDesc": "Dettaglio massimo — sentieri, edifici, vegetazione",
             "gpxLabel": "Multi-tracce + Export GPX",
             "gpxDesc": "Importa ed esporta tutte le escursioni che vuoi",
@@ -212,10 +245,10 @@
             "offlineDesc": "Scarica tutte le regioni che vuoi"
         },
         "preset": {
-            "eco": "Eco",
-            "balanced": "Std",
-            "performance": "High",
-            "ultra": "Ultra",
+            "eco": "Autonomia",
+            "balanced": "Bilanciato",
+            "performance": "Fluido",
+            "ultra": "Massimo",
             "custom": "Personalizzato"
         },
         "theme": {
@@ -254,7 +287,7 @@
         "storage": {
             "clearCache": "Svuota Cache",
             "downloadZone": "Scarica Zona",
-            "pmtiles": "Carica file .pmtiles"
+            "pmtiles": "Carica un archivio cartografico locale"
         },
         "lang": {
             "label": "Lingua",
@@ -319,10 +352,14 @@
             "poi": "Luogo"
         },
         "filter": {
+            "ariaLabel": "Filtri di ricerca",
             "all": "Tutto",
             "cities": "Città",
             "mountains": "Montagne",
             "countries": "Paesi"
+        },
+        "meta": {
+            "distance": "{{distance}} km dalla mappa"
         }
     },
     "layers": {
@@ -354,22 +391,24 @@
             "recording": "Registrazione in corso",
             "sos": "SOS emergenza"
         },
+        "mapDetail": "{{source}} · dettaglio {{detail}}",
+        "mapDetailCompact": "Mappa · {{detail}}",
         "lod": {
-            "swiss": "SWISS",
-            "ign": "IGN FR",
-            "italy": "ITALY",
-            "germany": "GERMANY",
-            "spain": "SPAIN",
-            "austria": "AUSTRIA",
-            "norway": "KARTVERK",
-            "opentopo": "OPENTOPO",
-            "world": "WORLD",
-            "sat": "SAT"
+            "swiss": "Mappa Svizzera",
+            "ign": "Mappa Francia",
+            "italy": "Mappa Italia",
+            "germany": "Mappa Germania",
+            "spain": "Mappa Spagna",
+            "austria": "Mappa Austria",
+            "norway": "Mappa Norvegia",
+            "opentopo": "Mappa escursionistica",
+            "world": "Mappa mondiale",
+            "sat": "Satellite"
         },
-        "tooltipLOD": "<b>Livello di dettaglio</b>: zoom attuale e fonte cartografica. Swiss = Swisstopo (Svizzera), IGN = Geoportail (Francia), Italy = cartografia italiana, Germany = BKG (Germania), Spain = IGN Spagna, Austria = basemap.at (Austria), Kartverket = Norvegia, Opentopo = OpenTopoMap (mondo). LVL = livello di zoom (1-18)."
+        "tooltipLOD": "<b>Mappa attuale</b>: mostra la fonte cartografica e il dettaglio visibile. Tocca per gestire le mappe disponibili."
     },
     "upsell": {
-        "lod": "🔍 Dettaglio massimo raggiunto — passa a Pro per il LOD 18",
+        "lod": "Massimo dettaglio cartografico raggiunto — passa a Pro per andare oltre",
         "timeline": "📅 Accedi a qualsiasi data con Pro"
     },
     "connectivity": {
@@ -396,7 +435,7 @@
             "offlineHint": "Forza l'uso della cache",
             "gpsAccuracy": "Segnale GPS",
             "network": "Rete",
-            "pmtiles": "Archivio locale (.pmtiles)",
+            "pmtiles": "Archivio cartografico locale",
             "packAvailable": "Pacchetto disponibile",
             "zonesUsed": "zona utilizzata",
             "tiles": "tessere"
@@ -416,10 +455,10 @@
     "zoneSelect": {
         "currentZone": "Area visibile",
         "total": "Tile da scaricare",
-        "totalLODs": "Totale (LOD",
-        "lodRange": "Gamma LOD",
-        "lodSingle": "LOD singolo",
-        "freeSingle": "Gratis: 1 LOD singolo",
+        "totalLODs": "Totale (dettagli",
+        "lodRange": "Livelli di dettaglio",
+        "lodSingle": "Dettaglio singolo",
+        "freeSingle": "Gratis: 1 livello di dettaglio",
         "cancel": "Annulla",
         "download": "Scarica",
         "warning": "Oltre 500 tile - download lungo",
@@ -612,7 +651,7 @@
     },
     "sos": {
         "title": "EMERGENZA SOS",
-        "subtitle": "Ecco le tue coordinate esatte da trasmettere ai soccorsi.",
+        "subtitle": "Ecco la posizione GPS stimata e la precisione disponibile da condividere con i soccorsi.",
         "locating": "⌛ Localizzazione in corso...",
         "copy": "Copia messaggio",
         "sms": "📱 Invia SMS",
@@ -672,19 +711,20 @@
         "next": "Avanti",
         "start": "Inizia",
         "explore": "Esplora la mappa",
+        "prepareRoute": "Pianifica un itinerario",
         "importGpx": "Importa GPX",
         "searchPeak": "Cerca una vetta",
         "slide1": {
-            "title": "Immersione e Libertà",
-            "desc": "Scopri la montagna in vero 3D. Usa il pulsante 2D/3D in basso a destra per alternare. Inclina la vista con 2 dita per attivare il rilievo."
+            "title": "Esplora il terreno",
+            "desc": "Cerca un luogo, poi usa la mappa 2D o il rilievo 3D e la luce solare per comprendere il terreno."
         },
         "slide2": {
-            "title": "Padroneggia la Luce",
-            "desc": "Anticipa l'illuminazione con la barra del tempo in basso (solo 3D). Le ombre seguono l'ora solare reale."
+            "title": "Prepara con semplici tocchi",
+            "desc": "Apri Prepara, poi tocca la mappa per inserire la partenza A e l’arrivo B. SunTrail calcola quindi itinerario e statistiche."
         },
         "slide3": {
-            "title": "Traccia la tua Avventura",
-            "desc": "Pianifica il tuo itinerario (clic sulla mappa o inserimento manuale), importa i file GPX tramite la scheda 'Track' o registra la tua traccia GPS dal vivo."
+            "title": "Parti con fiducia",
+            "desc": "Trova la registrazione GPS in Uscita e i file GPX in Biblioteca. GPS e modelli del terreno hanno limiti: verifica sempre le condizioni sul posto."
         },
         "slide4": {
             "title": "Analisi Solare",
@@ -703,10 +743,10 @@
         "title": "Passa a Pro",
         "hero": {
             "title": "Simulazione solare unica al mondo",
-            "subtitle": "Scopri esattamente quando il sole illumina il tuo sentiero. Ombre reali sul terreno 3D — per qualsiasi giorno dell'anno."
+            "subtitle": "Stima quando il sole illumina il tuo sentiero. Ombre simulate sul terreno 3D — per qualsiasi giorno dell'anno."
         },
         "feature": {
-            "maxDetail": "Zoom LOD 18 massimo",
+            "maxDetail": "Massimo dettaglio cartografico",
             "satellite": "Vista Satellite HD",
             "buildings": "Edifici 3D realistici",
             "solarCalendar": "Calendario solare illimitato",
@@ -820,7 +860,8 @@
         "storage": "Archiviazione",
         "storageEmpty": "Nessun pacchetto installato",
         "free": "disponible",
-        "lodInfo": "Pro: LOD 12-14 · Gratis: LOD 12",
+        "lodInfo": "Pro: più livelli di dettaglio · Gratis: dettaglio standard",
+        "detailRange": "Dettagli {{min}}–{{max}}",
         "btn": {
             "buy": "Acquista",
             "download": "Scarica",

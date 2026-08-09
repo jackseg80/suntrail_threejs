@@ -146,7 +146,7 @@ export class PacksSheet extends BaseComponent {
                 <span style="font-size:24px;">${flag}</span>
                 <div>
                     <div style="font-weight:600; font-size:var(--text-sm);">${name}</div>
-                    <div style="font-size:var(--text-xs); color:var(--text-3);">LOD ${meta.lodRange.min}-${meta.lodRange.max}</div>
+                    <div style="font-size:var(--text-xs); color:var(--text-3);">${i18n.t('packs.detailRange', { min: String(meta.lodRange.min), max: String(meta.lodRange.max) })}</div>
                 </div>
             </div>
             <div style="font-size:var(--text-xs); color:var(--text-3);">${meta.sizeMB} MB</div>

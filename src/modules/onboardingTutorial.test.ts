@@ -5,20 +5,15 @@ const { mockT, mockHaptic } = vi.hoisted(() => {
         const defaults: Record<string, string> = {
             'onboarding.slide1.title': 'Bienvenue',
             'onboarding.slide1.desc': 'SunTrail est votre compagnon.',
-            'onboarding.slide2.title': 'Solaire',
-            'onboarding.slide2.desc': 'Simulation solaire.',
-            'onboarding.slide3.title': 'Tracks',
-            'onboarding.slide3.desc': 'Importez vos traces.',
-            'onboarding.slide4.title': 'Analyse',
-            'onboarding.slide4.desc': 'Profil et inclino.',
-            'onboarding.slide5.title': 'Meteo',
-            'onboarding.slide5.desc': 'Previsions meteo.',
-            'onboarding.slide6.title': 'Securite',
-            'onboarding.slide6.desc': 'SOS.',
+            'onboarding.slide2.title': 'Préparer',
+            'onboarding.slide2.desc': 'Posez vos points.',
+            'onboarding.slide3.title': 'Confiance',
+            'onboarding.slide3.desc': 'Vérifiez les conditions.',
             'onboarding.skip': 'Passer',
             'onboarding.next': 'Suivant',
             'onboarding.start': 'Commencer',
             'onboarding.explore': 'Explorer',
+            'onboarding.prepareRoute': 'Planifier un itinéraire',
             'onboarding.importGpx': 'Importer',
             'onboarding.searchPeak': 'Chercher',
         };
@@ -95,8 +90,8 @@ describe('onboardingTutorial', () => {
             });
 
             const nextBtn = document.getElementById('ob-next')!;
-            // v6.0 has 6 slides (5 "Next" clicks)
-            for (let i = 0; i < 5; i++) {
+            // v5.82.0 has 3 slides (2 "Next" clicks)
+            for (let i = 0; i < 2; i++) {
                 nextBtn.click();
             }
 
@@ -132,14 +127,14 @@ describe('onboardingTutorial', () => {
             expect(title.textContent).toBe('Bienvenue');
         });
 
-        it('should render 6 dot indicators', async () => {
+        it('should render 3 dot indicators', async () => {
             void showOnboarding();
             await vi.waitFor(() => {
                 expect(document.getElementById('ob-dots')).not.toBeNull();
             });
 
             const dots = document.querySelectorAll('.ob-dot');
-            expect(dots.length).toBe(6);
+            expect(dots.length).toBe(3);
         });
 
         it('should highlight first dot as active', async () => {
@@ -175,8 +170,8 @@ describe('onboardingTutorial', () => {
             });
 
             const nextBtn = document.getElementById('ob-next')!;
-            // Navigate to slide 5 (0-indexed, last is 5)
-            for (let i = 0; i < 5; i++) {
+            // Navigate to slide 3 (0-indexed, last is 2)
+            for (let i = 0; i < 2; i++) {
                 nextBtn.click();
             }
 
@@ -190,13 +185,47 @@ describe('onboardingTutorial', () => {
             });
 
             const nextBtn = document.getElementById('ob-next')!;
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 2; i++) {
                 nextBtn.click();
             }
 
             const menuItems = document.querySelectorAll('.ob-menu-item');
             expect(menuItems.length).toBe(3);
             expect(menuItems[0].textContent).toContain('Explorer');
+            expect(menuItems[1].textContent).toContain(
+                'Planifier un itinéraire'
+            );
+            menuItems.forEach((item) => expect(item.tagName).toBe('BUTTON'));
+        });
+
+        it('uses an accessible modal dialog and supports Escape', async () => {
+            vi.useFakeTimers();
+            const promise = showOnboarding();
+            const overlay = document.getElementById('onboarding-overlay')!;
+            expect(overlay.getAttribute('role')).toBe('dialog');
+            expect(overlay.getAttribute('aria-modal')).toBe('true');
+            expect(overlay.getAttribute('aria-labelledby')).toBe('ob-title');
+
+            overlay.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+            );
+            await promise;
+            vi.advanceTimersByTime(500);
+            expect(document.getElementById('onboarding-overlay')).toBeNull();
+            vi.useRealTimers();
+        });
+
+        it('disables decorative animations when reduced motion is requested', async () => {
+            void showOnboarding();
+            await vi.waitFor(() => {
+                expect(
+                    document.getElementById('onboarding-overlay')
+                ).not.toBeNull();
+            });
+            const style = document.querySelector('#onboarding-overlay style')!;
+            expect(style.textContent).toContain(
+                '@media (prefers-reduced-motion: reduce)'
+            );
         });
 
         it('should have safe area padding in footer style', async () => {

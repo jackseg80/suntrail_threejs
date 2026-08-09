@@ -13,6 +13,10 @@ import { forceImmediateLODUpdate } from '../../scene';
 import { updateUserMarker } from '../../location';
 import { getAltitudeAt, hasTerrainData } from '../../analysis';
 import { showToast } from '../../toast';
+import {
+    setRoutePlanningMode,
+    toggleRoutePlanningMode,
+} from '../../routeManager';
 import templateHTML from '../templates/nav-bar.html?raw';
 
 export class NavigationBar extends BaseComponent {
@@ -37,12 +41,40 @@ export class NavigationBar extends BaseComponent {
                 if (!tabId) return;
 
                 void haptic('light');
-                if (sheetManager.getActiveSheetId() === tabId) {
+
+                if (tabId === 'prepare') {
+                    if (sheetManager.getActiveSheetId()) sheetManager.close();
+                    toggleRoutePlanningMode();
+                    this.setActiveTab(
+                        state.isRoutePlanningMode ? 'prepare' : null
+                    );
+                    document
+                        .getElementById('route-settings')
+                        ?.classList.toggle(
+                            'hidden',
+                            !state.isRoutePlanningMode ||
+                                window.innerWidth < 900
+                        );
+                    return;
+                }
+
+                const sheetId = tabId === 'library' ? 'track' : tabId;
+                const activeSheet = sheetManager.getActiveSheetId();
+                const sameDestination =
+                    activeSheet === sheetId &&
+                    this.getActiveDestination() === tabId;
+                if (sameDestination) {
                     sheetManager.close();
                     this.setActiveTab(null);
                 } else {
-                    sheetManager.open(tabId);
+                    setRoutePlanningMode(false);
+                    sheetManager.open(sheetId);
                     this.setActiveTab(tabId);
+                    if (sheetId === 'track') {
+                        this.focusTrackDestination(
+                            tabId === 'library' ? 'library' : 'outing'
+                        );
+                    }
                 }
             };
 
@@ -234,16 +266,59 @@ export class NavigationBar extends BaseComponent {
         tabs.forEach((tab) => {
             const tabId = tab.getAttribute('data-tab');
             if (!tabId) return;
+            const labelKey =
+                (tab as HTMLElement).dataset.labelKey || `nav.tab.${tabId}`;
             const labelEl = tab.querySelector('.nav-label');
             if (labelEl) {
-                labelEl.textContent = i18n.t(`nav.tab.${tabId}`);
+                labelEl.textContent = i18n.t(labelKey);
             }
-            tab.setAttribute('aria-label', i18n.t(`nav.tab.${tabId}`));
+            tab.setAttribute('aria-label', i18n.t(labelKey));
         });
     }
 
     private syncActiveTab(activeId: string | null): void {
+        if (activeId === 'track') {
+            const destination = document.body.dataset.trackDestination;
+            this.setActiveTab(destination === 'library' ? 'library' : 'track');
+            return;
+        }
+        if (!activeId && state.isRoutePlanningMode) {
+            this.setActiveTab('prepare');
+            return;
+        }
         this.setActiveTab(activeId);
+    }
+
+    private getActiveDestination(): string | null {
+        const active = this.element?.querySelector('.nav-tab.active');
+        return active?.getAttribute('data-tab') ?? null;
+    }
+
+    private focusTrackDestination(destination: 'outing' | 'library'): void {
+        document.body.dataset.trackDestination = destination;
+        window.setTimeout(() => {
+            const track = document.getElementById('track');
+            if (!track) return;
+            const title = track.querySelector('.sheet-title');
+            if (title) {
+                title.textContent = i18n.t(
+                    destination === 'library'
+                        ? 'nav.tab.library'
+                        : 'nav.tab.outing'
+                );
+            }
+            const libraryScope = document.getElementById('track-library-scope');
+            if (libraryScope) {
+                libraryScope.hidden = destination !== 'library';
+            }
+            if (destination === 'library') {
+                document
+                    .getElementById('gpx-layers-list')
+                    ?.scrollIntoView({ block: 'start' });
+            } else {
+                track.scrollTop = 0;
+            }
+        }, 80);
     }
 
     private setActiveTab(tabId: string | null): void {

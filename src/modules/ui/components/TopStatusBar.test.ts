@@ -90,60 +90,60 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         bar.render();
     }
 
-    it('shows SWISS when getCountryCode returns CH', () => {
+    it('shows the localized Swiss map label for CH', () => {
         mockGetCountryCode.mockReturnValue('CH');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('SWISS');
+        expect(badge?.textContent).toContain('Carte suisse');
     });
 
     it('shows IGN FR when getCountryCode returns FR', () => {
         mockGetCountryCode.mockReturnValue('FR');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('IGN FR');
+        expect(badge?.textContent).toContain('Carte France');
     });
 
     it('shows ITALY when getCountryCode returns IT', () => {
         mockGetCountryCode.mockReturnValue('IT');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('ITALY');
+        expect(badge?.textContent).toContain('Carte Italie');
     });
 
     it('shows GERMANY when getCountryCode returns DE', () => {
         mockGetCountryCode.mockReturnValue('DE');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('GERMANY');
+        expect(badge?.textContent).toContain('Carte Allemagne');
     });
 
     it('shows AUSTRIA when getCountryCode returns AT', () => {
         mockGetCountryCode.mockReturnValue('AT');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('AUSTRIA');
+        expect(badge?.textContent).toContain('Carte Autriche');
     });
 
     it('shows SPAIN when getCountryCode returns ES', () => {
         mockGetCountryCode.mockReturnValue('ES');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('SPAIN');
+        expect(badge?.textContent).toContain('Carte Espagne');
     });
 
     it('shows KARTVERK when getCountryCode returns NO', () => {
         mockGetCountryCode.mockReturnValue('NO');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('KARTVERK');
+        expect(badge?.textContent).toContain('Carte Norvège');
     });
 
     it('shows WORLD when getCountryCode returns unknown country', () => {
         mockGetCountryCode.mockReturnValue('XX');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('WORLD');
+        expect(badge?.textContent).toContain('Carte mondiale');
     });
 
     it('shows SAT when MAP_SOURCE is satellite', () => {
@@ -151,7 +151,7 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         mockGetCountryCode.mockReturnValue('CH');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('SAT');
+        expect(badge?.textContent).toContain('Satellite');
     });
 
     it('shows OPENTOPO when MAP_SOURCE is opentopomap', () => {
@@ -159,7 +159,7 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         mockGetCountryCode.mockReturnValue('CH');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('OPENTOPO');
+        expect(badge?.textContent).toContain('Carte randonnée');
     });
 
     it('shows zoom level in badge', () => {
@@ -167,7 +167,7 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         mockGetCountryCode.mockReturnValue('CH');
         createAndRender();
         const badge = document.querySelector('.lod-badge');
-        expect(badge?.textContent).toContain('LVL 14');
+        expect(badge?.textContent).toContain('détail 14');
     });
 });
 
@@ -402,7 +402,7 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
 
         const badge = document.querySelector('.lod-badge') as HTMLElement;
         expect(badge.textContent).toContain('📦');
-        expect(badge.textContent).toContain('SWISS');
+        expect(badge.textContent).toContain('Carte suisse');
         expect(badge.dataset.packState).toBeUndefined();
     });
 
@@ -417,7 +417,7 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
 
         const badge = document.querySelector('.lod-badge') as HTMLElement;
         expect(badge.textContent).toContain('✓');
-        expect(badge.textContent).toContain('SWISS');
+        expect(badge.textContent).toContain('Carte suisse');
         expect(badge.dataset.packState).toBe('installed');
     });
 
@@ -430,7 +430,7 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
         const badge = document.querySelector('.lod-badge') as HTMLElement;
         expect(badge.textContent).not.toContain('📦');
         expect(badge.textContent).not.toContain('✓');
-        expect(badge.textContent).toContain('SWISS');
+        expect(badge.textContent).toContain('Carte suisse');
         expect(badge.dataset.packState).toBeUndefined();
     });
 });

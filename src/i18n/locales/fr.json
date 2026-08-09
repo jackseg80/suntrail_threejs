@@ -1,6 +1,11 @@
 {
     "nav": {
         "tab": {
+            "explore": "Explorer",
+            "prepare": "Préparer",
+            "outing": "Sortie",
+            "library": "Bibliothèque",
+            "more": "Plus",
             "search": "Recherche",
             "layers": "Calques",
             "track": "Parcours",
@@ -13,6 +18,7 @@
     },
     "track": {
         "title": "Parcours",
+        "libraryScope": "Traces récentes : imports GPX et sorties enregistrées sur cet appareil. Les itinéraires manuels ne sont pas encore sauvegardés.",
         "manual": {
             "title": "Itinéraire manuel"
         },
@@ -60,7 +66,7 @@
             "tooltipDplus": "<b>Dénivelé positif (D+)</b> : cumul des montées sur le parcours. Indique l'effort total en ascension.",
             "tooltipDminus": "<b>Dénivelé négatif (D-)</b> : cumul des descentes sur le parcours.",
             "tooltipDuration": "<b>Temps estimé</b> : calculé sur la base d'une vitesse moyenne de 4 km/h en montagne, ajustée selon le dénivelé.",
-            "tooltipPoints": "<b>Points GPS</b> : nombre de positions enregistrées pendant le suivi. Plus il y a de points, plus le tracé est précis."
+            "tooltipPoints": "<b>Points GPS</b> : nombre de positions enregistrées pendant le suivi. La précision dépend surtout du signal, du relief et de l’appareil."
         },
         "imported": {
             "title": "Tracés importés",
@@ -94,7 +100,7 @@
     "routePlanner": {
         "title": "Planificateur d'itinéraire",
         "hint": {
-            "orsSwiss": "Pour les sentiers suisses, ajoutez une clé OpenRouteService"
+            "orsSwiss": "Le calcul de secours peut privilégier des routes générales. Une source randonnée peut être configurée dans le Laboratoire développeur."
         },
         "profile": "Profil",
         "profiles": {
@@ -145,7 +151,28 @@
     },
     "routeBar": {
         "computing": "Calcul…",
-        "onePoint": "1 point · posez-en un 2e"
+        "onePoint": "Départ A placé · touchez la carte pour B",
+        "error": "Itinéraire indisponible · modifiez les points"
+    },
+    "planning": {
+        "tapToAddStart": "Touchez la carte pour placer le départ A",
+        "loop": "Boucle",
+        "hint": {
+            "longPress": "Astuce expert : hors du mode Planifier, un appui long ajoute aussi un point."
+        },
+        "aria": {
+            "region": "Mode de planification d’itinéraire",
+            "settings": "Réglages de l’itinéraire",
+            "settingsDialog": "Réglages de l’itinéraire",
+            "reverse": "Inverser le départ et l’arrivée",
+            "clear": "Effacer l’itinéraire"
+        },
+        "profile": {
+            "hiking": "Randonnée",
+            "walking": "Marche",
+            "cycling": "Vélo",
+            "mountainBike": "VTT"
+        }
     },
     "benchmark": {
         "running": "Optimisation pour votre appareil...",
@@ -185,13 +212,19 @@
             "presets": "Profil de performance",
             "rendering": "Rendu 3D & Détails",
             "density": "Densité Détails",
-            "advanced": "⚙️ Paramètres Avancés",
+            "advanced": "Laboratoire développeur",
             "dataManagement": "Gestion des données",
             "language": "Langue",
             "account": "Compte",
             "sources": "Sources de données & Légal",
             "pro": "Fonctionnalités PRO",
             "theme": "Thème"
+        },
+        "category": {
+            "ariaLabel": "Catégories des réglages",
+            "essentials": "Essentiels",
+            "hiking": "Randonnée avancée",
+            "developer": "Laboratoire développeur"
         },
         "account": {
             "loggedInAs": "Connecté :",
@@ -221,7 +254,7 @@
             "solarCalBtn": "Acheter Pro",
             "solarAnalLabel": "Analyse solaire Pro",
             "solarAnalDesc": "Azimut, élévation, graphique 24h, phase lunaire",
-            "lodLabel": "Zoom LOD 18 + Satellite",
+            "lodLabel": "Détail cartographique maximal + Satellite",
             "lodDesc": "Détail maximum — sentiers, bâtiments, végétation",
             "gpxLabel": "Multi-tracés + Export GPX",
             "gpxDesc": "Importez et exportez autant de randonnées que vous voulez",
@@ -229,10 +262,10 @@
             "offlineDesc": "Téléchargez autant de régions que vous voulez"
         },
         "preset": {
-            "eco": "Éco",
-            "balanced": "Std",
-            "performance": "High",
-            "ultra": "Ultra",
+            "eco": "Endurance",
+            "balanced": "Équilibré",
+            "performance": "Fluide",
+            "ultra": "Maximum",
             "custom": "Personnalisé"
         },
         "theme": {
@@ -272,7 +305,7 @@
         "storage": {
             "clearCache": "Vider Cache",
             "downloadZone": "Télécharger Zone",
-            "pmtiles": "Charger .pmtiles local"
+            "pmtiles": "Charger une archive cartographique locale"
         },
         "lang": {
             "label": "Langue",
@@ -322,10 +355,14 @@
             "poi": "Lieu"
         },
         "filter": {
+            "ariaLabel": "Filtres de recherche",
             "all": "Tout",
             "cities": "Villes",
             "mountains": "Montagnes",
             "countries": "Pays"
+        },
+        "meta": {
+            "distance": "{{distance}} km de la carte"
         }
     },
     "layers": {
@@ -357,22 +394,24 @@
             "recording": "Enregistrement en cours",
             "sos": "SOS urgence"
         },
+        "mapDetail": "{{source}} · détail {{detail}}",
+        "mapDetailCompact": "Carte · {{detail}}",
         "lod": {
-            "swiss": "SWISS",
-            "ign": "IGN FR",
-            "italy": "ITALY",
-            "germany": "GERMANY",
-            "spain": "SPAIN",
-            "austria": "AUSTRIA",
-            "norway": "KARTVERK",
-            "opentopo": "OPENTOPO",
-            "world": "WORLD",
-            "sat": "SAT"
+            "swiss": "Carte suisse",
+            "ign": "Carte France",
+            "italy": "Carte Italie",
+            "germany": "Carte Allemagne",
+            "spain": "Carte Espagne",
+            "austria": "Carte Autriche",
+            "norway": "Carte Norvège",
+            "opentopo": "Carte randonnée",
+            "world": "Carte mondiale",
+            "sat": "Satellite"
         },
-        "tooltipLOD": "<b>Niveau de détail</b> : zoom et source cartographique actuelle. Swiss = Swisstopo (Suisse), IGN = Géoportail (France), Italy = cartographie italienne, Germany = BKG (Allemagne), Spain = IGN Espagne, Austria = basemap.at (Autriche), Kartverket = Norvège, Opentopo = OpenTopoMap (monde). LVL = niveau de zoom (1-18)."
+        "tooltipLOD": "<b>Carte actuelle</b> : indique la source cartographique et le niveau de détail visible. Touchez pour gérer les cartes disponibles."
     },
     "upsell": {
-        "lod": "🔍 Détail maximum atteint — passez à Pro pour voir jusqu'au LOD 18",
+        "lod": "Détail cartographique maximum atteint — passez à Pro pour aller plus loin",
         "timeline": "📅 Accédez à n'importe quelle date avec Pro"
     },
     "connectivity": {
@@ -399,7 +438,7 @@
             "offlineHint": "Forcer l'usage du cache uniquement",
             "gpsAccuracy": "Signal GPS",
             "network": "Réseau",
-            "pmtiles": "Stockage local (.pmtiles)",
+            "pmtiles": "Archive cartographique locale",
             "packAvailable": "Pack disponible",
             "zonesUsed": "zone utilisée",
             "tiles": "tuiles"
@@ -419,10 +458,10 @@
     "zoneSelect": {
         "currentZone": "Zone visible",
         "total": "Tuiles à télécharger",
-        "totalLODs": "Total (LOD",
-        "lodRange": "Plage LOD",
-        "lodSingle": "LOD unique",
-        "freeSingle": "Gratuit : 1 LOD unique",
+        "totalLODs": "Total (détails",
+        "lodRange": "Niveaux de détail",
+        "lodSingle": "Détail unique",
+        "freeSingle": "Gratuit : 1 niveau de détail",
         "cancel": "Annuler",
         "download": "Télécharger",
         "warning": "Plus de 500 tuiles - téléchargement long",
@@ -622,7 +661,7 @@
     },
     "sos": {
         "title": "URGENCE SOS",
-        "subtitle": "Voici vos coordonnées exactes à transmettre aux secours.",
+        "subtitle": "Voici votre position GPS estimée et la précision disponible à transmettre aux secours.",
         "locating": "⌛ Localisation en cours...",
         "copy": "Copier le message",
         "sms": "📱 Envoyer par SMS",
@@ -682,19 +721,20 @@
         "next": "Suivant",
         "start": "Commencer",
         "explore": "Explorer la carte",
+        "prepareRoute": "Planifier un itinéraire",
         "importGpx": "Importer un GPX",
         "searchPeak": "Chercher un sommet",
         "slide1": {
-            "title": "Immersion & Liberté",
-            "desc": "Découvrez la montagne en 3D réelle. Utilisez le bouton 2D/3D en bas à droite pour basculer. Inclinez la vue avec 2 doigts pour activer le relief."
+            "title": "Explorez le terrain",
+            "desc": "Recherchez un lieu, puis utilisez la carte 2D ou le relief 3D et la lumière solaire pour comprendre le terrain."
         },
         "slide2": {
-            "title": "Maîtrisez la Lumière",
-            "desc": "Anticipez l'ensoleillement avec la barre de temps en bas (uniquement en 3D). Les ombres projetées suivent l'heure réelle du soleil."
+            "title": "Préparez par taps simples",
+            "desc": "Ouvrez Préparer, puis touchez la carte pour placer le départ A et l’arrivée B. SunTrail calcule ensuite l’itinéraire et ses statistiques."
         },
         "slide3": {
-            "title": "Tracez votre Aventure",
-            "desc": "Planifiez votre itinéraire (clic carte ou saisie manuelle), importez vos GPX via l'onglet 'Parcours' ou enregistrez votre trace GPS en direct."
+            "title": "Partez en confiance",
+            "desc": "Retrouvez l’enregistrement GPS dans Sortie et vos GPX dans Bibliothèque. Le GPS et le relief ont des limites : vérifiez toujours les conditions sur place."
         },
         "slide4": {
             "title": "Analyse Solaire",
@@ -713,10 +753,10 @@
         "title": "Passer à Pro",
         "hero": {
             "title": "Simulation solaire unique au monde",
-            "subtitle": "Voyez exactement quand le soleil éclaire votre sentier. Ombres projetées sur le vrai relief 3D — pour n'importe quel jour de l'année."
+            "subtitle": "Estimez quand le soleil éclaire votre sentier. Ombres simulées sur le relief 3D — pour n'importe quel jour de l'année."
         },
         "feature": {
-            "maxDetail": "Zoom LOD 18 maximum",
+            "maxDetail": "Détail cartographique maximal",
             "satellite": "Vue Satellite HD",
             "buildings": "Bâtiments 3D réalistes",
             "solarCalendar": "Calendrier solaire illimité",
@@ -830,7 +870,8 @@
         "storage": "Stockage",
         "storageEmpty": "Aucun pack installé",
         "free": "disponible",
-        "lodInfo": "Pro : LOD 12-14 · Gratuit : LOD 12",
+        "lodInfo": "Pro : plusieurs niveaux de détail · Gratuit : détail standard",
+        "detailRange": "Détails {{min}}–{{max}}",
         "btn": {
             "buy": "Acheter",
             "download": "Télécharger",

@@ -1,15 +1,14 @@
 <div class="top-status-bar-content">
     <div class="top-left-widgets">
-        <div
+        <button
+            type="button"
             class="top-widget"
             id="top-pill-weather"
-            role="button"
-            tabindex="0"
             aria-label="Météo"
         >
             <span class="weather-icon">☀️</span>
             <span class="weather-temp">--°C</span>
-        </div>
+        </button>
         <div
             class="status-widget rec-indicator"
             id="rec-status-widget"
@@ -20,23 +19,21 @@
         </div>
     </div>
     <div class="top-center-widgets">
-        <div
+        <button
+            type="button"
             class="top-widget"
             id="top-pill-lod"
-            role="button"
-            tabindex="0"
             aria-live="polite"
             aria-label="Carte et zoom"
         >
-            <span class="lod-badge">SWISS · LVL --</span>
-        </div>
+            <span class="lod-badge">Carte · détail --</span>
+        </button>
     </div>
     <div class="top-right-widgets">
-        <div
+        <button
+            type="button"
             class="icon-btn-sm"
             id="net-status-icon"
-            role="button"
-            tabindex="0"
             aria-label="Statut réseau et données"
         >
             <svg
@@ -54,27 +51,25 @@
                 <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
                 <line x1="12" y1="20" x2="12.01" y2="20" />
             </svg>
-        </div>
-        <div
+        </button>
+        <button
+            type="button"
             class="icon-btn-sm danger"
             id="sos-main-btn"
-            role="button"
-            tabindex="0"
             aria-label="Appel de secours SOS"
         >
             <span style="font-size: 13px; line-height: 1" aria-hidden="true"
                 >🆘</span
             >
-        </div>
-        <div
+        </button>
+        <button
+            type="button"
             class="status-widget timeline-toggle-widget"
             id="timeline-toggle-btn"
-            role="button"
-            tabindex="0"
             aria-label="Ouvrir la timeline de simulation"
         >
             <span class="timeline-icon">🕒</span>
-        </div>
+        </button>
     </div>
 </div>
 <button

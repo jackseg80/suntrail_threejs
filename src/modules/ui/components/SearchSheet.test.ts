@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const { mockState } = vi.hoisted(() => ({
     mockState: {
         localPeaks: [],
+        TARGET_LAT: 46.8,
+        TARGET_LON: 8.2,
         subscribe: vi.fn(() => vi.fn()),
     },
 }));
@@ -19,6 +21,9 @@ vi.mock('../../terrain', () => ({
 vi.mock('../../geo', () => ({
     lngLatToTile: vi.fn(() => ({ zoom: 14, tx: 0, ty: 0 })),
     lngLatToWorld: vi.fn(() => ({ x: 0, z: 0 })),
+    getCountryCode: vi.fn(() => 'CH'),
+    haversineDistance: vi.fn(() => 12.4),
+    COUNTRY_NAMES: { CH: 'Suisse' },
 }));
 
 vi.mock('../../scene', () => ({
@@ -53,18 +58,17 @@ vi.mock('../../geocodingService', () => ({
 
 vi.mock('../templates/search.html?raw', () => ({
     default: `
-        <div class="search-sheet-root">
-            <div id="search">
-                <button id="close-search">Fermer</button>
-                <div><input id="geo-input" type="text" /></div>
-                <div id="geo-results"></div>
-            </div>
+        <div id="search">
+            <button id="close-search">Fermer</button>
+            <div><input id="geo-input" type="text" /></div>
+            <div id="geo-results"></div>
         </div>`,
 }));
 
 import { SearchSheet } from './SearchSheet';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
+import { searchLocations } from '../../geocodingService';
 
 describe('SearchSheet', () => {
     let container: HTMLElement;
@@ -124,6 +128,27 @@ describe('SearchSheet', () => {
         sheet.hydrate();
         const chips = document.querySelectorAll('.search-chip');
         expect(chips.length).toBe(4);
+    });
+
+    it('renders contextual metadata in a semantic search result', () => {
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        const item = sheet['createGeoItem'](
+            46.02,
+            7.74,
+            'Zermatt, Suisse',
+            { type: 'city', zoom: 11, camDist: 90000 },
+            'Zermatt',
+            0,
+            { region: 'Valais', country: 'Suisse', distanceKm: 12.4 }
+        );
+
+        expect(item.tagName).toBe('BUTTON');
+        expect(item.getAttribute('role')).toBe('option');
+        expect(item.getAttribute('aria-selected')).toBe('false');
+        expect(item.querySelector('.srch-peak-sub')?.textContent).toContain(
+            'search.type.city · Valais · Suisse · search.meta.distance'
+        );
     });
 
     it('first filter chip is active by default', () => {
@@ -247,6 +272,23 @@ describe('SearchSheet', () => {
         const results = document.getElementById('geo-results')!;
         expect(results).not.toBeNull();
         vi.useRealTimers();
+    });
+
+    it('renders a localized error when remote geocoding fails', async () => {
+        vi.mocked(searchLocations).mockRejectedValueOnce(
+            new Error('network unavailable')
+        );
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        const input = document.getElementById('geo-input') as HTMLInputElement;
+        input.value = 'Chamonix';
+
+        sheet['handleInput']();
+        await vi.advanceTimersByTimeAsync(500);
+
+        const results = document.getElementById('geo-results')!;
+        expect(results.textContent).toContain('search.error');
+        expect(results.style.display).toBe('block');
     });
 
     it('subscribes to sheetClosed for reset', () => {

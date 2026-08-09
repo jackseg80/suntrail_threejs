@@ -1,11 +1,17 @@
 import * as THREE from 'three';
 import { state } from './state';
-import { computeRoute, clearRouteWaypoints } from './routingService';
+import {
+    computeRoute,
+    clearRouteWaypoints,
+    reverseWaypoints,
+} from './routingService';
 import { getAltitudeAt } from './analysis';
 import { lngLatToWorld } from './geo';
 import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
 import { scheduleRouteSolarAnalysis, invalidateRouteCache } from './solarRoute';
+import { showToast } from './toast';
+import { STORAGE_KEYS } from '../constants/storage';
 
 const waypointGroup = new THREE.Group();
 let autoComputeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -36,6 +42,11 @@ export function initRouteManager(): void {
             scheduleRouteSolarAnalysis(200);
         }),
         state.subscribe('routeLoading', () => updateBar()),
+        state.subscribe('routeError', () => updateBar()),
+        state.subscribe('isRoutePlanningMode', () => {
+            syncPlanningModeUI();
+            updateBar();
+        }),
         state.subscribe('originTile', () => rebuildMarkers()),
         state.subscribe('ZOOM', () => rebuildMarkers()),
         state.subscribe('IS_2D_MODE', () => rebuildMarkers()),
@@ -49,6 +60,8 @@ export function initRouteManager(): void {
         }),
         state.subscribe('gpxLayers', () => updateBar())
     );
+    syncPlanningModeUI();
+    updateBar();
 }
 
 export function disposeRouteManager(): void {
@@ -225,6 +238,51 @@ export function clearRoute(): void {
     document.body.classList.remove('route-planner-active');
 }
 
+export function setRoutePlanningMode(
+    active: boolean,
+    options: { announceHint?: boolean } = {}
+): void {
+    state.isRoutePlanningMode = active;
+    if (!active || options.announceHint === false) return;
+
+    try {
+        if (localStorage.getItem(STORAGE_KEYS.PLANNING_LONG_PRESS_HINT) === '1')
+            return;
+        localStorage.setItem(STORAGE_KEYS.PLANNING_LONG_PRESS_HINT, '1');
+    } catch {
+        // Storage can be unavailable in private WebViews; the hint remains non-blocking.
+    }
+
+    showToast(
+        i18n.t('planning.hint.longPress') ||
+            'Astuce : hors du mode Planifier, un appui long ajoute aussi un point.',
+        5000
+    );
+}
+
+export function toggleRoutePlanningMode(): void {
+    setRoutePlanningMode(!state.isRoutePlanningMode, {
+        announceHint: true,
+    });
+}
+
+export function reverseRoute(): void {
+    if (state.routeWaypoints.length < 2) return;
+    reverseWaypoints();
+}
+
+function syncPlanningModeUI(): void {
+    document.body.classList.toggle(
+        'route-planning-mode',
+        state.isRoutePlanningMode
+    );
+    const planTab = document.getElementById('nav-plan-tab');
+    planTab?.setAttribute('aria-pressed', String(state.isRoutePlanningMode));
+    if (!state.isRoutePlanningMode) {
+        document.getElementById('route-settings')?.classList.add('hidden');
+    }
+}
+
 function updateBar(): void {
     updateBarFromLayerStats();
     renderBar();
@@ -245,7 +303,7 @@ function updateBarFromLayerStats(): void {
 
 function renderBar(): void {
     const count = state.routeWaypoints.length;
-    if (count === 0) {
+    if (count === 0 && !state.isRoutePlanningMode) {
         document.body.classList.remove('route-planner-active');
         _barStats = null;
         renderSettingsWaypoints();
@@ -266,13 +324,20 @@ function renderBar(): void {
     if (infoEl) {
         if (state.routeLoading) {
             infoEl.textContent = i18n.t('routeBar.computing') || 'Calcul\u2026';
+        } else if (state.routeError) {
+            infoEl.textContent =
+                i18n.t('routeBar.error') || 'Itinéraire indisponible';
         } else if (_barStats) {
             infoEl.textContent = `${_barStats.distance.toFixed(1)} km \u00b7 \u2191${Math.round(_barStats.ascent)}m \u00b7 \u2193${Math.round(_barStats.descent)}m \u00b7 ${fmt(_barStats.duration)}`;
         } else if (count === 1) {
             infoEl.textContent =
                 i18n.t('routeBar.onePoint') || '1 point \u00b7 posez-en un 2e';
-        } else {
+        } else if (count > 1) {
             infoEl.textContent = `${count} points`;
+        } else {
+            infoEl.textContent =
+                i18n.t('planning.tapToAddStart') ||
+                'Touchez la carte pour placer le départ A';
         }
     }
 

@@ -359,6 +359,7 @@ export interface State {
     DEBUG_MODE: boolean; // v5.29.6 : Contrôle des logs sensibles
     DEBUG_NORMALMAP_RG_COMPACT: boolean; // v5.61.4 : Mode normal map compact (RG 2 canaux, Z reconstruit GPU)
     ORS_KEY: string;
+    isRoutePlanningMode: boolean;
     routeWaypoints: RouteWaypoint[];
     routeLoading: boolean;
     routeError: string | null;
@@ -482,6 +483,7 @@ const initialState: State = {
     DEBUG_MODE: false,
     DEBUG_NORMALMAP_RG_COMPACT: true,
     ORS_KEY: '',
+    isRoutePlanningMode: false,
     routeWaypoints: [],
     routeLoading: false,
     routeError: null,
