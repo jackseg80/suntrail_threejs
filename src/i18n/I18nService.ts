@@ -68,6 +68,24 @@ class I18nService {
     }
 
     /**
+     * Detect the preferred system language and map it to an available locale.
+     * Checks navigator.languages first, then navigator.language (first tag wins).
+     * Falls back to 'fr' when no match is found or navigator is unavailable.
+     */
+    detectSystemLocale(): Locale {
+        if (typeof navigator === 'undefined') return 'fr';
+        const supported: Locale[] = ['fr', 'de', 'it', 'en'];
+        const candidates = [...(navigator.languages ?? []), navigator.language];
+        for (const raw of candidates) {
+            if (typeof raw !== 'string' || raw.length === 0) continue;
+            const lang = raw.toLowerCase().split('-')[0];
+            const match = supported.find((l) => l === lang);
+            if (match) return match;
+        }
+        return 'fr';
+    }
+
+    /**
      * Apply translations to all [data-i18n] and [data-i18n-placeholder] elements
      * within the given root element. Called after every DOM clone or locale change.
      */

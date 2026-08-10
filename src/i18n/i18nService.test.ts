@@ -123,4 +123,62 @@ describe('I18nService', () => {
         });
         expect(result).toBe('Chargement 75%');
     });
+
+    describe('detectSystemLocale', () => {
+        it('should return the first supported locale from navigator.languages', () => {
+            vi.stubGlobal('navigator', {
+                language: 'de-CH',
+                languages: ['de-CH', 'en-US'],
+            });
+            expect(i18n.detectSystemLocale()).toBe('de');
+            vi.unstubAllGlobals();
+        });
+
+        it('should map navigator.language when languages is absent', () => {
+            vi.stubGlobal('navigator', {
+                language: 'it-IT',
+            });
+            expect(i18n.detectSystemLocale()).toBe('it');
+            vi.unstubAllGlobals();
+        });
+
+        it('should match every supported locale', () => {
+            vi.stubGlobal('navigator', {
+                language: 'fr-FR',
+                languages: ['fr-FR'],
+            });
+            expect(i18n.detectSystemLocale()).toBe('fr');
+            vi.stubGlobal('navigator', {
+                language: 'de-DE',
+                languages: ['de-DE'],
+            });
+            expect(i18n.detectSystemLocale()).toBe('de');
+            vi.stubGlobal('navigator', {
+                language: 'it-CH',
+                languages: ['it-CH'],
+            });
+            expect(i18n.detectSystemLocale()).toBe('it');
+            vi.stubGlobal('navigator', {
+                language: 'en-GB',
+                languages: ['en-GB'],
+            });
+            expect(i18n.detectSystemLocale()).toBe('en');
+            vi.unstubAllGlobals();
+        });
+
+        it('should fall back to fr for unsupported system languages', () => {
+            vi.stubGlobal('navigator', {
+                language: 'es-ES',
+                languages: ['es-ES', 'pt-BR'],
+            });
+            expect(i18n.detectSystemLocale()).toBe('fr');
+            vi.unstubAllGlobals();
+        });
+
+        it('should fall back to fr when navigator is unavailable', () => {
+            vi.stubGlobal('navigator', undefined);
+            expect(i18n.detectSystemLocale()).toBe('fr');
+            vi.unstubAllGlobals();
+        });
+    });
 });

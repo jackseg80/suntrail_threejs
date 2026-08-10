@@ -1,3 +1,15 @@
+## [5.83.2] - 2026-08-10
+
+### Ajouté
+- Au premier démarrage (aucun réglage sauvegardé), l'app détecte la langue du système
+  (`navigator.languages` / `navigator.language`) et bascule sur `fr`, `de`, `it` ou `en`
+  si disponible, avec repli sur `fr`. Les préférences déjà sauvegardées restent prioritaires.
+
+### Validation
+- `npm run check` et la suite unitaire complète (1551 tests) passent.
+- Nouvelles couvertures : `detectSystemLocale` (mapping, non-support, absence de navigator)
+  et sélection de langue au premier démarrage vs. lancements suivants.
+
 ## [5.83.1] - 2026-08-10
 
 ### Corrigé

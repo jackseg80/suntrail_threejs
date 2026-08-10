@@ -136,6 +136,11 @@ export async function appInit(): Promise<void> {
     }
 
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
+    // v5.83.2 : Au premier démarrage (aucun réglage sauvegardé), détecter la
+    // langue du système et basculer l'app dessus si elle est disponible.
+    if (firstLaunch) {
+        state.lang = i18n.detectSystemLocale();
+    }
     i18n.setLocale(state.lang);
     initTheme();
 

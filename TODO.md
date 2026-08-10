@@ -1,4 +1,4 @@
-# SunTrail — TODO (version source v5.83.1)
+# SunTrail — TODO (version source v5.83.2)
 
 > Dernière mise à jour : 2026-08-10
 
@@ -65,12 +65,15 @@ Prompt de clôture :
 - [x] Retest Galaxy S23 des jalons de boucle, de la réouverture du profil et des boutons unifiés.
 - [x] Correctif v5.83.1 : résumé Préparer lisible en portrait et mode carte au second clic,
   validés sur Galaxy S23.
-- [ ] Après autorisation explicite seulement : CI, AAB et publication v5.83.1.
+- [x] v5.83.2 : détection de la langue système au premier démarrage (fr/de/it/en, repli fr),
+  préférence sauvegardée prioritaire, tests ajoutés (1551 au total) et `npm run check` OK.
+- [x] Autorisation explicite reçue : CI, AAB et publication v5.83.2 (tag + push).
 
 ## 🟡 Programme produit engagé
 
 - [x] **v5.83.1** — correctif d'interface Préparer ; routes, brouillon et contrat de traces
   validés sur Galaxy S23.
+- [x] **v5.83.2** — détection de la langue système au premier démarrage, publiée.
 - [ ] **v5.84.0 interne** — moteur de suivi TypeScript et fixtures, sans promesse Play publique.
 - [ ] **v5.85.0** — guidage Android natif robuste, écran éteint et récupération.
 - [ ] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne.

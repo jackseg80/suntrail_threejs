@@ -36,7 +36,11 @@ vi.mock('./scene', () => ({
 }));
 vi.mock('./theme', () => ({ initTheme: vi.fn() }));
 vi.mock('../i18n/I18nService', () => ({
-    i18n: { setLocale: vi.fn(), t: (k: string) => k },
+    i18n: {
+        setLocale: vi.fn(),
+        t: (k: string) => k,
+        detectSystemLocale: vi.fn(() => 'fr'),
+    },
 }));
 
 // Mock components
@@ -101,6 +105,38 @@ describe('appInit.ts — Initialization Sequence', () => {
         // Check if ultra preset was applied via loadSettings
         const perf = await import('./performance');
         expect(perf.applyPreset).toHaveBeenCalledWith('ultra');
+    });
+
+    it('should detect system language on first launch (no saved settings)', async () => {
+        const { loadSettings, state } = await import('./state');
+        const { i18n } = await import('../i18n/I18nService');
+
+        vi.mocked(loadSettings).mockReturnValue(null);
+        vi.mocked(i18n.detectSystemLocale).mockReturnValue('de');
+
+        await appInit();
+
+        expect(i18n.detectSystemLocale).toHaveBeenCalled();
+        expect(state.lang).toBe('de');
+        expect(i18n.setLocale).toHaveBeenCalledWith('de');
+    });
+
+    it('should keep saved language preference on later launches', async () => {
+        const { loadSettings, state } = await import('./state');
+        const { i18n } = await import('../i18n/I18nService');
+
+        vi.mocked(loadSettings).mockReturnValue({
+            MAP_SOURCE: 'swisstopo',
+            PERFORMANCE_PRESET: 'balanced',
+            lang: 'it',
+        } as any);
+        state.lang = 'it'; // le vrai loadSettings restaure la langue sauvegardée
+
+        await appInit();
+
+        expect(i18n.detectSystemLocale).not.toHaveBeenCalled();
+        expect(state.lang).toBe('it');
+        expect(i18n.setLocale).toHaveBeenCalledWith('it');
     });
 
     it('wires map selection, coordinate dismissal and route controls', async () => {
