@@ -30,7 +30,13 @@ test.describe('Settings and Performance', () => {
 
   test('should toggle rendering options', async ({ page }) => {
     await page.click('.nav-tab[data-tab="settings"]');
-    
+    await expect(page.locator('#settings')).toHaveClass(/is-open/);
+
+    // Les options de rendu vivent dans la catégorie "Laboratoire développeur"
+    // (un <details> replié) : l'utilisateur l'ouvre via la navigation des catégories.
+    await page.click('[data-settings-category="developer"]');
+    await expect(page.locator('#settings-developer-lab')).toHaveAttribute('open', '');
+
     const shadowToggle = page.locator('#shadow-toggle');
 
     // Toggle shadows

@@ -143,12 +143,13 @@ export async function appInit(): Promise<void> {
     // Mode test (E2E) : en CI headless, le GPU logiciel (SwiftShader) fait
     // détecter le preset "eco", qui pose la classe body `preset-eco`. Celle-ci
     // masque `#timeline-toggle-btn` (display:none) et empêche l'interaction sur
-    // les réglages rendus (cf. tests expertsheets + settings). En mode test, on
-    // bascule sur "balanced" pour garder une UI complète et stable. Le mode 2D
-    // (IS_2D_MODE) est conservé tel quel pour ne pas casser planning-beginner.
-    // Le benchmark différé est inutile en test.
+    // les réglages rendus (cf. tests expertsheets + settings). On retire
+    // uniquement cette classe : le preset eco reste appliqué (scène légère,
+    // stable sur le GPU logiciel CI, notamment pour planning-beginner), et le
+    // mode 2D (IS_2D_MODE) est conservé tel quel. Le benchmark différé est
+    // inutile en test.
     if (isTestMode && state.PERFORMANCE_PRESET === 'eco') {
-        applyPreset('balanced');
+        document.body.classList.remove('preset-eco');
     }
 
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
