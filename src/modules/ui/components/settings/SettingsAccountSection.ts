@@ -1,6 +1,7 @@
 import { i18n } from '../../../../i18n/I18nService';
 import { authService } from '../../../authService';
 import { showToast } from '../../../toast';
+import { confirmDialog } from '../../confirmDialog';
 import { ICON_CHECK, ICON_LOG_OUT, ICON_USER } from '../../icons';
 
 /**
@@ -67,9 +68,10 @@ export function bindSettingsAccountSection(root: HTMLElement): void {
     deleteBtn.textContent =
         i18n.t('settings.account.deleteAccount') || 'Supprimer mon compte';
     deleteBtn.onclick = async () => {
-        const confirmed = confirm(
+        const confirmed = await confirmDialog(
             i18n.t('settings.account.deleteConfirmMsg') ||
-                'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.'
+                'Supprimer définitivement votre compte et vos données ? Cette action ne résilie pas votre abonnement. Irréversible.',
+            { danger: true }
         );
         if (!confirmed) return;
         const { error } = await authService.deleteAccount();

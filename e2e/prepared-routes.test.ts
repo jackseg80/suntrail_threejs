@@ -297,8 +297,9 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         ).toBe(true);
 
         await page.locator('.nav-tab[data-tab="library"]').click();
-        page.once('dialog', (dialog) => dialog.accept());
         await card.locator('[data-route-action="delete"]').click();
+        await page.locator('#confirm-dialog-overlay').waitFor({ state: 'visible' });
+        await page.locator('.confirm-dialog-accept').click();
         await expect
             .poll(() => countPreparedRoutes(page), { timeout: 10_000 })
             .toBe(0);
@@ -485,8 +486,9 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         );
         await expect(legacyRow).toBeVisible();
 
-        page.once('dialog', (dialog) => dialog.accept());
         await legacyRow.locator('[data-action="legacy-convert"]').click();
+        await page.locator('#confirm-dialog-overlay').waitFor({ state: 'visible' });
+        await page.locator('.confirm-dialog-accept').click();
         await expect
             .poll(() => countPreparedRoutes(page), { timeout: 10_000 })
             .toBe(1);

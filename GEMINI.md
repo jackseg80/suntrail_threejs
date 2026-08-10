@@ -5,6 +5,10 @@
 > La langue système est détectée au premier démarrage, l'anglais étant la langue par défaut.
 > Prepared Routes et la bibliothèque IndexedDB locale distinguent le brouillon Préparer,
 > la trace consultée et REC. Aucune implémentation v5.84 n'a commencé.
+>
+> Correctifs en attente de commit (même version) : suppression de compte iOS via `confirmDialog`
+> (modale HTML custom), bouton timeline visible à 390 px, disclaimer affiché même sans WebGL,
+> et suite E2E stabilisée (SW bloqué, preset forcé en mode test, langue `fr` forcée, override `nanoid`).
 
 > La base de connaissance technique est maintenue dans **`CLAUDE.md`**.
 > Ce fichier sert de point d'entrée pour Gemini CLI.

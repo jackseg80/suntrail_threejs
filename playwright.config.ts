@@ -16,6 +16,11 @@ export default defineConfig({
         baseURL: 'http://127.0.0.1:5173',
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
+        // Le Service Worker PWA intercepte les requêtes réseau (ex. geocoding
+        // MapTiler) via un runtimeCaching CacheFirst, ce qui court-circuite
+        // les mocks `page.route` des tests E2E. Le désactiver rend les mocks
+        // déterministes (et évite la persistance d'un SW fantôme entre runs).
+        serviceWorkers: 'block',
     },
 
     projects: [

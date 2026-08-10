@@ -97,15 +97,15 @@ test.describe('Account deletion (RGPD)', () => {
     await setupApp(page, { [FAKE_SESSION_KEY]: JSON.stringify(FAKE_SESSION) });
     await page.click('.nav-tab[data-tab="settings"]');
 
-    // Accept the confirm() dialog
-    page.once('dialog', dialog => dialog.accept());
-
+    // Confirmer via la modale HTML custom (window.confirm n'est pas fiable sur WebKit/iOS)
     await page.locator('#account-delete-btn').click();
+    await page.locator('#confirm-dialog-overlay').waitFor({ state: 'visible' });
+    await page.locator('.confirm-dialog-accept').click();
 
-    // After deletion, the page reloads — wait for app to be back
+    // Le flow supprime le compte (RPC intercepté) puis recharge la page.
+    // Attendre l'appel RPC avant la vérification (le dialog custom est async).
+    await expect.poll(() => rpcCalled).toBe(true);
     await page.waitForFunction(() => (window as any).suntrailReady === true, { timeout: 15000 });
-
-    expect(rpcCalled).toBe(true);
   });
 
 });

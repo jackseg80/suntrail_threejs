@@ -53,6 +53,11 @@ import { sheetManager } from './ui/core/SheetManager';
 import { attachDraggablePanel } from './ui/draggablePanel';
 
 export async function appInit(): Promise<void> {
+    // Mode test (E2E) : environnement déterministe. La suite est écrite en
+    // français et s'attend à une UI 3D complète, indépendamment de la locale
+    // du navigateur CI (en-US) et du GPU logiciel (SwiftShader → preset eco).
+    const isTestMode = window.location.search.includes('mode=test');
+
     // --- 1. HYDRATATION IMMÉDIATE DES COMPOSANTS SYSTÈME ---
     const topStatusBar = new TopStatusBar();
     topStatusBar.hydrate();
@@ -135,11 +140,24 @@ export async function appInit(): Promise<void> {
         }
     }
 
+    // Mode test (E2E) : en CI headless, le GPU logiciel (SwiftShader) fait
+    // détecter le preset "eco", qui pose la classe body `preset-eco`. Celle-ci
+    // masque `#timeline-toggle-btn` (display:none) et empêche l'interaction sur
+    // les réglages rendus (cf. tests expertsheets + settings). En mode test, on
+    // bascule sur "balanced" pour garder une UI complète et stable. Le mode 2D
+    // (IS_2D_MODE) est conservé tel quel pour ne pas casser planning-beginner.
+    // Le benchmark différé est inutile en test.
+    if (isTestMode && state.PERFORMANCE_PRESET === 'eco') {
+        applyPreset('balanced');
+    }
+
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
     // v5.83.2 : Au premier démarrage (aucun réglage sauvegardé), détecter la
     // langue du système et basculer l'app dessus si elle est disponible.
+    // En mode test (E2E), on force le français : toute la suite de tests est
+    // écrite en français et ne doit pas dépendre de la locale du navigateur CI.
     if (firstLaunch) {
-        state.lang = i18n.detectSystemLocale();
+        state.lang = isTestMode ? 'fr' : i18n.detectSystemLocale();
     }
     i18n.setLocale(state.lang);
     initTheme();
@@ -182,7 +200,7 @@ export async function appInit(): Promise<void> {
     await launchScene();
 
     // Premier lancement : benchmark micro différé (+15s) quand le système est stable
-    if (firstLaunch) {
+    if (firstLaunch && !isTestMode) {
         setTimeout(async () => {
             try {
                 const { recommendedPreset } = await runBenchmark();

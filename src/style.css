@@ -2135,7 +2135,7 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
     }
 }
 
-@media (max-width: 390px) {
+@media (max-width: 389px) {
     #timeline-toggle-btn {
         display: none;
     }
@@ -4669,4 +4669,80 @@ body.profile-interacting #bottom-bar {
 .cached-zone-delete:hover {
     background: rgba(239, 68, 68, 0.12);
     color: var(--danger, #ef4444);
+}
+
+/* Confirm Dialog (v5.83.4) */
+.confirm-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    padding: 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+.confirm-dialog-card {
+    background: var(--surface-solid, #1a1d2e);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-xl, 24px);
+    padding: 24px 20px 20px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: confirm-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes confirm-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+.confirm-dialog-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text, #fff);
+    margin: 0 0 12px;
+}
+.confirm-dialog-message {
+    font-size: 0.85rem;
+    color: var(--text-2);
+    line-height: 1.5;
+    margin: 0 0 20px;
+}
+.confirm-dialog-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.confirm-dialog-btn {
+    min-height: 44px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: var(--radius-lg, 12px);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        opacity 0.2s,
+        transform 0.15s;
+    color: var(--text-2);
+    background: var(--surface-subtle);
+}
+.confirm-dialog-btn:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+}
+.confirm-dialog-accept {
+    background: var(--accent);
+    color: #fff;
+}
+.confirm-dialog-danger {
+    background: var(--danger, #ef4444);
 }

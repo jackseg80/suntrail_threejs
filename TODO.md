@@ -2,6 +2,16 @@
 
 > Dernière mise à jour : 2026-08-10
 
+## ✅ Correctifs CI + produit (même version 5.83.3, non publiés)
+
+- [x] Suppression de compte (RGPD) fonctionnelle sur iOS : `confirmDialog` (modale HTML custom)
+      remplace `window.confirm()` qui retourne toujours `false` sur WebKit/iOS.
+- [x] Bouton timeline visible sur iPhone 12/13/14 : media query `max-width: 389px` au lieu de 390px.
+- [x] Disclaimer + onboarding affichés même si la scène WebGL ne devient pas prête.
+- [x] Suite E2E stabilisée : SW bloqué, preset forcé en mode test, langue `fr` forcée en test.
+- [x] `npm audit` clean (override `nanoid ^3.3.17`).
+- [x] `npm run check` (tsc + prettier + eslint), 1551 tests unitaires et E2E 3 navigateurs verts.
+
 ## ✅ v5.82.0 — Fondations UX finalisées
 
 - [x] Mode Planifier, navigation, recherche, onboarding, réglages et accessibilité implémentés dans le worktree.

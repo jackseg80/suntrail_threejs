@@ -1,3 +1,30 @@
+## [Non publié] - 2026-08-10
+
+### Corrigé
+- **Suppression de compte (RGPD) fonctionnelle sur iOS** : `window.confirm()` retourne toujours
+  `false` sur WebKit/iOS sans afficher de dialog, rendant la suppression de compte impossible.
+  Remplacement par une modale HTML custom accessible (`confirmDialog`), utilisée aussi pour la
+  suppression de routes préparées et la conversion des routes legacy dans la Bibliothèque.
+- **Bouton timeline de nouveau visible sur iPhone 12/13/14 (390 px)** : la media query responsive
+  passait de `max-width: 390px` à `max-width: 389px` pour ne plus masquer le bouton sur les
+  appareils de 390 px exactement.
+- **Robustesse au premier lancement** : si la scène 3D ne devient jamais prête (WebGL indisponible,
+  ex. environnement headless), le disclaimer de sécurité et l'onboarding s'affichent quand même.
+- **Fixes CI quotidienne** :
+  - `npm audit` : override `nanoid ^3.3.17` (CVE high, version montée en 3.3.18).
+  - E2E `search` : le Service Worker PWA interceptait le géocodage MapTiler avant les mocks
+    Playwright ; les tests désactivent désormais les service workers.
+  - E2E `expertsheets`/`settings` : en CI headless, le GPU logiciel (SwiftShader) faisait
+    détecter le preset `eco` qui masquait la timeline et les réglages rendus ; en mode test,
+    le preset est forcé sur `balanced`.
+  - E2E `prepared-routes` : la détection de la langue système basculait l'UI en anglais alors
+    que la suite attend du français ; en mode test, la langue est forcée sur `fr`.
+
+### Validation
+- `npm run check` (tsc + prettier + eslint) et la suite unitaire complète (1551 tests) passent.
+- Suite E2E complète sur les 3 navigateurs (Chromium, Firefox, Mobile Safari) : 55 tests passés,
+  0 échec, 8 skipped (tests `@smoke` exclus du run complet), identique au contrat CI attendu.
+
 ## [5.83.3] - 2026-08-10
 
 ### Corrigé

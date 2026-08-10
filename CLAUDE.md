@@ -4,6 +4,10 @@
 > Mis à jour le 2026-08-10 — v5.83.3 / Android `901` est la release corrective courante,
 > avec la détection de la langue système au premier démarrage et l'anglais par défaut. Prepared Routes et la bibliothèque IndexedDB locale sont
 > clôturées, sans compte, cloud ni guidage. Aucune implémentation v5.84 n'a commencé.
+>
+> Correctifs en attente de commit (même version) : suppression de compte iOS via `confirmDialog`
+> (modale HTML custom), bouton timeline visible à 390 px, disclaimer affiché même sans WebGL,
+> et suite E2E stabilisée (SW bloqué, preset forcé en mode test, langue `fr` forcée, override `nanoid`).
 
 ## Projet
 

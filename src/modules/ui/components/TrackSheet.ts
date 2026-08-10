@@ -36,6 +36,7 @@ import {
 import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
 import { getPlaceName } from '../../geocodingService';
 import { createTooltip, type TooltipHandle } from '../tooltip';
+import { confirmDialog } from '../confirmDialog';
 import templateHTML from '../templates/track.html?raw';
 import { preparedRouteService } from '../../preparedRoutes/preparedRouteService';
 import { releaseFlags } from '../../releaseFlags';
@@ -756,9 +757,10 @@ export class TrackSheet extends BaseComponent {
                             );
                         } else if (
                             action === 'delete' &&
-                            window.confirm(
-                                i18n.t('preparedRoutes.confirm.delete')
-                            )
+                            (await confirmDialog(
+                                i18n.t('preparedRoutes.confirm.delete'),
+                                { danger: true }
+                            ))
                         ) {
                             await preparedRouteService.delete(id);
                             showToast(i18n.t('preparedRoutes.toast.deleted'));
@@ -1434,12 +1436,13 @@ export class TrackSheet extends BaseComponent {
                     const entry = history.find(
                         (candidate) => candidate.id === id
                     );
-                    if (
-                        !entry ||
-                        !window.confirm(
-                            i18n.t('preparedRoutes.confirm.convertLegacy')
-                        )
-                    ) {
+                    if (!entry) {
+                        return;
+                    }
+                    const confirmed = await confirmDialog(
+                        i18n.t('preparedRoutes.confirm.convertLegacy')
+                    );
+                    if (!confirmed) {
                         return;
                     }
                     try {
