@@ -1,3 +1,17 @@
+## [5.83.3] - 2026-08-10
+
+### Corrigé
+- La langue par défaut de l'app passe au **français → anglais** : au premier démarrage sans
+  langue système détectable, l'interface s'affiche désormais en anglais (`en`) au lieu du français.
+  La chaîne de repli de traduction (`t()`) utilise aussi `en` comme référence, et le défaut
+  d'état (`state.lang`) est `en`. La langue du système reste prioritaire quand elle est prise
+  en charge (`fr`/`de`/`it`/`en`).
+
+### Validation
+- `npm run check` et la suite unitaire complète (1551 tests) passent.
+- Tests ajustés pour le nouveau défaut anglais ; les tests de libellés français ciblés
+  (`TopStatusBar`, `sun`) posent explicitement la locale `fr`.
+
 ## [5.83.2] - 2026-08-10
 
 ### Ajouté

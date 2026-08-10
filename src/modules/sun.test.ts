@@ -2,10 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { updateSunPosition } from './sun';
 import { state } from './state';
+import { i18n } from '../i18n/I18nService';
 
 describe('sun.ts', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        i18n.setLocale('fr'); // tests assert French phase labels
         // Mock DOM elements
         document.body.innerHTML = `
             <div id="time-disp"></div>

@@ -16,21 +16,21 @@ class I18nService {
     private translations: TranslationData;
 
     constructor() {
-        // Default to 'fr' at construction time — setLocale() will be called
+        // Default to 'en' at construction time — setLocale() will be called
         // by initUI() once state.lang is properly restored from localStorage.
-        this.currentLocale = 'fr';
-        this.translations = allTranslations.fr;
+        this.currentLocale = 'en';
+        this.translations = allTranslations.en;
     }
 
     /**
      * Translate a key with optional variable interpolation.
      * Supports nested keys like 'track.empty.title'.
-     * Fallback chain: current locale → fr → key itself.
+     * Fallback chain: current locale → en → key itself.
      */
     t(key: string, vars?: Record<string, string>): string {
         let value = this.resolve(this.translations, key);
         if (value === undefined) {
-            value = this.resolve(allTranslations.fr, key);
+            value = this.resolve(allTranslations.en, key);
         }
         if (value === undefined) {
             return key;
@@ -52,7 +52,7 @@ class I18nService {
         const changed = locale !== this.currentLocale;
         if (changed) {
             this.currentLocale = locale;
-            this.translations = allTranslations[locale] || allTranslations.fr;
+            this.translations = allTranslations[locale] || allTranslations.en;
             state.lang = locale;
         }
         if (typeof document !== 'undefined') {
@@ -70,10 +70,10 @@ class I18nService {
     /**
      * Detect the preferred system language and map it to an available locale.
      * Checks navigator.languages first, then navigator.language (first tag wins).
-     * Falls back to 'fr' when no match is found or navigator is unavailable.
+     * Falls back to 'en' when no match is found or navigator is unavailable.
      */
     detectSystemLocale(): Locale {
-        if (typeof navigator === 'undefined') return 'fr';
+        if (typeof navigator === 'undefined') return 'en';
         const supported: Locale[] = ['fr', 'de', 'it', 'en'];
         const candidates = [...(navigator.languages ?? []), navigator.language];
         for (const raw of candidates) {
@@ -82,7 +82,7 @@ class I18nService {
             const match = supported.find((l) => l === lang);
             if (match) return match;
         }
-        return 'fr';
+        return 'en';
     }
 
     /**

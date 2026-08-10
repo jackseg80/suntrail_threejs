@@ -136,7 +136,7 @@ export class PacksSheet extends BaseComponent {
     private createPackCard(meta: PackMeta): HTMLElement {
         const ps = packManager.getPackState(meta.id);
         const status: PackStatus = ps?.status ?? 'not_purchased';
-        const lang = state.lang || 'fr';
+        const lang = state.lang || 'en';
 
         const card = document.createElement('div');
         card.className = 'pack-card';
@@ -146,7 +146,7 @@ export class PacksSheet extends BaseComponent {
         // Header: flag + name + size
         const flag =
             countryCodeToFlag(meta.regionCheck) || packIdToFlag(meta.id);
-        const name = meta.name[lang] || meta.name['fr'] || meta.id;
+        const name = meta.name[lang] || meta.name['en'] || meta.id;
 
         const header = document.createElement('div');
         header.style.cssText =

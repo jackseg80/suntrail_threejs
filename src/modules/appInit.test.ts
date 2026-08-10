@@ -7,7 +7,7 @@ vi.mock('./state', () => ({
     state: {
         uiVisible: true,
         subscribe: vi.fn().mockReturnValue(() => {}),
-        lang: 'fr',
+        lang: 'en',
         PERFORMANCE_PRESET: 'balanced',
         isNetworkAvailable: true,
         TARGET_LAT: 46.5,
@@ -39,7 +39,7 @@ vi.mock('../i18n/I18nService', () => ({
     i18n: {
         setLocale: vi.fn(),
         t: (k: string) => k,
-        detectSystemLocale: vi.fn(() => 'fr'),
+        detectSystemLocale: vi.fn(() => 'en'),
     },
 }));
 

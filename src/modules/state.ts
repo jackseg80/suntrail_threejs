@@ -382,7 +382,7 @@ export interface State {
 }
 
 const initialState: State = {
-    lang: 'fr',
+    lang: 'en',
     themePreference: 'auto',
     MK: '',
     MAP_SOURCE: 'swisstopo',

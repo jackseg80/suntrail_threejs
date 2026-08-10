@@ -192,8 +192,8 @@ export class ConnectivitySheet extends BaseComponent {
         }
 
         const ps = packManager.getPackState(pack.id);
-        const lang = state.lang || 'fr';
-        const name = pack.name[lang] || pack.name['fr'] || pack.id;
+        const lang = state.lang || 'en';
+        const name = pack.name[lang] || pack.name['en'] || pack.id;
 
         let statusText: string;
         let statusColor: string;

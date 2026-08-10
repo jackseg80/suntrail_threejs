@@ -42,6 +42,7 @@ import { state } from '../../state';
 import { packManager } from '../../packManager';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
+import { i18n } from '../../../i18n/I18nService';
 import { TopStatusBar } from './TopStatusBar';
 
 describe('TopStatusBar — LOD label (country mapping)', () => {
@@ -49,6 +50,7 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        i18n.setLocale('fr'); // tests assert French country labels
 
         document.body.innerHTML = `
             <template id="template-top-status-bar">
@@ -349,6 +351,7 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        i18n.setLocale('fr'); // tests assert French country labels
 
         document.body.innerHTML = `
             <template id="template-top-status-bar">
