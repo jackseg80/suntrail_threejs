@@ -2,7 +2,7 @@
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
 > Révision : 2026-08-08 après audit critique et inspection du worktree.
-> v5.83.1 / Android 899 est la release corrective de v5.83, sans changement de périmètre. Aucune implémentation v5.84
+> v5.83.3 / Android 901 est la release corrective de v5.83, sans changement de périmètre. Aucune implémentation v5.84
 > n'a commencé.
 
 ## 1. Ordre de réalisation

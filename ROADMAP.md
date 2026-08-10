@@ -1,4 +1,4 @@
-# SunTrail — Roadmap produit révisée (version source v5.83.1)
+# SunTrail — Roadmap produit révisée (version source v5.83.3)
 
 > Révision : 2026-08-08, après audit critique et inspection du worktree.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
@@ -13,10 +13,11 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-08-09
+## État réel au 2026-08-10
 
-- La version source et Android de référence est **v5.83.1** / **899**. C'est un correctif de
-  lisibilité Préparer et de mode carte ; il ne modifie pas le périmètre fonctionnel v5.83.
+- La version source et Android de référence est **v5.83.3** / **901**. Les correctifs v5.83.1
+  à v5.83.3 (lisibilité Préparer, détection de la langue système, anglais par défaut) ne
+  modifient pas le périmètre fonctionnel v5.83.
 - Prepared Routes, la bibliothèque IndexedDB, la compatibilité GPX/REC, la difficulté expliquée,
   les corrections mobiles et la validation Galaxy S23 sont clôturées.
 - Les gates TypeScript, unitaires, build/bundle, i18n, E2E Chromium, Capacitor et Android sont
