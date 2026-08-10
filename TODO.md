@@ -1,6 +1,6 @@
-# SunTrail — TODO (version source v5.83.0)
+# SunTrail — TODO (version source v5.83.1)
 
-> Dernière mise à jour : 2026-08-09
+> Dernière mise à jour : 2026-08-10
 
 ## ✅ v5.82.0 — Fondations UX finalisées
 
@@ -62,13 +62,15 @@ Prompt de clôture :
   départ, deux passages intermédiaires et arrivée superposée au départ.
 - [x] Régression automatisée GPX boucle → sauvegarde → réouverture du profil ajoutée sur la
   vraie IndexedDB Chromium ; boutons Prepared Routes/visibilité unifiés avec le thème.
-- [ ] Retest Galaxy S23 des jalons de boucle, de la réouverture du profil et des boutons unifiés.
-- [ ] Après autorisation explicite seulement : commit, tag, push, CI, AAB et publication.
+- [x] Retest Galaxy S23 des jalons de boucle, de la réouverture du profil et des boutons unifiés.
+- [x] Correctif v5.83.1 : résumé Préparer lisible en portrait et mode carte au second clic,
+  validés sur Galaxy S23.
+- [ ] Après autorisation explicite seulement : CI, AAB et publication v5.83.1.
 
 ## 🟡 Programme produit engagé
 
-- [ ] **v5.83.0** — planifier, évaluer et sauvegarder localement (`PreparedRoute`) ; validation
-  finale du contrat de traces en cours, publication non démarrée.
+- [x] **v5.83.1** — correctif d'interface Préparer ; routes, brouillon et contrat de traces
+  validés sur Galaxy S23.
 - [ ] **v5.84.0 interne** — moteur de suivi TypeScript et fixtures, sans promesse Play publique.
 - [ ] **v5.85.0** — guidage Android natif robuste, écran éteint et récupération.
 - [ ] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne.

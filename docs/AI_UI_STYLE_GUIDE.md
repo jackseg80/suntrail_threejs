@@ -1,6 +1,6 @@
-# AI UI Style Guide (v5.83.0)
+# AI UI Style Guide (v5.83.1)
 
-> Référence du worktree v5.83.0 non publié ; v5.82.0 reste la release publique.
+> Référence de la release publique corrective v5.83.1 ; v5.84 n'est pas implémentée.
 
 This guide defines the standardized UI patterns for SunTrail to ensure visual consistency across all panels (Expert Sheets, Settings, etc.).
 

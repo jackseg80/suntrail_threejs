@@ -2,16 +2,15 @@
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
 > Révision : 2026-08-08 après audit critique et inspection du worktree.
-> v5.82.0 / Android 897 est clôturée et publiée depuis le 2026-08-09. Le tag et la release
-> GitHub publics pointent sur `e317e10`. Le worktree v5.83.0 est implémenté mais non publié ;
-> aucune portée v5.84 n'a commencé.
+> v5.83.1 / Android 899 est la release corrective de v5.83, sans changement de périmètre. Aucune implémentation v5.84
+> n'a commencé.
 
 ## 1. Ordre de réalisation
 
 ```text
 v5.82 validation terrain S23 + publication ✓
    ↓
-v5.83 planifier + évaluer + sauvegarder localement
+v5.83 planifier + évaluer + sauvegarder localement ✓
    ↓
 v5.84 valider le moteur de suivi en interne/fermé
    ↓
@@ -41,7 +40,9 @@ promesse complète de guidage Android et traite le risque natif avant le cloud.
 
 SuisseMobile sert de référence pour la sobriété, la carte officielle, la préparation et la
 continuité web/app. AllTrails sert de référence pour l'état avant départ, le suivi et les alertes.
-SunTrail doit se différencier par le relief 3D, le soleil projeté et l'heure de passage.
+Komoot et Garmin servent de référence pour la prochaine indication, la distance au prochain
+point utile, le hors-trace et la sobriété de l'écran terrain. SunTrail doit se différencier par
+le relief 3D, le soleil projeté et l'heure de passage.
 
 ## 3. Contrats
 
@@ -118,6 +119,24 @@ signaux `info | warning | critical`. Une section inconnue ne bloque pas les autr
 ### Guidage v5.84/v5.85
 
 ```ts
+interface GuidanceCueV1 {
+  id: string;
+  kind: 'depart' | 'continue' | 'slight-left' | 'left' | 'sharp-left' |
+    'slight-right' | 'right' | 'sharp-right' | 'u-turn' | 'arrive' | 'waypoint' | 'poi';
+  progressMeters: number;
+  label: string | null;
+  source: 'ors' | 'osrm' | 'gpx-waypoint' | 'manual' | 'geometry-derived';
+  confidence: 'routed' | 'declared' | 'derived';
+}
+
+interface GuidancePlanV1 {
+  schemaVersion: 1;
+  routeId: string;
+  geometryFingerprint: string;
+  cues: GuidanceCueV1[];
+  createdAt: string;
+}
+
 interface GuidanceSnapshot {
   routeId: string;
   status: 'idle' | 'acquiring' | 'onRoute' | 'offRoute' | 'recovered' | 'arrived' | 'paused';
@@ -126,14 +145,30 @@ interface GuidanceSnapshot {
   crossTrackMeters: number;
   eta: string | null;
   bearing: number | null;
+  nextCue: GuidanceCueV1 | null;
+  distanceToNextCueMeters: number | null;
   accuracyMeters: number | null;
   positionAgeMs: number | null;
   updatedAt: string;
 }
 ```
 
-v5.84 calcule en TypeScript au premier plan sur un track interne/fermé. v5.85 porte la source
-de vérité dans le service Android et conserve les mêmes fixtures/payloads avant publication.
+`GuidancePlanV1` est un artefact local dérivé et stocké à côté de `PreparedRouteV1`, sans modifier
+son contrat v1. Il est invalidé si l'empreinte de géométrie change et peut être régénéré. La
+migration IndexedDB est additive et les routes v5.83 sans plan restent lisibles.
+
+Les étapes ORS (`segments.steps`) sont conservées avec leurs types de manœuvre ; les étapes OSRM
+peuvent servir de fallback lorsqu'elles existent. Un GPX `trk` standard ne porte que la géométrie :
+ses `wpt`/`rtept` nommés ne deviennent des cues que s'ils sont spatialement associés à la trace.
+Une cue déduite du seul angle est `geometry-derived`/`derived`, filtrée pour éviter courbes et
+lacets, et formulée « changement de direction approximatif », jamais comme une intersection
+certaine. Aucune cue fiable n'est inventée si les données ne le permettent pas.
+
+v5.84 calcule en TypeScript au premier plan sur un track interne/fermé et affiche la prochaine
+indication avec sa distance. v5.85 porte la source de vérité dans le service Android et conserve
+les mêmes fixtures/payloads avant publication. FIT Course et TCX peuvent transporter des points
+de parcours plus riches, mais leurs imports, la voix, la liste « Up Ahead » complète et le
+recalcul réseau sont différés afin de ne pas diluer la validation du matcher v5.84.
 
 ## 4. Décisions Free / Pro
 

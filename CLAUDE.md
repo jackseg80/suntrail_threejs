@@ -1,10 +1,9 @@
-# SunTrail — Guide IA (version source v5.83.0)
+# SunTrail — Guide IA (version source v5.83.1)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-09 — v5.82.0 / Android `897` reste la release publiée (`e317e10`).
-> Le worktree v5.83.0 implémente Prepared Routes et la bibliothèque IndexedDB locale, sans compte,
-> cloud ni guidage. Il n'est ni committé, ni tagué, ni poussé, ni publié. Android `898` est
-> provisoire jusqu'au prochain contrôle Play Console.
+> Mis à jour le 2026-08-10 — v5.83.1 / Android `899` est la release corrective publiée,
+> avec le résumé Préparer portrait et le mode carte validés sur Galaxy S23. Prepared Routes et la bibliothèque IndexedDB locale sont
+> clôturées, sans compte, cloud ni guidage. Aucune implémentation v5.84 n'a commencé.
 
 ## Projet
 

@@ -1,4 +1,4 @@
-# SunTrail — Roadmap produit révisée (version source v5.83.0)
+# SunTrail — Roadmap produit révisée (version source v5.83.1)
 
 > Révision : 2026-08-08, après audit critique et inspection du worktree.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
@@ -15,21 +15,14 @@ heure de passage et conditions.
 
 ## État réel au 2026-08-09
 
-- La version source et Android de référence est **v5.82.0** / **897**. La version est clôturée
-  et publiée ; le tag et la release GitHub publics pointent sur `e317e10` et contiennent l'AAB
-  signé. Le développement local v5.83 peut commencer.
-- Le mode Planifier, la nouvelle navigation, la recherche, l'onboarding et les réglages sont
-  finalisés dans la portée Fondations UX.
-- `npm run check`, les **1 491 tests unitaires**, le build, le budget bundle, l'audit i18n,
-  les six smoke Chromium et le scénario débutant isolé passent.
-- La revue visuelle couvre 360, 390, 768, 900 et 1280 px, les textes longs DE/IT et les états
-  vide, chargement, erreur et hors ligne.
-- Capacitor est synchronisé ; tests, lint et APK Android debug passent.
-- La validation terrain Galaxy S23 est clôturée le 2026-08-09 sans anomalie bloquante signalée.
-  Les métriques détaillées du protocole n'ont pas été consignées ; elles ne sont pas déduites.
-- L'observation Sortie/Bibliothèque est une transition UX P2, explicitement portée par v5.83.
-- Le bundle Android signé v5.82.0 est attaché à la release publique ; la clôture complète de
-  v5.82 autorise désormais le démarrage de v5.83.
+- La version source et Android de référence est **v5.83.1** / **899**. C'est un correctif de
+  lisibilité Préparer et de mode carte ; il ne modifie pas le périmètre fonctionnel v5.83.
+- Prepared Routes, la bibliothèque IndexedDB, la compatibilité GPX/REC, la difficulté expliquée,
+  les corrections mobiles et la validation Galaxy S23 sont clôturées.
+- Les gates TypeScript, unitaires, build/bundle, i18n, E2E Chromium, Capacitor et Android sont
+  verts. Aucune implémentation v5.84 n'a commencé.
+- Après comparaison Komoot/Garmin, v5.84 inclura la prochaine indication et sa distance au sein
+  du moteur foreground, sans étendre la promesse aux fonctions natives/background de v5.85.
 
 ## Séquence de livraison révisée
 
@@ -37,7 +30,7 @@ heure de passage et conditions.
 |---|---|---|
 | **v5.82.0** | Comprendre et utiliser la préparation sans geste caché | Finalisé dans le worktree, sans PreparedRoute |
 | **v5.83.0** | Planifier, évaluer et retrouver une route après redémarrage | PreparedRoute local, bibliothèque, difficulté/effort, soleil utile |
-| **v5.84.0 interne** | Valider le moteur de suivi sans promesse publique incomplète | GuidanceEngine TS, fixtures, progression/ETA/écart, foreground |
+| **v5.84.0 interne** | Valider le moteur de suivi sans promesse publique incomplète | GuidanceEngine TS, progression/ETA/écart, prochaine indication, foreground |
 | **v5.85.0** | Guider réellement sur Android, écran éteint et après interruption | Matcher natif, route Room, notification, récupération, tests appareils |
 | **v5.86.0** | Savoir si la sortie est prête et emporter son corridor | Readiness en couches, corridor Free remplaçable, offline fiable |
 | **v6.0.0** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
@@ -66,8 +59,8 @@ peut commencer.
 
 ## v5.83.0 — Planifier, évaluer et sauvegarder localement
 
-> **Worktree implémenté le 2026-08-09, publication non démarrée.** La release publiée reste
-> v5.82.0. Aucun travail v5.84 n'a commencé.
+> **Release clôturée et publiée le 2026-08-09.** Tag `v5.83.0`, commit `89e76be`, AAB signé
+> attaché à la release GitHub. Aucun travail d'implémentation v5.84 n'a commencé.
 
 ### Domaine
 
@@ -130,6 +123,8 @@ Livrer le cœur de navigation avant le cloud :
 
 - `GuidanceEngine` TypeScript pur avec fixtures déterministes ;
 - segment proche, progression, distance restante, ETA, écart et look-ahead ;
+- prochaine indication et distance : manœuvre routée ORS/OSRM, waypoint/POI nommé, ou changement
+  de direction géométrique explicitement approximatif ;
 - états acquiring/on-route/off-route/recovered/arrived/paused ;
 - alertes visuelles et haptiques au premier plan ;
 - route et matcher utilisables hors réseau tant que l'application reste ouverte ;
@@ -138,11 +133,19 @@ Livrer le cœur de navigation avant le cloud :
 - web limité au premier plan, avec la même formulation honnête.
 
 Cette version ne promet ni alertes écran éteint, ni survie après kill, ni notification de
-guidage. Elle reste sur un track interne/fermé, sous release flag, avec la formulation
-« suivi écran actif — bêta ». Ces garanties appartiennent à v5.85.
+guidage, ni voix, ni recalcul automatique. Elle reste sur un track interne/fermé, sous release
+flag, avec la formulation « suivi écran actif — bêta ». Ces garanties appartiennent à v5.85
+ou à une portée ultérieure explicitement validée.
+
+GPX reste le format d'échange principal : un `trk` fournit la géométrie mais aucune manœuvre
+standard. Les `wpt`/`rtept` nommés peuvent alimenter les points à venir lorsqu'ils sont associés
+à la trace. Les étapes ORS/OSRM sont conservées dans un plan de guidage local séparé de
+`PreparedRouteV1`. L'import FIT/TCX, la voix et les extensions propriétaires sont différés.
 
 **Gate interne :** parcours de terrain simulé et test appareil Android application ouverte,
-mode avion, avec bruit GPS et lacets proches, sans régression REC. Aucun déploiement public.
+mode avion, avec bruit GPS et lacets proches ; prochaine indication correcte, aucune manœuvre
+inventée sur GPX sans données fiables et aucune alerte répétée, sans régression REC. Aucun
+déploiement public.
 
 ## v5.85.0 — Guidage Android robuste
 

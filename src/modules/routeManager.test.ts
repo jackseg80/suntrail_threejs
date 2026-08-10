@@ -70,6 +70,7 @@ import {
     clearRoute,
     scheduleGeocodeNames,
     setRoutePlanningMode,
+    toggleRoutePlannerChrome,
     reverseRoute,
 } from './routeManager';
 
@@ -96,6 +97,15 @@ describe('routeManager', () => {
         localStorage.clear();
         document.body.className = '';
         document.body.innerHTML = `
+            <div id="route-plan-hud">
+                <div id="rph-context"></div>
+                <div id="rph-stats" hidden>
+                    <span id="rph-distance"></span>
+                    <span id="rph-ascent"></span>
+                    <span id="rph-descent"></span>
+                    <span id="rph-duration"></span>
+                </div>
+            </div>
             <div id="route-bar">
                 <div id="rb-dots"></div>
                 <div id="rb-info"></div>
@@ -168,6 +178,21 @@ describe('routeManager', () => {
             expect(
                 localStorage.getItem('suntrail_planning_long_press_hint_v1')
             ).toBe('1');
+        });
+
+        it('masque puis restaure les commandes sans quitter le mode Préparer', () => {
+            setRoutePlanningMode(true, { announceHint: false });
+
+            toggleRoutePlannerChrome();
+            expect(state.isRoutePlanningMode).toBe(true);
+            expect(
+                document.body.classList.contains('route-planner-chrome-hidden')
+            ).toBe(true);
+
+            toggleRoutePlannerChrome();
+            expect(
+                document.body.classList.contains('route-planner-chrome-hidden')
+            ).toBe(false);
         });
     });
 
@@ -319,6 +344,32 @@ describe('routeManager', () => {
             expect(document.getElementById('rb-info')?.textContent).toContain(
                 'preparedRoutes.source.manualDraft · Boucle du lac · 8.0 km'
             );
+            expect(document.getElementById('rph-context')?.textContent).toBe(
+                'preparedRoutes.source.manualDraft · Boucle du lac'
+            );
+            expect(document.getElementById('rph-distance')?.textContent).toBe(
+                '8.0 km'
+            );
+            expect(document.getElementById('rph-ascent')?.textContent).toBe(
+                'D+ 29 m'
+            );
+            expect(document.getElementById('rph-descent')?.textContent).toBe(
+                'D− 33 m'
+            );
+            expect(document.getElementById('rph-duration')?.textContent).toBe(
+                '2h'
+            );
+            expect(document.getElementById('rph-stats')?.hidden).toBe(false);
+        });
+
+        it('garde une instruction complète en haut tant que la route ne possède pas de statistiques', () => {
+            setRoutePlanningMode(true, { announceHint: false });
+            initRouteManager();
+
+            expect(document.getElementById('rph-context')?.textContent).toBe(
+                'planning.tapToAddStart'
+            );
+            expect(document.getElementById('rph-stats')?.hidden).toBe(true);
         });
 
         it('distingue un GPX en préparation de la trace seulement consultée', () => {

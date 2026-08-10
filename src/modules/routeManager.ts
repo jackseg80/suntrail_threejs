@@ -294,6 +294,11 @@ export function setRoutePlanningMode(
     active: boolean,
     options: { announceHint?: boolean } = {}
 ): void {
+    // Toute entrée explicite dans Préparer rouvre ses commandes. Le masquage est
+    // une préférence visuelle ponctuelle, jamais une propriété du brouillon.
+    if (active && !state.isRoutePlanningMode) {
+        document.body.classList.remove('route-planner-chrome-hidden');
+    }
     state.isRoutePlanningMode = active;
     if (!active || options.announceHint === false) return;
 
@@ -318,6 +323,20 @@ export function toggleRoutePlanningMode(): void {
     });
 }
 
+/**
+ * Réduit temporairement l'interface Préparer pour laisser la carte libre,
+ * sans désactiver la pose de points ni modifier le brouillon en cours.
+ */
+export function toggleRoutePlannerChrome(): void {
+    if (!state.isRoutePlanningMode) return;
+    const hidden = document.body.classList.toggle(
+        'route-planner-chrome-hidden'
+    );
+    document
+        .getElementById('nav-plan-tab')
+        ?.setAttribute('aria-expanded', String(!hidden));
+}
+
 export function reverseRoute(): void {
     if (state.routeWaypoints.length < 2) return;
     reverseWaypoints();
@@ -331,7 +350,16 @@ function syncPlanningModeUI(): void {
     const planTab = document.getElementById('nav-plan-tab');
     planTab?.setAttribute('aria-pressed', String(state.isRoutePlanningMode));
     if (!state.isRoutePlanningMode) {
+        document.body.classList.remove('route-planner-chrome-hidden');
+        planTab?.setAttribute('aria-expanded', 'false');
         document.getElementById('route-settings')?.classList.add('hidden');
+    } else {
+        planTab?.setAttribute(
+            'aria-expanded',
+            String(
+                !document.body.classList.contains('route-planner-chrome-hidden')
+            )
+        );
     }
 }
 
@@ -380,6 +408,7 @@ function renderBar(): void {
 
     const dotsEl = document.getElementById('rb-dots');
     const infoEl = document.getElementById('rb-info');
+    const barStats = count >= 2 ? _barStats : null;
 
     if (dotsEl) {
         dotsEl.innerHTML = Array.from(
@@ -388,27 +417,56 @@ function renderBar(): void {
         ).join('');
     }
 
-    if (infoEl) {
-        if (state.routeLoading) {
-            infoEl.textContent = i18n.t('routeBar.computing') || 'Calcul\u2026';
-        } else if (state.routeError) {
-            infoEl.textContent =
-                i18n.t('routeBar.error') || 'Itinéraire indisponible';
-        } else if (_barStats) {
-            infoEl.textContent = `${getRouteBarContext()} · ${_barStats.distance.toFixed(1)} km · ↑${Math.round(_barStats.ascent)}m · ↓${Math.round(_barStats.descent)}m · ${fmt(_barStats.duration)}`;
-        } else if (count === 1) {
-            infoEl.textContent =
-                i18n.t('routeBar.onePoint') || '1 point \u00b7 posez-en un 2e';
-        } else if (count > 1) {
-            infoEl.textContent = `${count} points`;
-        } else {
-            infoEl.textContent =
-                i18n.t('planning.tapToAddStart') ||
-                'Touchez la carte pour placer le départ A';
-        }
+    let info: string;
+    let mobileContext: string;
+    if (state.routeLoading) {
+        info = i18n.t('routeBar.computing') || 'Calcul\u2026';
+        mobileContext = info;
+    } else if (state.routeError) {
+        info = i18n.t('routeBar.error') || 'Itinéraire indisponible';
+        mobileContext = info;
+    } else if (barStats) {
+        mobileContext = getRouteBarContext();
+        info = `${mobileContext} · ${barStats.distance.toFixed(1)} km · ↑${Math.round(barStats.ascent)}m · ↓${Math.round(barStats.descent)}m · ${fmt(barStats.duration)}`;
+    } else if (count === 1) {
+        info = i18n.t('routeBar.onePoint') || '1 point \u00b7 posez-en un 2e';
+        mobileContext = info;
+    } else if (count > 1) {
+        info = `${count} points`;
+        mobileContext = info;
+    } else {
+        info =
+            i18n.t('planning.tapToAddStart') ||
+            'Touchez la carte pour placer le départ A';
+        mobileContext = info;
     }
 
+    if (infoEl) infoEl.textContent = info;
+    renderMobileRouteHUD(
+        mobileContext,
+        state.routeLoading || state.routeError ? null : barStats
+    );
+
     renderSettingsWaypoints();
+}
+
+function renderMobileRouteHUD(context: string, stats: typeof _barStats): void {
+    const contextEl = document.getElementById('rph-context');
+    const statsEl = document.getElementById('rph-stats');
+    if (contextEl) contextEl.textContent = context;
+    if (!statsEl) return;
+
+    statsEl.hidden = !stats;
+    if (!stats) return;
+
+    const setStat = (id: string, value: string) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    };
+    setStat('rph-distance', `${stats.distance.toFixed(1)} km`);
+    setStat('rph-ascent', `D+ ${Math.round(stats.ascent)} m`);
+    setStat('rph-descent', `D− ${Math.round(stats.descent)} m`);
+    setStat('rph-duration', fmt(stats.duration));
 }
 
 function renderSettingsWaypoints(): void {

@@ -1,6 +1,6 @@
-# AI Architecture Guide (v5.83.0)
+# AI Architecture Guide (v5.83.1)
 
-> Référence du worktree v5.83.0 non publié ; v5.82.0 reste la release publique.
+> Référence de la release publique corrective v5.83.1 ; v5.84 n'est pas implémentée.
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 

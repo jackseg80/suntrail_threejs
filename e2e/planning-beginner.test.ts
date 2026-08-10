@@ -66,14 +66,21 @@ test.describe('Beginner route planning', () => {
         await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(0);
         await expect(page.locator('body')).toHaveClass(/route-planner-active/);
 
+        // A second click now frees the map without leaving Plan mode.
         await prepare.click();
-        await expect(prepare).toHaveAttribute('aria-pressed', 'false');
+        await expect(prepare).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.locator('body')).toHaveClass(/route-planning-mode/);
+        await expect(page.locator('body')).toHaveClass(
+            /route-planner-chrome-hidden/
+        );
+
+        // Leaving through another destination still restores the original outside-Plan behavior.
+        const explore = page.locator('.nav-tab[data-tab="search"]');
+        await explore.click();
         await expect(page.locator('body')).not.toHaveClass(
             /route-planning-mode/
         );
-        await expect(page.locator('body')).not.toHaveClass(
-            /route-planner-active/
-        );
+        await explore.click();
 
         // The expert long-press shortcut still adds a point outside Plan mode.
         await page.mouse.move(x, firstY);

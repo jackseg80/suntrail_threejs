@@ -114,6 +114,22 @@
             <div id="top-status-bar"></div>
         </header>
 
+        <!-- Résumé compact Préparer : visible uniquement sur petits écrans. -->
+        <div
+            id="route-plan-hud"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+        >
+            <div class="rph-context" id="rph-context"></div>
+            <div class="rph-stats" id="rph-stats" hidden>
+                <span class="rph-stat" id="rph-distance"></span>
+                <span class="rph-stat" id="rph-ascent"></span>
+                <span class="rph-stat" id="rph-descent"></span>
+                <span class="rph-stat" id="rph-duration"></span>
+            </div>
+        </div>
+
         <!-- COORDS PILL -->
         <div id="coords-pill" class="hidden">
             <div class="coords-lat" id="click-latlon">—</div>

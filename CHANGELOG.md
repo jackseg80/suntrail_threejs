@@ -1,3 +1,18 @@
+## [5.83.1] - 2026-08-10
+
+### Corrigé
+- Le résumé Préparer sur téléphone sépare désormais le contexte du tracé et ses statistiques :
+  distance, D+, D− et durée restent lisibles, même avec un nom long.
+- Un second clic sur Préparer masque temporairement ce résumé et le bandeau d'actions pour
+  libérer la carte, sans quitter le mode de pose ni altérer le brouillon ; le clic suivant les
+  restaure.
+- Les statistiques résiduelles d'un ancien itinéraire ne sont plus montrées au démarrage d'un
+  nouveau brouillon vide ou à un seul point.
+
+### Validation
+- `npm run check`, les tests ciblés Préparer/navigation, build Capacitor et `cap:sync` passent.
+- Validation manuelle Galaxy S23 effectuée : résumé portrait et basculement de visibilité validés.
+
 ## [5.83.0] - 2026-08-09
 
 ### État

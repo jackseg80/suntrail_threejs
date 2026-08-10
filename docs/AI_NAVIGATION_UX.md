@@ -1,6 +1,6 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.83.0)
+# SunTrail — Navigation & Modules Fonctionnels (v5.83.1)
 
-> Référence du worktree v5.83.0 non publié. Point d'entrée :
+> Référence de la release publique corrective v5.83.1. Point d'entrée :
 > [CLAUDE.md](../CLAUDE.md).
 
 ---
@@ -58,6 +58,20 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - Les routes PreparedRoute fermées restent uniquement dans IndexedDB. Elles ne créent aucun
   calque Three.js avant leur ouverture ; l’historique récent reste limité à cinq entrées et les
   calques chargés à dix.
+
+## Suivi terrain prévu en v5.84
+
+- L'écran actif mettra en avant la prochaine indication et sa distance, puis la distance/ETA
+  restantes, l'écart à la trace et la qualité GPS. Il restera utilisable à une main et ne
+  masquera ni la carte ni le prochain danger de navigation.
+- Une indication issue des étapes ORS/OSRM est une manœuvre routée. Un simple changement de cap
+  déduit d'une géométrie GPX est présenté comme « changement de direction approximatif », jamais
+  comme une instruction certaine à une intersection.
+- Les waypoints ou POI nommés réellement associés à la trace peuvent apparaître comme prochain
+  point utile avec leur distance. Une trace GPX sans ces données reste parfaitement navigable
+  en suivi de ligne, sans inventer de noms ni de points d'intérêt.
+- Les alertes v5.84 sont visuelles et haptiques, application ouverte. Voix, notification écran
+  verrouillé, recalcul réseau et survie après fermeture restent hors de ce jalon interne.
 
 ## Mouvements de Caméra
 

@@ -15,6 +15,7 @@ import { getAltitudeAt, hasTerrainData } from '../../analysis';
 import { showToast } from '../../toast';
 import {
     setRoutePlanningMode,
+    toggleRoutePlannerChrome,
     toggleRoutePlanningMode,
 } from '../../routeManager';
 import templateHTML from '../templates/nav-bar.html?raw';
@@ -44,7 +45,11 @@ export class NavigationBar extends BaseComponent {
 
                 if (tabId === 'prepare') {
                     if (sheetManager.getActiveSheetId()) sheetManager.close();
-                    toggleRoutePlanningMode();
+                    if (state.isRoutePlanningMode) {
+                        toggleRoutePlannerChrome();
+                    } else {
+                        toggleRoutePlanningMode();
+                    }
                     this.setActiveTab(
                         state.isRoutePlanningMode ? 'prepare' : null
                     );

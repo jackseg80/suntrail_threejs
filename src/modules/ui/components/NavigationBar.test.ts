@@ -48,6 +48,7 @@ vi.mock('../../routeManager', () => ({
     toggleRoutePlanningMode: vi.fn(() => {
         mockState.isRoutePlanningMode = !mockState.isRoutePlanningMode;
     }),
+    toggleRoutePlannerChrome: vi.fn(),
 }));
 
 vi.mock('../../terrain', () => ({
@@ -86,6 +87,7 @@ import { eventBus } from '../../eventBus';
 import {
     setRoutePlanningMode,
     toggleRoutePlanningMode,
+    toggleRoutePlannerChrome,
 } from '../../routeManager';
 
 describe('NavigationBar', () => {
@@ -174,6 +176,21 @@ describe('NavigationBar', () => {
         tab.click();
         expect(toggleRoutePlanningMode).toHaveBeenCalledOnce();
         expect(sheetManager.open).not.toHaveBeenCalled();
+        expect(tab.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('masque les commandes au second clic sans quitter Préparer', () => {
+        mockState.isRoutePlanningMode = true;
+        const nav = new NavigationBar();
+        nav.hydrate();
+        const tab = container.querySelector(
+            '[data-tab="prepare"]'
+        ) as HTMLButtonElement;
+
+        tab.click();
+
+        expect(toggleRoutePlannerChrome).toHaveBeenCalledOnce();
+        expect(toggleRoutePlanningMode).not.toHaveBeenCalled();
         expect(tab.getAttribute('aria-selected')).toBe('true');
     });
 
