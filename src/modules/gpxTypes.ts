@@ -5,6 +5,9 @@ export interface GeoPoint {
     alt?: number;
     time?: string | Date;
     timestamp?: number;
+    name?: string;
+    cmt?: string;
+    desc?: string;
 }
 
 export interface GPXRawData {
@@ -15,6 +18,14 @@ export interface GPXRawData {
     routes?: Array<{
         name?: string;
         points: GeoPoint[];
+    }>;
+    waypoints?: Array<{
+        lat: number;
+        lon: number;
+        ele?: number;
+        name?: string;
+        cmt?: string;
+        desc?: string;
     }>;
 }
 

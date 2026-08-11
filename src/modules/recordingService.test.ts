@@ -103,6 +103,10 @@ describe('RecordingService (v5.29.36)', () => {
         const nameUsed = await recordingService.stopRecording('Ma Trace');
         expect(nameUsed).toBe('Ma Trace');
         expect(state.isRecording).toBe(false);
+        expect(mockNativeGPSService.stopCourse).toHaveBeenCalledTimes(1);
+        expect(
+            mockForegroundService.stopRecordingService
+        ).toHaveBeenCalledTimes(1);
         expect(mockFilesystem.writeFile).toHaveBeenCalled();
     });
 

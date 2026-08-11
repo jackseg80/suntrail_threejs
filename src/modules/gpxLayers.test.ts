@@ -314,6 +314,26 @@ describe('Multi-GPX Layers (v5.10)', () => {
         // v5.53.4 : RDP ratio check (2.0 vs 0.5 = 4x)
         expect(epsEco / epsUltra).toBeCloseTo(4, 1);
     });
+
+    it('updateAllGPXMeshes preserves route data when one rebuild fails', async () => {
+        const layer = addGPXLayer(rawData, 'route-to-preserve');
+        const utils = await import('./utils');
+        const spyRDP = vi.spyOn(utils, 'simplifyRDP').mockReturnValueOnce([]);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.useFakeTimers();
+
+        updateAllGPXMeshes();
+        vi.runAllTimers();
+
+        expect(state.gpxLayers).toHaveLength(1);
+        expect(state.gpxLayers[0].id).toBe(layer.id);
+        expect(state.gpxLayers[0].points).toHaveLength(layer.points.length);
+        expect(state.gpxLayers[0].mesh).toBeNull();
+
+        spyRDP.mockRestore();
+        warn.mockRestore();
+        vi.useRealTimers();
+    });
 });
 
 describe('removeGPXLayer', () => {

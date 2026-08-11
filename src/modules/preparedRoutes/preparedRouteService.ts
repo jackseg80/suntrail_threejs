@@ -12,7 +12,13 @@ import {
     createRouteId,
     convertLegacyHistoryEntry,
     type PreparedRouteV1,
+    type RouteWaypoint,
 } from './preparedRoute';
+import {
+    buildGuidancePlan,
+    isGuidancePlanCurrent,
+} from '../guidance/guidancePlan';
+import type { GuidancePlanV1 } from '../guidance/guidanceTypes';
 
 export class PreparedRouteService {
     private repository: RouteRepository | null;
@@ -81,7 +87,10 @@ export class PreparedRouteService {
             tags: state.routeDraftTags,
             guidanceQuality: state.routeComputation.guidanceQuality,
         });
-        await this.saveRoute(route);
+        const plan = buildGuidancePlan(route, {
+            routedCues: state.routeComputation.guidanceCues,
+        });
+        await this.saveRoute(route, plan);
         this.applyRouteMetadata(route);
         state.routeDraftDirty = false;
         state.routeLastSavedAt = route.updatedAt;
@@ -93,7 +102,31 @@ export class PreparedRouteService {
             plannedStartAt: state.routePlannedStartAt,
             plannedPaceKmh: state.routePlannedPaceKmh,
         });
-        await this.saveRoute(route);
+        const namedWaypoints: RouteWaypoint[] = [
+            ...(layer.rawData.waypoints ?? []).map((waypoint) => ({
+                lat: waypoint.lat,
+                lon: waypoint.lon,
+                alt: waypoint.ele,
+                name:
+                    waypoint.name?.trim() ||
+                    waypoint.desc?.trim() ||
+                    waypoint.cmt?.trim(),
+            })),
+            ...(layer.rawData.routes ?? []).flatMap((gpxRoute) =>
+                gpxRoute.points
+                    .filter((point) => !!point.name?.trim())
+                    .map((point) => ({
+                        lat: point.lat,
+                        lon: point.lon,
+                        alt: point.ele ?? point.alt,
+                        name: point.name,
+                    }))
+            ),
+        ];
+        await this.saveRoute(
+            route,
+            buildGuidancePlan(route, { namedWaypoints })
+        );
         return route;
     }
 
@@ -103,7 +136,7 @@ export class PreparedRouteService {
         const route = convertLegacyHistoryEntry(entry, {
             plannedPaceKmh: state.routePlannedPaceKmh,
         });
-        await this.saveRoute(route);
+        await this.saveRoute(route, buildGuidancePlan(route));
         return route;
     }
 
@@ -184,8 +217,26 @@ export class PreparedRouteService {
             createdAt: now,
             updatedAt: now,
         };
-        await this.saveRoute(duplicate);
+        const sourcePlan = await this.getRepository().getGuidancePlan(id);
+        await this.saveRoute(
+            duplicate,
+            buildGuidancePlan(duplicate, {
+                routedCues: sourcePlan?.cues.filter(
+                    (cue) => cue.source === 'ors' || cue.source === 'osrm'
+                ),
+            })
+        );
         return duplicate;
+    }
+
+    public async getGuidancePlan(
+        route: PreparedRouteV1
+    ): Promise<GuidancePlanV1> {
+        const stored = await this.getRepository().getGuidancePlan(route.id);
+        if (stored && isGuidancePlanCurrent(stored, route)) return stored;
+        const regenerated = buildGuidancePlan(route);
+        await this.getRepository().saveGuidancePlan(regenerated);
+        return regenerated;
     }
 
     public async toggleFavorite(id: string): Promise<PreparedRouteV1> {
@@ -196,7 +247,8 @@ export class PreparedRouteService {
             favorite: !route.favorite,
             updatedAt: new Date().toISOString(),
         };
-        await this.saveRoute(updated);
+        const plan = await this.getGuidancePlan(route);
+        await this.saveRoute(updated, plan);
         if (state.activePreparedRouteId === id) {
             state.routeDraftFavorite = updated.favorite;
         }
@@ -222,9 +274,16 @@ export class PreparedRouteService {
         await this.repository?.close();
     }
 
-    private async saveRoute(route: PreparedRouteV1): Promise<void> {
+    private async saveRoute(
+        route: PreparedRouteV1,
+        plan?: GuidancePlanV1
+    ): Promise<void> {
         try {
-            await this.getRepository().save(route);
+            if (plan) {
+                await this.getRepository().saveRouteWithPlan(route, plan);
+            } else {
+                await this.getRepository().save(route);
+            }
             this.lastError = null;
             await this.refresh();
         } catch (error) {

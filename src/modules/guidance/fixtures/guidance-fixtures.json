@@ -1,0 +1,251 @@
+{
+    "straight": {
+        "description": "Progression régulière sur une droite",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.004, "ele": 510 }
+        ],
+        "samples": [
+            { "lat": 46.0, "lon": 7.0001, "accuracyMeters": 5, "offsetMs": 0 },
+            {
+                "lat": 46.0,
+                "lon": 7.001,
+                "accuracyMeters": 5,
+                "offsetMs": 10000
+            },
+            {
+                "lat": 46.0,
+                "lon": 7.0025,
+                "accuracyMeters": 5,
+                "offsetMs": 30000
+            }
+        ]
+    },
+    "loop": {
+        "description": "Boucle dont départ et arrivée sont proches",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.003, "ele": 510 },
+            { "lat": 46.002, "lon": 7.003, "ele": 520 },
+            { "lat": 46.002, "lon": 7.0, "ele": 515 },
+            { "lat": 46.0, "lon": 7.0, "ele": 500 }
+        ],
+        "samples": [
+            { "lat": 46.0, "lon": 7.0001, "accuracyMeters": 5, "offsetMs": 0 },
+            {
+                "lat": 46.0,
+                "lon": 7.0027,
+                "accuracyMeters": 5,
+                "offsetMs": 30000
+            },
+            {
+                "lat": 46.0019,
+                "lon": 7.0029,
+                "accuracyMeters": 5,
+                "offsetMs": 60000
+            },
+            {
+                "lat": 46.002,
+                "lon": 7.0002,
+                "accuracyMeters": 5,
+                "offsetMs": 90000
+            }
+        ]
+    },
+    "outAndBack": {
+        "description": "Aller-retour sur la même géométrie physique",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.004, "ele": 520 },
+            { "lat": 46.00005, "lon": 7.0, "ele": 500 }
+        ],
+        "samples": [
+            { "lat": 46.0, "lon": 7.0002, "accuracyMeters": 5, "offsetMs": 0 },
+            {
+                "lat": 46.0,
+                "lon": 7.0038,
+                "accuracyMeters": 5,
+                "offsetMs": 40000
+            },
+            {
+                "lat": 46.00005,
+                "lon": 7.002,
+                "accuracyMeters": 5,
+                "offsetMs": 70000
+            }
+        ]
+    },
+    "nearHairpins": {
+        "description": "Épingles parallèles distantes de quelques mètres",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.003, "ele": 540 },
+            { "lat": 46.00008, "lon": 7.003, "ele": 545 },
+            { "lat": 46.00008, "lon": 7.0002, "ele": 580 },
+            { "lat": 46.00016, "lon": 7.0002, "ele": 585 },
+            { "lat": 46.00016, "lon": 7.003, "ele": 620 }
+        ],
+        "samples": [
+            { "lat": 46.0, "lon": 7.0002, "accuracyMeters": 8, "offsetMs": 0 },
+            {
+                "lat": 46.00001,
+                "lon": 7.0025,
+                "accuracyMeters": 8,
+                "offsetMs": 30000
+            },
+            {
+                "lat": 46.00008,
+                "lon": 7.0028,
+                "accuracyMeters": 8,
+                "offsetMs": 50000
+            },
+            {
+                "lat": 46.00008,
+                "lon": 7.001,
+                "accuracyMeters": 8,
+                "offsetMs": 80000
+            }
+        ]
+    },
+    "crossing": {
+        "description": "Croisement géométrique à progression ambiguë",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.002, "lon": 7.002, "ele": 520 },
+            { "lat": 46.0, "lon": 7.002, "ele": 530 },
+            { "lat": 46.002, "lon": 7.0, "ele": 540 }
+        ],
+        "samples": [
+            {
+                "lat": 46.0001,
+                "lon": 7.0001,
+                "accuracyMeters": 5,
+                "offsetMs": 0
+            },
+            {
+                "lat": 46.0008,
+                "lon": 7.0008,
+                "accuracyMeters": 5,
+                "offsetMs": 15000
+            },
+            {
+                "lat": 46.0011,
+                "lon": 7.0011,
+                "accuracyMeters": 5,
+                "offsetMs": 30000
+            }
+        ]
+    },
+    "noise": {
+        "description": "Bruit GPS autour d’un segment sans régression de progression",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.004, "ele": 510 }
+        ],
+        "samples": [
+            {
+                "lat": 46.00003,
+                "lon": 7.001,
+                "accuracyMeters": 12,
+                "offsetMs": 0
+            },
+            {
+                "lat": 45.99996,
+                "lon": 7.0012,
+                "accuracyMeters": 12,
+                "offsetMs": 5000
+            },
+            {
+                "lat": 46.00004,
+                "lon": 7.0011,
+                "accuracyMeters": 12,
+                "offsetMs": 10000
+            },
+            {
+                "lat": 45.99997,
+                "lon": 7.0015,
+                "accuracyMeters": 12,
+                "offsetMs": 15000
+            }
+        ]
+    },
+    "gpsJump": {
+        "description": "Saut GPS impossible qui ne doit pas déplacer la progression",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.01, "ele": 520 }
+        ],
+        "samples": [
+            { "lat": 46.0, "lon": 7.001, "accuracyMeters": 5, "offsetMs": 0 },
+            {
+                "lat": 46.0,
+                "lon": 7.0012,
+                "accuracyMeters": 5,
+                "offsetMs": 5000
+            },
+            { "lat": 46.02, "lon": 7.03, "accuracyMeters": 5, "offsetMs": 6000 }
+        ]
+    },
+    "recovery": {
+        "description": "Sortie de trace tenue puis retour sous le seuil de récupération",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.01, "ele": 520 }
+        ],
+        "samples": [
+            { "lat": 46.0, "lon": 7.001, "accuracyMeters": 5, "offsetMs": 0 },
+            {
+                "lat": 46.0,
+                "lon": 7.0015,
+                "accuracyMeters": 5,
+                "offsetMs": 5000
+            },
+            {
+                "lat": 46.0006,
+                "lon": 7.002,
+                "accuracyMeters": 5,
+                "offsetMs": 10000
+            },
+            {
+                "lat": 46.0006,
+                "lon": 7.0023,
+                "accuracyMeters": 5,
+                "offsetMs": 31000
+            },
+            {
+                "lat": 46.0001,
+                "lon": 7.0025,
+                "accuracyMeters": 5,
+                "offsetMs": 35000
+            },
+            {
+                "lat": 46.0001,
+                "lon": 7.0028,
+                "accuracyMeters": 5,
+                "offsetMs": 46000
+            }
+        ]
+    },
+    "arrival": {
+        "description": "Arrivée confirmée dans le rayon final",
+        "geometry": [
+            { "lat": 46.0, "lon": 7.0, "ele": 500 },
+            { "lat": 46.0, "lon": 7.002, "ele": 505 }
+        ],
+        "samples": [
+            { "lat": 46.0, "lon": 7.0002, "accuracyMeters": 5, "offsetMs": 0 },
+            {
+                "lat": 46.0,
+                "lon": 7.0019,
+                "accuracyMeters": 5,
+                "offsetMs": 20000
+            },
+            {
+                "lat": 46.0,
+                "lon": 7.00198,
+                "accuracyMeters": 5,
+                "offsetMs": 31000
+            }
+        ]
+    }
+}

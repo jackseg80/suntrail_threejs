@@ -51,6 +51,10 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         i18n.setLocale('fr'); // tests assert French country labels
+        Object.defineProperty(window, 'innerWidth', {
+            configurable: true,
+            value: 1024,
+        });
 
         document.body.innerHTML = `
             <template id="template-top-status-bar">
@@ -97,6 +101,17 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         createAndRender();
         const badge = document.querySelector('.lod-badge');
         expect(badge?.textContent).toContain('Carte suisse');
+    });
+
+    it('keeps the map source in the compact mobile label', () => {
+        Object.defineProperty(window, 'innerWidth', {
+            configurable: true,
+            value: 390,
+        });
+        mockGetCountryCode.mockReturnValue('CH');
+        createAndRender();
+        const badge = document.querySelector('.lod-badge');
+        expect(badge?.textContent).toBe('Suisse · 14');
     });
 
     it('shows IGN FR when getCountryCode returns FR', () => {

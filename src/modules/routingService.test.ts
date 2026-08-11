@@ -45,7 +45,10 @@ vi.mock('./gpxLayers', () => ({
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
 
 vi.mock('../i18n/I18nService', () => ({
-    i18n: { t: vi.fn((key: string) => key) },
+    i18n: {
+        t: vi.fn((key: string) => key),
+        getLocale: vi.fn(() => 'fr'),
+    },
 }));
 
 vi.mock('./geo', () => ({
@@ -321,6 +324,7 @@ describe('routingService', () => {
                 (options.headers as Record<string, string>).Authorization
             ).toBe(state.ORS_KEY);
             expect(JSON.parse(String(options.body))).toMatchObject({
+                language: 'fr',
                 extra_info: [
                     'traildifficulty',
                     'steepness',

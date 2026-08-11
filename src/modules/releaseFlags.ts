@@ -11,7 +11,7 @@ export type ReleaseFlags = Record<ReleaseFlagId, boolean>;
 
 export const DEFAULT_RELEASE_FLAGS: Readonly<ReleaseFlags> = Object.freeze({
     preparedRoutes: true,
-    guidanceForeground: false,
+    guidanceForeground: true,
     routeReadiness: false,
     routeCorridor: false,
     accountSync: false,

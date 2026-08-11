@@ -65,6 +65,10 @@ test.describe('Beginner route planning', () => {
         await page.locator('#rb-clear-btn').click();
         await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(0);
         await expect(page.locator('body')).toHaveClass(/route-planner-active/);
+        await expect(page.locator('#rph-context')).toContainText(
+            /départ|start|Startpunkt|partenza/i
+        );
+        await expect(page.locator('#rph-stats')).toBeHidden();
 
         // A second click now frees the map without leaving Plan mode.
         await prepare.click();

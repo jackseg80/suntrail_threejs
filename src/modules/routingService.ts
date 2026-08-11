@@ -24,6 +24,13 @@ import {
     mutateRouteWaypoints,
     resetRouteDraftHistory,
 } from './preparedRoutes/routeDraftHistory';
+import {
+    cuesFromORSSteps,
+    cuesFromOSRMSteps,
+    type ORSGuidanceStep,
+    type OSRMGuidanceStep,
+} from './guidance/guidancePlan';
+import type { GuidanceCueV1 } from './guidance/guidanceTypes';
 
 export type { RouteWaypoint } from './preparedRoutes/preparedRoute';
 
@@ -46,6 +53,7 @@ interface ORSResponse {
             ascent?: number;
             descent?: number;
             extras?: ORSExtras;
+            segments?: Array<{ steps?: ORSGuidanceStep[] }>;
         };
     }>;
 }
@@ -58,6 +66,7 @@ interface OSRMResponse {
         geometry: {
             coordinates: Array<[number, number]>;
         };
+        legs?: Array<{ steps?: OSRMGuidanceStep[] }>;
     }>;
 }
 
@@ -92,7 +101,8 @@ async function fetchFromORS(
     const payload: Record<string, unknown> = {
         coordinates: waypointsToORSFormat(waypoints),
         elevation: true,
-        instructions: false,
+        instructions: true,
+        language: i18n.getLocale(),
     };
     if (profile === 'foot-hiking') {
         payload.extra_info = [
@@ -138,7 +148,7 @@ async function fetchFromOSRM(
     waypoints: RouteWaypoint[]
 ): Promise<OSRMResponse> {
     const coords = waypointsToOSRMFormat(waypoints);
-    const url = `${getOSRMEndpoint()}${coords}?geometries=geojson&overview=full`;
+    const url = `${getOSRMEndpoint()}${coords}?geometries=geojson&overview=full&steps=true`;
 
     const response = await fetch(url);
 
@@ -280,6 +290,7 @@ export async function computeRoute(
         let points!: Array<{ lat: number; lon: number; ele: number }>;
         let usedORS = false;
         let orsExtras: ORSExtras | undefined;
+        let guidanceCues: GuidanceCueV1[] = [];
 
         if (useORS) {
             try {
@@ -291,6 +302,12 @@ export async function computeRoute(
                     throw new Error('Route cancelled');
                 points = orsResponseToPoints(response);
                 orsExtras = response.features[0].properties.extras;
+                guidanceCues = cuesFromORSSteps(
+                    response.features[0].properties.segments?.flatMap(
+                        (segment) => segment.steps ?? []
+                    ) ?? [],
+                    points
+                );
                 usedORS = true;
             } catch (e: any) {
                 if (state.DEBUG_MODE)
@@ -306,6 +323,11 @@ export async function computeRoute(
             if (generation !== _routeGeneration)
                 throw new Error('Route cancelled');
             points = osrmResponseToPoints(response);
+            guidanceCues = cuesFromOSRMSteps(
+                response.routes[0].legs?.flatMap((leg) => leg.steps ?? []) ??
+                    [],
+                points
+            );
         }
 
         const rawData = buildGPXCompatibleData(points);
@@ -341,6 +363,7 @@ export async function computeRoute(
             guidanceQuality: 'full',
             technicalDifficulty: difficulty.difficulty,
             dataCoverage: difficulty.coverage,
+            guidanceCues,
         };
         state.routeComputation = result;
         if (!(state.routeDraftName ?? '').trim()) {

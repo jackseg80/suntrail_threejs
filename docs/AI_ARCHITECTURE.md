@@ -1,6 +1,7 @@
-# AI Architecture Guide (v5.83.1)
+# AI Architecture Guide (v5.84.0 — jalon interne clôturé)
 
-> Référence de la release publique corrective v5.83.1 ; v5.84 n'est pas implémentée.
+> Référence de la pré-release GitHub interne v5.84 foreground ; aucune promesse native/background
+> ni déploiement Play/public.
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -18,6 +19,8 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `routeManager` | Explicit planning mode, waypoint/bar UI, route recompute and legacy-compatible controls. | `setRoutePlanningMode`, `reverseRoute`, `clearRoute` |
 | `PreparedRouteService` | Only UI-facing orchestration for local prepared routes and legacy/GPX conversion. | `saveCurrentDraft`, `load`, `duplicate`, `convertLegacy` |
 | `RouteRepository` | Sole IndexedDB access for `PreparedRouteV1`; injected `IDBFactory`, atomic writes and additive upgrades. | `list`, `get`, `saveMany`, `delete`, `close` |
+| `GuidanceEngine` | Pure polyline projection, robust progress, ETA/cross-track/bearing and state hysteresis. No DOM/Three.js. | `start`, `update`, `tick`, `pause`, `resume`, `stop` |
+| `GuidanceForegroundService` | Foreground UI orchestration over the existing `state.userLocation` stream; REC remains independent. | `start`, `pause`, `resume`, `stop` |
 | `releaseFlags` | Release rollout decisions, separate from Free/Pro entitlements. | `isEnabled`, `refresh`, `setDeveloperOverride` |
 | `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
@@ -46,6 +49,8 @@ The `eventBus` is the central hub for module-to-module communication.
 | `recordingRecovered` | `main` | none | GPS recording resumed after app restart. |
 | `preparedRoutesUpdated` | `PreparedRouteService` | none | Refreshes the local route library after storage changes. |
 | `trackDestinationChanged` | `NavigationBar` | `{ destination: 'outing' \| 'library' }` | Switches the shared `TrackSheet` between functional destinations. |
+| `guidanceSnapshot` | `GuidanceForegroundService` | `GuidanceSnapshot` | Publishes the current foreground matcher state. |
+| `guidanceStopped` | `GuidanceForegroundService` | none | Signals the end of the foreground guidance session. |
 | `onServiceStopped` | `nativeGPSService` | none | Android Foreground Service stopped via notification. |
 
 ## 2. Shader Architecture & Uniforms

@@ -4,6 +4,7 @@ import {
 } from 'fake-indexeddb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+    GUIDANCE_PLAN_STORE_NAME,
     ROUTE_DATABASE_VERSION,
     ROUTE_STORE_NAME,
     RouteRepository,
@@ -12,6 +13,7 @@ import {
     createPreparedRouteFromComputation,
     type PreparedRouteV1,
 } from './preparedRoute';
+import { buildGuidancePlan } from '../guidance/guidancePlan';
 
 function buildRoute(id: string, favorite = false): PreparedRouteV1 {
     return createPreparedRouteFromComputation({
@@ -165,7 +167,46 @@ describe('RouteRepository with a fresh fake-indexeddb factory', () => {
         expect(Array.from(store.indexNames)).toEqual(
             expect.arrayContaining(['updatedAt', 'favorite', 'name'])
         );
+        expect(Array.from(upgraded.objectStoreNames)).toContain(
+            GUIDANCE_PLAN_STORE_NAME
+        );
         upgraded.close();
+    });
+
+    it('migrates a v2 route database and stores the guidance plan separately', async () => {
+        const factory = new FakeIDBFactory();
+        const database = await openDatabase(
+            factory,
+            'routes-guidance-upgrade',
+            2,
+            (legacy) => {
+                const store = legacy.createObjectStore(ROUTE_STORE_NAME, {
+                    keyPath: 'id',
+                });
+                store.createIndex('updatedAt', 'updatedAt');
+                store.createIndex('favorite', 'favorite');
+                store.createIndex('name', 'name');
+            }
+        );
+        const transaction = database.transaction(ROUTE_STORE_NAME, 'readwrite');
+        const route = buildRoute('route-with-plan');
+        transaction.objectStore(ROUTE_STORE_NAME).put(route);
+        await transactionDone(transaction);
+        database.close();
+
+        const repository = new RouteRepository(
+            factory,
+            'routes-guidance-upgrade'
+        );
+        const plan = buildGuidancePlan(route, {
+            now: '2026-08-11T00:00:00.000Z',
+        });
+        await repository.saveRouteWithPlan(route, plan);
+        expect(await repository.getGuidancePlan(route.id)).toEqual(plan);
+
+        await repository.delete(route.id);
+        expect(await repository.getGuidancePlan(route.id)).toBeNull();
+        await repository.close();
     });
 
     it('skips corrupt records in lists and lets callers delete them', async () => {

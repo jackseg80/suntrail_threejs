@@ -614,6 +614,78 @@ describe('TrackSheet — trace roles and visibility', () => {
         ).toContain('Trace archivée');
     });
 
+    it('recomputes the catalogue immediately when switching destinations', () => {
+        const track = document.getElementById('track')!;
+        track.insertAdjacentHTML(
+            'beforeend',
+            `<section id="prepared-routes-section" hidden>
+                <div id="legacy-tracks-anchor"></div>
+            </section>
+            <div id="outing-tracks-anchor" class="track-outing-only"></div>`
+        );
+        vi.mocked(loadHistory).mockReturnValue([
+            {
+                id: 'gpx-viewed',
+                name: 'Tour GPX',
+                color: '#00ff00',
+                timestamp: Date.now(),
+                locationName: 'Test',
+                centerLat: 46.5,
+                centerLon: 7.5,
+                bounds: {
+                    minLat: 46.49,
+                    maxLat: 46.51,
+                    minLon: 7.49,
+                    maxLon: 7.51,
+                },
+                simplifiedPoints: [
+                    { lat: 46.49, lon: 7.49 },
+                    { lat: 46.51, lon: 7.51 },
+                ],
+                stats: (state as any).gpxLayers[0].stats,
+            },
+            {
+                id: 'gpx-archived',
+                name: 'Trace archivée',
+                color: '#888888',
+                timestamp: Date.now(),
+                locationName: 'Test',
+                centerLat: 46.6,
+                centerLon: 7.6,
+                bounds: {
+                    minLat: 46.59,
+                    maxLat: 46.61,
+                    minLon: 7.59,
+                    maxLon: 7.61,
+                },
+                simplifiedPoints: [
+                    { lat: 46.59, lon: 7.59 },
+                    { lat: 46.61, lon: 7.61 },
+                ],
+                stats: (state as any).gpxLayers[0].stats,
+            },
+        ] as any);
+
+        (sheet as any).syncDestination('library');
+        expect(
+            document.getElementById('gpx-layers-list')?.textContent
+        ).toContain('Trace archivée');
+        expect(
+            document.getElementById('gpx-layers-list')?.parentElement?.id
+        ).toBe('legacy-tracks-anchor');
+
+        (sheet as any).syncDestination('outing');
+        expect(
+            document.getElementById('gpx-layers-list')?.textContent
+        ).not.toContain('Trace archivée');
+        expect(
+            document.getElementById('gpx-layers-list')?.textContent
+        ).toContain('Tour GPX');
+        expect(
+            document.getElementById('gpx-layers-list')?.parentElement?.id
+        ).toBe('outing-tracks-anchor');
+    });
+
     it('unloads from Outing without deleting history, but deletes from Library', () => {
         (sheet as any).renderUnifiedTrackList();
         (

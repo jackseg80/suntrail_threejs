@@ -323,6 +323,7 @@ export interface State {
     recoveredPoints: LocationPoint[] | null;
     userLocation: { lat: number; lon: number; alt: number } | null;
     userLocationAccuracy: number | null;
+    userSpeedMps: number | null;
     userHeading: number | null;
     isFollowingUser: boolean;
     userMarker: THREE.Group | null;
@@ -464,6 +465,7 @@ const initialState: State = {
     recoveredPoints: null,
     userLocation: null,
     userLocationAccuracy: null,
+    userSpeedMps: null,
     userHeading: null,
     isFollowingUser: false,
     userMarker: null,

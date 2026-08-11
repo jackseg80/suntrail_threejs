@@ -68,12 +68,14 @@ describe('TimelineComponent', () => {
         state.simDate = new Date(2024, 5, 21, 12, 0, 0);
         state.isSunAnimating = false;
         state.animationSpeed = 1.0;
+        state.IS_2D_MODE = false;
     });
 
     afterEach(() => {
         vi.clearAllTimers();
         vi.useRealTimers();
         document.body.innerHTML = '';
+        document.body.className = '';
     });
 
     describe('syncUI — slider', () => {
@@ -168,6 +170,82 @@ describe('TimelineComponent', () => {
             await Promise.resolve();
 
             expect(btn.textContent).toBe('▶');
+            comp.dispose();
+        });
+    });
+
+    describe('ancrage sous les panneaux hauts', () => {
+        const rect = (top: number, bottom: number, width = 320) =>
+            ({
+                top,
+                bottom,
+                width,
+                height: bottom - top,
+                left: 0,
+                right: width,
+                x: 0,
+                y: top,
+                toJSON: () => ({}),
+            }) as DOMRect;
+
+        it('place la timeline sous le résumé de Préparer visible', async () => {
+            document.body.insertAdjacentHTML(
+                'afterbegin',
+                '<div id="top-status-bar"></div><div id="route-plan-hud" style="display:block;opacity:1"></div>'
+            );
+            vi.spyOn(
+                document.getElementById('top-status-bar')!,
+                'getBoundingClientRect'
+            ).mockReturnValue(rect(0, 52));
+            vi.spyOn(
+                document.getElementById('route-plan-hud')!,
+                'getBoundingClientRect'
+            ).mockReturnValue(rect(58, 126));
+
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+            (
+                document.getElementById(
+                    'timeline-toggle-btn'
+                ) as HTMLButtonElement
+            ).click();
+
+            expect(
+                document
+                    .getElementById('bottom-bar')!
+                    .style.getPropertyValue('--timeline-top')
+            ).toBe('134px');
+            comp.dispose();
+        });
+
+        it('place la timeline sous le résumé réduit du guidage', async () => {
+            document.body.insertAdjacentHTML(
+                'afterbegin',
+                '<div id="top-status-bar"></div><section class="guidance-foreground" style="display:block;opacity:1"></section>'
+            );
+            document.body.classList.add('guidance-profile-open');
+            vi.spyOn(
+                document.getElementById('top-status-bar')!,
+                'getBoundingClientRect'
+            ).mockReturnValue(rect(0, 52));
+            vi.spyOn(
+                document.querySelector('.guidance-foreground')!,
+                'getBoundingClientRect'
+            ).mockReturnValue(rect(62, 118));
+
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+            (
+                document.getElementById(
+                    'timeline-toggle-btn'
+                ) as HTMLButtonElement
+            ).click();
+
+            expect(
+                document
+                    .getElementById('bottom-bar')!
+                    .style.getPropertyValue('--timeline-top')
+            ).toBe('126px');
             comp.dispose();
         });
     });

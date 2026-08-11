@@ -68,6 +68,8 @@ import {
     initRouteManager,
     removeWaypointAt,
     clearRoute,
+    cancelScheduledAutoCompute,
+    scheduleAutoCompute,
     scheduleGeocodeNames,
     setRoutePlanningMode,
     toggleRoutePlannerChrome,
@@ -250,6 +252,25 @@ describe('routeManager', () => {
                 document.body.classList.contains('route-planner-active')
             ).toBe(false);
         });
+
+        it("restaure l'instruction initiale et masque toutes les anciennes statistiques", () => {
+            state.isRoutePlanningMode = true;
+            state.routeWaypoints = [];
+            state.routeDraftName = 'Ancienne route';
+            state.routeDraftDirty = true;
+            const stats = document.getElementById('rph-stats')!;
+            stats.hidden = false;
+            document.getElementById('rph-distance')!.textContent = '8.2 km';
+
+            clearRoute();
+
+            expect(document.getElementById('rph-context')?.textContent).toBe(
+                'planning.tapToAddStart'
+            );
+            expect(stats.hidden).toBe(true);
+            expect(state.routeDraftName).toBe('');
+            expect(state.routeDraftDirty).toBe(false);
+        });
     });
 
     describe('auto-compute', () => {
@@ -283,6 +304,23 @@ describe('routeManager', () => {
                 );
             }
 
+            vi.useRealTimers();
+        });
+
+        it('annule aussi un timer programmé par la microtâche réactive suivante', async () => {
+            vi.useFakeTimers();
+            state.routeWaypoints = [
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ];
+
+            queueMicrotask(() => scheduleAutoCompute());
+            cancelScheduledAutoCompute();
+            await Promise.resolve();
+            vi.advanceTimersByTime(800);
+            await Promise.resolve();
+
+            expect(mockComputeRoute).not.toHaveBeenCalled();
             vi.useRealTimers();
         });
     });

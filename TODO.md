@@ -1,6 +1,20 @@
-# SunTrail — TODO (version source v5.83.3)
+# SunTrail — TODO (version source v5.84.0 — jalon interne clôturé)
 
-> Dernière mise à jour : 2026-08-10
+> Dernière mise à jour : 2026-08-11
+
+## ✅ v5.84.0 — moteur de suivi interne clôturé
+
+- [x] `GuidanceEngine` pur : projection, progression robuste, restant/ETA, écart, bearing/look-ahead.
+- [x] Accuracy/fraîcheur, hystérésis, cooldown et sept états de session testés.
+- [x] Fixtures droite, boucle, aller-retour, épingles, croisement, bruit, saut, récupération, arrivée.
+- [x] `GuidancePlanV1` séparé et migration IndexedDB v2→v3 additive.
+- [x] Cues ORS/OSRM, points GPX nommés proches et dérivés approximatifs filtrés.
+- [x] UI foreground, alertes visuelles/haptiques, recentrage et REC indépendant.
+- [x] Qualités `full` / confirmation `approximate` / refus `not-ready` couvertes en E2E.
+- [x] Gates automatisés, synchronisation Capacitor et contrôles Android consignés (0 erreur).
+- [x] Validation manuelle Galaxy S23 application ouverte/mode avion/GPS bruité/lacets/REC
+      acceptée par le testeur ; limites foreground confirmées.
+- [x] Commit, tag et pré-release GitHub interne autorisés ; aucun téléversement Play Console.
 
 ## ✅ Correctifs CI + produit (même version 5.83.3, non publiés)
 
@@ -87,7 +101,7 @@ Prompt de clôture :
   validés sur Galaxy S23.
 - [x] **v5.83.2** — détection de la langue système au premier démarrage, publiée.
 - [x] **v5.83.3** — anglais par défaut, publiée.
-- [ ] **v5.84.0 interne** — moteur de suivi TypeScript et fixtures, sans promesse Play publique.
+- [x] **v5.84.0 interne** — clôturée par pré-release GitHub interne, sans déploiement Play.
 - [ ] **v5.85.0** — guidage Android natif robuste, écran éteint et récupération.
 - [ ] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne.
 - [ ] **v6.0.0** — compte optionnel et synchronisation PC–Android.

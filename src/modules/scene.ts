@@ -67,6 +67,16 @@ export { flyTo };
 
 // Handler de visibilité : suspend le GPU quand l'app passe en arrière-plan (v5.11)
 let visibilityChangeHandler: (() => void) | null = null;
+let sceneResumeHandler: (() => void) | null = null;
+let renderWatchdogId: number | null = null;
+let contextRecoveryTimeout: number | null = null;
+
+/** Réveille explicitement le rendu après une mutation de caméra hors interaction. */
+export function requestSceneRender(): void {
+    sceneResumeHandler?.();
+}
+
+eventBus.on('sceneRenderRequested', requestSceneRender);
 
 // v5.40.18 : Objets statiques partagés pour éviter le Garbage Collection (Zero-Allocation Pattern)
 const _sharedMatrix = new THREE.Matrix4();
@@ -155,6 +165,15 @@ export async function disposeScene(): Promise<void> {
             visibilityChangeHandler
         );
         visibilityChangeHandler = null;
+    }
+    sceneResumeHandler = null;
+    if (renderWatchdogId !== null) {
+        window.clearInterval(renderWatchdogId);
+        renderWatchdogId = null;
+    }
+    if (contextRecoveryTimeout !== null) {
+        window.clearTimeout(contextRecoveryTimeout);
+        contextRecoveryTimeout = null;
     }
     window.removeEventListener('resize', onWindowResize);
 
@@ -259,7 +278,24 @@ export async function initScene(): Promise<void> {
             event.preventDefault();
             console.error('[WebGL] Contexte perdu !');
             showToast(i18n.t('common.errorWebglLost'), 5000);
-            setTimeout(() => window.location.reload(), 2000);
+            if (contextRecoveryTimeout !== null) {
+                window.clearTimeout(contextRecoveryTimeout);
+            }
+            contextRecoveryTimeout = window.setTimeout(
+                () => window.location.reload(),
+                3000
+            );
+        },
+        false
+    );
+    state.renderer.domElement.addEventListener(
+        'webglcontextrestored',
+        () => {
+            if (contextRecoveryTimeout !== null) {
+                window.clearTimeout(contextRecoveryTimeout);
+                contextRecoveryTimeout = null;
+            }
+            requestSceneRender();
         },
         false
     );
@@ -824,9 +860,18 @@ export async function initScene(): Promise<void> {
         }
         lastInteracting = interacting;
 
-        const tiltAnimating = updateAutoTilt(distToTarget);
+        // En suivi, centerOnUser est l'unique propriétaire de la caméra. Ne pas
+        // appliquer en parallèle l'auto-tilt et un second update amorti de
+        // MapControls : deux solveurs concurrents créaient des retours rapides
+        // et des fluctuations visuelles sur Android.
+        const cameraFollowActive = state.isFollowingUser && !interacting;
+        const tiltAnimating = cameraFollowActive
+            ? false
+            : updateAutoTilt(distToTarget);
 
-        const controlsDirty = state.controls.update();
+        const controlsDirty = cameraFollowActive
+            ? false
+            : state.controls.update();
         const needsUpdate =
             (controlsDirty &&
                 (state.isUserInteracting || now - lastInteractionTime < 800)) ||
@@ -863,7 +908,7 @@ export async function initScene(): Promise<void> {
                 updateWeatherSystem(weatherAccumDelta, state.camera.position);
                 weatherAccumDelta = 0;
             }
-            if (state.isFollowingUser && !interacting) centerOnUser(delta);
+            if (cameraFollowActive) centerOnUser(delta);
 
             if (state.isSunAnimating) {
                 if (lastSunAnimTime === 0) lastSunAnimTime = now;
@@ -921,12 +966,32 @@ export async function initScene(): Promise<void> {
     };
     state.renderer.setAnimationLoop(renderLoopFn);
 
+    sceneResumeHandler = () => {
+        if (document.hidden || !state.renderer || !state.camera || !state.scene)
+            return;
+        onWindowResize();
+        state.controls?.update();
+        state.camera.updateMatrixWorld(true);
+        needsInitialRender = Math.max(needsInitialRender, 5);
+        lastInteractionTime = performance.now();
+        state.renderer.setAnimationLoop(renderLoopFn);
+    };
+
+    // Android WebView peut exceptionnellement perdre sa boucle RAF alors que
+    // l'interface HTML reste active. Le watchdog la réarme sans reconstruire
+    // la scène ni toucher aux données GPS/REC.
+    renderWatchdogId = window.setInterval(() => {
+        if (!document.hidden && performance.now() - lastRenderTime > 2000) {
+            requestSceneRender();
+        }
+    }, 1000);
+
     window.dispatchEvent(new Event('suntrail:sceneReady'));
 
     visibilityChangeHandler = () => {
         if (!state.renderer) return;
         if (document.hidden) state.renderer.setAnimationLoop(null);
-        else state.renderer.setAnimationLoop(renderLoopFn);
+        else requestSceneRender();
     };
     document.addEventListener('visibilitychange', visibilityChangeHandler);
 

@@ -1,4 +1,4 @@
-# SunTrail — Roadmap produit révisée (version source v5.83.3)
+# SunTrail — Roadmap produit révisée (version source v5.84.0 — jalon interne clôturé)
 
 > Révision : 2026-08-08, après audit critique et inspection du worktree.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
@@ -13,15 +13,15 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-08-10
+## État réel au 2026-08-11
 
-- La version source et Android de référence est **v5.83.3** / **901**. Les correctifs v5.83.1
-  à v5.83.3 (lisibilité Préparer, détection de la langue système, anglais par défaut) ne
-  modifient pas le périmètre fonctionnel v5.83.
+- La dernière release corrective publique reste **v5.83.3** / **901**. **v5.84.0** / Android
+  **902** est clôturée comme pré-release GitHub interne, sans téléversement Play Console.
 - Prepared Routes, la bibliothèque IndexedDB, la compatibilité GPX/REC, la difficulté expliquée,
   les corrections mobiles et la validation Galaxy S23 sont clôturées.
-- Les gates TypeScript, unitaires, build/bundle, i18n, E2E Chromium, Capacitor et Android sont
-  verts. Aucune implémentation v5.84 n'a commencé.
+- Le moteur foreground, ses fixtures, le plan de guidage local, l'UI et l'indépendance REC sont
+  implémentés. Les gates automatisés et la validation Galaxy S23 sont acceptés pour ce périmètre
+  foreground.
 - Après comparaison Komoot/Garmin, v5.84 inclura la prochaine indication et sa distance au sein
   du moteur foreground, sans étendre la promesse aux fonctions natives/background de v5.85.
 
@@ -31,7 +31,7 @@ heure de passage et conditions.
 |---|---|---|
 | **v5.82.0** | Comprendre et utiliser la préparation sans geste caché | Finalisé dans le worktree, sans PreparedRoute |
 | **v5.83.0** | Planifier, évaluer et retrouver une route après redémarrage | PreparedRoute local, bibliothèque, difficulté/effort, soleil utile |
-| **v5.84.0 interne** | Valider le moteur de suivi sans promesse publique incomplète | GuidanceEngine TS, progression/ETA/écart, prochaine indication, foreground |
+| **v5.84.0 interne clôturée** | Valider le moteur de suivi sans promesse publique incomplète | GuidanceEngine TS, progression/ETA/écart, prochaine indication, foreground |
 | **v5.85.0** | Guider réellement sur Android, écran éteint et après interruption | Matcher natif, route Room, notification, récupération, tests appareils |
 | **v5.86.0** | Savoir si la sortie est prête et emporter son corridor | Readiness en couches, corridor Free remplaçable, offline fiable |
 | **v6.0.0** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
@@ -61,7 +61,7 @@ peut commencer.
 ## v5.83.0 — Planifier, évaluer et sauvegarder localement
 
 > **Release clôturée et publiée le 2026-08-09.** Tag `v5.83.0`, commit `89e76be`, AAB signé
-> attaché à la release GitHub. Aucun travail d'implémentation v5.84 n'a commencé.
+> attaché à la release GitHub. Cet état vérifié constituait le point de départ de v5.84.
 
 ### Domaine
 
@@ -118,7 +118,11 @@ ne contrôlent jamais la sécurité ni les droits Pro.
 statistiques, sa marge de jour et un état de difficulté explicite. ORS complet/partiel et
 OSRM/absence de donnée sont testés ; « inconnue » est un résultat valide, jamais un écran vide.
 
-## v5.84.0 — Moteur de suivi, jalon interne
+## v5.84.0 — Moteur de suivi, jalon interne clôturé
+
+> **Clôturé le 2026-08-11 comme pré-release GitHub interne.** Le moteur, les cues, l'UI et les
+> E2E ciblés sont validés ; la validation Galaxy S23 a été acceptée pour le périmètre foreground.
+> v5.85 ne doit pas commencer sans une nouvelle autorisation explicite.
 
 Livrer le cœur de navigation avant le cloud :
 

@@ -167,6 +167,11 @@ export class TimelineComponent {
                 const isOpen = bottomBar.classList.toggle('is-open');
                 toggleBtn.classList.toggle('active');
                 document.body.classList.toggle('timeline-open', isOpen);
+                if (isOpen) {
+                    this.updateTopAnchor(bottomBar);
+                } else {
+                    bottomBar.style.removeProperty('--timeline-top');
+                }
             });
 
             // Drag handle — swipe down to close
@@ -185,6 +190,7 @@ export class TimelineComponent {
 
             const checkTimelineOverlap = (): void => {
                 const isOpen = bottomBar.classList.contains('is-open');
+                if (isOpen) this.updateTopAnchor(bottomBar);
                 const isCustomPos =
                     bottomBar.classList.contains('panel-custom-pos');
                 // body.timeline-custom-pos désactive la règle CSS statique et laisse
@@ -229,6 +235,39 @@ export class TimelineComponent {
                 window.removeEventListener('pointermove', checkTimelineOverlap);
                 tlOverlapObserver.disconnect();
                 document.body.classList.remove('timeline-custom-pos');
+            });
+
+            // Le panneau de contexte Préparer et le résumé réduit du guidage
+            // occupent parfois le haut. La timeline se cale alors juste sous
+            // le dernier panneau réellement visible, quelle que soit sa hauteur.
+            const updateAnchorIfOpen = () => {
+                if (bottomBar.classList.contains('is-open')) {
+                    this.updateTopAnchor(bottomBar);
+                }
+            };
+            window.addEventListener('resize', updateAnchorIfOpen, {
+                passive: true,
+            });
+            const bodyAnchorObserver = new MutationObserver(updateAnchorIfOpen);
+            bodyAnchorObserver.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class'],
+            });
+            const anchorResizeObserver =
+                typeof ResizeObserver === 'undefined'
+                    ? null
+                    : new ResizeObserver(updateAnchorIfOpen);
+            [
+                document.getElementById('top-status-bar'),
+                document.getElementById('route-plan-hud'),
+                document.querySelector('.guidance-foreground'),
+            ].forEach((element) => {
+                if (element) anchorResizeObserver?.observe(element);
+            });
+            this.subscriptions.push(() => {
+                window.removeEventListener('resize', updateAnchorIfOpen);
+                bodyAnchorObserver.disconnect();
+                anchorResizeObserver?.disconnect();
             });
         }
 
@@ -296,10 +335,55 @@ export class TimelineComponent {
                         bottomBar.classList.add('is-open');
                         document.body.classList.add('timeline-open');
                         if (toggleBtn) toggleBtn.classList.add('active');
+                        this.updateTopAnchor(bottomBar);
                     }
                 }
             })
         );
+    }
+
+    /** Positionne la timeline sous les panneaux fixes visibles dans la zone haute. */
+    private updateTopAnchor(bottomBar: HTMLElement): void {
+        const topStatusBar = document.getElementById('top-status-bar');
+        const topStatusBottom = topStatusBar
+            ? topStatusBar.getBoundingClientRect().bottom
+            : 52;
+        let top = Math.max(8, topStatusBottom + 8);
+
+        const anchors: Array<HTMLElement | null> = [
+            document.getElementById('route-plan-hud'),
+            document.body.classList.contains('guidance-profile-open')
+                ? document.querySelector<HTMLElement>('.guidance-foreground')
+                : null,
+        ];
+
+        for (const anchor of anchors) {
+            if (!this.isVisibleTopAnchor(anchor)) continue;
+            const rect = anchor.getBoundingClientRect();
+            // N'utilise jamais un panneau bas comme point d'ancrage : seul le
+            // chrome situé dans la moitié supérieure doit décaler la timeline.
+            if (rect.top < window.innerHeight / 2) {
+                top = Math.max(top, rect.bottom + 8);
+            }
+        }
+
+        bottomBar.style.setProperty('--timeline-top', `${Math.ceil(top)}px`);
+    }
+
+    private isVisibleTopAnchor(
+        element: HTMLElement | null
+    ): element is HTMLElement {
+        if (!element || element.hidden) return false;
+        const style = window.getComputedStyle(element);
+        if (
+            style.display === 'none' ||
+            style.visibility === 'hidden' ||
+            style.opacity === '0'
+        ) {
+            return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
     }
 
     private syncUI() {

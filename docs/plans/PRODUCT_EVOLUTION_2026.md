@@ -1,9 +1,10 @@
 # SunTrail — Plan d'évolution produit révisé v5.82 → v6.1
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
-> Révision : 2026-08-08 après audit critique et inspection du worktree.
-> v5.83.3 / Android 901 est la release corrective de v5.83, sans changement de périmètre. Aucune implémentation v5.84
-> n'a commencé.
+> Révision : 2026-08-11 après clôture du jalon foreground.
+> v5.83.3 / Android 901 reste la dernière release corrective publique. v5.84.0 / Android 902 est
+> clôturée comme pré-release GitHub interne après validation Galaxy S23 et gates ; aucun
+> téléversement Play Console et aucune v5.85 n'est démarrée.
 
 ## 1. Ordre de réalisation
 

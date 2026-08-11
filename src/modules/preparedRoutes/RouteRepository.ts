@@ -1,8 +1,11 @@
 import { validatePreparedRoute, type PreparedRouteV1 } from './preparedRoute';
+import { validateGuidancePlan } from '../guidance/guidancePlan';
+import type { GuidancePlanV1 } from '../guidance/guidanceTypes';
 
 export const ROUTE_DATABASE_NAME = 'suntrail-prepared-routes';
-export const ROUTE_DATABASE_VERSION = 2;
+export const ROUTE_DATABASE_VERSION = 3;
 export const ROUTE_STORE_NAME = 'routes';
+export const GUIDANCE_PLAN_STORE_NAME = 'guidancePlans';
 
 export type RouteRepositoryErrorCode =
     | 'unavailable'
@@ -168,6 +171,74 @@ export class RouteRepository {
         await this.saveMany([route]);
     }
 
+    public async getGuidancePlan(
+        routeId: string
+    ): Promise<GuidancePlanV1 | null> {
+        try {
+            const database = await this.getDatabase();
+            const transaction = database.transaction(
+                GUIDANCE_PLAN_STORE_NAME,
+                'readonly'
+            );
+            const completed = transactionComplete(transaction);
+            const value = await requestResult(
+                transaction.objectStore(GUIDANCE_PLAN_STORE_NAME).get(routeId)
+            );
+            await completed;
+            if (value === undefined) return null;
+            return validateGuidancePlan(value);
+        } catch (error) {
+            throw normalizeRepositoryError(error);
+        }
+    }
+
+    public async saveGuidancePlan(plan: GuidancePlanV1): Promise<void> {
+        const validatedPlan = validateGuidancePlan(plan);
+        try {
+            const database = await this.getDatabase();
+            const transaction = database.transaction(
+                GUIDANCE_PLAN_STORE_NAME,
+                'readwrite'
+            );
+            const completed = transactionComplete(transaction);
+            transaction
+                .objectStore(GUIDANCE_PLAN_STORE_NAME)
+                .put(validatedPlan);
+            await completed;
+        } catch (error) {
+            throw normalizeRepositoryError(error);
+        }
+    }
+
+    public async saveRouteWithPlan(
+        route: PreparedRouteV1,
+        plan: GuidancePlanV1
+    ): Promise<void> {
+        const validatedRoute = validatePreparedRoute(route);
+        const validatedPlan = validateGuidancePlan(plan);
+        if (validatedPlan.routeId !== validatedRoute.id) {
+            throw new RouteRepositoryError(
+                'transaction',
+                'Guidance plan routeId does not match the route.'
+            );
+        }
+        try {
+            const database = await this.getDatabase();
+            const transaction = database.transaction(
+                [ROUTE_STORE_NAME, GUIDANCE_PLAN_STORE_NAME],
+                'readwrite'
+            );
+            const completed = transactionComplete(transaction);
+            transaction.objectStore(ROUTE_STORE_NAME).put(validatedRoute);
+            transaction
+                .objectStore(GUIDANCE_PLAN_STORE_NAME)
+                .put(validatedPlan);
+            await completed;
+        } catch (error) {
+            throw normalizeRepositoryError(error);
+        }
+    }
+
     /** Toutes les écritures réussissent ou la transaction complète est annulée. */
     public async saveMany(routes: PreparedRouteV1[]): Promise<void> {
         const validatedRoutes = routes.map((route) =>
@@ -192,11 +263,12 @@ export class RouteRepository {
         try {
             const database = await this.getDatabase();
             const transaction = database.transaction(
-                ROUTE_STORE_NAME,
+                [ROUTE_STORE_NAME, GUIDANCE_PLAN_STORE_NAME],
                 'readwrite'
             );
             const completed = transactionComplete(transaction);
             transaction.objectStore(ROUTE_STORE_NAME).delete(id);
+            transaction.objectStore(GUIDANCE_PLAN_STORE_NAME).delete(id);
             await completed;
             this.diagnostics = {
                 corruptedIds: this.diagnostics.corruptedIds.filter(
@@ -245,6 +317,26 @@ export class RouteRepository {
                     }
                     if (!store.indexNames.contains('name')) {
                         store.createIndex('name', 'name');
+                    }
+                    const guidanceStore = database.objectStoreNames.contains(
+                        GUIDANCE_PLAN_STORE_NAME
+                    )
+                        ? transaction.objectStore(GUIDANCE_PLAN_STORE_NAME)
+                        : database.createObjectStore(GUIDANCE_PLAN_STORE_NAME, {
+                              keyPath: 'routeId',
+                          });
+                    if (
+                        !guidanceStore.indexNames.contains(
+                            'geometryFingerprint'
+                        )
+                    ) {
+                        guidanceStore.createIndex(
+                            'geometryFingerprint',
+                            'geometryFingerprint'
+                        );
+                    }
+                    if (!guidanceStore.indexNames.contains('createdAt')) {
+                        guidanceStore.createIndex('createdAt', 'createdAt');
                     }
                 };
                 request.onsuccess = () => {

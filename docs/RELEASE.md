@@ -155,6 +155,9 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **897** | **5.82.0** | **v5.82.0** | **Release clôturée et publiée ; validation Galaxy S23 acceptée sans P0/P1, CI verte et AAB signé attaché à la release GitHub.** | **2026-08-09** |
 | **898** | **5.83.0** | **v5.83.0** | **Prepared Routes et bibliothèque locale : routes IndexedDB, compatibilité GPX/REC, difficulté expliquée, validation Galaxy S23 ; le tag déclenche la CI et l'AAB signé attaché à la release GitHub.** | **2026-08-09** |
 | **899** | **5.83.1** | **v5.83.1** | **Correctif de lisibilité Préparer : résumé portrait, mode carte au second clic, brouillon conservé ; validation Galaxy S23.** | **2026-08-10** |
+| **900** | **5.83.2** | **v5.83.2** | **Détection de la langue système au premier démarrage.** | **2026-08-10** |
+| **901** | **5.83.3** | **v5.83.3** | **Anglais par défaut et correctifs de locale.** | **2026-08-10** |
+| **902** | **5.84.0** | **v5.84.0** | **Jalon interne/fermé clôturé : moteur de suivi foreground validé sur Galaxy S23, pré-release GitHub avec AAB signé ; aucun téléversement Play Console.** | **2026-08-11** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

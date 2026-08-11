@@ -83,6 +83,19 @@ describe('attachDraggablePanel()', () => {
         expect(onDismiss).not.toHaveBeenCalled();
     });
 
+    it('does not start a drag from an interactive child', () => {
+        const button = document.createElement('button');
+        handle.appendChild(button);
+
+        button.dispatchEvent(makePointerEvent('pointerdown', { clientY: 100 }));
+        vi.advanceTimersByTime(350);
+        button.dispatchEvent(makePointerEvent('pointermove', { clientY: 180 }));
+        button.dispatchEvent(makePointerEvent('pointerup', { clientY: 180 }));
+
+        expect(handle.style.cursor).toBe('');
+        expect(onDismiss).not.toHaveBeenCalled();
+    });
+
     it('calls onDismiss after swipe down exceeding threshold', () => {
         handle.dispatchEvent(makePointerEvent('pointerdown', { clientY: 100 }));
         handle.dispatchEvent(makePointerEvent('pointermove', { clientY: 130 }));

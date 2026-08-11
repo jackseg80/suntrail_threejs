@@ -77,6 +77,22 @@ describe('NativeGPSService (v5.29.38)', () => {
         expect(mockPreferences.set).toHaveBeenCalled();
     });
 
+    it('stops notification updates before stopping the native course', async () => {
+        const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
+        (nativeGPSService as any).currentCourseId = null;
+        (nativeGPSService as any).statsUpdateInterval = 123;
+        state.currentCourseId = 'active-123';
+        state.isRecording = true;
+
+        await nativeGPSService.stopCourse();
+
+        expect(clearIntervalSpy).toHaveBeenCalledWith(123);
+        expect(mockRecordingNative.stopCourse).toHaveBeenCalledTimes(1);
+        expect(state.currentCourseId).toBe('');
+        expect(state.isRecording).toBe(false);
+        clearIntervalSpy.mockRestore();
+    });
+
     it('should filter points with sudden altitude jumps', () => {
         const points = [
             {

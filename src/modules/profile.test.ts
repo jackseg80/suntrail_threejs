@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { updateElevationProfile, getSlopeCategory } from './profile';
+import {
+    closeElevationProfile,
+    updateElevationProfile,
+    getSlopeCategory,
+} from './profile';
 import { haversineDistance } from './geo';
 import { state } from './state';
 import type { GPXLayer } from './state';
@@ -8,6 +12,7 @@ import type { GPXLayer } from './state';
 describe("Profil d'altitude (Module Profile)", () => {
     beforeEach(() => {
         // Mock du DOM minimal
+        document.body.className = '';
         document.body.innerHTML = `
             <div id="elevation-profile"></div>
             <div id="profile-info"></div>
@@ -72,15 +77,24 @@ describe("Profil d'altitude (Module Profile)", () => {
         };
         state.gpxLayers = [layer];
         state.activeGPXLayerId = 'test-layer';
+        document.body.classList.add('guidance-active');
 
         updateElevationProfile();
 
         const profileEl = document.getElementById('elevation-profile');
         expect(profileEl?.classList.contains('is-open')).toBe(true);
+        expect(document.body.classList.contains('guidance-profile-open')).toBe(
+            true
+        );
 
         // Vérification du contenu du SVG (un path devrait être créé)
         const svg = document.getElementById('profile-svg');
         expect(svg?.innerHTML).toContain('path');
+
+        closeElevationProfile();
+        expect(document.body.classList.contains('guidance-profile-open')).toBe(
+            false
+        );
     });
 
     describe('v5.24.3 - Fix mismatch index positions 3D', () => {

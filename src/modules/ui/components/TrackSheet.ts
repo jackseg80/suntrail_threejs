@@ -37,6 +37,7 @@ import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
 import { getPlaceName } from '../../geocodingService';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import { confirmDialog } from '../confirmDialog';
+import { guidanceForegroundService } from '../../guidance/GuidanceForegroundService';
 import templateHTML from '../templates/track.html?raw';
 import { preparedRouteService } from '../../preparedRoutes/preparedRouteService';
 import { releaseFlags } from '../../releaseFlags';
@@ -122,7 +123,6 @@ export class TrackSheet extends BaseComponent {
 
         // --- Unified track list container ---
         this.createLayersListContainer();
-        this.renderUnifiedTrackList();
         this.renderPreparedRoutes();
         this.syncDestination(
             document.body.dataset.trackDestination === 'library'
@@ -657,6 +657,11 @@ export class TrackSheet extends BaseComponent {
             destinationAnchor.appendChild(legacyList);
             legacyList.hidden = false;
         }
+        // Le contenu dépend de la destination : Sortie ne montre que les
+        // traces chargées, Bibliothèque montre aussi l'historique local. Sans
+        // ce rendu immédiat, l'écran conservait le filtre précédent jusqu'au
+        // retour tardif d'un géocodage réseau.
+        this.renderUnifiedTrackList();
         const title = this.element.querySelector('.sheet-title');
         if (title) {
             title.textContent = i18n.t(
@@ -712,6 +717,7 @@ export class TrackSheet extends BaseComponent {
                         ${warning}
                     </div>
                     <div class="prepared-route-actions">
+                        ${releaseFlags.isEnabled('guidanceForeground') ? `<button type="button" data-route-action="guidance" data-route-id="${route.id}" class="prepared-route-guidance">${i18n.t('guidance.actions.start')}</button>` : ''}
                         <button type="button" data-route-action="open" data-route-id="${route.id}">${i18n.t('preparedRoutes.actions.open')}</button>
                         <button type="button" data-route-action="favorite" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.favorite')}" aria-pressed="${route.favorite}">${route.favorite ? '★' : '☆'}</button>
                         <button type="button" data-route-action="duplicate" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.duplicate')}">⧉</button>
@@ -729,7 +735,54 @@ export class TrackSheet extends BaseComponent {
                     if (!id || !action) return;
                     button.disabled = true;
                     try {
-                        if (action === 'open') {
+                        if (action === 'guidance') {
+                            const target = state.preparedRoutes.find(
+                                (route) => route.id === id
+                            );
+                            if (!target) {
+                                showToast(
+                                    i18n.t('preparedRoutes.error.notFound')
+                                );
+                                return;
+                            }
+                            if (target.guidanceQuality === 'not-ready') {
+                                showToast(i18n.t('guidance.error.notReady'));
+                                return;
+                            }
+                            if (
+                                target.guidanceQuality === 'approximate' &&
+                                !(await confirmDialog(
+                                    i18n.t('guidance.confirm.approximate'),
+                                    {
+                                        confirmText: i18n.t(
+                                            'guidance.actions.startAnyway'
+                                        ),
+                                    }
+                                ))
+                            ) {
+                                return;
+                            }
+                            if (
+                                !(await this.protectCurrentDraft(target.name))
+                            ) {
+                                return;
+                            }
+                            await preparedRouteService.load(id);
+                            const started =
+                                await guidanceForegroundService.start(target, {
+                                    approximateConfirmed:
+                                        target.guidanceQuality ===
+                                        'approximate',
+                                });
+                            if (!started) {
+                                showToast(i18n.t('guidance.error.gps'));
+                                return;
+                            }
+                            sheetManager.close();
+                            setRoutePlanningMode(false, {
+                                announceHint: false,
+                            });
+                        } else if (action === 'open') {
                             const target = state.preparedRoutes.find(
                                 (route) => route.id === id
                             );

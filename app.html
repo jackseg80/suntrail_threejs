@@ -206,6 +206,30 @@
                 </svg>
             </button>
             <button
+                class="rb-btn rb-guidance-btn"
+                id="rb-guidance-btn"
+                aria-label="Suivre cet itinéraire"
+                data-i18n-aria-label="guidance.actions.start"
+                disabled
+                hidden
+            >
+                <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <circle cx="4" cy="19" r="1.5" />
+                    <path d="M5.5 19c6 0 3-14 11-14h3" />
+                    <path d="m16 2 4 3-4 3" />
+                </svg>
+            </button>
+            <button
                 class="rb-btn"
                 id="rb-reverse-btn"
                 aria-label="Inverser le départ et l'arrivée"
@@ -618,6 +642,29 @@
                     "
                     >3D</span
                 >
+            </button>
+
+            <!-- TIMELINE SOLAIRE — disponible uniquement lorsque la carte est en 3D -->
+            <button
+                type="button"
+                class="fab-btn timeline-toggle-fab"
+                id="timeline-toggle-btn"
+                aria-label="Ouvrir la timeline de simulation"
+            >
+                <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <circle cx="12" cy="12" r="8.5" />
+                    <path d="M12 7.5v5l3.25 2" />
+                </svg>
             </button>
         </div>
 

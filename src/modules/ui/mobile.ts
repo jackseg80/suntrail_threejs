@@ -3,6 +3,7 @@ import { sheetManager } from './core/SheetManager';
 import { state } from '../state';
 import { startLocationTracking, isWatchActive } from '../location';
 import { nativeGPSService } from '../nativeGPSService';
+import { eventBus } from '../eventBus';
 
 /**
  * Initializes mobile-specific UI logic, such as back button handling.
@@ -115,6 +116,7 @@ export function initMobileUI(): void {
             }
         } else {
             // App revient en foreground
+            eventBus.emit('sceneRenderRequested');
             if (
                 _wasRecordingWhenBackgrounded &&
                 state.isRecording &&

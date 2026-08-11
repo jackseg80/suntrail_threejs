@@ -298,7 +298,9 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
 
         await page.locator('.nav-tab[data-tab="library"]').click();
         await card.locator('[data-route-action="delete"]').click();
-        await page.locator('#confirm-dialog-overlay').waitFor({ state: 'visible' });
+        await page
+            .locator('#confirm-dialog-overlay')
+            .waitFor({ state: 'visible' });
         await page.locator('.confirm-dialog-accept').click();
         await expect
             .poll(() => countPreparedRoutes(page), { timeout: 10_000 })
@@ -333,28 +335,45 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         await openPreparedRoutesApp(page);
         const databaseInfo = await page.evaluate(
             ({ databaseName, storeName }) =>
-                new Promise<{ version: number; indexes: string[] }>(
-                    (resolve, reject) => {
-                        const request = indexedDB.open(databaseName);
-                        request.onerror = () => reject(request.error);
-                        request.onsuccess = () => {
-                            const database = request.result;
-                            const store = database
-                                .transaction(storeName, 'readonly')
-                                .objectStore(storeName);
-                            resolve({
-                                version: database.version,
-                                indexes: Array.from(store.indexNames),
-                            });
-                            database.close();
-                        };
-                    }
-                ),
+                new Promise<{
+                    version: number;
+                    indexes: string[];
+                    stores: string[];
+                    guidanceIndexes: string[];
+                }>((resolve, reject) => {
+                    const request = indexedDB.open(databaseName);
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        const database = request.result;
+                        const transaction = database.transaction(
+                            [storeName, 'guidancePlans'],
+                            'readonly'
+                        );
+                        const store = transaction.objectStore(storeName);
+                        const guidanceStore =
+                            transaction.objectStore('guidancePlans');
+                        resolve({
+                            version: database.version,
+                            indexes: Array.from(store.indexNames),
+                            stores: Array.from(database.objectStoreNames),
+                            guidanceIndexes: Array.from(
+                                guidanceStore.indexNames
+                            ),
+                        });
+                        database.close();
+                    };
+                }),
             { databaseName: DATABASE_NAME, storeName: STORE_NAME }
         );
-        expect(databaseInfo.version).toBe(2);
+        expect(databaseInfo.version).toBe(3);
         expect(databaseInfo.indexes).toEqual(
             expect.arrayContaining(['updatedAt', 'favorite', 'name'])
+        );
+        expect(databaseInfo.stores).toEqual(
+            expect.arrayContaining(['routes', 'guidancePlans'])
+        );
+        expect(databaseInfo.guidanceIndexes).toEqual(
+            expect.arrayContaining(['geometryFingerprint', 'createdAt'])
         );
     });
 
@@ -487,7 +506,9 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         await expect(legacyRow).toBeVisible();
 
         await legacyRow.locator('[data-action="legacy-convert"]').click();
-        await page.locator('#confirm-dialog-overlay').waitFor({ state: 'visible' });
+        await page
+            .locator('#confirm-dialog-overlay')
+            .waitFor({ state: 'visible' });
         await page.locator('.confirm-dialog-accept').click();
         await expect
             .poll(() => countPreparedRoutes(page), { timeout: 10_000 })
@@ -539,5 +560,57 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
             source: 'legacy-conversion',
             difficultySource: 'legacy',
         });
+    });
+
+    test('saves and starts guidance directly from a ready manual draft', async ({
+        page,
+        context,
+    }) => {
+        test.setTimeout(90_000);
+        await context.grantPermissions(['geolocation']);
+        await context.setGeolocation({
+            latitude: 46.5,
+            longitude: 7.5001,
+            accuracy: 5,
+        });
+        await mockOSRM(page);
+        await mockGeocoding(page);
+        await openPreparedRoutesApp(page, {
+            suntrail_gps_disclosure_v1: '1',
+        });
+
+        await page.locator('.nav-tab[data-tab="prepare"]').click();
+        await page.locator('#rb-settings-btn').click();
+        await page.locator('#rs-route-name').fill('Départ direct E2E');
+        await page.locator('#rs-start-search').fill('Depart E2E');
+        await page.locator('#rs-start-results [data-result-index="0"]').click();
+        await page.locator('#rs-end-search').fill('Arrivee E2E');
+        await page.locator('#rs-end-results [data-result-index="0"]').click();
+
+        const followButton = page.locator('#rb-guidance-btn');
+        await expect(followButton).toBeVisible();
+        await expect(followButton).toBeEnabled({ timeout: 15_000 });
+        await expect(followButton.locator('svg')).toBeVisible();
+        await expect(followButton).toHaveAttribute(
+            'aria-label',
+            /sauvegarder et suivre|save and follow|speichern und folgen|salva e segui/i
+        );
+        await expect(followButton).toHaveAttribute(
+            'title',
+            /sauvegarder et suivre|save and follow|speichern und folgen|salva e segui/i
+        );
+        await followButton.click();
+
+        await expect(page.locator('#guidance-foreground')).toBeVisible();
+        await expect(page.locator('#guidance-route-name')).toHaveText(
+            'Départ direct E2E'
+        );
+        await expect
+            .poll(() => countPreparedRoutes(page), { timeout: 10_000 })
+            .toBe(1);
+        const routeBar = page.locator('#route-bar');
+        await expect(routeBar).toBeHidden();
+        await expect(page.locator('#route-plan-hud')).toBeHidden();
+        await expect(page.locator('.fab-stack')).toBeVisible();
     });
 });

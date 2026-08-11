@@ -56,6 +56,19 @@ export function attachDraggablePanel(opts: DraggablePanelOptions): () => void {
     let _activePointerId = -1;
 
     const onStart = (e: PointerEvent): void => {
+        const target = e.target instanceof Element ? e.target : null;
+        if (
+            target?.closest(
+                'button, a, input, select, textarea, [role="button"]'
+            )
+        ) {
+            // Les actions de l'en-tête appartiennent visuellement à la poignée,
+            // mais leur clic ne doit jamais amorcer un drag ou un dismiss.
+            isActive = false;
+            clearHold();
+            return;
+        }
+
         // NE PAS capturer le pointer ici — ça bloquerait les clics sur les boutons enfants.
         // La capture se fait uniquement quand un drag/dismiss commence réellement.
         _activePointerId = e.pointerId;

@@ -219,9 +219,16 @@ export function scheduleAutoCompute(): void {
 }
 
 export function cancelScheduledAutoCompute(): void {
-    if (!autoComputeTimer) return;
-    clearTimeout(autoComputeTimer);
-    autoComputeTimer = null;
+    const cancel = () => {
+        if (!autoComputeTimer) return;
+        clearTimeout(autoComputeTimer);
+        autoComputeTimer = null;
+    };
+    cancel();
+    // ReactiveState notifie routeWaypoints dans une microtâche. Lors d'un
+    // chargement PreparedRoute, le timer peut donc être créé juste après
+    // l'annulation synchrone ; cette seconde passe ferme cette course.
+    queueMicrotask(cancel);
 }
 
 export function scheduleGeocodeNames(): void {
@@ -285,6 +292,12 @@ export function clearRoute(): void {
     state.scene?.remove(waypointGroup);
     _lastWaypointCount = 0;
     _barStats = null;
+    state.routeDraftName = '';
+    state.routeDraftFavorite = false;
+    state.routeDraftNotes = '';
+    state.routeDraftTags = [];
+    state.routeDraftDirty = false;
+    updateBar();
     if (!state.isRoutePlanningMode) {
         document.body.classList.remove('route-planner-active');
     }

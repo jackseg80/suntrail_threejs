@@ -524,7 +524,7 @@
             "sos": "SOS Notruf"
         },
         "mapDetail": "{{source}} · Detail {{detail}}",
-        "mapDetailCompact": "Karte · {{detail}}",
+        "mapDetailCompact": "{{source}} · {{detail}}",
         "lod": {
             "swiss": "Schweizer Karte",
             "ign": "Frankreich-Karte",
@@ -535,6 +535,18 @@
             "norway": "Norwegen-Karte",
             "opentopo": "Wanderkarte",
             "world": "Weltkarte",
+            "sat": "Satellit"
+        },
+        "lodShort": {
+            "swiss": "Schweiz",
+            "ign": "Frankreich",
+            "italy": "Italien",
+            "germany": "Deutschland",
+            "spain": "Spanien",
+            "austria": "Österreich",
+            "norway": "Norwegen",
+            "opentopo": "Wandern",
+            "world": "Welt",
             "sat": "Satellit"
         },
         "tooltipLOD": "<b>Aktuelle Karte</b>: zeigt Kartenquelle und sichtbare Details. Tippen, um verfügbare Karten zu verwalten."
@@ -1087,6 +1099,78 @@
         "upsell": {
             "pro": "Zeitanalyse und optimale Abfahrt mit Pro",
             "btn": "Pro ↗"
+        }
+    },
+    "guidance": {
+        "title": "Routenführung",
+        "foregroundBeta": "Führung bei aktivem Bildschirm — interne Beta",
+        "foregroundLimit": "Funktioniert im Vordergrund, solange die App geöffnet bleibt. Keine Führung bei ausgeschaltetem Bildschirm oder Wiederaufnahme nach dem Schließen.",
+        "remaining": "Verbleibend",
+        "eta": "Ankunft",
+        "progress": "Fortschritt",
+        "crossTrack": "Abweichung",
+        "status": {
+            "idle": "Gestoppt",
+            "acquiring": "GPS…",
+            "onRoute": "Auf Route",
+            "offRoute": "Abseits",
+            "recovered": "Route wiedergefunden",
+            "arrived": "Angekommen",
+            "paused": "Pausiert"
+        },
+        "actions": {
+            "start": "Folgen",
+            "saveAndStart": "Speichern und folgen",
+            "startAnyway": "Trotzdem folgen",
+            "pause": "Pause",
+            "resume": "Fortsetzen",
+            "profile": "Profil",
+            "stop": "Stoppen",
+            "stopRec": "REC stoppen",
+            "details": "Details",
+            "compact": "Einklappen"
+        },
+        "confirm": {
+            "approximate": "Diese Route verwendet eine ungefähre Geometrie. Prüfen Sie den Track vor dem Start. Fortfahren?"
+        },
+        "error": {
+            "notReady": "Diese Route ist nicht für die Führung bereit. Vollständige Geometrie neu berechnen oder importieren.",
+            "gps": "Führung nicht gestartet: GPS-Berechtigung oder Signal fehlt."
+        },
+        "gps": { "acquiring": "GPS-Suche — keine Warnungen", "ready": "GPS" },
+        "orientation": {
+            "northUp": "Norden oben",
+            "headingUp": "Fahrtrichtung oben"
+        },
+        "direction": {
+            "ahead": "Richtung des weiteren Routenverlaufs",
+            "rejoin": "Direkte Richtung zurück zur Route"
+        },
+        "alert": {
+            "offRoute": "Sie sind abseits der Route",
+            "recovered": "Route wiedergefunden",
+            "arrived": "Sie sind angekommen"
+        },
+        "confidence": {
+            "routed": "Routenhinweis",
+            "declared": "deklarierter Punkt",
+            "derived": "ungefähr"
+        },
+        "cue": {
+            "depart": "Start",
+            "continue": "Weiter",
+            "slight-left": "Leicht links",
+            "left": "Links abbiegen",
+            "sharp-left": "Scharf links",
+            "slight-right": "Leicht rechts",
+            "right": "Rechts abbiegen",
+            "sharp-right": "Scharf rechts",
+            "u-turn": "Wenden",
+            "arrive": "Ankunft",
+            "waypoint": "Wegpunkt",
+            "poi": "Interessanter Ort",
+            "none": "Dem Track folgen",
+            "approximate": "Ungefähre Richtungsänderung"
         }
     },
     "ui": {

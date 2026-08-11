@@ -2,6 +2,7 @@ import SunCalc from '../suncalcCompat';
 import type { GPXHistoryEntry } from '../gpxHistoryService';
 import type { GPXLayer } from '../state';
 import { getElevation } from '../gpxTypes';
+import type { GuidanceCueV1 } from '../guidance/guidanceTypes';
 
 export const PREPARED_ROUTE_SCHEMA_VERSION = 1 as const;
 
@@ -111,6 +112,7 @@ export interface RouteComputationSnapshot {
     guidanceQuality: GuidanceQuality;
     technicalDifficulty: TechnicalDifficulty;
     dataCoverage: RouteDataCoverage;
+    guidanceCues?: GuidanceCueV1[];
 }
 
 export class PreparedRouteValidationError extends Error {

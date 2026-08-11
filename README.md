@@ -1,10 +1,10 @@
 # ⛰️ SunTrail 3D
 
-**v5.83.3** · **MIT + Commons Clause**
+**v5.84.0 — jalon interne clôturé** · **MIT + Commons Clause**
 
 L'application de randonnée 3D mobile-first avec simulation solaire avancée. Terrain
 ultra-réaliste, ombres portées dynamiques sur le relief, les forêts et les bâtiments,
-GPS haute précision, analyse topographique et guidage hors ligne. Disponible sur
+GPS haute précision, analyse topographique et suivi de trace hors ligne au premier plan. Disponible sur
 **Android** (Capacitor) et **Web** (Three.js).
 
 ## Pourquoi SunTrail 3D ?
@@ -45,6 +45,8 @@ applications, SunTrail calcule en temps réel les **ombres portées** sur le rel
   shader GPU.
 - **Enregistrement GPS** : Service de suivi robuste en arrière-plan avec protection contre
   les crashs système.
+- **Suivi écran actif (bêta interne)** : progression, distance/ETA restantes, écart et prochaine
+  indication tant que l'application reste ouverte. Aucune promesse écran éteint ou après fermeture.
 
 > **Note sur la disponibilité** : Le projet est en constante évolution. Certaines
 > fonctionnalités avancées (comme la précision extrême des bâtiments ou la signalétique
@@ -71,7 +73,7 @@ applications, SunTrail calcule en temps réel les **ombres portées** sur le rel
 ## Stack technique
 
 Three.js r184 · TypeScript 6 (strict) · Vite 8 · Capacitor 8 · RevenueCat · Supabase ·
-Vitest (1551 tests) · Playwright (E2E)
+Vitest · Playwright (E2E)
 
 ## Ressources & Médias
 

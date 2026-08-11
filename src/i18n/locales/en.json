@@ -524,7 +524,7 @@
             "sos": "SOS emergency"
         },
         "mapDetail": "{{source}} · detail {{detail}}",
-        "mapDetailCompact": "Map · {{detail}}",
+        "mapDetailCompact": "{{source}} · {{detail}}",
         "lod": {
             "swiss": "Swiss map",
             "ign": "France map",
@@ -535,6 +535,18 @@
             "norway": "Norway map",
             "opentopo": "Hiking map",
             "world": "World map",
+            "sat": "Satellite"
+        },
+        "lodShort": {
+            "swiss": "Switzerland",
+            "ign": "France",
+            "italy": "Italy",
+            "germany": "Germany",
+            "spain": "Spain",
+            "austria": "Austria",
+            "norway": "Norway",
+            "opentopo": "Hiking",
+            "world": "World",
             "sat": "Satellite"
         },
         "tooltipLOD": "<b>Current map</b>: shows the map source and visible detail. Tap to manage available maps."
@@ -1088,6 +1100,81 @@
         "upsell": {
             "pro": "Timeline analysis and optimal departure with Pro",
             "btn": "Pro ↗"
+        }
+    },
+    "guidance": {
+        "title": "Route guidance",
+        "foregroundBeta": "Screen-on guidance — internal beta",
+        "foregroundLimit": "Works in the foreground while the app stays open. No screen-off guidance or recovery after closing.",
+        "remaining": "Remaining",
+        "eta": "Arrival",
+        "progress": "Progress",
+        "crossTrack": "Off route",
+        "status": {
+            "idle": "Stopped",
+            "acquiring": "GPS…",
+            "onRoute": "On route",
+            "offRoute": "Off route",
+            "recovered": "Route recovered",
+            "arrived": "Arrived",
+            "paused": "Paused"
+        },
+        "actions": {
+            "start": "Follow",
+            "saveAndStart": "Save and follow",
+            "startAnyway": "Follow anyway",
+            "pause": "Pause",
+            "resume": "Resume",
+            "profile": "Profile",
+            "stop": "Stop",
+            "stopRec": "Stop REC",
+            "details": "Details",
+            "compact": "Collapse"
+        },
+        "confirm": {
+            "approximate": "This route uses approximate geometry. Check the track before starting guidance. Continue?"
+        },
+        "error": {
+            "notReady": "This route is not ready for guidance. Recalculate or reimport its full geometry.",
+            "gps": "Guidance did not start: GPS permission or signal is unavailable."
+        },
+        "gps": {
+            "acquiring": "Acquiring GPS — alerts disabled",
+            "ready": "GPS"
+        },
+        "orientation": {
+            "northUp": "north up",
+            "headingUp": "heading up"
+        },
+        "direction": {
+            "ahead": "Direction of the route ahead",
+            "rejoin": "Direct direction to rejoin the route"
+        },
+        "alert": {
+            "offRoute": "You are off the route",
+            "recovered": "Route recovered",
+            "arrived": "You have arrived"
+        },
+        "confidence": {
+            "routed": "routed instruction",
+            "declared": "declared point",
+            "derived": "approximate"
+        },
+        "cue": {
+            "depart": "Start",
+            "continue": "Continue",
+            "slight-left": "Bear left",
+            "left": "Turn left",
+            "sharp-left": "Sharp left",
+            "slight-right": "Bear right",
+            "right": "Turn right",
+            "sharp-right": "Sharp right",
+            "u-turn": "Make a U-turn",
+            "arrive": "Arrive",
+            "waypoint": "Waypoint",
+            "poi": "Point of interest",
+            "none": "Follow the track",
+            "approximate": "Approximate direction change"
         }
     },
     "ui": {

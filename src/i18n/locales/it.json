@@ -522,7 +522,7 @@
             "sos": "SOS emergenza"
         },
         "mapDetail": "{{source}} · dettaglio {{detail}}",
-        "mapDetailCompact": "Mappa · {{detail}}",
+        "mapDetailCompact": "{{source}} · {{detail}}",
         "lod": {
             "swiss": "Mappa Svizzera",
             "ign": "Mappa Francia",
@@ -533,6 +533,18 @@
             "norway": "Mappa Norvegia",
             "opentopo": "Mappa escursionistica",
             "world": "Mappa mondiale",
+            "sat": "Satellite"
+        },
+        "lodShort": {
+            "swiss": "Svizzera",
+            "ign": "Francia",
+            "italy": "Italia",
+            "germany": "Germania",
+            "spain": "Spagna",
+            "austria": "Austria",
+            "norway": "Norvegia",
+            "opentopo": "Escursioni",
+            "world": "Mondo",
             "sat": "Satellite"
         },
         "tooltipLOD": "<b>Mappa attuale</b>: mostra la fonte cartografica e il dettaglio visibile. Tocca per gestire le mappe disponibili."
@@ -1085,6 +1097,81 @@
         "upsell": {
             "pro": "Analisi timeline e partenza ottimale con Pro",
             "btn": "Pro ↗"
+        }
+    },
+    "guidance": {
+        "title": "Guida del percorso",
+        "foregroundBeta": "Guida con schermo acceso — beta interna",
+        "foregroundLimit": "Funziona in primo piano finché l’app resta aperta. Nessuna guida a schermo spento o ripresa dopo la chiusura.",
+        "remaining": "Rimanente",
+        "eta": "Arrivo",
+        "progress": "Avanzamento",
+        "crossTrack": "Scarto",
+        "status": {
+            "idle": "Fermata",
+            "acquiring": "GPS…",
+            "onRoute": "Sul percorso",
+            "offRoute": "Fuori percorso",
+            "recovered": "Percorso ritrovato",
+            "arrived": "Arrivato",
+            "paused": "In pausa"
+        },
+        "actions": {
+            "start": "Segui",
+            "saveAndStart": "Salva e segui",
+            "startAnyway": "Segui comunque",
+            "pause": "Pausa",
+            "resume": "Riprendi",
+            "profile": "Profilo",
+            "stop": "Ferma",
+            "stopRec": "Ferma REC",
+            "details": "Dettagli",
+            "compact": "Riduci"
+        },
+        "confirm": {
+            "approximate": "Questo percorso usa una geometria approssimativa. Controlla la traccia prima di iniziare. Continuare?"
+        },
+        "error": {
+            "notReady": "Questo percorso non è pronto per la guida. Ricalcola o reimporta la geometria completa.",
+            "gps": "Guida non avviata: autorizzazione o segnale GPS non disponibile."
+        },
+        "gps": {
+            "acquiring": "Acquisizione GPS — nessun avviso",
+            "ready": "GPS"
+        },
+        "orientation": {
+            "northUp": "nord in alto",
+            "headingUp": "direzione in alto"
+        },
+        "direction": {
+            "ahead": "Direzione del seguito del percorso",
+            "rejoin": "Direzione diretta per ritrovare il percorso"
+        },
+        "alert": {
+            "offRoute": "Sei fuori dal percorso",
+            "recovered": "Percorso ritrovato",
+            "arrived": "Sei arrivato"
+        },
+        "confidence": {
+            "routed": "indicazione calcolata",
+            "declared": "punto dichiarato",
+            "derived": "approssimativo"
+        },
+        "cue": {
+            "depart": "Partenza",
+            "continue": "Continua",
+            "slight-left": "Leggermente a sinistra",
+            "left": "Gira a sinistra",
+            "sharp-left": "Svolta stretta a sinistra",
+            "slight-right": "Leggermente a destra",
+            "right": "Gira a destra",
+            "sharp-right": "Svolta stretta a destra",
+            "u-turn": "Fai inversione",
+            "arrive": "Arrivo",
+            "waypoint": "Punto di passaggio",
+            "poi": "Punto d’interesse",
+            "none": "Segui la traccia",
+            "approximate": "Cambio di direzione approssimativo"
         }
     },
     "ui": {

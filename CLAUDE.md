@@ -1,13 +1,11 @@
-# SunTrail — Guide IA (version source v5.83.3)
+# SunTrail — Guide IA (version source v5.84.0 — jalon interne clôturé)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-10 — v5.83.3 / Android `901` est la release corrective courante,
-> avec la détection de la langue système au premier démarrage et l'anglais par défaut. Prepared Routes et la bibliothèque IndexedDB locale sont
-> clôturées, sans compte, cloud ni guidage. Aucune implémentation v5.84 n'a commencé.
->
-> Correctifs en attente de commit (même version) : suppression de compte iOS via `confirmDialog`
-> (modale HTML custom), bouton timeline visible à 390 px, disclaimer affiché même sans WebGL,
-> et suite E2E stabilisée (SW bloqué, preset forcé en mode test, langue `fr` forcée, override `nanoid`).
+> Mis à jour le 2026-08-11 — v5.84.0 / Android `902` est clôturée comme pré-release GitHub interne.
+> Le suivi de route TypeScript fonctionne au premier plan, tant que l'application reste ouverte,
+> derrière `guidanceForeground`. La validation Galaxy S23 est acceptée pour ce périmètre ; aucun
+> déploiement Play/public et aucune v5.85 n'est commencée. Prepared Routes, bibliothèque locale et
+> REC indépendant sont préservés.
 
 ## Projet
 
@@ -26,6 +24,9 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Historique GPX (v5.56.2)** : 5 derniers tracés persistants avec mini-cartes et geocoding auto.
 - **Prepared Routes (v5.83.0)** : `PreparedRouteV1` et `RouteRepository` IndexedDB ; géométrie
   complète, réouverture locale, difficulté/effort/ETA/soleil et legacy approximatif explicite.
+- **Suivi foreground (v5.84.0, jalon interne clôturé)** : `GuidanceEngine` TypeScript pur, `GuidancePlanV1`
+  séparé, indications ORS/OSRM/GPX, progression/ETA/écart et alertes visuelles/haptiques écran
+  actif. Aucun guidage natif/background, notification ou reprise après fermeture.
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -64,6 +65,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Design & UI** | [docs/AI_UI_STYLE_GUIDE.md](docs/AI_UI_STYLE_GUIDE.md) | Grilles, Icônes, Variables CSS. |
 | **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Offline limits. |
 | **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, Offline interaction, Modules. |
+| **Suivi foreground** | [docs/GUIDANCE_FOREGROUND.md](docs/GUIDANCE_FOREGROUND.md) | Algorithme, seuils, payload, cues et limites v5.84. |
 | **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 

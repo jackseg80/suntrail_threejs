@@ -552,6 +552,11 @@ function _doUpdateAllGPXMeshes(): void {
             updatedLayers.push(updated);
         } catch (e) {
             console.warn('[GPX] Failed to rebuild layer', layer.name, e);
+            // Un échec ponctuel de drapage (rotation, changement de tuiles,
+            // mémoire sous pression) ne doit jamais supprimer la trace et ses
+            // points. Le mesh déjà disposé reste nul et pourra être retenté au
+            // prochain rebuild.
+            updatedLayers.push({ ...layer, mesh: null });
         }
     }
     state.gpxLayers = updatedLayers;

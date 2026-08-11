@@ -37,11 +37,16 @@ vi.mock('../nativeGPSService', () => ({
     },
 }));
 
+vi.mock('../eventBus', () => ({
+    eventBus: { emit: vi.fn() },
+}));
+
 import { App } from '@capacitor/app';
 import { initMobileUI } from './mobile';
 import { sheetManager } from './core/SheetManager';
 import { startLocationTracking, isWatchActive } from '../location';
 import { nativeGPSService } from '../nativeGPSService';
+import { eventBus } from '../eventBus';
 
 describe('initMobileUI()', () => {
     beforeEach(() => {
@@ -188,6 +193,7 @@ describe('initMobileUI()', () => {
 
             await handler({ isActive: true });
             expect(nativeGPSService.syncPoints).not.toHaveBeenCalled();
+            expect(eventBus.emit).toHaveBeenCalledWith('sceneRenderRequested');
         });
 
         it('ignores resume when no course ID', async () => {

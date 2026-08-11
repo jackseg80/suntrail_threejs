@@ -26,6 +26,9 @@ type EventMap = {
     gpxHistoryUpdated: void;
     preparedRoutesUpdated: void;
     trackDestinationChanged: { destination: 'outing' | 'library' };
+    guidanceSnapshot: import('./guidance/guidanceTypes').GuidanceSnapshot;
+    guidanceStopped: void;
+    sceneRenderRequested: void;
 };
 
 type Listener<T> = (payload: T) => void;

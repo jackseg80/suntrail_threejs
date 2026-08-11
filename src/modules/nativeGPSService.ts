@@ -237,6 +237,11 @@ class NativeGPSService {
     async stopCourse(): Promise<void> {
         if (!RecordingNative) return;
 
+        // Bloquer d'abord toute mise à jour de notification. Une promesse de
+        // statistiques encore en vol pouvait redémarrer RecordingService juste
+        // après STOP et laisser une notification orpheline sur Android.
+        this.stopStatsUpdates();
+
         if (this.currentCourseId) {
             const lastTimestamp =
                 state.recordedPoints.length > 0
@@ -256,6 +261,7 @@ class NativeGPSService {
         await RecordingNative.stopCourse();
         this.removeListeners();
         this.currentCourseId = null;
+        state.currentCourseId = '';
         state.isPaused = false;
         state.isRecording = false;
         state.recordingStartTime = null; // Reset
@@ -388,12 +394,13 @@ class NativeGPSService {
                 alt: number;
                 accuracy: number;
             }) => {
+                state.userLocationAccuracy = event.accuracy ?? null;
+                state.lastTrackingUpdate = Date.now();
                 state.userLocation = {
                     lat: event.lat,
                     lon: event.lon,
                     alt: event.alt,
                 };
-                state.userLocationAccuracy = event.accuracy ?? null;
             }
         ).then((h) => this._listenerHandles.push(h));
 
@@ -514,10 +521,7 @@ class NativeGPSService {
      * Supprime les listeners.
      */
     private removeListeners(): void {
-        if (this.statsUpdateInterval) {
-            clearInterval(this.statsUpdateInterval);
-            this.statsUpdateInterval = null;
-        }
+        this.stopStatsUpdates();
         for (const h of this._listenerHandles) {
             h.remove();
         }
@@ -525,6 +529,13 @@ class NativeGPSService {
         if (!RecordingNative) return;
         RecordingNative.removeAllListeners();
         this.isListening = false;
+    }
+
+    private stopStatsUpdates(): void {
+        if (this.statsUpdateInterval) {
+            clearInterval(this.statsUpdateInterval);
+            this.statsUpdateInterval = null;
+        }
     }
 }
 

@@ -60,6 +60,13 @@ test.describe('Expert Sheets and Widgets', () => {
   });
 
   test('should toggle solar timeline', async ({ page }) => {
+    // La timeline est volontairement disponible uniquement en 3D.
+    const body = page.locator('body');
+    if (await body.evaluate((element) => element.classList.contains('mode-2d'))) {
+      await page.locator('#nav-2d-toggle').click();
+      await expect(body).not.toHaveClass(/mode-2d/);
+    }
+
     const timelineBtn = page.locator('#timeline-toggle-btn');
     await expect(timelineBtn).toBeVisible();
     

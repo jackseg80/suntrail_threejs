@@ -140,6 +140,15 @@ public class RecordingService extends Service {
 
         // ── Commandes de contrôle (sans lancer une nouvelle course) ──────────────
         if (ACTION_UPDATE_STATS.equals(action)) {
+            // Une mise à jour asynchrone peut arriver juste après STOP. Si elle
+            // recrée le Service, aucune course n'est attachée : ne jamais recréer
+            // une notification orpheline dans ce cas.
+            if (mCurrentCourseId == null) {
+                NotificationManager nm = getSystemService(NotificationManager.class);
+                if (nm != null) nm.cancel(NOTIFICATION_ID);
+                stopSelf();
+                return START_NOT_STICKY;
+            }
             double dist      = intent.getDoubleExtra("distance", 0.0);
             double elev      = intent.getDoubleExtra("elevation", 0.0);
             double elevMinus = intent.getDoubleExtra("elevationMinus", 0.0);
@@ -358,6 +367,8 @@ public class RecordingService extends Service {
         sendBroadcast(bcast);
 
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm != null) nm.cancel(NOTIFICATION_ID);
         super.onDestroy();
     }
 

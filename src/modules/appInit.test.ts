@@ -68,6 +68,14 @@ vi.mock('./ui/components/TimelineComponent', () => ({
 describe('appInit.ts — Initialization Sequence', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.stubGlobal(
+            'MutationObserver',
+            class {
+                observe = vi.fn();
+                disconnect = vi.fn();
+                takeRecords = vi.fn().mockReturnValue([]);
+            }
+        );
         document.body.innerHTML = '<div id="canvas-container"></div>';
     });
 

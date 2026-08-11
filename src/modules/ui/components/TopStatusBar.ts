@@ -269,12 +269,14 @@ export class TopStatusBar extends BaseComponent {
             const ps = pack ? packManager.getPackState(pack.id) : null;
 
             this.lodBadge.dataset.lod = String(Math.floor(zoom));
-            const badgeTextKey =
-                window.innerWidth <= 500
-                    ? 'topbar.mapDetailCompact'
-                    : 'topbar.mapDetail';
+            const isCompact = window.innerWidth <= 500;
+            const badgeTextKey = isCompact
+                ? 'topbar.mapDetailCompact'
+                : 'topbar.mapDetail';
             let badgeText = i18n.t(badgeTextKey, {
-                source: country,
+                source: isCompact
+                    ? i18n.t(`topbar.lodShort.${sourceKey}`)
+                    : country,
                 detail: String(Math.floor(zoom)),
             });
             if (

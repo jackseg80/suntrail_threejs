@@ -7,9 +7,12 @@ import {
     undoRouteEdit,
 } from '../routeManager';
 import { addRouteWaypoint } from '../routingService';
+import { setRoutePlanningMode } from '../routeManager';
 import { releaseFlags } from '../releaseFlags';
 import { state } from '../state';
 import { showToast } from '../toast';
+import { confirmDialog } from '../ui/confirmDialog';
+import { guidanceForegroundService } from '../guidance/GuidanceForegroundService';
 import {
     computeEffort,
     computeLightSummary,
@@ -242,8 +245,29 @@ export function renderPreparedRouteEditor(): void {
         enabled && !!state.routeComputation && state.routeWaypoints.length >= 2;
     const settingsSave = element<HTMLButtonElement>('rs-save-btn');
     const barSave = element<HTMLButtonElement>('rb-save-btn');
+    const barGuidance = element<HTMLButtonElement>('rb-guidance-btn');
     if (settingsSave) settingsSave.disabled = !canSave;
     if (barSave) barSave.disabled = !canSave;
+    if (barGuidance) {
+        const guidanceEnabled = releaseFlags.isEnabled('guidanceForeground');
+        const mustSaveBeforeStart =
+            state.routeDraftDirty || !state.activePreparedRouteId;
+        const accessibleLabel = i18n.t(
+            mustSaveBeforeStart
+                ? 'guidance.actions.saveAndStart'
+                : 'guidance.actions.start'
+        );
+        const visibleLabel = i18n.t('guidance.actions.start');
+        barGuidance.hidden = !guidanceEnabled;
+        barGuidance.disabled =
+            !canSave || state.routeComputation?.guidanceQuality === 'not-ready';
+        // Keep the route bar action compact on small screens. The accessible
+        // name and tooltip still explain that an unsaved draft is saved first.
+        barGuidance.setAttribute('aria-label', accessibleLabel);
+        barGuidance.setAttribute('title', accessibleLabel);
+        const labelElement = barGuidance.querySelector('span');
+        if (labelElement) labelElement.textContent = visibleLabel;
+    }
 
     const status = element<HTMLDivElement>('rs-draft-status');
     if (status) {
@@ -344,6 +368,58 @@ async function saveDraft(button: HTMLButtonElement | null): Promise<void> {
     }
 }
 
+async function startGuidanceFromDraft(
+    button: HTMLButtonElement | null
+): Promise<void> {
+    const computation = state.routeComputation;
+    if (
+        !button ||
+        button.disabled ||
+        !computation ||
+        state.routeWaypoints.length < 2
+    ) {
+        return;
+    }
+    if (computation.guidanceQuality === 'not-ready') {
+        showToast(i18n.t('guidance.error.notReady'));
+        return;
+    }
+    const approximateConfirmed =
+        computation.guidanceQuality === 'approximate'
+            ? await confirmDialog(i18n.t('guidance.confirm.approximate'), {
+                  confirmText: i18n.t('guidance.actions.startAnyway'),
+              })
+            : false;
+    if (computation.guidanceQuality === 'approximate' && !approximateConfirmed)
+        return;
+
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    try {
+        // Le moteur ne prend volontairement qu'une PreparedRoute persistée :
+        // ce raccourci sauvegarde donc le brouillon avant de démarrer.
+        const route = await preparedRouteService.saveCurrentDraft();
+        const started = await guidanceForegroundService.start(route, {
+            approximateConfirmed,
+        });
+        if (!started) {
+            showToast(i18n.t('guidance.error.gps'));
+            return;
+        }
+        setRoutePlanningMode(false, { announceHint: false });
+    } catch (error) {
+        const message =
+            error instanceof Error &&
+            error.message.startsWith('preparedRoutes.')
+                ? i18n.t(error.message)
+                : i18n.t('preparedRoutes.error.storage');
+        showToast(message);
+    } finally {
+        button.removeAttribute('aria-busy');
+        renderPreparedRouteEditor();
+    }
+}
+
 export function initPreparedRouteUI(): void {
     if (initialized) return;
     initialized = true;
@@ -396,6 +472,10 @@ export function initPreparedRouteUI(): void {
     );
     element<HTMLButtonElement>('rb-save-btn')?.addEventListener('click', (e) =>
         saveDraft(e.currentTarget as HTMLButtonElement)
+    );
+    element<HTMLButtonElement>('rb-guidance-btn')?.addEventListener(
+        'click',
+        (e) => startGuidanceFromDraft(e.currentTarget as HTMLButtonElement)
     );
     bindSearch('start');
     bindSearch('end');

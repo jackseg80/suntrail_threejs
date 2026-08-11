@@ -8,6 +8,9 @@ declare module 'gpxparser' {
         lon: number;
         ele: number;
         time?: Date;
+        name?: string;
+        cmt?: string;
+        desc?: string;
     }
 
     export interface GPXTrackSegment {

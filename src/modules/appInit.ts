@@ -10,6 +10,7 @@ import { initScene, flyTo, forceImmediateLODUpdate } from './scene';
 import { refreshTerrain } from './terrain';
 import { updateElevationProfile } from './profile';
 import {
+    beginUserFollow,
     startLocationTracking,
     updateUserMarker,
     stopLocationTracking,
@@ -793,6 +794,7 @@ function setupGpsButton() {
                 );
 
                 if (isFollowing) {
+                    beginUserFollow();
                     state.isFollowingUser = true;
                     await startLocationTracking();
                 } else {

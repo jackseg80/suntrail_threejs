@@ -1463,10 +1463,6 @@ input[type='range']:focus-visible {
 #track.recording #import-gpx-sheet {
     display: none !important;
 }
-#track.recording #gpx-layers-list {
-    display: none !important;
-}
-
 .rec-upsell-banner {
     display: flex;
     flex-direction: column;
@@ -1495,12 +1491,13 @@ input[type='range']:focus-visible {
     /* #1555e0 on white = 5.6:1 — passe WCAG AA */
 }
 
-/* BARRE DE TEMPS BASSE (TIMELINE) - CENTERED STYLE */
+/* TIMELINE SOLAIRE — tiroir haut, sous la barre repliable, pour libérer la carte basse */
 #bottom-bar {
     position: fixed;
-    bottom: calc(var(--ui-bottom-offset) + 16px);
+    top: var(--timeline-top, calc(env(safe-area-inset-top, 0px) + 60px));
+    bottom: auto;
     left: 50%;
-    transform: translate(-50%, 200px); /* Hidden below by default */
+    transform: translate(-50%, -200px); /* Hidden above by default */
     width: calc(100% - 40px);
     max-width: 450px;
     background: var(--surface);
@@ -1572,16 +1569,7 @@ body.sheet-open .fab-stack {
     pointer-events: none;
 }
 
-/* Timeline ouverte en position par défaut → ne cacher les FABs que sur petits écrans où elle les touche */
-/* Breakpoint ~600px : la timeline (max-width 450px) + FAB (52px + gap 16px) se chevauchent */
-@media (max-width: 600px) {
-    body.timeline-open .fab-stack {
-        transform: translateY(20px) scale(0.9);
-        opacity: 0;
-        pointer-events: none;
-    }
-}
-/* En mode drag libre, annuler la règle statique — .widget-overlap-hidden prend le relai */
+/* En position libre, .widget-overlap-hidden masque uniquement les contrôles réellement couverts. */
 body.timeline-custom-pos .fab-stack {
     transform: translateY(0) scale(1);
     opacity: 1;
@@ -1851,14 +1839,25 @@ body.sheet-layers-sheet-open #sheet-overlay {
     opacity: 1;
     pointer-events: auto;
 }
-/* Timebar ouverte : remonter le profil pour ne pas être couvert */
-body.timeline-open #elevation-profile:not(.panel-custom-pos) {
-    bottom: calc(var(--ui-bottom-offset) + 150px);
-    transition:
-        bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-        opacity 0.4s;
+
+/* Téléphone : le profil partage toujours l'espace avec le rail cartographique.
+   Une position choisie par l'utilisateur reste entièrement pilotée en inline par
+   draggablePanel ; il n'existe donc qu'un seul panneau, en Préparer et en suivi. */
+@media (max-width: 600px) {
+    #elevation-profile:not(.panel-custom-pos) {
+        right: var(--profile-panel-right, 84px);
+        bottom: calc(var(--ui-bottom-offset) + 8px);
+        left: var(--profile-panel-left, 8px);
+        width: auto;
+        max-width: none;
+        transform: translateY(calc(100% + 40px));
+    }
+
+    #elevation-profile.is-open:not(.panel-custom-pos) {
+        transform: translateY(0);
+    }
 }
+
 .profile-drag-handle {
     width: 100%;
     padding: var(--space-2) 0 var(--space-2);
@@ -2114,21 +2113,49 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
 /* ── RESPONSIVE : petits écrans ──────────────────────────────────────────────────── */
 /* Réduit la taille des widgets pour éviter les chevauchements */
 @media (max-width: 500px) {
-    .icon-btn-sm {
-        width: 48px;
+    #top-status-bar {
         height: 48px;
+        padding-inline: 8px;
+        gap: 4px;
+    }
+    .top-status-bar-content,
+    .top-left-widgets,
+    .top-center-widgets,
+    .top-right-widgets {
+        gap: 4px;
+    }
+    .top-left-widgets,
+    .top-right-widgets {
+        flex-shrink: 0;
+    }
+    .icon-btn-sm {
+        width: 44px;
+        height: 44px;
     }
     .status-widget,
     .top-widget {
-        min-height: 48px;
+        min-height: 44px;
         padding: 4px var(--space-2);
     }
     .top-collapse-toggle {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
+    }
+    #top-pill-weather {
+        min-width: 52px;
+    }
+    #top-pill-lod {
+        max-width: 132px;
+        min-width: 0;
+        overflow: hidden;
     }
     .lod-badge {
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .rec-indicator {
+        top: 48px;
     }
     .lod-info-trigger {
         display: none !important;
@@ -2136,17 +2163,8 @@ body.timeline-open #elevation-profile:not(.panel-custom-pos) {
 }
 
 @media (max-width: 389px) {
-    #timeline-toggle-btn {
-        display: none;
-    }
-    #top-status-bar {
-        padding-inline: 8px;
-    }
-    .top-status-bar-content,
-    .top-left-widgets,
-    .top-center-widgets,
-    .top-right-widgets {
-        gap: 4px;
+    #top-pill-lod {
+        max-width: 104px;
     }
 }
 
@@ -2160,7 +2178,7 @@ body.ui-hidden #nav-bar {
     opacity: 0;
 }
 body.ui-hidden #bottom-bar {
-    transform: translate(-50%, 200px);
+    transform: translate(-50%, -200px);
     opacity: 0;
 }
 body.ui-hidden #gps-main-btn,
@@ -2189,11 +2207,9 @@ body.preset-eco.ui-moving #nav-bar {
 }
 
 /* ── MODE 2D ─────────────────────────────────────────────────────────────────── */
-/* Timeline : bouton visible mais désactivé visuellement — clic → toast "disponible en 3D" */
+/* Timeline : bouton absent en 2D — la simulation solaire requiert la 3D. */
 body.mode-2d #timeline-toggle-btn {
-    opacity: 0.35;
-    cursor: not-allowed;
-    pointer-events: auto; /* JS gère le clic pour afficher le toast */
+    display: none !important;
 }
 /* Barre du bas (bottom-bar) : toujours masquée en 2D — la simulation solaire requiert la 3D */
 body.mode-2d #bottom-bar {
@@ -3578,6 +3594,10 @@ body.ui-hidden #route-bar {
         gap: 4px;
     }
 
+    .rph-stats[hidden] {
+        display: none;
+    }
+
     .rph-stat {
         min-width: 0;
         color: var(--text);
@@ -3764,6 +3784,12 @@ body.profile-interacting #bottom-bar {
 .rb-save-btn:not(:disabled) {
     color: var(--success);
     border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+}
+
+.rb-guidance-btn:not(:disabled) {
+    color: #fff;
+    border-color: var(--success, #16a34a);
+    background: var(--success, #16a34a);
 }
 
 .rs-draft-status {
@@ -4065,6 +4091,410 @@ body.profile-interacting #bottom-bar {
     color: var(--on-accent);
 }
 
+.prepared-route-actions button[data-route-action='guidance'] {
+    background: var(--success, #16a34a);
+    border-color: var(--success, #16a34a);
+    color: #fff;
+}
+
+/* Mode guidage : une seule surface basse, un rail cartographique réservé et
+   aucun chrome d'édition. Les données du brouillon restent intactes. */
+body.guidance-active {
+    --guidance-rail-width: 68px;
+    --guidance-gap: 8px;
+    --guidance-bottom: calc(var(--bar-h) + var(--safe-bottom) + 8px);
+    --guidance-safe-top: calc(env(safe-area-inset-top, 0px) + 62px);
+    --ui-bottom-offset: calc(var(--bar-h) + var(--safe-bottom));
+}
+
+body.guidance-active #route-bar,
+body.guidance-active #route-plan-hud,
+body.guidance-active #route-settings {
+    display: none !important;
+}
+
+body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
+    right: var(--guidance-gap);
+    bottom: var(--guidance-bottom);
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.guidance-foreground {
+    position: fixed;
+    z-index: 1450;
+    left: 50%;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    width: min(520px, calc(100vw - 20px));
+    max-height: min(78vh, 680px);
+    overflow-y: auto;
+    transform: translateX(-50%);
+    padding: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.22);
+    border-radius: 20px;
+    background: rgba(7, 14, 25, 0.96);
+    color: #fff;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    font-variant-numeric: tabular-nums;
+}
+
+.guidance-foreground[hidden] {
+    display: none !important;
+}
+
+.guidance-foreground[data-status='offRoute'] {
+    border-color: #fb923c;
+}
+
+.guidance-foreground[data-status='arrived'],
+.guidance-foreground[data-status='recovered'] {
+    border-color: #4ade80;
+}
+
+.guidance-alert {
+    margin: -4px -4px 10px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    background: #c2410c;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.guidance-heading,
+.guidance-gps-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.guidance-heading > div:first-child {
+    display: grid;
+    min-width: 0;
+}
+
+.guidance-heading-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex: none;
+}
+
+.guidance-heading strong {
+    overflow: hidden;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.guidance-eyebrow,
+.guidance-cue-confidence,
+.guidance-limit,
+.guidance-gps-row {
+    color: #cbd5e1;
+    font-size: 11px;
+}
+
+.guidance-status {
+    flex: none;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.25);
+    color: #bfdbfe;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.guidance-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    min-height: 30px;
+    padding: 4px 7px;
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.guidance-expand > span:last-child {
+    display: inline-block;
+    transition: transform 0.18s ease;
+}
+
+.guidance-expand[aria-expanded='true'] > span:last-child {
+    transform: rotate(180deg);
+}
+
+.guidance-cue {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 2px 10px;
+    align-items: center;
+    margin-block: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: #172554;
+}
+
+.guidance-cue-distance {
+    grid-row: 1 / 3;
+    color: #93c5fd;
+    font-size: clamp(24px, 8vw, 38px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+}
+
+.guidance-direction {
+    display: grid;
+    grid-row: 1 / 3;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    align-self: center;
+    border-radius: 50%;
+    background: rgba(147, 197, 253, 0.14);
+    color: #bfdbfe;
+}
+
+.guidance-direction[hidden] {
+    display: none;
+}
+
+.guidance-direction svg {
+    width: 25px;
+    height: 25px;
+    fill: currentcolor;
+    transform-origin: center;
+    transition: transform 0.3s ease-out;
+}
+
+.guidance-foreground[data-status='offRoute'] .guidance-direction {
+    background: rgba(251, 146, 60, 0.2);
+    color: #fed7aa;
+}
+
+.guidance-cue strong {
+    font-size: clamp(17px, 5vw, 24px);
+    line-height: 1.08;
+}
+
+.guidance-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+
+.guidance-metrics > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    padding: 8px 6px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    text-align: center;
+}
+
+.guidance-metrics span {
+    color: #cbd5e1;
+    font-size: 10px;
+}
+
+.guidance-metrics strong {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.guidance-gps-row {
+    margin-block: 9px;
+}
+
+.guidance-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+        'pause profile'
+        'record stop';
+    gap: 6px;
+}
+
+.guidance-actions button[data-guidance-action='pause'] {
+    grid-area: pause;
+}
+
+.guidance-actions button[data-guidance-action='profile'] {
+    grid-area: profile;
+}
+
+.guidance-actions button[data-guidance-action='record'] {
+    grid-area: record;
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.guidance-actions .guidance-stop {
+    grid-area: stop;
+}
+
+.guidance-actions button {
+    min-height: 48px;
+    padding: 8px 5px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    background: #1e293b;
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.guidance-actions button[data-guidance-action='record'][data-recording='true'] {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+.guidance-actions .guidance-stop {
+    color: #fecaca;
+}
+
+.guidance-limit {
+    margin: 8px 2px 0;
+    line-height: 1.35;
+    text-align: center;
+}
+
+/* Par défaut, le suivi ne prend qu'une bande : prochaine consigne, restant,
+   ETA et commandes. Les détails restent à un toucher, sans perdre REC. */
+.guidance-foreground:not([data-expanded='true']) {
+    max-height: none;
+    overflow: visible;
+    padding: 10px;
+    border-radius: 16px;
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-eyebrow,
+.guidance-foreground:not([data-expanded='true']) .guidance-cue-confidence,
+.guidance-foreground:not([data-expanded='true'])
+    .guidance-metrics
+    > div:nth-child(n + 3),
+.guidance-foreground:not([data-expanded='true']) .guidance-gps-row,
+.guidance-foreground:not([data-expanded='true']) .guidance-limit {
+    display: none;
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-cue {
+    margin-block: 8px;
+    padding: 9px 10px;
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-cue-distance {
+    font-size: clamp(22px, 7vw, 32px);
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-cue strong {
+    font-size: clamp(16px, 4.5vw, 20px);
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-direction {
+    width: 30px;
+    height: 30px;
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-metrics {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-metrics > div {
+    padding-block: 6px;
+}
+
+.guidance-foreground:not([data-expanded='true']) .guidance-actions button {
+    min-height: 42px;
+}
+
+/* Le profil devient une vue secondaire exclusive. Le guidage essentiel reste
+   visible sous la barre haute et le graphique partage l'écran avec le rail. */
+body.guidance-active.guidance-profile-open .guidance-foreground {
+    z-index: 1600;
+    top: var(--guidance-safe-top);
+    right: var(--guidance-gap);
+    bottom: auto;
+    left: var(--guidance-gap);
+    width: auto;
+    max-height: none;
+    overflow: visible;
+    transform: none;
+    padding: 8px 10px;
+}
+
+body.guidance-profile-open .guidance-eyebrow,
+body.guidance-profile-open .guidance-expand,
+body.guidance-profile-open .guidance-cue-confidence,
+body.guidance-profile-open .guidance-metrics,
+body.guidance-profile-open .guidance-gps-row,
+body.guidance-profile-open .guidance-actions,
+body.guidance-profile-open .guidance-limit {
+    display: none;
+}
+
+body.guidance-profile-open .guidance-cue {
+    margin: 6px 0 0;
+    padding: 7px 9px;
+}
+
+body.guidance-profile-open .guidance-cue-distance {
+    font-size: clamp(20px, 6vw, 28px);
+}
+
+body.guidance-profile-open .guidance-cue strong {
+    font-size: clamp(15px, 4vw, 19px);
+}
+
+body.guidance-profile-open #elevation-profile:not(.panel-custom-pos) {
+    max-height: min(42dvh, 360px);
+    overflow-y: auto;
+}
+
+body.guidance-profile-open
+    #elevation-profile.is-expanded
+    #profile-chart-container {
+    height: min(26dvh, 220px);
+}
+
+@media (max-width: 600px) {
+    body.guidance-active .guidance-foreground {
+        right: calc(var(--guidance-rail-width) + var(--guidance-gap) * 2);
+        bottom: var(--guidance-bottom);
+        left: var(--guidance-gap);
+        width: auto;
+        transform: none;
+    }
+}
+
+@media (max-width: 420px) {
+    .guidance-foreground {
+        bottom: calc(68px + env(safe-area-inset-bottom));
+        width: calc(100vw - 12px);
+        padding: 10px;
+        border-radius: 16px;
+    }
+
+    .guidance-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 .prepared-route-actions
     button[data-route-action='favorite'][aria-pressed='true'] {
     background: color-mix(in srgb, var(--gold) 16%, var(--surface-solid));
@@ -4123,6 +4553,11 @@ body.profile-interacting #bottom-bar {
 .prepared-storage-error {
     border-color: var(--danger);
     color: var(--danger);
+}
+
+.prepared-routes-empty[hidden],
+.prepared-storage-error[hidden] {
+    display: none;
 }
 
 .legacy-library-help {

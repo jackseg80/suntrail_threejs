@@ -9,7 +9,7 @@ import { eventBus } from './eventBus';
 type EffectiveTheme = 'light' | 'dark';
 
 const darkMediaQuery =
-    typeof window !== 'undefined'
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
         ? window.matchMedia('(prefers-color-scheme: dark)')
         : null;
 

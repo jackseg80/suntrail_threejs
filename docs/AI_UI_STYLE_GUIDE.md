@@ -1,6 +1,7 @@
 # AI UI Style Guide (v5.83.1)
 
-> Référence de la release publique corrective v5.83.1 ; v5.84 n'est pas implémentée.
+> Référence de la release publique corrective v5.83.1, étendue par la pré-release interne v5.84
+> pour le panneau de suivi, le rail cartographique et les panneaux mobiles exclusifs.
 
 This guide defines the standardized UI patterns for SunTrail to ensure visual consistency across all panels (Expert Sheets, Settings, etc.).
 

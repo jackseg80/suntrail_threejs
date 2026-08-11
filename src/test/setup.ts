@@ -1,5 +1,29 @@
 import { afterEach, beforeEach, vi } from 'vitest';
 
+function installDeterministicMatchMedia(): void {
+    if (
+        typeof window === 'undefined' ||
+        typeof window.matchMedia === 'function'
+    )
+        return;
+    Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: vi.fn().mockImplementation((query: string) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn().mockReturnValue(false),
+        })),
+    });
+}
+
+installDeterministicMatchMedia();
+
 /**
  * Unit tests must never issue real network requests. Apart from making tests
  * flaky, pending Happy DOM fetches are reported as AbortError during teardown.
@@ -15,6 +39,7 @@ function installDeterministicFetch(): void {
 }
 
 beforeEach(() => {
+    installDeterministicMatchMedia();
     installDeterministicFetch();
 });
 

@@ -1,4 +1,59 @@
-## [Non publié] - 2026-08-10
+## [5.84.0] - 2026-08-11 — jalon interne/fermé clôturé
+
+### Ajouté
+- **GuidanceEngine TypeScript pur** : projection sur polyligne, continuité robuste aux boucles,
+  allers-retours, lacets et croisements, progression monotone, distance/ETA restantes,
+  cross-track, bearing et look-ahead.
+- **États et alertes foreground** : `idle`, `acquiring`, `onRoute`, `offRoute`, `recovered`,
+  `arrived`, `paused`, avec précision/fraîcheur GPS, hystérésis 20 s/10 s et cooldown 120 s.
+- **GuidancePlanV1 séparé** : migration IndexedDB additive v2→v3, empreinte de géométrie,
+  instructions ORS/OSRM, waypoints GPX nommés proches et changements de direction dérivés
+  explicitement approximatifs.
+- **Interface terrain à une main** : prochaine indication, distance, ETA, progression, écart,
+  qualité GPS, recentrage, pause/reprise, arrêt et REC indépendant, avec alertes visuelles et
+  haptiques. Le release flag `guidanceForeground` reste distinct de Free/Pro.
+- **Fixtures et tests déterministes** : droite, boucle, aller-retour, épingles proches,
+  croisement, bruit, saut GPS, retour sur route et arrivée, plus E2E démarrer/pause/reprendre/
+  arriver/stop et guidance-only/recording-only/both.
+
+### Corrigé
+- **Retour terrain Galaxy S23** : rotation du suivi avec hystérésis 12°/5° contre le bruit du
+  compas, repositionnement réellement rendu après dépliage/réduction du panneau et flèche de
+  direction (suite de la trace ou retour direct hors-trace).
+- **Indications localisées** : ORS reçoit maintenant la langue active ; les plans ORS déjà
+  sauvegardés affichent au minimum l'action canonique traduite au lieu de conserver une phrase
+  anglaise.
+- **STOP REC depuis le guidage** : arrêt central identique à Sortie, neutralisation de la course
+  entre STOP et la dernière mise à jour de statistiques Android, et suppression explicite de la
+  notification native résiduelle.
+- **Carte noire ou figée Android** : réarmement de la boucle WebGL au retour au premier plan,
+  invalidation explicite après changement de panneau et watchdog de rendu de 3 secondes.
+- **Caméra de suivi stable** : démarrer ou déplier le panneau n'active plus le recentrage
+  permanent. Le bouton Recentrer reste l'action explicite de suivi caméra et son décalage vers
+  le tiers supérieur utilise un axe d'orbite stable, sans boucle d'oscillation.
+- **Panneau lisible sur mobile** : le chrome Préparer est retiré de l'affichage pendant la
+  session sans perdre le brouillon, le panneau compact réserve un rail aux quatre commandes
+  cartographiques et le profil devient une vue exclusive avec un bandeau de guidage essentiel.
+- **Interactions du profil** : les boutons placés dans sa poignée ne déclenchent plus en même
+  temps un déplacement ou un geste de fermeture ; la croix reste fiable sur petit écran.
+- **Nettoyage Préparer et Bibliothèque** : Effacer restaure immédiatement l'instruction de départ
+  sans anciennes statistiques ; les états vides/erreur marqués `hidden` ne laissent plus de
+  liseré pointillé. Le raccourci explicite « Sauvegarder et suivre » documente la persistance
+  nécessaire avant le démarrage du moteur.
+
+### Portée
+- Jalon interne/fermé publié comme pré-release GitHub, sans déploiement Play ni promesse publique
+  de guidage complet. Aucun guidage écran éteint, notification,
+  persistance native de session/route, survie après kill/swipe-away, voix ou recalcul réseau.
+- Version source `5.84.0` et Android `versionName 5.84.0` / `versionCode 902` ; validation
+  Galaxy S23 acceptée pour le périmètre foreground. L'AAB signé est attaché à la release GitHub ;
+  il n'est pas téléversé sur Play Console.
+
+### Validation automatisée
+- `npm run check`, 1 577 tests Vitest, builds web/Capacitor, budget bundle (2,25 MiB), audit
+  i18n, 6 smoke E2E et 8 E2E Guidance/PreparedRoute/Préparer ciblés réussis.
+- `cap:sync` sans diff versionné inattendu ; Gradle `test lint assembleDebug` réussi, lint Android
+  à 0 erreur (2 avertissements historiques de ressources inutilisées).
 
 ### Corrigé
 - **Suppression de compte (RGPD) fonctionnelle sur iOS** : `window.confirm()` retourne toujours

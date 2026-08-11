@@ -195,6 +195,10 @@ export function updateElevationProfile(
         profileEl.classList.remove('is-open');
         void profileEl.offsetWidth;
         profileEl.classList.add('is-open');
+        document.body.classList.toggle(
+            'guidance-profile-open',
+            document.body.classList.contains('guidance-active')
+        );
         setupSwipeGesture(profileEl);
         setupExpandToggle();
     }
@@ -600,6 +604,7 @@ eventBus.on('localeChanged', () => {
 
 export function closeElevationProfile(): void {
     document.body.classList.remove('profile-interacting');
+    document.body.classList.remove('guidance-profile-open');
     const profileEl = document.getElementById('elevation-profile');
     if (profileEl) {
         profileEl.classList.remove('is-open');
