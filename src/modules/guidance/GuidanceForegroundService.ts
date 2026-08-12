@@ -13,6 +13,7 @@ import type { PreparedRouteV1 } from '../preparedRoutes/preparedRoute';
 import { preparedRouteService } from '../preparedRoutes/preparedRouteService';
 import { recordingService } from '../recordingService';
 import { releaseFlags } from '../releaseFlags';
+import { displayPreparedRoute } from '../routingService';
 import { state } from '../state';
 import {
     nativeGPSService,
@@ -234,6 +235,10 @@ export class GuidanceForegroundService {
             await nativeGPSService.stopGuidance();
             return false;
         }
+        // La session Room restaure le moteur, mais pas les calques WebGL éphémères de la WebView.
+        // Réafficher la route sauvegardée recrée le calque `prepared-*` attendu par la carte et
+        // le bouton Profil, sans modifier la PreparedRoute ni la session native.
+        displayPreparedRoute(route);
         this.route = route;
         this.nativeActive = true;
         this.expanded = false;

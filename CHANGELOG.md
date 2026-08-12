@@ -21,6 +21,8 @@
   principal tué sont architecturés pour la reprise Room, avec preuve physique encore requise.
 - **Rotation Android** : le redimensionnement portrait/paysage réarme explicitement le rendu
   WebGL, évitant une carte noire jusqu'au premier geste tactile.
+- **Reprise WebView Android** : une session Guidance récupérée recrée désormais le calque de la
+  route sauvegardée ; carte et Profil restent disponibles en même temps que REC.
 
 ### Portée et gates
 - Version source `5.85.0`, Android `versionName 5.85.0` / `versionCode 903` provisoire tant que

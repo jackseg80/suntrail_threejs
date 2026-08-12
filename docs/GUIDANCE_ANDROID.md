@@ -41,6 +41,10 @@ principal. Après redémarrage de `:tracking`, l'état non terminal reprend avec
 actif. Un miroir minimal en `SharedPreferences` sert uniquement à décider la reprise ; Room
 reste la source de vérité détaillée.
 
+À la réouverture de la WebView, la route relue dans IndexedDB est aussi recréée comme calque
+`prepared-*` sur la carte. Ce calque éphémère est nécessaire au tracé et au bouton Profil ; il ne
+modifie ni la `PreparedRouteV1` ni la copie native Room.
+
 ## Matcher Java et parité v5.84
 
 `guidance/GuidanceEngine.java` est un port pur Java du moteur v5.84 :
