@@ -14,11 +14,19 @@ android {
         applicationId "com.suntrail.threejs"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 902
+        versionCode 903
         // ...
-        versionName "5.84.0"
+        versionName "5.85.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += [
+                    "room.schemaLocation": "$projectDir/schemas".toString(),
+                    "room.incremental": "true"
+                ]
+            }
+        }
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
@@ -43,6 +51,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    sourceSets {
+        test.resources.srcDir "../../src/modules/guidance/fixtures"
+        androidTest.assets.srcDir "../../src/modules/guidance/fixtures"
+    }
 }
 
 repositories {
@@ -60,6 +72,7 @@ dependencies {
     // GPS natif dans RecordingService (FusedLocationProviderClient) â€” v5.23
     implementation "com.google.android.gms:play-services-location:21.4.0"
     testImplementation "junit:junit:$junitVersion"
+    testImplementation "org.json:json:20260719"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
@@ -68,6 +81,9 @@ dependencies {
     def room_version = "2.8.4"
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version"
+    androidTestImplementation "androidx.room:room-testing:$room_version"
+    androidTestImplementation "androidx.test:core:1.7.0"
+    androidTestImplementation "androidx.test:rules:1.7.0"
 }
 
 apply from: 'capacitor.build.gradle'

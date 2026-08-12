@@ -1,6 +1,26 @@
-# SunTrail — TODO (version source v5.84.0 — jalon interne clôturé)
+# SunTrail — TODO (version source v5.85.0 — validation terrain requise)
 
-> Dernière mise à jour : 2026-08-11
+> Dernière mise à jour : 2026-08-12
+
+## 🟡 v5.85.0 — guidage Android natif implémenté, commit local autorisé
+
+- [x] Service `:tracking` partagé en modes `recording`, `guidance`, `both`, source Fused unique.
+- [x] Anciennes API REC conservées recording-only et arrêts REC/Guidance/les deux indépendants.
+- [x] Route/session/snapshot Room v2, migration additive, schéma exporté et copie défensive.
+- [x] Port Java pur du matcher/machine d'état et golden des neuf fixtures v5.84 à tolérances fixes.
+- [x] Bridge/UI derrière `nativeGuidance=false`, reprise WebView/processus et statut `recovered`.
+- [x] Permission/GPS/stale/route/corruption/stockage, notification, WakeLock et actions traités.
+- [x] JUnit/parité exécutés ; instrumentation Galaxy S23/API 36 : 5/5 tests, 0 échec.
+- [ ] Exécuter l'instrumentation réelle sur API 24 et 33.
+- [ ] Valider Galaxy A53 et Galaxy S23 sur le terrain : écran éteint, mode avion, swipe-away et relance.
+- [ ] Exécuter 3 × 1 h REC-only puis 3 × 1 h Guidance+REC sur chaque appareil, avec mesures.
+- [ ] Démontrer sur A53 un surcoût ≤ 1 point batterie/h ou documenter une décision de blocage.
+- [ ] Revalider Play Console avant d'attribuer définitivement le `versionCode 903`.
+- [ ] Clôture, tag et release uniquement après autorisation explicite ; le commit local de
+      l'implémentation est autorisé. Ne pas commencer v5.86.
+
+Protocole :
+[docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md](docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md).
 
 ## ✅ v5.84.0 — moteur de suivi interne clôturé
 
@@ -102,7 +122,7 @@ Prompt de clôture :
 - [x] **v5.83.2** — détection de la langue système au premier démarrage, publiée.
 - [x] **v5.83.3** — anglais par défaut, publiée.
 - [x] **v5.84.0 interne** — clôturée par pré-release GitHub interne, sans déploiement Play.
-- [ ] **v5.85.0** — guidage Android natif robuste, écran éteint et récupération.
+- [ ] **v5.85.0** — implémentée localement ; clôture bloquée par instrumentation et terrain.
 - [ ] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne.
 - [ ] **v6.0.0** — compte optionnel et synchronisation PC–Android.
 - [ ] **v6.1.0** — outils experts et finition professionnelle.

@@ -260,5 +260,31 @@ describe('scene.ts', () => {
                 document.querySelector('#canvas-container canvas')
             ).not.toBeNull();
         });
+
+        it('rearms rendering after a viewport resize', async () => {
+            document.body.innerHTML = '<div id="canvas-container"></div>';
+            Object.assign(state, {
+                TARGET_LAT: 46.5,
+                TARGET_LON: 7.5,
+                ZOOM: 14,
+                PIXEL_RATIO_LIMIT: 1,
+                SHADOWS: true,
+                SHOW_STATS: false,
+                PERFORMANCE_PRESET: 'balanced',
+                simDate: new Date('2025-06-01T12:00:00'),
+            });
+
+            await initScene();
+            const renderer = MockWebGLRenderer.instances.at(-1)!;
+            const loopsBeforeResize =
+                renderer.setAnimationLoop.mock.calls.length;
+
+            window.dispatchEvent(new Event('resize'));
+
+            expect(renderer.setSize).toHaveBeenCalledTimes(3);
+            expect(renderer.setAnimationLoop).toHaveBeenCalledTimes(
+                loopsBeforeResize + 1
+            );
+        });
     });
 });

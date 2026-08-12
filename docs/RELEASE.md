@@ -158,6 +158,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **900** | **5.83.2** | **v5.83.2** | **Détection de la langue système au premier démarrage.** | **2026-08-10** |
 | **901** | **5.83.3** | **v5.83.3** | **Anglais par défaut et correctifs de locale.** | **2026-08-10** |
 | **902** | **5.84.0** | **v5.84.0** | **Jalon interne/fermé clôturé : moteur de suivi foreground validé sur Galaxy S23, pré-release GitHub avec AAB signé ; aucun téléversement Play Console.** | **2026-08-11** |
+| **903 (provisoire)** | **5.85.0** | **—** | **Guidage Android natif committé localement ; instrumentation S23/API 36 5/5 verte. Play Console non revérifiée, aucune publication ni téléversement. Ne pas considérer ce code attribué avant la gate release.** | **2026-08-12** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

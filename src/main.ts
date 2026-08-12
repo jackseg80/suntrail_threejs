@@ -88,6 +88,9 @@ window.addEventListener(
 
             // Initialisation unifiée (Natif + Preferences)
             await nativeGPSService.init();
+            const { guidanceForegroundService } =
+                await import('./modules/guidance/GuidanceForegroundService');
+            await guidanceForegroundService.recoverNativeSession();
 
             // Cas 1 : Course native toujours active (reprise transparente)
             if (state.isRecording && state.recordedPoints.length > 0) {

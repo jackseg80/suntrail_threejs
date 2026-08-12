@@ -15,6 +15,12 @@ import { cleanGPSTrack } from './gpsDeduplication';
 import { calculateTrackStats } from './geoStats';
 import { recordingService } from './recordingService';
 import { STORAGE_KEYS } from '../constants/storage';
+import type {
+    GuidanceEvent,
+    GuidancePlanV1,
+    GuidanceSnapshot,
+} from './guidance/guidanceTypes';
+import type { PreparedRouteV1 } from './preparedRoutes/preparedRoute';
 
 // ... (Types remain the same)
 
@@ -29,11 +35,48 @@ export interface NativeGPSPoint {
     accuracy: number;
 }
 
+export type NativeSessionMode = 'none' | 'recording' | 'guidance' | 'both';
+
+export interface NativeSession {
+    active: boolean;
+    mode: NativeSessionMode;
+    recording: boolean;
+    guidance: boolean;
+    routeId?: string | null;
+    courseId?: string | null;
+    issue?: string | null;
+    snapshot?: GuidanceSnapshot | null;
+}
+
+export interface NativeGuidanceUpdate {
+    snapshot: GuidanceSnapshot;
+    events: GuidanceEvent[];
+    acceptedPosition: boolean;
+    issue?: string | null;
+}
+
 interface RecordingPlugin {
     startCourse(options?: {
         originTile?: { x: number; y: number; z: number };
     }): Promise<{ courseId: string }>;
     stopCourse(): Promise<void>;
+    startGuidance(options: {
+        routeId: string;
+        geometry: PreparedRouteV1['geometry'];
+        cues: GuidancePlanV1['cues'];
+        geometryFingerprint: string | null;
+        plannedPaceKmh: number;
+    }): Promise<{
+        started: boolean;
+        routeId: string;
+        geometryPointCount: number;
+    }>;
+    stopGuidance(): Promise<void>;
+    pauseGuidance(): Promise<void>;
+    resumeGuidance(): Promise<void>;
+    stopAll(): Promise<void>;
+    getActiveSession(): Promise<NativeSession>;
+    getGuidanceSnapshot(): Promise<{ snapshot: GuidanceSnapshot | null }>;
     getPoints(options: {
         courseId: string;
         since: number;
@@ -72,6 +115,10 @@ class NativeGPSService {
     private statsUpdateInterval: number | null = null;
     private _listenerHandles: Array<{ remove(): void }> = [];
     private _syncing = false;
+    private guidanceListeners = new Set<
+        (update: NativeGuidanceUpdate) => void
+    >();
+    private sessionListeners = new Set<(session: NativeSession) => void>();
 
     /**
      * Initialisation et récupération au démarrage (v5.28.1)
@@ -80,6 +127,11 @@ class NativeGPSService {
         if (!RecordingNative) return;
 
         try {
+            const nativeSession = await this.getActiveSession();
+            if (nativeSession?.active) {
+                state.isRecording = nativeSession.recording;
+                this.setupListeners();
+            }
             // 1. Tenter de récupérer la course native encore active
             const nativeCourse = await this.getCurrentCourse();
 
@@ -259,7 +311,6 @@ class NativeGPSService {
         }
 
         await RecordingNative.stopCourse();
-        this.removeListeners();
         this.currentCourseId = null;
         state.currentCourseId = '';
         state.isPaused = false;
@@ -272,6 +323,74 @@ class NativeGPSService {
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
 
         this.flushMeshUpdate();
+    }
+
+    /** Démarre Guidance dans :tracking à partir d'une copie de route validée côté Java. */
+    async startGuidance(
+        route: PreparedRouteV1,
+        plan: GuidancePlanV1 | null
+    ): Promise<void> {
+        if (!RecordingNative) return;
+        await RecordingNative.startGuidance({
+            routeId: route.id,
+            geometry: route.geometry.map((point) => ({ ...point })),
+            cues: plan?.cues.map((cue) => ({ ...cue })) ?? [],
+            geometryFingerprint: plan?.geometryFingerprint ?? null,
+            plannedPaceKmh: route.plannedPaceKmh,
+        });
+        this.setupListeners();
+    }
+
+    async stopGuidance(): Promise<void> {
+        await RecordingNative?.stopGuidance();
+    }
+
+    async pauseGuidance(): Promise<void> {
+        await RecordingNative?.pauseGuidance();
+    }
+
+    async resumeGuidance(): Promise<void> {
+        await RecordingNative?.resumeGuidance();
+    }
+
+    async stopAll(): Promise<void> {
+        await RecordingNative?.stopAll();
+        this.removeListeners();
+    }
+
+    async getActiveSession(): Promise<NativeSession | null> {
+        if (!RecordingNative) return null;
+        try {
+            return await RecordingNative.getActiveSession();
+        } catch (error) {
+            console.warn('[NativeGPSService] getActiveSession failed:', error);
+            return null;
+        }
+    }
+
+    async getGuidanceSnapshot(): Promise<GuidanceSnapshot | null> {
+        if (!RecordingNative) return null;
+        try {
+            return (await RecordingNative.getGuidanceSnapshot()).snapshot;
+        } catch (error) {
+            console.warn(
+                '[NativeGPSService] getGuidanceSnapshot failed:',
+                error
+            );
+            return null;
+        }
+    }
+
+    addGuidanceListener(
+        listener: (update: NativeGuidanceUpdate) => void
+    ): () => void {
+        this.guidanceListeners.add(listener);
+        return () => this.guidanceListeners.delete(listener);
+    }
+
+    addSessionListener(listener: (session: NativeSession) => void): () => void {
+        this.sessionListeners.add(listener);
+        return () => this.sessionListeners.delete(listener);
     }
 
     /**
@@ -393,14 +512,34 @@ class NativeGPSService {
                 lon: number;
                 alt: number;
                 accuracy: number;
+                timestamp: number;
             }) => {
                 state.userLocationAccuracy = event.accuracy ?? null;
-                state.lastTrackingUpdate = Date.now();
+                state.lastTrackingUpdate = event.timestamp || Date.now();
                 state.userLocation = {
                     lat: event.lat,
                     lon: event.lon,
                     alt: event.alt,
                 };
+            }
+        ).then((h) => this._listenerHandles.push(h));
+
+        RecordingNative.addListener(
+            'onGuidanceSnapshot',
+            (update: NativeGuidanceUpdate) => {
+                for (const listener of this.guidanceListeners) listener(update);
+            }
+        ).then((h) => this._listenerHandles.push(h));
+
+        RecordingNative.addListener(
+            'onSessionChanged',
+            (event: Omit<NativeSession, 'active' | 'snapshot'>) => {
+                const session: NativeSession = {
+                    ...event,
+                    active: event.recording || event.guidance,
+                };
+                state.isRecording = event.recording;
+                for (const listener of this.sessionListeners) listener(session);
             }
         ).then((h) => this._listenerHandles.push(h));
 

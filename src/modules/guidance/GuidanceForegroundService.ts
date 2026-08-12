@@ -14,6 +14,10 @@ import { preparedRouteService } from '../preparedRoutes/preparedRouteService';
 import { recordingService } from '../recordingService';
 import { releaseFlags } from '../releaseFlags';
 import { state } from '../state';
+import {
+    nativeGPSService,
+    type NativeGuidanceUpdate,
+} from '../nativeGPSService';
 import { GuidanceEngine } from './GuidanceEngine';
 import type {
     GuidanceCueKind,
@@ -62,9 +66,15 @@ export class GuidanceForegroundService {
     private element: HTMLElement | null = null;
     private expanded = false;
     private recordingActionPending = false;
+    private nativeActive = false;
+    private unsubscribeNativeGuidance: (() => void) | null = null;
+    private unsubscribeNativeSession: (() => void) | null = null;
 
     public isActive(): boolean {
-        return !!this.engine && this.snapshot?.status !== 'idle';
+        return (
+            (this.nativeActive || !!this.engine) &&
+            this.snapshot?.status !== 'idle'
+        );
     }
 
     public getSnapshot(): GuidanceSnapshot | null {
@@ -85,12 +95,42 @@ export class GuidanceForegroundService {
         }
         if (!(await this.ensureLocationPermission())) return false;
 
+        if (this.nativeActive) {
+            await nativeGPSService.stopGuidance();
+            this.nativeActive = false;
+        }
         this.stop(false);
         this.expanded = false;
         setUserFollowViewport('guidanceCompact');
         closeElevationProfile();
         const plan = await preparedRouteService.getGuidancePlan(route);
         this.route = route;
+        if (
+            releaseFlags.isEnabled('nativeGuidance') &&
+            Capacitor.isNativePlatform()
+        ) {
+            this.nativeActive = true;
+            this.ensureUI();
+            document.body.classList.add('guidance-active');
+            this.unsubscribeNativeGuidance =
+                nativeGPSService.addGuidanceListener((update) =>
+                    this.applyNativeUpdate(update)
+                );
+            this.subscribeNativeSession();
+            this.unsubscribeRecording = state.subscribe('isRecording', () =>
+                this.render()
+            );
+            await nativeGPSService.startGuidance(route, plan);
+            const snapshot = await nativeGPSService.getGuidanceSnapshot();
+            if (snapshot) {
+                this.applyUpdate({
+                    snapshot,
+                    events: [],
+                    acceptedPosition: false,
+                });
+            }
+            return true;
+        }
         this.engine = new GuidanceEngine({
             routeId: route.id,
             geometry: route.geometry,
@@ -138,15 +178,18 @@ export class GuidanceForegroundService {
     }
 
     public pause(): void {
-        if (this.engine) this.applyUpdate(this.engine.pause());
+        if (this.nativeActive) void nativeGPSService.pauseGuidance();
+        else if (this.engine) this.applyUpdate(this.engine.pause());
     }
 
     public resume(): void {
-        if (this.engine) this.applyUpdate(this.engine.resume());
+        if (this.nativeActive) void nativeGPSService.resumeGuidance();
+        else if (this.engine) this.applyUpdate(this.engine.resume());
     }
 
     public stop(announce = true): void {
-        if (this.engine) this.applyUpdate(this.engine.stop());
+        if (this.nativeActive) void nativeGPSService.stopGuidance();
+        else if (this.engine) this.applyUpdate(this.engine.stop());
         if (document.body.classList.contains('guidance-active')) {
             closeElevationProfile();
         }
@@ -154,11 +197,16 @@ export class GuidanceForegroundService {
         this.unsubscribeLocation = null;
         this.unsubscribeRecording?.();
         this.unsubscribeRecording = null;
+        this.unsubscribeNativeGuidance?.();
+        this.unsubscribeNativeGuidance = null;
+        this.unsubscribeNativeSession?.();
+        this.unsubscribeNativeSession = null;
         if (this.tickTimer !== null) window.clearInterval(this.tickTimer);
         this.tickTimer = null;
         if (this.alertTimer !== null) window.clearTimeout(this.alertTimer);
         this.alertTimer = null;
         this.engine = null;
+        this.nativeActive = false;
         this.route = null;
         this.snapshot = null;
         this.expanded = false;
@@ -167,6 +215,62 @@ export class GuidanceForegroundService {
         if (this.element) this.element.hidden = true;
         eventBus.emit('guidanceStopped');
         if (announce) void haptic('light');
+    }
+
+    /** Rattache l'UI à une session :tracking survivante après destruction de WebView. */
+    public async recoverNativeSession(): Promise<boolean> {
+        if (
+            !releaseFlags.isEnabled('nativeGuidance') ||
+            !Capacitor.isNativePlatform()
+        ) {
+            return false;
+        }
+        const session = await nativeGPSService.getActiveSession();
+        if (!session?.guidance || !session.routeId || !session.snapshot) {
+            return false;
+        }
+        const route = await preparedRouteService.getById(session.routeId);
+        if (!route) {
+            await nativeGPSService.stopGuidance();
+            return false;
+        }
+        this.route = route;
+        this.nativeActive = true;
+        this.expanded = false;
+        setUserFollowViewport('guidanceCompact');
+        closeElevationProfile();
+        this.ensureUI();
+        document.body.classList.add('guidance-active');
+        this.unsubscribeNativeGuidance = nativeGPSService.addGuidanceListener(
+            (update) => this.applyNativeUpdate(update)
+        );
+        this.subscribeNativeSession();
+        this.unsubscribeRecording = state.subscribe('isRecording', () =>
+            this.render()
+        );
+        this.applyUpdate({
+            snapshot: session.snapshot,
+            events:
+                session.snapshot.status === 'recovered' ? ['recovered'] : [],
+            acceptedPosition: false,
+        });
+        return true;
+    }
+
+    private applyNativeUpdate(update: NativeGuidanceUpdate): void {
+        this.applyUpdate(update);
+    }
+
+    private subscribeNativeSession(): void {
+        this.unsubscribeNativeSession?.();
+        this.unsubscribeNativeSession = nativeGPSService.addSessionListener(
+            (session) => {
+                if (this.nativeActive && !session.guidance) {
+                    this.nativeActive = false;
+                    this.stop(false);
+                }
+            }
+        );
     }
 
     private async ensureLocationPermission(): Promise<boolean> {

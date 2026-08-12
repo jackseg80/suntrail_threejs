@@ -1,0 +1,323 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "efe345646f04bf75f2cc707a2f87ffc9",
+    "entities": [
+      {
+        "tableName": "gps_points",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `course_id` TEXT, `lat` REAL NOT NULL, `lon` REAL NOT NULL, `alt` REAL NOT NULL, `timestamp` INTEGER NOT NULL, `accuracy` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "courseId",
+            "columnName": "course_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lat",
+            "columnName": "lat",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lon",
+            "columnName": "lon",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alt",
+            "columnName": "alt",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accuracy",
+            "columnName": "accuracy",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_gps_points_course_id_timestamp",
+            "unique": false,
+            "columnNames": [
+              "course_id",
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_gps_points_course_id_timestamp` ON `${TABLE_NAME}` (`course_id`, `timestamp`)"
+          },
+          {
+            "name": "index_gps_points_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_gps_points_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          }
+        ]
+      },
+      {
+        "tableName": "active_guidance_route",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `route_id` TEXT NOT NULL, `geometry_json` TEXT NOT NULL, `cues_json` TEXT NOT NULL, `geometry_fingerprint` TEXT, `planned_pace_kmh` REAL NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routeId",
+            "columnName": "route_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "geometryJson",
+            "columnName": "geometry_json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cuesJson",
+            "columnName": "cues_json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "geometryFingerprint",
+            "columnName": "geometry_fingerprint",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "plannedPaceKmh",
+            "columnName": "planned_pace_kmh",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_active_guidance_route_route_id",
+            "unique": true,
+            "columnNames": [
+              "route_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_active_guidance_route_route_id` ON `${TABLE_NAME}` (`route_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "guidance_session",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `mode` TEXT NOT NULL, `route_id` TEXT, `status` TEXT NOT NULL, `recording_course_id` TEXT, `progress_meters` REAL NOT NULL, `remaining_meters` REAL NOT NULL, `cross_track_meters` REAL NOT NULL, `eta_epoch_ms` INTEGER, `bearing` REAL, `next_cue_json` TEXT, `distance_to_next_cue_meters` REAL, `accuracy_meters` REAL, `position_age_ms` INTEGER, `updated_at` INTEGER NOT NULL, `last_position_lat` REAL, `last_position_lon` REAL, `last_position_accuracy` REAL, `last_position_timestamp` INTEGER, `last_projected_lat` REAL, `last_projected_lon` REAL, `current_segment_index` INTEGER NOT NULL, `good_sample_count` INTEGER NOT NULL, `off_route_since` INTEGER, `recovery_since` INTEGER, `recovered_at` INTEGER, `arrival_since` INTEGER, `last_off_route_alert_at` INTEGER, `issue` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mode",
+            "columnName": "mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routeId",
+            "columnName": "route_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordingCourseId",
+            "columnName": "recording_course_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "progressMeters",
+            "columnName": "progress_meters",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remainingMeters",
+            "columnName": "remaining_meters",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "crossTrackMeters",
+            "columnName": "cross_track_meters",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "etaEpochMs",
+            "columnName": "eta_epoch_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "bearing",
+            "columnName": "bearing",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "nextCueJson",
+            "columnName": "next_cue_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "distanceToNextCueMeters",
+            "columnName": "distance_to_next_cue_meters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "accuracyMeters",
+            "columnName": "accuracy_meters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "positionAgeMs",
+            "columnName": "position_age_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPositionLat",
+            "columnName": "last_position_lat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lastPositionLon",
+            "columnName": "last_position_lon",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lastPositionAccuracy",
+            "columnName": "last_position_accuracy",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lastPositionTimestamp",
+            "columnName": "last_position_timestamp",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastProjectedLat",
+            "columnName": "last_projected_lat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lastProjectedLon",
+            "columnName": "last_projected_lon",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "currentSegmentIndex",
+            "columnName": "current_segment_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goodSampleCount",
+            "columnName": "good_sample_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "offRouteSince",
+            "columnName": "off_route_since",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "recoverySince",
+            "columnName": "recovery_since",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "recoveredAt",
+            "columnName": "recovered_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "arrivalSince",
+            "columnName": "arrival_since",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastOffRouteAlertAt",
+            "columnName": "last_off_route_alert_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "issue",
+            "columnName": "issue",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'efe345646f04bf75f2cc707a2f87ffc9')"
+    ]
+  }
+}

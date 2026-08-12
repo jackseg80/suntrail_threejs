@@ -6,14 +6,14 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <!-- Foreground Service GPS (enregistrement de parcours en arrière-plan) -->
+    <!-- Foreground Service localisation : REC et/ou Guidance natif en arrière-plan -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <!-- Notifications (Android 13+ / API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Google Play Billing — requis pour les achats In-App (RevenueCat) -->
     <uses-permission android:name="com.android.vending.BILLING" />
-    <!-- Wake Lock — maintient le CPU actif pendant l'enregistrement GPS (v5.23) -->
+    <!-- Wake Lock — maintient le CPU actif pendant la session terrain REC/Guidance -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Exemption batterie — demandée au premier enregistrement GPS long (v5.53.2) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -64,7 +64,7 @@
             android:noHistory="true" />
 
         <!--
-            Foreground Service GPS dans le processus :tracking (v5.53.0).
+            Foreground Service terrain REC/Guidance dans le processus :tracking (v5.85.0).
             android:process=":tracking" — processus séparé du processus principal.
             android:stopWithTask="false" — survit au swipe de l'app des recents.
             Avec android:process séparé, survivra même au kill du processus principal.

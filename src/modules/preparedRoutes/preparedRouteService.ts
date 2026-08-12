@@ -19,6 +19,7 @@ import {
     isGuidancePlanCurrent,
 } from '../guidance/guidancePlan';
 import type { GuidancePlanV1 } from '../guidance/guidanceTypes';
+import { nativeGPSService } from '../nativeGPSService';
 
 export class PreparedRouteService {
     private repository: RouteRepository | null;
@@ -151,6 +152,11 @@ export class PreparedRouteService {
         return route;
     }
 
+    /** Lecture sans effet UI, notamment pour rattacher une WebView au guidage natif. */
+    public async getById(id: string): Promise<PreparedRouteV1 | null> {
+        return this.getRepository().get(id);
+    }
+
     public prepareGPXLayerAsDraft(layer: GPXLayer): void {
         const route = createPreparedRouteFromGPXLayer(layer, {
             plannedStartAt: state.routePlannedStartAt,
@@ -257,6 +263,10 @@ export class PreparedRouteService {
 
     public async delete(id: string): Promise<void> {
         try {
+            const nativeSession = await nativeGPSService.getActiveSession();
+            if (nativeSession?.guidance && nativeSession.routeId === id) {
+                await nativeGPSService.stopGuidance();
+            }
             await this.getRepository().delete(id);
             if (state.activePreparedRouteId === id) {
                 state.activePreparedRouteId = null;

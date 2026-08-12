@@ -1,3 +1,47 @@
+## [5.85.0] - 2026-08-12 — implémentation locale, gates terrain ouvertes
+
+### Ajouté
+- **Guidage natif Android** : port Java pur du matcher et de la machine d'état v5.84 dans le
+  service `:tracking`, avec `GuidanceSnapshot` partagé, alerte hors-route/arrivée et reprise
+  `recovered` après destruction de la WebView ou du processus principal.
+- **Session terrain unifiée** : modes `recording`, `guidance`, `both`, source FusedLocation unique,
+  WakeLock/notification uniques et actions pause/reprise/arrêts REC/Guidance indépendantes.
+- **Room v2 additive** : copie validée de la route active et état du matcher persistés, migration
+  v1→v2, schéma exporté, CRUD/reprise/suppression/corruption couverts par instrumentation.
+- **Parité v5.84** : golden produit par le moteur TypeScript non réécrit ; neuf fixtures comparées
+  côté JUnit à 0,02 m/0,02°, avec égalité stricte des états, événements et acceptations.
+- **Bridge protégé par flag** : `nativeGuidance` reste désactivé par défaut et distinct des
+  entitlements ; le chemin TypeScript v5.84 reste inchangé hors Android/flag.
+- Documentation architecture/seuils/récupération et protocole terrain A53/S23 complet.
+
+### Robustesse
+- GPS coupé, mode avion, stale/accuracy/sauts, permission retirée, route absente/corrompue et
+  stockage plein échouent de manière contrôlée sans transformer Guidance en seconde écriture REC.
+- Notification foreground persistante et actions sûres ; swipe-away/écran éteint/processus
+  principal tué sont architecturés pour la reprise Room, avec preuve physique encore requise.
+- **Rotation Android** : le redimensionnement portrait/paysage réarme explicitement le rendu
+  WebGL, évitant une carte noire jusqu'au premier geste tactile.
+
+### Portée et gates
+- Version source `5.85.0`, Android `versionName 5.85.0` / `versionCode 903` provisoire tant que
+  Play Console n'est pas revérifiée. Le commit local de l'implémentation est autorisé ; aucun tag,
+  push, AAB, release ou téléversement n'est autorisé.
+- L'instrumentation du Galaxy S23/API 36 est verte, mais les validations API 24/33, les scénarios
+  terrain A53/S23 et les douze sorties d'une heure restent rouges ; v5.85 ne doit pas être
+  clôturée ni v5.86 démarrée avant preuve.
+
+### Validation automatisée
+- `npm run check`, 1 586 tests Vitest, build, budget bundle (2,26 MiB), audit i18n et
+  `npm run cap:sync` réussis. Les 6 smoke Chromium réussissent ; le wrapper avec rapport HTML
+  reste bloqué à la fermeture, tandis que l'exécution équivalente avec rapport ligne sort à 0.
+- JUnit : 4 tests matcher/machine d'état/parité (9 fixtures, 30 positions) et 1 test de contrat
+  bridge réussis. Le test Android généré `ExampleUnitTest` n'est pas compté comme couverture.
+- Gradle `test lint assembleDebug app:assembleDebugAndroidTest` réussi ; lint à 0 erreur et
+  2 avertissements historiques de ressources inutilisées. Sur Galaxy S23 `SM-S911B` Android 16 /
+  API 36, `app:connectedDebugAndroidTest` réussit : 3 tests Room (CRUD, migration v1→v2,
+  corruption), 1 test `:tracking` (notification, pause/reprise et arrêt REC indépendant) et
+  l'exemple Capacitor réaligné sur l'applicationId. Cet exemple ne compte pas comme couverture.
+
 ## [5.84.0] - 2026-08-11 — jalon interne/fermé clôturé
 
 ### Ajouté

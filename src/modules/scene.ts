@@ -68,6 +68,7 @@ export { flyTo };
 // Handler de visibilité : suspend le GPU quand l'app passe en arrière-plan (v5.11)
 let visibilityChangeHandler: (() => void) | null = null;
 let sceneResumeHandler: (() => void) | null = null;
+let sceneResizeHandler: (() => void) | null = null;
 let renderWatchdogId: number | null = null;
 let contextRecoveryTimeout: number | null = null;
 
@@ -175,7 +176,10 @@ export async function disposeScene(): Promise<void> {
         window.clearTimeout(contextRecoveryTimeout);
         contextRecoveryTimeout = null;
     }
-    window.removeEventListener('resize', onWindowResize);
+    if (sceneResizeHandler) {
+        window.removeEventListener('resize', sceneResizeHandler);
+        sceneResizeHandler = null;
+    }
 
     currentThrottledUpdate = null;
     currentThrottledSunUpdate = null;
@@ -621,7 +625,14 @@ export async function initScene(): Promise<void> {
 
     const clock = new THREE.Clock();
     let lastRenderTime = 0;
-    window.addEventListener('resize', onWindowResize);
+    // Sur Android WebView, un resize peut invalider le framebuffer alors que la boucle de rendu
+    // économe n'a aucune autre raison de peindre. Réarmer explicitement la scène évite le canvas
+    // noir après rotation portrait/paysage, sans attendre un geste utilisateur.
+    sceneResizeHandler = () => {
+        onWindowResize();
+        requestSceneRender();
+    };
+    window.addEventListener('resize', sceneResizeHandler);
 
     let needsInitialRender = 20;
     let tilesFading = true;

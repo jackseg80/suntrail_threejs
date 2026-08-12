@@ -1,11 +1,11 @@
-# SunTrail — Guide IA (version source v5.84.0 — jalon interne clôturé)
+# SunTrail — Guide IA (version source v5.85.0 — gates terrain ouvertes)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-11 — v5.84.0 / Android `902` est clôturée comme pré-release GitHub interne.
-> Le suivi de route TypeScript fonctionne au premier plan, tant que l'application reste ouverte,
-> derrière `guidanceForeground`. La validation Galaxy S23 est acceptée pour ce périmètre ; aucun
-> déploiement Play/public et aucune v5.85 n'est commencée. Prepared Routes, bibliothèque locale et
-> REC indépendant sont préservés.
+> Mis à jour le 2026-08-12 — v5.85.0 / Android `903` est implémentée localement, non clôturée.
+> Le guidage Java/Room dans `:tracking` est derrière `nativeGuidance=false` ; l'instrumentation
+> S23/API 36 est verte (5/5), mais API 24/33, terrain A53/S23 et sorties longues restent des gates
+> rouges. Le commit local v5.85 est autorisé ; aucun tag, push, AAB, déploiement Play/public ou
+> démarrage v5.86 n'est autorisé. Prepared Routes et REC sont préservés.
 
 ## Projet
 
@@ -27,6 +27,8 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Suivi foreground (v5.84.0, jalon interne clôturé)** : `GuidanceEngine` TypeScript pur, `GuidancePlanV1`
   séparé, indications ORS/OSRM/GPX, progression/ETA/écart et alertes visuelles/haptiques écran
   actif. Aucun guidage natif/background, notification ou reprise après fermeture.
+- **Guidage Android (v5.85.0, commit local)** : port Java du matcher, route/session Room v2, modes
+  recording/guidance/both, snapshot et notification persistante avec reprise. Gates terrain ouvertes.
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -66,6 +68,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Business & Gates** | [docs/MONETIZATION.md](docs/MONETIZATION.md) | RevenueCat, Grille Free/Pro, Offline limits. |
 | **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, Offline interaction, Modules. |
 | **Suivi foreground** | [docs/GUIDANCE_FOREGROUND.md](docs/GUIDANCE_FOREGROUND.md) | Algorithme, seuils, payload, cues et limites v5.84. |
+| **Guidage Android** | [docs/GUIDANCE_ANDROID.md](docs/GUIDANCE_ANDROID.md) | Java/Room, bridge, notification, reprise, seuils et gates v5.85. |
 | **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 

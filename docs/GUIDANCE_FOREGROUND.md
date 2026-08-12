@@ -3,6 +3,9 @@
 > Jalon interne/fermé clôturé. Le suivi fonctionne tant que l'application reste ouverte et visible.
 > Il ne fournit ni notification de guidage, ni fonctionnement écran éteint, ni reprise après
 > kill/swipe-away. Le REC natif conserve son comportement indépendant existant.
+>
+> Successeur v5.85 : [GUIDANCE_ANDROID.md](GUIDANCE_ANDROID.md). Le moteur décrit ici reste le
+> fallback inchangé lorsque `nativeGuidance` est désactivé ou hors Android.
 
 ## Architecture
 
@@ -129,6 +132,8 @@ interface GuidanceSnapshot {
   premier plan du navigateur.
 - Un watchdog réarme la boucle de rendu WebGL si Android WebView laisse l'interface active mais
   suspend la carte ; le retour natif au premier plan force également resize et nouveaux rendus.
+  Un changement portrait/paysage réarme de la même manière un rendu après le resize, pour ne pas
+  attendre le premier geste tactile avant de repeindre le framebuffer.
 - STOP REC depuis le panneau passe par le même arrêt central que Sortie. Les statistiques de
   notification sont coupées avant l'arrêt natif et le service Android annule explicitement toute
   notification résiduelle.
