@@ -9,6 +9,7 @@ import { showToast } from './modules/toast';
 import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
 import { sheetManager } from './modules/ui/core/SheetManager';
+import { guidanceForegroundService } from './modules/guidance/GuidanceForegroundService';
 
 // Détection de changement de version → nettoyage des caches SW (précaches uniquement)
 try {
@@ -88,8 +89,6 @@ window.addEventListener(
 
             // Initialisation unifiée (Natif + Preferences)
             await nativeGPSService.init();
-            const { guidanceForegroundService } =
-                await import('./modules/guidance/GuidanceForegroundService');
             await guidanceForegroundService.recoverNativeSession();
 
             // Cas 1 : Course native toujours active (reprise transparente)

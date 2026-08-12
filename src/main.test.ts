@@ -18,6 +18,11 @@ vi.mock('virtual:pwa-register', () => ({
 vi.mock('./modules/nativeGPSService', () => ({
     nativeGPSService: { init: vi.fn().mockResolvedValue(undefined) },
 }));
+vi.mock('./modules/guidance/GuidanceForegroundService', () => ({
+    guidanceForegroundService: {
+        recoverNativeSession: vi.fn().mockResolvedValue(undefined),
+    },
+}));
 vi.mock('./modules/toast', () => ({ showToast: vi.fn() }));
 vi.mock('./modules/state', () => ({
     state: { isRecording: false, recordedPoints: [], recoveredPoints: [] },
