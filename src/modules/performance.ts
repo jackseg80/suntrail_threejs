@@ -104,6 +104,12 @@ export function applyPreset(preset: PresetType): void {
         return;
     }
 
+    // Batterie < 20% : seuls les profils légers sont autorisés (v5.86)
+    if (state.IS_BATTERY_LOW && preset !== 'eco') {
+        showToast(i18n.t('preset.batteryTooLow'), 4000);
+        return;
+    }
+
     const settings = PRESETS[preset];
     state.PERFORMANCE_PRESET = preset;
 
@@ -267,18 +273,36 @@ export function checkPerformanceThrottle(fps: number): void {
 /**
  * Initialise la surveillance de la batterie
  */
+let _presetBeforeBatteryEco: PresetType | null = null;
+
 export function initBatteryManager(): void {
     if ('getBattery' in navigator) {
         (navigator as any)
             .getBattery()
             .then((battery: any) => {
                 const checkBattery = () => {
-                    if (
-                        battery.level < 0.2 &&
-                        state.PERFORMANCE_PRESET !== 'eco'
-                    ) {
-                        showToast(i18n.t('preset.lowBattery'));
-                        applyPreset('eco');
+                    const isLow = battery.level < 0.2;
+
+                    if (isLow && !state.IS_BATTERY_LOW) {
+                        state.IS_BATTERY_LOW = true;
+                        if (state.PERFORMANCE_PRESET !== 'eco') {
+                            _presetBeforeBatteryEco = state.PERFORMANCE_PRESET;
+                            showToast(i18n.t('preset.lowBattery'), 6000);
+                            applyPreset('eco');
+                        }
+                    } else if (!isLow && state.IS_BATTERY_LOW) {
+                        state.IS_BATTERY_LOW = false;
+                        if (
+                            state.PERFORMANCE_PRESET === 'eco' &&
+                            _presetBeforeBatteryEco &&
+                            _presetBeforeBatteryEco !== 'eco'
+                        ) {
+                            const presetToRestore = _presetBeforeBatteryEco;
+                            _presetBeforeBatteryEco = null;
+                            applyPreset(presetToRestore);
+                            showToast(i18n.t('preset.batteryRestored'), 4000);
+                        }
+                        _presetBeforeBatteryEco = null;
                     }
                 };
                 battery.addEventListener('levelchange', checkBattery);
@@ -373,4 +397,5 @@ export function _resetPerformanceCounters(): void {
     lowFpsCount = 0;
     highFpsCount = 0;
     isDynamicallyThrottled = false;
+    _presetBeforeBatteryEco = null;
 }

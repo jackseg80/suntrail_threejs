@@ -875,6 +875,25 @@ body.mode-2d .mode-icon-2d {
     color: var(--accent);
 }
 
+/* Batterie faible (v5.86) : profils 3D verrouillés visuellement */
+.preset-btn.battery-locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.preset-btn.battery-locked.active {
+    opacity: 1;
+}
+.battery-lock-banner {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    color: var(--text-2);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
 /* MODERN TOGGLE */
 input[type='checkbox'] {
     appearance: none;

@@ -818,7 +818,10 @@
     },
     "preset": {
         "applied": "Profilo applicato: {{preset}}",
-        "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata"
+        "lowBattery": "🔋 Batteria scarica: Modalità Eco attivata",
+        "batteryTooLow": "🔋 Batteria troppo scarica: ricarica oltre il 20% per attivare questo profilo",
+        "batteryLocked": "🔋 Batteria scarica — Profili 3D bloccati per risparmiare energia. Ricarica oltre il 20% per riattivarli.",
+        "batteryRestored": "🔋 Batteria sufficiente — Profili 3D ripristinati"
     },
     "coords": {
         "solar": "☀️ Solare"

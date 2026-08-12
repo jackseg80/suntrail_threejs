@@ -827,7 +827,10 @@
     },
     "preset": {
         "applied": "Applied preset: {{preset}}",
-        "lowBattery": "🔋 Low battery: Eco mode enabled"
+        "lowBattery": "🔋 Low battery: Eco mode enabled",
+        "batteryTooLow": "🔋 Battery too low: charge above 20% to enable this profile",
+        "batteryLocked": "🔋 Low battery — 3D profiles locked to save power. Charge above 20% to unlock them.",
+        "batteryRestored": "🔋 Battery OK — 3D profiles restored"
     },
     "coords": {
         "solar": "☀ Solar"

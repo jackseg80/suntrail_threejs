@@ -6,6 +6,7 @@ describe('Performance Integration - Battery Management', () => {
     beforeEach(() => {
         // Reset state
         state.PERFORMANCE_PRESET = 'balanced';
+        state.IS_BATTERY_LOW = false;
         state.SHOW_SLOPES = true;
         state.BUILDINGS_SHADOWS = true;
         vi.clearAllMocks();
@@ -76,5 +77,85 @@ describe('Performance Integration - Battery Management', () => {
         expect(state.PERFORMANCE_PRESET).toBe('eco');
         expect(state.SHOW_SLOPES).toBe(false);
         expect(state.BUILDINGS_SHADOWS).toBe(false);
+    });
+
+    it('should flag IS_BATTERY_LOW when battery drops below 20%', async () => {
+        let levelChangeListener: any = null;
+        const mockBattery = {
+            level: 0.25,
+            addEventListener: vi.fn((event, listener) => {
+                if (event === 'levelchange') levelChangeListener = listener;
+            }),
+        };
+
+        vi.stubGlobal('navigator', {
+            getBattery: vi.fn().mockResolvedValue(mockBattery),
+            userAgent: 'Mozilla/5.0',
+        });
+
+        initBatteryManager();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(state.IS_BATTERY_LOW).toBe(false);
+
+        (mockBattery as any).level = 0.15;
+        if (levelChangeListener) levelChangeListener();
+
+        expect(state.IS_BATTERY_LOW).toBe(true);
+        expect(state.PERFORMANCE_PRESET).toBe('eco');
+    });
+
+    it('should restore previous preset when battery recovers above 20%', async () => {
+        let levelChangeListener: any = null;
+        const mockBattery = {
+            level: 0.25,
+            addEventListener: vi.fn((event, listener) => {
+                if (event === 'levelchange') levelChangeListener = listener;
+            }),
+        };
+
+        vi.stubGlobal('navigator', {
+            getBattery: vi.fn().mockResolvedValue(mockBattery),
+            userAgent: 'Mozilla/5.0',
+        });
+
+        initBatteryManager();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        (mockBattery as any).level = 0.15;
+        if (levelChangeListener) levelChangeListener();
+        expect(state.IS_BATTERY_LOW).toBe(true);
+        expect(state.PERFORMANCE_PRESET).toBe('eco');
+
+        (mockBattery as any).level = 0.5;
+        if (levelChangeListener) levelChangeListener();
+
+        expect(state.IS_BATTERY_LOW).toBe(false);
+        expect(state.PERFORMANCE_PRESET).toBe('balanced');
+    });
+
+    it('should not force eco if user was already on eco preset (manual)', async () => {
+        let levelChangeListener: any = null;
+        const mockBattery = {
+            level: 0.25,
+            addEventListener: vi.fn((event, listener) => {
+                if (event === 'levelchange') levelChangeListener = listener;
+            }),
+        };
+
+        vi.stubGlobal('navigator', {
+            getBattery: vi.fn().mockResolvedValue(mockBattery),
+            userAgent: 'Mozilla/5.0',
+        });
+
+        state.PERFORMANCE_PRESET = 'eco';
+        initBatteryManager();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        (mockBattery as any).level = 0.1;
+        if (levelChangeListener) levelChangeListener();
+
+        expect(state.IS_BATTERY_LOW).toBe(true);
+        expect(state.PERFORMANCE_PRESET).toBe('eco');
     });
 });

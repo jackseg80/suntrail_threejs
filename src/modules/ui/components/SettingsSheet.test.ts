@@ -65,6 +65,11 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
         document.body.innerHTML = `
             <div id="settings-panel">
                 <button id="close-panel"></button>
+                <div id="battery-lock-banner" style="display:none"></div>
+                <button class="preset-btn" data-preset="eco">Éco</button>
+                <button class="preset-btn" data-preset="balanced">Std</button>
+                <button class="preset-btn" data-preset="performance">High</button>
+                <button class="preset-btn" data-preset="ultra">Ultra</button>
                 <input type="range" id="res-slider" min="1" max="100" value="50">
                 <span id="res-disp">50</span>
                 <input type="checkbox" id="hide-ui-on-move-toggle">
@@ -87,6 +92,7 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
 
         sheet = new SettingsSheet();
         (sheet as any).element = document.getElementById('settings-panel');
+        state.IS_BATTERY_LOW = false;
         sheet.render();
     });
 
@@ -159,6 +165,34 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
         toggle.checked = false;
         toggle.dispatchEvent(new Event('change'));
         expect(state.HIDE_UI_ON_MOVE).toBe(false);
+    });
+
+    it('verrouille les profils 3D + affiche le bandeau quand batterie < 20% (v5.86)', async () => {
+        const balanced = document.querySelector(
+            '.preset-btn[data-preset="balanced"]'
+        ) as HTMLButtonElement;
+        const eco = document.querySelector(
+            '.preset-btn[data-preset="eco"]'
+        ) as HTMLButtonElement;
+        const banner = document.getElementById(
+            'battery-lock-banner'
+        ) as HTMLElement;
+
+        state.IS_BATTERY_LOW = true;
+        await Promise.resolve();
+
+        expect(balanced.classList.contains('battery-locked')).toBe(true);
+        expect(balanced.getAttribute('aria-disabled')).toBe('true');
+        expect(eco.classList.contains('battery-locked')).toBe(false);
+        expect(eco.getAttribute('aria-disabled')).toBeNull();
+        expect(banner.style.display).toBe('block');
+
+        state.IS_BATTERY_LOW = false;
+        await Promise.resolve();
+
+        expect(balanced.classList.contains('battery-locked')).toBe(false);
+        expect(balanced.getAttribute('aria-disabled')).toBeNull();
+        expect(banner.style.display).toBe('none');
     });
 });
 

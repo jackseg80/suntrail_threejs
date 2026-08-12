@@ -820,7 +820,10 @@
     },
     "preset": {
         "applied": "Profil angewendet: {{preset}}",
-        "lowBattery": "🔋 Akku schwach: Eco-Modus aktiviert"
+        "lowBattery": "🔋 Akku schwach: Eco-Modus aktiviert",
+        "batteryTooLow": "🔋 Akku zu schwach: für dieses Profil über 20 % aufladen",
+        "batteryLocked": "🔋 Akku schwach — 3D-Profile zum Energiesparen gesperrt. Lade über 20 % auf, um sie wieder zu aktivieren.",
+        "batteryRestored": "🔋 Akku ausreichend — 3D-Profile wiederhergestellt"
     },
     "coords": {
         "solar": "☀ Solar"

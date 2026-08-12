@@ -55,6 +55,31 @@ export class SettingsSheet extends BaseComponent {
             });
         });
 
+        // Batterie faible : verrouillage visuel des profils 3D + bandeau explicatif (v5.86)
+        const updateBatteryLockUI = () => {
+            if (!this.element) return;
+            const isLow = state.IS_BATTERY_LOW;
+            const banner = this.element.querySelector(
+                '#battery-lock-banner'
+            ) as HTMLElement;
+            if (banner) banner.style.display = isLow ? 'block' : 'none';
+            this.element.querySelectorAll('.preset-btn').forEach((btn) => {
+                const preset = (btn as HTMLElement).dataset.preset;
+                if (preset && preset !== 'eco') {
+                    btn.classList.toggle('battery-locked', isLow);
+                    if (isLow) {
+                        btn.setAttribute('aria-disabled', 'true');
+                    } else {
+                        btn.removeAttribute('aria-disabled');
+                    }
+                }
+            });
+        };
+        updateBatteryLockUI();
+        this.addSubscription(
+            state.subscribe('IS_BATTERY_LOW', updateBatteryLockUI)
+        );
+
         // Sliders
         this.bindSlider('res-slider', 'RESOLUTION', 'res-disp', refreshTerrain);
         this.bindSlider('range-slider', 'RANGE', 'range-disp', refreshTerrain);

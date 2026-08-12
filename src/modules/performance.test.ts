@@ -59,6 +59,7 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
         state.PIXEL_RATIO_LIMIT = 1.0;
         state.SHADOW_RES = 128;
         state.PERFORMANCE_PRESET = 'balanced';
+        state.IS_BATTERY_LOW = false;
         state.renderer = null;
         state.sunLight = null;
         // Défaut : desktop
@@ -86,6 +87,37 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             mockDisposeAll.mockClear();
             applyCustomSettings({ SHADOWS: false });
             expect(mockDisposeAll).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('applyPreset() — Batterie faible (v5.86)', () => {
+        it('refuse un profil 3D quand la batterie est < 20%', () => {
+            state.IS_BATTERY_LOW = true;
+            state.PERFORMANCE_PRESET = 'eco';
+            state.RESOLUTION = 2;
+
+            applyPreset('balanced');
+
+            expect(state.PERFORMANCE_PRESET).toBe('eco');
+            expect(state.RESOLUTION).toBe(2);
+        });
+
+        it('autorise le profil eco même batterie faible', () => {
+            state.IS_BATTERY_LOW = true;
+            state.PERFORMANCE_PRESET = 'balanced';
+
+            applyPreset('eco');
+
+            expect(state.PERFORMANCE_PRESET).toBe('eco');
+        });
+
+        it('ne bloque pas les profils quand la batterie est OK', () => {
+            state.IS_BATTERY_LOW = false;
+            state.PERFORMANCE_PRESET = 'eco';
+
+            applyPreset('balanced');
+
+            expect(state.PERFORMANCE_PRESET).toBe('balanced');
         });
     });
 

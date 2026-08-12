@@ -828,7 +828,10 @@
     },
     "preset": {
         "applied": "Profil appliqué : {{preset}}",
-        "lowBattery": "🔋 Batterie faible : Mode Éco activé"
+        "lowBattery": "🔋 Batterie faible : Mode Éco activé",
+        "batteryTooLow": "🔋 Batterie trop faible : rechargez au-dessus de 20 % pour activer ce profil",
+        "batteryLocked": "🔋 Batterie faible — Profils 3D verrouillés pour économiser la batterie. Rechargez au-dessus de 20 % pour les réactiver.",
+        "batteryRestored": "🔋 Batterie suffisante — Profils 3D restaurés"
     },
     "coords": {
         "solar": "☀ Solaire"

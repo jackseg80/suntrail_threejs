@@ -359,6 +359,7 @@ export interface State {
     installedPacks: string[];
     DEBUG_MODE: boolean; // v5.29.6 : Contrôle des logs sensibles
     DEBUG_NORMALMAP_RG_COMPACT: boolean; // v5.61.4 : Mode normal map compact (RG 2 canaux, Z reconstruit GPU)
+    IS_BATTERY_LOW: boolean; // v5.86 : Batterie < 20% → profil Éco forcé, profils 3D verrouillés
     ORS_KEY: string;
     isRoutePlanningMode: boolean;
     routeWaypoints: RouteWaypoint[];
@@ -496,6 +497,7 @@ const initialState: State = {
     installedPacks: [],
     DEBUG_MODE: false,
     DEBUG_NORMALMAP_RG_COMPACT: true,
+    IS_BATTERY_LOW: false,
     ORS_KEY: '',
     isRoutePlanningMode: false,
     routeWaypoints: [],
