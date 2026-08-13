@@ -4128,6 +4128,12 @@ body.profile-interacting #bottom-bar {
     font-size: var(--text-xs);
 }
 
+.prepared-readiness-coverage {
+    margin: 0;
+    color: var(--text-1);
+    font-size: var(--text-xs);
+}
+
 .prepared-readiness li[data-severity='warning'] {
     color: var(--gold);
 }

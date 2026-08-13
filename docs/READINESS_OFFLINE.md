@@ -1,7 +1,8 @@
 # Readiness et corridor hors ligne v5.86
 
-> État au 2026-08-13 : premier lot local implémenté. Le corridor, sa couverture mesurée et les
-> enrichissements réseau/appareil restent à réaliser. v5.85.1 reste en validation séparée.
+> État au 2026-08-13 : readiness local et planification/mesure du corridor implémentées. Le
+> téléchargement, le remplacement Free et les enrichissements réseau/appareil restent à réaliser.
+> v5.85.1 reste en validation séparée.
 
 ## Contrat du rapport
 
@@ -13,7 +14,7 @@ sections indépendantes :
 | :--- | :--- | :--- |
 | `route` | `PreparedRouteV1.stats` | Toujours local ; distance, D+/D-, durée, effort, difficulté et qualité de guidage. |
 | `light` | Résumé SunCalc persisté dans la route | Disponible seulement si une heure de départ et les dates calculées existent. |
-| `offline` | futur index corridor/pack | `unknown` tant qu'un index n'a pas compté les tuiles requises et présentes. |
+| `offline` | plan corridor + cache/packs locaux | Mesure 5→14 pour le corridor Free de 1 km ; `unknown` avant la première mesure. |
 | `conditions` | futur enrichissement réseau | `unknown` sans requête ; n'empêche jamais le rapport ni le guidage. |
 | `device` | futur bridge Android | `unknown` hors preuve explicite fournie par l'appareil. |
 
@@ -36,9 +37,21 @@ Le corridor doit prolonger les stockages existants, sans cache parallèle :
 | OPFS / PMTiles | Packs pays volumineux. |
 | IndexedDB | Routes, futur index de couverture et état des téléchargements. |
 
-Une bbox de zone, un état `installed` ou la présence d'un cache ne suffit pas à annoncer une
-couverture complète. Le prochain lot doit calculer la liste de tuiles du corridor, vérifier chaque
-ressource réutilisable (pack/cache), conserver le total requis et mesurer la couverture réelle.
+Une bbox de zone ou un simple état `installed` ne suffit pas à annoncer une couverture complète.
+`routeCorridor.ts` intersecte chaque segment avec les tuiles du corridor, déduplique les résultats,
+rejette l'antiméridien et s'arrête au-delà de 2 000 tuiles. La mesure vérifie les blobs réellement
+lisibles dans PMTiles local, overview embarqué, pack OPFS, cache offline ou cache opportuniste. Une
+tuile est couverte si son fond cartographique est lisible hors ligne. Le relief et les sentiers sont
+des compléments de rendu : leur taille est comptée lorsqu'ils existent, mais leur absence ne masque
+pas une carte utilisable, conformément au comportement du worker hors ligne.
+
+La recherche des packs reste mondiale et data-driven : le gestionnaire de packs applique le
+catalogue, les LOD et les bornes de chaque archive. La mesure ne contient aucune liste de pays et
+n'utilise pas les polygones embarqués comme prérequis à la lecture d'un pack local.
+
+La mesure est bornée à huit inspections simultanées et les routes sont traitées en série. Son cache
+de cinq minutes est invalidé si la route, la source cartographique, MapTiler, les sentiers ou les
+packs installés changent. Aucune requête réseau n'est effectuée.
 
 ## Invariants pour les lots suivants
 
@@ -51,6 +64,8 @@ ressource réutilisable (pack/cache), conserver le total requis et mesurer la co
 
 ## Validation
 
-Le premier lot est couvert par des tests à horloge fixée pour les données locales, les états
-`unknown`, l'arrivée après la nuit, la fraîcheur et l'isolation d'une erreur réseau. Les tests
-appareil, le mode avion avec corridor et la couverture réelle ne sont pas encore réalisés.
+Les tests couvrent le rapport à horloge fixée, les états `unknown`, l'arrivée après la nuit, les
+rayons 0,5/1/2 km, la déduplication, l'antiméridien, le plafond de volume, les caches corrompus ou
+incomplets, l'exclusion des packs CDN, un pack Suisse sans préfiltre pays, un cache hors catalogue
+européen et l'invalidation de contexte. Les tests appareil, le téléchargement/reprise et le
+redémarrage mode avion avec corridor restent ouverts.

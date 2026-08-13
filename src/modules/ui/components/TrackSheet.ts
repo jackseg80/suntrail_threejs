@@ -46,6 +46,7 @@ import {
     buildRouteReadinessReport,
     type ReadinessSectionStatus,
 } from '../../readiness/routeReadiness';
+import { routeCorridorReadinessService } from '../../readiness/routeCorridorReadiness';
 
 const pendingGeocode = new Set<string>();
 
@@ -67,9 +68,13 @@ function renderReadinessStatus(
     section: string,
     status: ReadinessSectionStatus
 ): string {
+    const statusKey =
+        section === 'offline' && status === 'available'
+            ? 'readiness.status.measured'
+            : `readiness.status.${status}`;
     return `<span class="prepared-readiness-status" data-status="${status}">
         ${escapeText(i18n.t(`readiness.sections.${section}`))}
-        <b>${escapeText(i18n.t(`readiness.status.${status}`))}</b>
+        <b>${escapeText(i18n.t(statusKey))}</b>
     </span>`;
 }
 
@@ -735,7 +740,10 @@ export class TrackSheet extends BaseComponent {
                         ? `<p class="prepared-route-warning">${escapeText(i18n.t('preparedRoutes.quality.approximateWarning'))}</p>`
                         : '';
                 const readiness = releaseFlags.isEnabled('routeReadiness')
-                    ? buildRouteReadinessReport(route)
+                    ? buildRouteReadinessReport(route, {
+                          offline:
+                              routeCorridorReadinessService.getInput(route),
+                      })
                     : null;
                 const readinessSignals = readiness
                     ? [
@@ -758,6 +766,26 @@ export class TrackSheet extends BaseComponent {
                             ${renderReadinessStatus('conditions', readiness.sections.conditions.status)}
                             ${renderReadinessStatus('device', readiness.sections.device.status)}
                         </div>
+                        ${
+                            readiness.sections.offline.data
+                                ? `<p class="prepared-readiness-coverage">${escapeText(
+                                      i18n.t('readiness.offline.coverage', {
+                                          percent: String(
+                                              readiness.sections.offline.data
+                                                  .coveragePercent
+                                          ),
+                                          covered: String(
+                                              readiness.sections.offline.data
+                                                  .coveredTileCount
+                                          ),
+                                          required: String(
+                                              readiness.sections.offline.data
+                                                  .requiredTileCount
+                                          ),
+                                      })
+                                  )}</p>`
+                                : ''
+                        }
                         ${
                             readinessSignals.length > 0
                                 ? `<ul>${readinessSignals
@@ -789,6 +817,20 @@ export class TrackSheet extends BaseComponent {
                 </article>`;
             })
             .join('');
+        for (const route of routes) {
+            if (
+                releaseFlags.isEnabled('routeReadiness') &&
+                routeCorridorReadinessService.shouldMeasure(route)
+            ) {
+                void routeCorridorReadinessService
+                    .measure(route)
+                    .then((changed) => {
+                        if (changed && this.element?.isConnected) {
+                            this.renderPreparedRoutes();
+                        }
+                    });
+            }
+        }
         container
             .querySelectorAll<HTMLButtonElement>('[data-route-action]')
             .forEach((button) => {

@@ -5,6 +5,8 @@ import {
     OFFLINE_CACHE_NAME,
     resetTileLoaderState,
     initCacheLayer,
+    inspectOfflineTileResources,
+    getColorUrl,
 } from './tileLoader';
 import { packManager } from './packManager';
 import { state } from './state';
@@ -13,7 +15,9 @@ import { state } from './state';
 vi.mock('./packManager', () => ({
     packManager: {
         hasMountedPacks: vi.fn(),
+        hasInstalledPackForCountry: vi.fn(),
         getTileFromPacks: vi.fn(),
+        getOfflineTileFromPacks: vi.fn(),
     },
 }));
 
@@ -46,7 +50,9 @@ function makeCacheSpy() {
             store.delete(url);
             return Promise.resolve(true);
         }),
-        keys: vi.fn<() => Promise<Request[]>>(() => Promise.resolve([])),
+        keys: vi.fn<() => Promise<Request[]>>(() =>
+            Promise.resolve([...store.keys()].map((url) => new Request(url)))
+        ),
         _store: store,
     };
 }
@@ -56,7 +62,11 @@ describe('TileLoader Integration with Packs', () => {
         vi.clearAllMocks();
         state.IS_OFFLINE = false;
         (packManager.hasMountedPacks as any).mockReturnValue(false);
+        (packManager.hasInstalledPackForCountry as any).mockReturnValue(false);
         (packManager.getTileFromPacks as any).mockReturnValue(
+            Promise.resolve(null)
+        );
+        (packManager.getOfflineTileFromPacks as any).mockReturnValue(
             Promise.resolve(null)
         );
     });
@@ -191,6 +201,80 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
             url,
             expect.any(Response)
         );
+    });
+
+    it('mesure mondialement une tuile lisible depuis le cache sans exiger le relief', async () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = 'test_key_valid_12345';
+        state.SHOW_TRAILS = false;
+        // Tokyo : le calcul ne dépend ni d'un pack ni d'un pays européen connu.
+        const tile = { zoom: 14, tx: 14_549, ty: 6_451 };
+        const colorUrl = getColorUrl(tile.tx, tile.ty, tile.zoom);
+        offlineSpy._store.set(
+            colorUrl,
+            new Response(new Blob(['x'.repeat(150)], { type: 'image/png' }))
+        );
+        resetTileLoaderState();
+        await initCacheLayer();
+
+        await expect(inspectOfflineTileResources(tile)).resolves.toEqual({
+            covered: true,
+            sizeBytes: 150,
+        });
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('mesure un pack local via son propre catalogue sans préfiltre pays', async () => {
+        state.MK = 'test_key_valid_12345';
+        state.MAP_SOURCE = 'swisstopo';
+        state.SHOW_TRAILS = false;
+        const tile = { zoom: 14, tx: 8_510, ty: 5_790 };
+        const packColor = new Blob(['x'.repeat(180)], {
+            type: 'image/webp',
+        });
+        (packManager.hasInstalledPackForCountry as any).mockReturnValue(false);
+        (packManager.getOfflineTileFromPacks as any).mockImplementation(
+            (_z: number, _x: number, _y: number, type: string) =>
+                Promise.resolve(type === 'color' ? packColor : null)
+        );
+        resetTileLoaderState();
+        await initCacheLayer();
+
+        await expect(inspectOfflineTileResources(tile)).resolves.toEqual({
+            covered: true,
+            sizeBytes: 180,
+        });
+        expect(packManager.getOfflineTileFromPacks).toHaveBeenCalledWith(
+            tile.zoom,
+            tile.tx,
+            tile.ty,
+            'color'
+        );
+        expect(packManager.hasInstalledPackForCountry).not.toHaveBeenCalled();
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('ne déclare jamais couverte une tuile sans fond cartographique', async () => {
+        state.MK = 'test_key_valid_12345';
+        state.MAP_SOURCE = 'swisstopo';
+        state.SHOW_TRAILS = false;
+        const tile = { zoom: 14, tx: 14_549, ty: 6_451 };
+        (packManager.getOfflineTileFromPacks as any).mockImplementation(
+            (_z: number, _x: number, _y: number, type: string) =>
+                Promise.resolve(
+                    type === 'elevation'
+                        ? new Blob(['x'.repeat(200)], { type: 'image/webp' })
+                        : null
+                )
+        );
+        resetTileLoaderState();
+        await initCacheLayer();
+
+        await expect(inspectOfflineTileResources(tile)).resolves.toEqual({
+            covered: false,
+            sizeBytes: 200,
+        });
+        expect(global.fetch).not.toHaveBeenCalled();
     });
 
     it('storeInOfflineCache=false doit stocker dans le cache normal', async () => {

@@ -239,6 +239,7 @@
         },
         "status": {
             "available": "disponible",
+            "measured": "mesuré",
             "stale": "ancien",
             "unknown": "inconnu",
             "error": "erreur"
@@ -256,7 +257,13 @@
         },
         "offline": {
             "not-measured": "La couverture hors ligne de cette route n’est pas encore mesurée.",
-            "invalid-measurement": "La mesure de couverture hors ligne est incohérente."
+            "invalid-measurement": "La mesure de couverture hors ligne est incohérente.",
+            "coverage": "Couverture locale : {{percent}} % ({{covered}}/{{required}} tuiles).",
+            "antimeridian": "Le corridor franchit l’antiméridien et n’est pas pris en charge.",
+            "too-large": "Le corridor dépasse la limite de 2 000 tuiles.",
+            "invalid-geometry": "La géométrie de la route ne permet pas de calculer le corridor.",
+            "invalid-options": "Les paramètres du corridor sont invalides.",
+            "measurement-error": "La couverture locale n’a pas pu être mesurée."
         },
         "conditions": {
             "not-loaded": "Les conditions réseau optionnelles ne sont pas chargées.",

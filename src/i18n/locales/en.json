@@ -239,6 +239,7 @@
         },
         "status": {
             "available": "available",
+            "measured": "measured",
             "stale": "stale",
             "unknown": "unknown",
             "error": "error"
@@ -256,7 +257,13 @@
         },
         "offline": {
             "not-measured": "Offline coverage for this route has not been measured yet.",
-            "invalid-measurement": "The offline coverage measurement is inconsistent."
+            "invalid-measurement": "The offline coverage measurement is inconsistent.",
+            "coverage": "Local coverage: {{percent}}% ({{covered}}/{{required}} tiles).",
+            "antimeridian": "The corridor crosses the antimeridian and is not supported.",
+            "too-large": "The corridor exceeds the 2,000-tile limit.",
+            "invalid-geometry": "The route geometry cannot be used to calculate the corridor.",
+            "invalid-options": "The corridor settings are invalid.",
+            "measurement-error": "Local coverage could not be measured."
         },
         "conditions": {
             "not-loaded": "Optional network conditions are not loaded.",

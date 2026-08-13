@@ -1,21 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { mockIsProActive, mockPreparedRouteService, mockSetRoutePlanningMode } =
-    vi.hoisted(() => ({
-        mockIsProActive: vi.fn(() => false),
-        mockPreparedRouteService: {
-            getLastError: vi.fn(() => null),
-            load: vi.fn().mockResolvedValue(undefined),
-            toggleFavorite: vi.fn().mockResolvedValue(undefined),
-            duplicate: vi.fn().mockResolvedValue(undefined),
-            delete: vi.fn().mockResolvedValue(undefined),
-            importGPXLayer: vi.fn().mockResolvedValue(undefined),
-            prepareGPXLayerAsDraft: vi.fn(),
-            saveCurrentDraft: vi.fn().mockResolvedValue(undefined),
-            convertLegacy: vi.fn().mockResolvedValue(undefined),
-        },
-        mockSetRoutePlanningMode: vi.fn(),
-    }));
+const {
+    mockIsProActive,
+    mockPreparedRouteService,
+    mockSetRoutePlanningMode,
+    mockCorridorReadinessService,
+} = vi.hoisted(() => ({
+    mockIsProActive: vi.fn(() => false),
+    mockPreparedRouteService: {
+        getLastError: vi.fn(() => null),
+        load: vi.fn().mockResolvedValue(undefined),
+        toggleFavorite: vi.fn().mockResolvedValue(undefined),
+        duplicate: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        importGPXLayer: vi.fn().mockResolvedValue(undefined),
+        prepareGPXLayerAsDraft: vi.fn(),
+        saveCurrentDraft: vi.fn().mockResolvedValue(undefined),
+        convertLegacy: vi.fn().mockResolvedValue(undefined),
+    },
+    mockSetRoutePlanningMode: vi.fn(),
+    mockCorridorReadinessService: {
+        getInput: vi.fn((): unknown => undefined),
+        shouldMeasure: vi.fn(() => false),
+        measure: vi.fn().mockResolvedValue(false),
+    },
+}));
 
 vi.mock('../../../i18n/I18nService', () => ({
     i18n: { t: (k: string) => k, getLocale: () => 'fr' },
@@ -100,6 +109,9 @@ vi.mock('../../preparedRoutes/preparedRouteService', () => ({
 }));
 vi.mock('../../releaseFlags', () => ({
     releaseFlags: { isEnabled: vi.fn(() => true) },
+}));
+vi.mock('../../readiness/routeCorridorReadiness', () => ({
+    routeCorridorReadinessService: mockCorridorReadinessService,
 }));
 vi.mock('../icons', () => ({ ICON_CLOSE: '✕', ICON_LOCK: '🔒' }));
 vi.mock('../core/SheetManager', () => ({
@@ -201,6 +213,7 @@ describe('TrackSheet - Prepared Routes library', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockIsProActive.mockReturnValue(false);
+        mockCorridorReadinessService.getInput.mockReturnValue(undefined);
         (state as any).routeWaypoints = [];
         (state as any).routeComputation = null;
         (state as any).routeDraftDirty = false;
@@ -309,6 +322,36 @@ describe('TrackSheet - Prepared Routes library', () => {
             ).toHaveBeenCalledWith('route-local-1')
         );
         expect(mockIsProActive).not.toHaveBeenCalled();
+    });
+
+    it('affiche une couverture locale mesurée sans masquer le guidage', () => {
+        mockCorridorReadinessService.getInput.mockReturnValue({
+            kind: 'evidence',
+            evidence: {
+                source: 'corridor-local-index-v1',
+                observedAt: new Date().toISOString(),
+                staleAfterMs: 300_000,
+                data: {
+                    coveragePercent: 50,
+                    coveredTileCount: 5,
+                    requiredTileCount: 10,
+                    sizeBytes: 1_000,
+                    corridorId: null,
+                },
+            },
+        });
+
+        (sheet as any).renderPreparedRoutes();
+
+        expect(
+            document.querySelector('.prepared-readiness')?.textContent
+        ).toContain('readiness.status.measured');
+        expect(
+            document.querySelector('.prepared-readiness-coverage')?.textContent
+        ).toBe('readiness.offline.coverage');
+        expect(
+            document.querySelector('[data-route-action="guidance"]')
+        ).not.toBeNull();
     });
 
     it('opens a saved route in the existing planning flow', async () => {

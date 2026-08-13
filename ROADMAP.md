@@ -226,10 +226,11 @@ A53/S23 encore ouvertes. Aucun commit, tag, push ou déploiement n'est implicite
 
 ## v5.86.0 — Prêt à partir & corridor hors ligne
 
-**État au 2026-08-13 :** premier lot local implémenté dans le worktree : contrat déterministe
-`RouteReadinessReport`, route/lumière immédiates et placeholders honnêtes pour offline, conditions
-et appareil. Le corridor, la couverture mesurée et les validations mode avion/appareil restent
-ouverts. Détails : [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md).
+**État au 2026-08-13 :** readiness local et deuxième lot corridor implémentés dans le worktree :
+contrat déterministe, route/lumière immédiates, plan Free 1 km LOD 5→14 et couverture mesurée sans
+réseau depuis caches/packs locaux. Téléchargement, remplacement Free, reprise/quota/intégrité et
+validations mode avion/appareil restent ouverts. Détails :
+[docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md).
 
 Le `RouteReadinessReport` fonctionne en couches :
 

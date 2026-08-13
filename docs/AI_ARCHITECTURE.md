@@ -22,6 +22,8 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `GuidanceEngine` | Pure polyline projection, robust progress, ETA/cross-track/bearing and state hysteresis. No DOM/Three.js. | `start`, `update`, `tick`, `pause`, `resume`, `stop` |
 | `GuidanceForegroundService` | Foreground UI orchestration over the existing `state.userLocation` stream; REC remains independent. | `start`, `pause`, `resume`, `stop` |
 | `routeReadiness` | Pure layered readiness report; local route/light remain independent from optional offline, network and Android evidence. | `buildRouteReadinessReport` |
+| `routeCorridor` | Pure geometry-to-tile planning plus bounded local coverage measurement; no network or download side effect. | `buildRouteCorridorPlan`, `measureCorridorCoverage` |
+| `RouteCorridorReadinessService` | Serializes per-route measurements and invalidates short-lived evidence when route/map/local-pack context changes. | `getInput`, `shouldMeasure`, `measure` |
 | `releaseFlags` | Release rollout decisions, separate from Free/Pro entitlements. | `isEnabled`, `refresh`, `setDeveloperOverride` |
 | `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |

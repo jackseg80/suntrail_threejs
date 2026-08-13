@@ -239,6 +239,7 @@
         },
         "status": {
             "available": "verfügbar",
+            "measured": "gemessen",
             "stale": "veraltet",
             "unknown": "unbekannt",
             "error": "Fehler"
@@ -256,7 +257,13 @@
         },
         "offline": {
             "not-measured": "Die Offline-Abdeckung dieser Route wurde noch nicht gemessen.",
-            "invalid-measurement": "Die gemessene Offline-Abdeckung ist widersprüchlich."
+            "invalid-measurement": "Die gemessene Offline-Abdeckung ist widersprüchlich.",
+            "coverage": "Lokale Abdeckung: {{percent}} % ({{covered}}/{{required}} Kacheln).",
+            "antimeridian": "Der Korridor überquert den Antimeridian und wird nicht unterstützt.",
+            "too-large": "Der Korridor überschreitet die Grenze von 2.000 Kacheln.",
+            "invalid-geometry": "Die Routengeometrie kann nicht für den Korridor verwendet werden.",
+            "invalid-options": "Die Korridoreinstellungen sind ungültig.",
+            "measurement-error": "Die lokale Abdeckung konnte nicht gemessen werden."
         },
         "conditions": {
             "not-loaded": "Optionale Netzwerkbedingungen sind nicht geladen.",

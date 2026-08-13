@@ -238,6 +238,7 @@
         },
         "status": {
             "available": "disponibile",
+            "measured": "misurato",
             "stale": "datato",
             "unknown": "sconosciuto",
             "error": "errore"
@@ -255,7 +256,13 @@
         },
         "offline": {
             "not-measured": "La copertura offline di questo percorso non è ancora stata misurata.",
-            "invalid-measurement": "La misura della copertura offline non è coerente."
+            "invalid-measurement": "La misura della copertura offline non è coerente.",
+            "coverage": "Copertura locale: {{percent}}% ({{covered}}/{{required}} tessere).",
+            "antimeridian": "Il corridoio attraversa l’antimeridiano e non è supportato.",
+            "too-large": "Il corridoio supera il limite di 2.000 tessere.",
+            "invalid-geometry": "La geometria del percorso non consente di calcolare il corridoio.",
+            "invalid-options": "Le impostazioni del corridoio non sono valide.",
+            "measurement-error": "Non è stato possibile misurare la copertura locale."
         },
         "conditions": {
             "not-loaded": "Le condizioni di rete opzionali non sono caricate.",

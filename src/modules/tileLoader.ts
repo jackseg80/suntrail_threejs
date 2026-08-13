@@ -57,20 +57,20 @@ export async function setPMTilesSource(urlOrFile: string | File) {
 async function getTileFromPMTiles(
     z: number,
     x: number,
-    y: number
+    y: number,
+    useSharedAbortController = true
 ): Promise<Blob | null> {
     if (!localPMTiles) return null;
     try {
-        if (pmtilesController) pmtilesController.abort();
-        pmtilesController = new AbortController();
+        let signal: AbortSignal | undefined;
+        if (useSharedAbortController) {
+            if (pmtilesController) pmtilesController.abort();
+            pmtilesController = new AbortController();
+            signal = pmtilesController.signal;
+        }
 
         // PMTiles utilise le schéma XYZ standard
-        const tileData = await localPMTiles.getZxy(
-            z,
-            x,
-            y,
-            pmtilesController.signal
-        );
+        const tileData = await localPMTiles.getZxy(z, x, y, signal);
         if (tileData && tileData.data) {
             // On présume que c'est du WebP ou JPEG par défaut dans notre cas d'usage, on renvoie un Blob
             return new Blob([tileData.data], { type: 'image/webp' });
@@ -579,6 +579,95 @@ async function getCachedBlob(url: string): Promise<Blob | null> {
         _cacheIndex.delete(url);
         return null;
     }
+}
+
+export interface OfflineTileResourceInspection {
+    covered: boolean;
+    sizeBytes: number;
+}
+
+/**
+ * Mesure les ressources immédiatement lisibles sans réseau pour une tuile.
+ * La couleur est la ressource minimale pour conserver un fond de carte lisible.
+ * L'élévation et l'overlay améliorent le rendu, mais leur absence n'empêche pas
+ * le worker d'afficher la tuile hors ligne.
+ */
+export async function inspectOfflineTileResources(tile: {
+    zoom: number;
+    tx: number;
+    ty: number;
+}): Promise<OfflineTileResourceInspection> {
+    if (!_workerCache || !_offlineCache) await initCacheLayer();
+
+    const { zoom, tx, ty } = tile;
+    const { url: elevationUrl } = getElevationUrl(tx, ty, zoom, false);
+    const colorUrl = getColorUrl(tx, ty, zoom);
+    const overlayUrl = getOverlayUrl(tx, ty, zoom);
+    const required = {
+        elevation: elevationUrl !== null,
+        overlay: overlayUrl !== null,
+    };
+    const blobs: {
+        color: Blob | null;
+        elevation: Blob | null;
+        overlay: Blob | null;
+    } = { color: null, elevation: null, overlay: null };
+
+    // Source PMTiles importée localement, puis overview embarqué.
+    blobs.color = await getTileFromPMTiles(zoom, tx, ty, false);
+    if (!blobs.color && embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
+        blobs.color = await getTileFromEmbedded(zoom, tx, ty);
+    }
+
+    // Le PackManager porte lui-même le catalogue mondial, les LOD et les bornes
+    // de chaque pack. Ne pas préfiltrer par pays ici : cela exclurait les packs
+    // régionaux ou les zones que le jeu de polygones embarqué ne connaît pas.
+    if (!blobs.color && state.MAP_SOURCE !== 'opentopomap') {
+        blobs.color = await packManager.getOfflineTileFromPacks(
+            zoom,
+            tx,
+            ty,
+            'color'
+        );
+    }
+    if (zoom >= 12) {
+        if (required.elevation && zoom <= 14) {
+            blobs.elevation = await packManager.getOfflineTileFromPacks(
+                zoom,
+                tx,
+                ty,
+                'elevation'
+            );
+        }
+        if (required.overlay) {
+            blobs.overlay = await packManager.getOfflineTileFromPacks(
+                zoom,
+                tx,
+                ty,
+                'overlay'
+            );
+        }
+    }
+
+    const [cachedColor, cachedElevation, cachedOverlay] = await Promise.all([
+        !blobs.color ? getCachedBlob(colorUrl) : null,
+        required.elevation && !blobs.elevation
+            ? getCachedBlob(elevationUrl!)
+            : null,
+        required.overlay && !blobs.overlay ? getCachedBlob(overlayUrl!) : null,
+    ]);
+    blobs.color ??= cachedColor;
+    blobs.elevation ??= cachedElevation;
+    blobs.overlay ??= cachedOverlay;
+
+    const covered = blobs.color !== null;
+    return {
+        covered,
+        sizeBytes:
+            (blobs.color?.size ?? 0) +
+            (blobs.elevation?.size ?? 0) +
+            (blobs.overlay?.size ?? 0),
+    };
 }
 
 /**

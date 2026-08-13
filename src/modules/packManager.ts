@@ -443,6 +443,29 @@ class PackManager {
         y: number,
         type: 'color' | 'elevation' | 'overlay' = 'color'
     ): Promise<Blob | null> {
+        return this.getTileFromPacksInternal(z, x, y, type, false);
+    }
+
+    /**
+     * Lit uniquement les archives réellement installées en OPFS. Cette voie
+     * n'interroge jamais un pack acheté disponible seulement sur le CDN.
+     */
+    async getOfflineTileFromPacks(
+        z: number,
+        x: number,
+        y: number,
+        type: 'color' | 'elevation' | 'overlay' = 'color'
+    ): Promise<Blob | null> {
+        return this.getTileFromPacksInternal(z, x, y, type, true);
+    }
+
+    private async getTileFromPacksInternal(
+        z: number,
+        x: number,
+        y: number,
+        type: 'color' | 'elevation' | 'overlay',
+        localOnly: boolean
+    ): Promise<Blob | null> {
         // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
         for (const pass of [true, false]) {
             for (const [packId, archive] of this.mountedArchives) {
@@ -456,6 +479,7 @@ class PackManager {
                     ps?.status === 'installed' ||
                     ps?.status === 'update_available';
 
+                if (localOnly && !isOpfs) continue;
                 if (pass !== isOpfs) continue;
                 if (!isOpfs && state.IS_OFFLINE) continue;
 

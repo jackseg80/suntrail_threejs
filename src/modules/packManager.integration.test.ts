@@ -153,6 +153,9 @@ describe('PackManager Integration', () => {
         const blob = await packManager.getTileFromPacks(z, x, y);
         expect(blob).toBeDefined();
         expect(blob?.type).toBe('image/webp');
+        await expect(
+            packManager.getOfflineTileFromPacks(z, x, y)
+        ).resolves.toBeDefined();
     });
 
     it('should serve elevation and overlay tiles with correct offsets', async () => {
@@ -217,14 +220,17 @@ describe('PackManager Integration', () => {
         );
 
         await packManager.initialize();
-        state.IS_OFFLINE = true;
+        state.IS_OFFLINE = false;
 
         const z = 12;
         const x = 2133;
         const y = 1450;
 
-        const blob = await packManager.getTileFromPacks(z, x, y);
-        expect(blob).toBeNull();
+        await expect(
+            packManager.getOfflineTileFromPacks(z, x, y)
+        ).resolves.toBeNull();
+        state.IS_OFFLINE = true;
+        await expect(packManager.getTileFromPacks(z, x, y)).resolves.toBeNull();
     });
 });
 
