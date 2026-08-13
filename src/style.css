@@ -4143,6 +4143,63 @@ body.profile-interacting #bottom-bar {
     font-size: var(--text-xs);
 }
 
+.prepared-corridor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    color: var(--text-2);
+    font-size: var(--text-xs);
+}
+
+.prepared-corridor label,
+.prepared-corridor-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.prepared-corridor select,
+.prepared-corridor button {
+    min-height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-subtle);
+    color: var(--text-1);
+    font: inherit;
+}
+
+.prepared-corridor select {
+    padding: 6px;
+}
+
+.prepared-corridor button {
+    padding: 6px 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.prepared-corridor .prepared-corridor-download {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.prepared-corridor-progress {
+    flex: 1 1 150px;
+}
+
+.prepared-corridor-progress progress {
+    width: min(160px, 55%);
+    accent-color: var(--accent);
+}
+
+.prepared-corridor .prepared-corridor-cancel {
+    color: var(--danger, #ef5350);
+}
+
 .prepared-route-actions {
     display: flex;
     align-items: center;

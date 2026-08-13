@@ -265,6 +265,26 @@
             "invalid-options": "Les paramètres du corridor sont invalides.",
             "measurement-error": "La couverture locale n’a pas pu être mesurée."
         },
+        "corridor": {
+            "download": "Télécharger le corridor",
+            "cancel": "Annuler",
+            "continue": "Continuer",
+            "replace": "Remplacer",
+            "radius": "Largeur",
+            "freeRadius": "Corridor Free : 1 km",
+            "busy": "Un téléchargement de corridor est déjà en cours.",
+            "progress": "Téléchargement : {{percent}} %",
+            "confirmCellular": "Le corridor peut utiliser jusqu’à {{size}} Mo sur le réseau mobile. Continuer ?",
+            "confirmQuota": "L’espace libre mesuré ({{available}} Mo) est inférieur à l’estimation maximale ({{required}} Mo). Les packs et caches locaux seront réutilisés. Continuer ?",
+            "confirmReplace": "Le corridor Free actuel restera disponible jusqu’à la fin. Remplacer ensuite ce corridor ?",
+            "result": {
+                "completed": "Corridor hors ligne prêt.",
+                "partial": "Corridor partiel : certaines ressources restent manquantes.",
+                "cancelled": "Téléchargement du corridor annulé ; les ressources acquises sont conservées.",
+                "error": "Le corridor n’a pas pu être enregistré.",
+                "replacement-required": "Confirmation de remplacement requise."
+            }
+        },
         "conditions": {
             "not-loaded": "Les conditions réseau optionnelles ne sont pas chargées.",
             "network-error": "Les conditions réseau ne sont pas disponibles."

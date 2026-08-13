@@ -5,6 +5,9 @@ const {
     mockPreparedRouteService,
     mockSetRoutePlanningMode,
     mockCorridorReadinessService,
+    mockBuildCorridorPlan,
+    mockCorridorInstall,
+    mockGetCorridorPreflight,
 } = vi.hoisted(() => ({
     mockIsProActive: vi.fn(() => false),
     mockPreparedRouteService: {
@@ -23,7 +26,20 @@ const {
         getInput: vi.fn((): unknown => undefined),
         shouldMeasure: vi.fn(() => false),
         measure: vi.fn().mockResolvedValue(false),
+        invalidate: vi.fn(),
     },
+    mockBuildCorridorPlan: vi.fn(() => ({
+        schemaVersion: 1,
+        routeId: 'route-local-1',
+        radiusMeters: 1_000,
+        minLod: 5,
+        maxLod: 14,
+        tiles: [{ zoom: 14, tx: 8_510, ty: 5_790 }],
+        tileCount: 1,
+        estimatedSizeBytes: 80 * 1024,
+    })),
+    mockCorridorInstall: vi.fn(),
+    mockGetCorridorPreflight: vi.fn(),
 }));
 
 vi.mock('../../../i18n/I18nService', () => ({
@@ -43,6 +59,9 @@ vi.mock('../../state', () => ({
         routeDraftDirty: false,
         routeDraftSourceLayerId: null,
         SHOW_BUILDINGS: false,
+        IS_OFFLINE: false,
+        isNetworkAvailable: true,
+        connectionType: 'wifi',
         subscribe: vi.fn(() => vi.fn()),
     },
     isProActive: mockIsProActive,
@@ -112,6 +131,18 @@ vi.mock('../../releaseFlags', () => ({
 }));
 vi.mock('../../readiness/routeCorridorReadiness', () => ({
     routeCorridorReadinessService: mockCorridorReadinessService,
+}));
+vi.mock('../../readiness/routeCorridor', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../readiness/routeCorridor')>()),
+    buildRouteCorridorPlan: mockBuildCorridorPlan,
+}));
+vi.mock('../../readiness/routeCorridorInstall', () => ({
+    createRouteCorridorInstallService: vi.fn(() => ({
+        install: mockCorridorInstall,
+    })),
+}));
+vi.mock('../../readiness/routeCorridorPreflight', () => ({
+    getRouteCorridorPreflight: mockGetCorridorPreflight,
 }));
 vi.mock('../icons', () => ({ ICON_CLOSE: '✕', ICON_LOCK: '🔒' }));
 vi.mock('../core/SheetManager', () => ({
@@ -214,6 +245,29 @@ describe('TrackSheet - Prepared Routes library', () => {
         vi.clearAllMocks();
         mockIsProActive.mockReturnValue(false);
         mockCorridorReadinessService.getInput.mockReturnValue(undefined);
+        mockCorridorReadinessService.measure.mockResolvedValue(false);
+        mockGetCorridorPreflight.mockResolvedValue({
+            networkType: 'wifi',
+            networkAllowed: true,
+            requiresCellularConfirmation: false,
+            quotaStatus: 'sufficient',
+            estimatedSizeBytes: 80 * 1024,
+            availableBytes: 10 * 1024 * 1024,
+        });
+        mockCorridorInstall.mockImplementation(async (_plan, options) => {
+            options.onProgress?.({
+                processedResourceCount: 1,
+                successfulResourceCount: 1,
+                failedResourceCount: 0,
+                totalResourceCount: 1,
+                sizeBytes: 120,
+            });
+            return {
+                status: 'completed',
+                manifest: {},
+                deletedResourceCount: 0,
+            };
+        });
         (state as any).routeWaypoints = [];
         (state as any).routeComputation = null;
         (state as any).routeDraftDirty = false;
@@ -238,6 +292,10 @@ describe('TrackSheet - Prepared Routes library', () => {
                 name: 'Tour local Free',
                 favorite: false,
                 guidanceQuality: 'approximate',
+                geometry: [
+                    { lat: 46.8, lon: 7.1 },
+                    { lat: 46.9, lon: 7.2 },
+                ],
                 stats: {
                     distance: 6.2,
                     ascent: 410,
@@ -321,7 +379,7 @@ describe('TrackSheet - Prepared Routes library', () => {
                 mockPreparedRouteService.toggleFavorite
             ).toHaveBeenCalledWith('route-local-1')
         );
-        expect(mockIsProActive).not.toHaveBeenCalled();
+        expect(mockIsProActive).toHaveReturnedWith(false);
     });
 
     it('affiche une couverture locale mesurée sans masquer le guidage', () => {
@@ -352,6 +410,168 @@ describe('TrackSheet - Prepared Routes library', () => {
         expect(
             document.querySelector('[data-route-action="guidance"]')
         ).not.toBeNull();
+    });
+
+    it('télécharge un corridor Free de 1 km et remesure la couverture', async () => {
+        (sheet as any).renderPreparedRoutes();
+
+        expect(document.querySelector('[data-corridor-radius]')).toBeNull();
+        (
+            document.querySelector(
+                '[data-route-action="corridor"]'
+            ) as HTMLButtonElement
+        ).click();
+
+        await vi.waitFor(() => expect(mockCorridorInstall).toHaveBeenCalled());
+        expect(mockBuildCorridorPlan).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'route-local-1' }),
+            { radiusMeters: 1_000 }
+        );
+        expect(mockCorridorInstall).toHaveBeenCalledWith(
+            expect.objectContaining({ routeId: 'route-local-1' }),
+            expect.objectContaining({
+                isPro: false,
+                replaceFree: false,
+                networkAllowed: true,
+            })
+        );
+        await vi.waitFor(() =>
+            expect(
+                mockCorridorReadinessService.invalidate
+            ).toHaveBeenCalledWith('route-local-1')
+        );
+        expect(mockCorridorReadinessService.measure).toHaveBeenCalled();
+    });
+
+    it('propose les rayons 0,5/1/2 km à Pro', () => {
+        mockIsProActive.mockReturnValue(true);
+        (sheet as any).renderPreparedRoutes();
+
+        const select = document.querySelector(
+            '[data-corridor-radius]'
+        ) as HTMLSelectElement;
+        expect([...select.options].map((option) => option.value)).toEqual([
+            '500',
+            '1000',
+            '2000',
+        ]);
+    });
+
+    it('demande un accord explicite avant tout téléchargement cellulaire', async () => {
+        mockGetCorridorPreflight.mockResolvedValue({
+            networkType: 'cellular',
+            networkAllowed: true,
+            requiresCellularConfirmation: true,
+            quotaStatus: 'sufficient',
+            estimatedSizeBytes: 80 * 1024,
+            availableBytes: 10 * 1024 * 1024,
+        });
+        (sheet as any).renderPreparedRoutes();
+
+        (
+            document.querySelector(
+                '[data-route-action="corridor"]'
+            ) as HTMLButtonElement
+        ).click();
+        await vi.waitFor(() =>
+            expect(
+                document.getElementById('confirm-dialog-overlay')
+            ).not.toBeNull()
+        );
+        expect(mockCorridorInstall).not.toHaveBeenCalled();
+        (
+            document.querySelector(
+                '#confirm-dialog-overlay [data-action="cancel"]'
+            ) as HTMLButtonElement
+        ).click();
+        await Promise.resolve();
+        expect(mockCorridorInstall).not.toHaveBeenCalled();
+    });
+
+    it('annule le transfert en cours depuis la carte sans perdre le contrôle UI', async () => {
+        let receivedSignal: AbortSignal | undefined;
+        mockCorridorInstall.mockImplementation(
+            async (_plan, options) =>
+                new Promise((resolve) => {
+                    receivedSignal = options.signal;
+                    options.onProgress?.({
+                        processedResourceCount: 0,
+                        successfulResourceCount: 0,
+                        failedResourceCount: 0,
+                        totalResourceCount: 3,
+                        sizeBytes: 0,
+                    });
+                    options.signal?.addEventListener('abort', () =>
+                        resolve({
+                            status: 'cancelled',
+                            manifest: {},
+                            deletedResourceCount: 0,
+                        })
+                    );
+                })
+        );
+        (sheet as any).renderPreparedRoutes();
+        (
+            document.querySelector(
+                '[data-route-action="corridor"]'
+            ) as HTMLButtonElement
+        ).click();
+
+        await vi.waitFor(() =>
+            expect(
+                document.querySelector('.prepared-corridor-cancel')
+            ).not.toBeNull()
+        );
+        (
+            document.querySelector(
+                '.prepared-corridor-cancel'
+            ) as HTMLButtonElement
+        ).click();
+
+        await vi.waitFor(() => expect(receivedSignal?.aborted).toBe(true));
+        await vi.waitFor(() =>
+            expect(
+                document.querySelector('.prepared-corridor-download')
+            ).not.toBeNull()
+        );
+    });
+
+    it('confirme le remplacement Free avant de relancer avec replaceFree', async () => {
+        mockCorridorInstall
+            .mockResolvedValueOnce({
+                status: 'replacement-required',
+                existingManifest: { id: 'old-free' },
+            })
+            .mockResolvedValueOnce({
+                status: 'completed',
+                manifest: {},
+                deletedResourceCount: 1,
+            });
+        (sheet as any).renderPreparedRoutes();
+        (
+            document.querySelector(
+                '[data-route-action="corridor"]'
+            ) as HTMLButtonElement
+        ).click();
+
+        await vi.waitFor(() =>
+            expect(
+                document.getElementById('confirm-dialog-overlay')
+            ).not.toBeNull()
+        );
+        expect(mockCorridorInstall).toHaveBeenCalledTimes(1);
+        (
+            document.querySelector(
+                '#confirm-dialog-overlay [data-action="confirm"]'
+            ) as HTMLButtonElement
+        ).click();
+
+        await vi.waitFor(() =>
+            expect(mockCorridorInstall).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.objectContaining({ replaceFree: true })
+            )
+        );
     });
 
     it('opens a saved route in the existing planning flow', async () => {

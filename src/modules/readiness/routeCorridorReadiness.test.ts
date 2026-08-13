@@ -55,6 +55,10 @@ describe('RouteCorridorReadinessService', () => {
             },
         });
         expect(service.shouldMeasure(route())).toBe(false);
+
+        service.invalidate('route-1');
+        expect(service.getInput(route())).toBeUndefined();
+        expect(service.shouldMeasure(route())).toBe(true);
     });
 
     it('invalide la mesure lorsque la configuration cartographique change', async () => {

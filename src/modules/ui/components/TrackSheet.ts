@@ -47,8 +47,28 @@ import {
     type ReadinessSectionStatus,
 } from '../../readiness/routeReadiness';
 import { routeCorridorReadinessService } from '../../readiness/routeCorridorReadiness';
+import {
+    buildRouteCorridorPlan,
+    CorridorPlanningError,
+    type RouteCorridorPlanV1,
+} from '../../readiness/routeCorridor';
+import {
+    createRouteCorridorInstallService,
+    type RouteCorridorInstallResult,
+} from '../../readiness/routeCorridorInstall';
+import type { CorridorDownloadProgress } from '../../readiness/routeCorridorDownload';
+import { getRouteCorridorPreflight } from '../../readiness/routeCorridorPreflight';
 
 const pendingGeocode = new Set<string>();
+
+interface CorridorDownloadUIState {
+    controller: AbortController;
+    progress: CorridorDownloadProgress;
+}
+
+function formatMegabytes(bytes: number): string {
+    return (bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1);
+}
 
 function escapeText(value: string): string {
     return value.replace(
@@ -80,6 +100,10 @@ function renderReadinessStatus(
 
 export class TrackSheet extends BaseComponent {
     private statTooltips: TooltipHandle[] = [];
+    private readonly corridorDownloads = new Map<
+        string,
+        CorridorDownloadUIState
+    >();
     constructor() {
         super('template-track', 'sheet-container', templateHTML);
     }
@@ -799,6 +823,7 @@ export class TrackSheet extends BaseComponent {
                         <small>${escapeText(i18n.t('readiness.networkOptional'))}</small>
                     </section>`
                     : '';
+                const corridorMarkup = this.renderCorridorControl(route.id);
                 return `<article class="prepared-route-card" data-route-id="${route.id}">
                     <div class="prepared-route-card-main">
                         <strong>${escapeText(route.name)}</strong>
@@ -806,6 +831,7 @@ export class TrackSheet extends BaseComponent {
                         <span>${i18n.t(`preparedRoutes.effort.${route.stats.effort.level}`)} · ETA ${route.stats.light.etaAt ? new Date(route.stats.light.etaAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · ${light}</span>
                         ${warning}
                         ${readinessMarkup}
+                        ${corridorMarkup}
                     </div>
                     <div class="prepared-route-actions">
                         ${releaseFlags.isEnabled('guidanceForeground') ? `<button type="button" data-route-action="guidance" data-route-id="${route.id}" class="prepared-route-guidance">${i18n.t('guidance.actions.start')}</button>` : ''}
@@ -838,6 +864,21 @@ export class TrackSheet extends BaseComponent {
                     const id = button.dataset.routeId;
                     const action = button.dataset.routeAction;
                     if (!id || !action) return;
+                    if (action === 'corridor') {
+                        const active = this.corridorDownloads.get(id);
+                        if (active) {
+                            active.controller.abort();
+                            button.disabled = true;
+                            return;
+                        }
+                        button.disabled = true;
+                        try {
+                            await this.startCorridorDownload(id);
+                        } finally {
+                            button.disabled = false;
+                        }
+                        return;
+                    }
                     button.disabled = true;
                     try {
                         if (action === 'guidance') {
@@ -930,6 +971,193 @@ export class TrackSheet extends BaseComponent {
                     }
                 });
             });
+    }
+
+    private renderCorridorControl(routeId: string): string {
+        if (!releaseFlags.isEnabled('routeCorridor')) return '';
+        const active = this.corridorDownloads.get(routeId);
+        if (active) {
+            const percent =
+                active.progress.totalResourceCount === 0
+                    ? 0
+                    : Math.round(
+                          (active.progress.processedResourceCount /
+                              active.progress.totalResourceCount) *
+                              100
+                      );
+            return `<div class="prepared-corridor" data-corridor-route-id="${routeId}">
+                <div class="prepared-corridor-progress">
+                    <progress value="${active.progress.processedResourceCount}" max="${Math.max(1, active.progress.totalResourceCount)}"></progress>
+                    <span>${escapeText(i18n.t('readiness.corridor.progress', { percent: String(percent) }))}</span>
+                </div>
+                <button type="button" data-route-action="corridor" data-route-id="${routeId}" class="prepared-corridor-cancel">${escapeText(i18n.t('readiness.corridor.cancel'))}</button>
+            </div>`;
+        }
+        const radiusControl = isProActive()
+            ? `<label>${escapeText(i18n.t('readiness.corridor.radius'))}
+                <select data-corridor-radius data-route-id="${routeId}" aria-label="${escapeText(i18n.t('readiness.corridor.radius'))}">
+                    <option value="500">0,5 km</option>
+                    <option value="1000" selected>1 km</option>
+                    <option value="2000">2 km</option>
+                </select>
+            </label>`
+            : `<span>${escapeText(i18n.t('readiness.corridor.freeRadius'))}</span>`;
+        return `<div class="prepared-corridor" data-corridor-route-id="${routeId}">
+            ${radiusControl}
+            <button type="button" data-route-action="corridor" data-route-id="${routeId}" class="prepared-corridor-download">${escapeText(i18n.t('readiness.corridor.download'))}</button>
+        </div>`;
+    }
+
+    private async startCorridorDownload(routeId: string): Promise<void> {
+        const route = state.preparedRoutes.find((item) => item.id === routeId);
+        if (!route) {
+            showToast(i18n.t('preparedRoutes.error.notFound'));
+            return;
+        }
+        if (this.corridorDownloads.size > 0) {
+            showToast(i18n.t('readiness.corridor.busy'));
+            return;
+        }
+        const radiusElement = this.element?.querySelector<HTMLSelectElement>(
+            `[data-corridor-radius][data-route-id="${routeId}"]`
+        );
+        const radius = Number(radiusElement?.value ?? 1_000) as
+            500 | 1_000 | 2_000;
+        let plan: RouteCorridorPlanV1;
+        try {
+            plan = buildRouteCorridorPlan(route, { radiusMeters: radius });
+        } catch (error) {
+            const code =
+                error instanceof CorridorPlanningError
+                    ? error.code
+                    : 'invalid-geometry';
+            showToast(i18n.t(`readiness.offline.${code}`));
+            return;
+        }
+        const preflight = await getRouteCorridorPreflight(plan, {
+            networkAvailable:
+                state.isNetworkAvailable === true && !state.IS_OFFLINE,
+            connectionType: state.connectionType,
+        });
+        if (
+            preflight.requiresCellularConfirmation &&
+            !(await confirmDialog(
+                i18n.t('readiness.corridor.confirmCellular', {
+                    size: formatMegabytes(preflight.estimatedSizeBytes),
+                }),
+                { confirmText: i18n.t('readiness.corridor.continue') }
+            ))
+        ) {
+            return;
+        }
+        if (
+            preflight.quotaStatus === 'insufficient' &&
+            !(await confirmDialog(
+                i18n.t('readiness.corridor.confirmQuota', {
+                    required: formatMegabytes(preflight.estimatedSizeBytes),
+                    available: formatMegabytes(preflight.availableBytes ?? 0),
+                }),
+                { confirmText: i18n.t('readiness.corridor.continue') }
+            ))
+        ) {
+            return;
+        }
+
+        let installService: ReturnType<
+            typeof createRouteCorridorInstallService
+        >;
+        try {
+            installService = createRouteCorridorInstallService();
+        } catch {
+            showToast(i18n.t('readiness.corridor.result.error'));
+            return;
+        }
+        const controller = new AbortController();
+        const initialProgress: CorridorDownloadProgress = {
+            processedResourceCount: 0,
+            successfulResourceCount: 0,
+            failedResourceCount: 0,
+            totalResourceCount: 0,
+            sizeBytes: 0,
+        };
+        this.corridorDownloads.set(routeId, {
+            controller,
+            progress: initialProgress,
+        });
+        this.renderPreparedRoutes();
+        let result: RouteCorridorInstallResult;
+        let transferStarted = false;
+        const install = async (replaceFree: boolean) => {
+            transferStarted = true;
+            return installService.install(plan, {
+                isPro: isProActive(),
+                replaceFree,
+                signal: controller.signal,
+                networkAllowed: preflight.networkAllowed,
+                onProgress: (progress) =>
+                    this.updateCorridorProgress(routeId, progress),
+            });
+        };
+        try {
+            result = await install(false);
+            if (result.status === 'replacement-required') {
+                transferStarted = false;
+                if (
+                    !(await confirmDialog(
+                        i18n.t('readiness.corridor.confirmReplace'),
+                        {
+                            confirmText: i18n.t('readiness.corridor.replace'),
+                        }
+                    ))
+                ) {
+                    return;
+                }
+                result = await install(true);
+            }
+            showToast(i18n.t(`readiness.corridor.result.${result.status}`));
+        } catch {
+            showToast(i18n.t('readiness.corridor.result.error'));
+        } finally {
+            this.corridorDownloads.delete(routeId);
+            if (transferStarted) {
+                routeCorridorReadinessService.invalidate(routeId);
+                await routeCorridorReadinessService.measure(route);
+            }
+            if (this.element?.isConnected) this.renderPreparedRoutes();
+        }
+    }
+
+    private updateCorridorProgress(
+        routeId: string,
+        progress: CorridorDownloadProgress
+    ): void {
+        const active = this.corridorDownloads.get(routeId);
+        if (!active) return;
+        active.progress = progress;
+        const host = [
+            ...this.element!.querySelectorAll<HTMLElement>(
+                '[data-corridor-route-id]'
+            ),
+        ].find((element) => element.dataset.corridorRouteId === routeId);
+        const progressElement = host?.querySelector('progress');
+        if (progressElement) {
+            progressElement.max = Math.max(1, progress.totalResourceCount);
+            progressElement.value = progress.processedResourceCount;
+        }
+        const percent =
+            progress.totalResourceCount === 0
+                ? 0
+                : Math.round(
+                      (progress.processedResourceCount /
+                          progress.totalResourceCount) *
+                          100
+                  );
+        const label = host?.querySelector('.prepared-corridor-progress span');
+        if (label) {
+            label.textContent = i18n.t('readiness.corridor.progress', {
+                percent: String(percent),
+            });
+        }
     }
 
     private renderMiniMap(

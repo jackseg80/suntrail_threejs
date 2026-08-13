@@ -265,6 +265,26 @@
             "invalid-options": "The corridor settings are invalid.",
             "measurement-error": "Local coverage could not be measured."
         },
+        "corridor": {
+            "download": "Download corridor",
+            "cancel": "Cancel",
+            "continue": "Continue",
+            "replace": "Replace",
+            "radius": "Width",
+            "freeRadius": "Free corridor: 1 km",
+            "busy": "A corridor download is already in progress.",
+            "progress": "Downloading: {{percent}}%",
+            "confirmCellular": "The corridor may use up to {{size}} MB of mobile data. Continue?",
+            "confirmQuota": "Measured free space ({{available}} MB) is below the maximum estimate ({{required}} MB). Local packs and caches will be reused. Continue?",
+            "confirmReplace": "The current Free corridor will remain available until completion. Replace it afterwards?",
+            "result": {
+                "completed": "Offline corridor ready.",
+                "partial": "Partial corridor: some resources are still missing.",
+                "cancelled": "Corridor download cancelled; acquired resources were kept.",
+                "error": "The corridor could not be saved.",
+                "replacement-required": "Replacement confirmation required."
+            }
+        },
         "conditions": {
             "not-loaded": "Optional network conditions are not loaded.",
             "network-error": "Network conditions are unavailable."

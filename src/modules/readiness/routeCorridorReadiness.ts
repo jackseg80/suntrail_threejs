@@ -101,6 +101,10 @@ export class RouteCorridorReadinessService {
         this.pending.clear();
     }
 
+    public invalidate(routeId: string): void {
+        this.cache.delete(routeId);
+    }
+
     private async measureInternal(route: PreparedRouteV1): Promise<boolean> {
         const key = this.keyFor(route);
         const measuredAtMs = this.now();

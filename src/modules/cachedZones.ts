@@ -1,4 +1,4 @@
-import type { BBox } from './geo';
+import { tilePixelToLatLon, type BBox } from './geo';
 import { decrementOfflineZoneCount } from './tileLoader';
 
 const CACHED_ZONES_KEY = 'suntrail_cached_zones';
@@ -39,4 +39,23 @@ export function removeCachedZone(id: string): void {
     const zones = getCachedZones().filter((z) => z.id !== id);
     localStorage.setItem(CACHED_ZONES_KEY, JSON.stringify(zones));
     decrementOfflineZoneCount();
+}
+
+export function isTileReferencedByCachedZone(
+    zoom: number,
+    tx: number,
+    ty: number
+): boolean {
+    const n = 2 ** zoom;
+    const northWest = tilePixelToLatLon(tx, ty, n);
+    const southEast = tilePixelToLatLon(tx + 1, ty + 1, n);
+    return getCachedZones().some(
+        (zone) =>
+            zoom >= zone.minLod &&
+            zoom <= zone.maxLod &&
+            southEast.lat <= zone.bbox.maxLat &&
+            northWest.lat >= zone.bbox.minLat &&
+            northWest.lon <= zone.bbox.maxLon &&
+            southEast.lon >= zone.bbox.minLon
+    );
 }

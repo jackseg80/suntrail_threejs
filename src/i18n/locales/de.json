@@ -265,6 +265,26 @@
             "invalid-options": "Die Korridoreinstellungen sind ungültig.",
             "measurement-error": "Die lokale Abdeckung konnte nicht gemessen werden."
         },
+        "corridor": {
+            "download": "Korridor herunterladen",
+            "cancel": "Abbrechen",
+            "continue": "Fortfahren",
+            "replace": "Ersetzen",
+            "radius": "Breite",
+            "freeRadius": "Free-Korridor: 1 km",
+            "busy": "Ein Korridor-Download läuft bereits.",
+            "progress": "Download: {{percent}} %",
+            "confirmCellular": "Der Korridor kann bis zu {{size}} MB mobile Daten verwenden. Fortfahren?",
+            "confirmQuota": "Der gemessene freie Speicher ({{available}} MB) liegt unter der Maximalschätzung ({{required}} MB). Lokale Pakete und Caches werden wiederverwendet. Fortfahren?",
+            "confirmReplace": "Der aktuelle Free-Korridor bleibt bis zum Abschluss verfügbar. Danach ersetzen?",
+            "result": {
+                "completed": "Offline-Korridor bereit.",
+                "partial": "Teilweiser Korridor: Einige Ressourcen fehlen noch.",
+                "cancelled": "Korridor-Download abgebrochen; geladene Ressourcen bleiben erhalten.",
+                "error": "Der Korridor konnte nicht gespeichert werden.",
+                "replacement-required": "Bestätigung zum Ersetzen erforderlich."
+            }
+        },
         "conditions": {
             "not-loaded": "Optionale Netzwerkbedingungen sind nicht geladen.",
             "network-error": "Netzwerkbedingungen sind nicht verfügbar."

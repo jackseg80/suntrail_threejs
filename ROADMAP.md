@@ -131,8 +131,8 @@ OSRM/absence de donnée sont testés ; « inconnue » est un résultat valide, j
 
 > **Clôturé le 2026-08-11 comme pré-release GitHub interne.** Le moteur, les cues, l'UI et les
 > E2E ciblés sont validés ; la validation Galaxy S23 a été acceptée pour le périmètre foreground.
-> v5.85.0 est clôturée et v5.85.1 est le chantier actif. v5.86 ne commence qu'après la
-> stabilisation corrective.
+> v5.85.0 est clôturée. v5.85.1 reste en validation séparée ; le démarrage de v5.86 a été
+> autorisé sans attendre ses validations Android/E2E et terrain encore ouvertes.
 
 Livrer le cœur de navigation avant le cloud :
 
@@ -226,10 +226,13 @@ A53/S23 encore ouvertes. Aucun commit, tag, push ou déploiement n'est implicite
 
 ## v5.86.0 — Prêt à partir & corridor hors ligne
 
-**État au 2026-08-13 :** readiness local et deuxième lot corridor implémentés dans le worktree :
-contrat déterministe, route/lumière immédiates, plan Free 1 km LOD 5→14 et couverture mesurée sans
-réseau depuis caches/packs locaux. Téléchargement, remplacement Free, reprise/quota/intégrité et
-validations mode avion/appareil restent ouverts. Détails :
+**État au 2026-08-13 :** readiness local et lots corridor 2/3/4 implémentés dans le worktree :
+contrat déterministe, route/lumière immédiates, plan Free 1 km LOD 5→14, couverture mesurée sans
+réseau depuis caches/packs locaux et moteur de téléchargement typé avec progression, résultat
+partiel et annulation conservatrice. Le manifeste persistant et le remplacement atomique Free
+préservent corridors partagés et zones manuelles. La Bibliothèque expose téléchargement,
+progression, annulation, choix Pro et confirmations cellulaire/quota. Validations mode avion/appareil
+restent ouvertes. Détails :
 [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md).
 
 Le `RouteReadinessReport` fonctionne en couches :

@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getCachedZones, addCachedZone, removeCachedZone } from './cachedZones';
+import {
+    getCachedZones,
+    addCachedZone,
+    removeCachedZone,
+    isTileReferencedByCachedZone,
+} from './cachedZones';
 
 const ZONE_KEY = 'suntrail_cached_zones';
 
@@ -106,6 +111,30 @@ describe('cachedZones', () => {
 
             removeCachedZone('non-existent-id');
             expect(getCachedZones()).toHaveLength(1);
+        });
+    });
+
+    describe('isTileReferencedByCachedZone', () => {
+        it('protège uniquement les tuiles dans l’emprise et les LOD enregistrés', () => {
+            addCachedZone({
+                label: 'Suisse romande',
+                bbox: {
+                    minLat: 45.8,
+                    maxLat: 47.9,
+                    minLon: 5.8,
+                    maxLon: 10.6,
+                },
+                minLod: 8,
+                maxLod: 14,
+                tileCount: 1,
+                sizeMB: '1',
+            });
+
+            expect(isTileReferencedByCachedZone(14, 8_510, 5_790)).toBe(true);
+            expect(isTileReferencedByCachedZone(15, 17_020, 11_580)).toBe(
+                false
+            );
+            expect(isTileReferencedByCachedZone(14, 1_000, 1_000)).toBe(false);
         });
     });
 });

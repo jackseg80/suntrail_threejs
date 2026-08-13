@@ -13,7 +13,7 @@ export const DEFAULT_RELEASE_FLAGS: Readonly<ReleaseFlags> = Object.freeze({
     preparedRoutes: true,
     guidanceForeground: true,
     routeReadiness: true,
-    routeCorridor: false,
+    routeCorridor: true,
     accountSync: false,
     nativeGuidance: false,
     expertWorkbench: false,

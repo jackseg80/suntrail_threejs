@@ -264,6 +264,26 @@
             "invalid-options": "Le impostazioni del corridoio non sono valide.",
             "measurement-error": "Non è stato possibile misurare la copertura locale."
         },
+        "corridor": {
+            "download": "Scarica corridoio",
+            "cancel": "Annulla",
+            "continue": "Continua",
+            "replace": "Sostituisci",
+            "radius": "Larghezza",
+            "freeRadius": "Corridoio Free: 1 km",
+            "busy": "È già in corso il download di un corridoio.",
+            "progress": "Download: {{percent}}%",
+            "confirmCellular": "Il corridoio può usare fino a {{size}} MB di dati mobili. Continuare?",
+            "confirmQuota": "Lo spazio libero misurato ({{available}} MB) è inferiore alla stima massima ({{required}} MB). I pacchetti e le cache locali saranno riutilizzati. Continuare?",
+            "confirmReplace": "Il corridoio Free attuale resterà disponibile fino al completamento. Sostituirlo dopo?",
+            "result": {
+                "completed": "Corridoio offline pronto.",
+                "partial": "Corridoio parziale: mancano ancora alcune risorse.",
+                "cancelled": "Download del corridoio annullato; le risorse acquisite sono conservate.",
+                "error": "Non è stato possibile salvare il corridoio.",
+                "replacement-required": "È richiesta la conferma della sostituzione."
+            }
+        },
         "conditions": {
             "not-loaded": "Le condizioni di rete opzionali non sono caricate.",
             "network-error": "Le condizioni di rete non sono disponibili."

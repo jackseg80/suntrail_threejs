@@ -158,6 +158,43 @@ export async function initCacheLayer(): Promise<void> {
         );
 }
 
+/** Vérifie directement le CacheStorage offline, sans réseau. */
+export async function hasOfflineTileResource(url: string): Promise<boolean> {
+    if (!_offlineCache) await initCacheLayer();
+    if (!_offlineCache) return false;
+    try {
+        const response = await _offlineCache.match(url);
+        if (response) {
+            _offlineCacheIndex.set(url, true);
+            return true;
+        }
+    } catch {
+        // Une lecture impossible n'est jamais transformée en preuve locale.
+    }
+    _offlineCacheIndex.delete(url);
+    return false;
+}
+
+/**
+ * Supprime uniquement les URLs explicitement confiées par un registre
+ * d'ownership. Les appelants doivent avoir vérifié les références partagées.
+ */
+export async function deleteOfflineTileResources(
+    urls: Iterable<string>
+): Promise<number> {
+    if (!_offlineCache) await initCacheLayer();
+    if (!_offlineCache) return 0;
+    let deleted = 0;
+    for (const url of new Set(urls)) {
+        try {
+            if (await _offlineCache.delete(url)) deleted++;
+        } finally {
+            _offlineCacheIndex.delete(url);
+        }
+    }
+    return deleted;
+}
+
 /**
  * Monte l'archive PMTiles overview embarquée dans l'APK/PWA (LOD 5-11).
  * Appelée une fois au démarrage. La couche CacheStorage est déjà initialisée
@@ -246,18 +283,31 @@ export function updateStorageUI() {
  * fonctionnent quelle que soit la forme de l'URL (XYZ, KVP, RESTful...).
  * @param storeInOfflineCache Si true, le blob téléchargé est stocké dans le cache offline (zones hors-ligne).
  */
+export type TileResourceType = 'color' | 'elevation' | 'overlay';
+
+export interface FetchWithCacheOptions {
+    resourceType?: TileResourceType;
+    signal?: AbortSignal;
+    localOnlyPacks?: boolean;
+    requireOfflineStorage?: boolean;
+    allowNetwork?: boolean;
+}
+
 export async function fetchWithCache(
     url: string,
     usePersistentCache: boolean = false,
     z?: number,
     x?: number,
     y?: number,
-    storeInOfflineCache: boolean = false
+    storeInOfflineCache: boolean = false,
+    options: FetchWithCacheOptions = {}
 ): Promise<Blob | null> {
     const hasCoords = z !== undefined && x !== undefined && y !== undefined;
+    const resourceType = options.resourceType ?? 'color';
+    if (options.signal?.aborted) return null;
 
     // --- PMTILES INTERCEPTION (v5.7.0) ---
-    if (localPMTiles && hasCoords) {
+    if (resourceType === 'color' && localPMTiles && hasCoords) {
         const pmBlob = await getTileFromPMTiles(z!, x!, y!);
         if (pmBlob) {
             if (state.DEBUG_MODE)
@@ -268,7 +318,16 @@ export async function fetchWithCache(
 
     // --- COUNTRY PACKS INTERCEPTION (v5.21.0) — fonctionne offline ---
     if (packManager.hasMountedPacks() && hasCoords) {
-        const packBlob = await packManager.getTileFromPacks(z!, x!, y!);
+        const packBlob = options.localOnlyPacks
+            ? await packManager.getOfflineTileFromPacks(
+                  z!,
+                  x!,
+                  y!,
+                  resourceType
+              )
+            : resourceType === 'color'
+              ? await packManager.getTileFromPacks(z!, x!, y!)
+              : await packManager.getTileFromPacks(z!, x!, y!, resourceType);
         if (packBlob) return packBlob;
     }
 
@@ -295,11 +354,22 @@ export async function fetchWithCache(
             if (cached) {
                 state.cacheHits++;
                 updateStorageUI();
-                return await cached.blob();
+                const blob = await cached.blob();
+                if (storeInOfflineCache) {
+                    try {
+                        const offlineCache =
+                            await caches.open(OFFLINE_CACHE_NAME);
+                        await offlineCache.put(url, new Response(blob.slice()));
+                        _offlineCacheIndex.set(url, true);
+                    } catch {
+                        if (options.requireOfflineStorage) return null;
+                    }
+                }
+                return blob;
             }
         }
         // Fallback embedded overview (LOD ≤ 11) — avant le réseau
-        if (embeddedPMTiles && hasCoords) {
+        if (resourceType === 'color' && embeddedPMTiles && hasCoords) {
             if (z! <= EMBEDDED_MAX_ZOOM) {
                 const useLocal =
                     state.MAP_SOURCE !== 'satellite' || state.IS_OFFLINE;
@@ -309,10 +379,14 @@ export async function fetchWithCache(
                 }
             }
         }
-        if (state.IS_OFFLINE) return null;
+        if (state.IS_OFFLINE || options.allowNetwork === false) return null;
 
         // v5.29.5 : Ajout d'un timeout pour ne pas bloquer les slots de connexion (max 6)
         const controller = new AbortController();
+        const abortFromCaller = () => controller.abort();
+        options.signal?.addEventListener('abort', abortFromCaller, {
+            once: true,
+        });
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         try {
@@ -320,8 +394,6 @@ export async function fetchWithCache(
                 mode: 'cors',
                 signal: controller.signal,
             });
-            clearTimeout(timeoutId);
-
             // v5.29.3 : Disjoncteur MapTiler (Rate Limit ou Clé invalide)
             if (url.includes('api.maptiler.com')) {
                 if (r.status === 403 || r.status === 429) {
@@ -348,7 +420,7 @@ export async function fetchWithCache(
                         await oc.put(url, new Response(blob.slice()));
                         _offlineCacheIndex.set(url, true);
                     } catch {
-                        /* cache write can fail */
+                        if (options.requireOfflineStorage) return null;
                     }
                 } else if (usePersistentCache && _workerCache) {
                     try {
@@ -361,10 +433,12 @@ export async function fetchWithCache(
                 return blob;
             }
         } catch (e) {
-            clearTimeout(timeoutId);
             if ((e as Error).name === 'AbortError') {
                 console.warn(`[tileLoader] Timeout ou Abort sur ${url}`);
             }
+        } finally {
+            clearTimeout(timeoutId);
+            options.signal?.removeEventListener('abort', abortFromCaller);
         }
         return null;
     } catch (e) {

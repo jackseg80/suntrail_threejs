@@ -7,6 +7,8 @@ import {
     initCacheLayer,
     inspectOfflineTileResources,
     getColorUrl,
+    hasOfflineTileResource,
+    deleteOfflineTileResources,
 } from './tileLoader';
 import { packManager } from './packManager';
 import { state } from './state';
@@ -107,6 +109,36 @@ describe('TileLoader Integration with Packs', () => {
         expect(result).toBe(mockBlob);
     });
 
+    it('adresse le bon layer d’un pack local pour un téléchargement corridor', async () => {
+        const mockBlob = new Blob(['offline-elevation'], {
+            type: 'image/webp',
+        });
+        (packManager.hasMountedPacks as any).mockReturnValue(true);
+        (packManager.getOfflineTileFromPacks as any).mockResolvedValue(
+            mockBlob
+        );
+
+        const result = await fetchWithCache(
+            'https://api.maptiler.com/tiles/terrain-rgb-v2/12/2133/1450.webp',
+            true,
+            12,
+            2133,
+            1450,
+            true,
+            { resourceType: 'elevation', localOnlyPacks: true }
+        );
+
+        expect(packManager.getOfflineTileFromPacks).toHaveBeenCalledWith(
+            12,
+            2133,
+            1450,
+            'elevation'
+        );
+        expect(packManager.getTileFromPacks).not.toHaveBeenCalled();
+        expect(global.fetch).not.toHaveBeenCalled();
+        expect(result).toBe(mockBlob);
+    });
+
     it('should fallback to network if pack does not have the tile', async () => {
         (packManager.hasMountedPacks as any).mockReturnValue(true);
         (packManager.getTileFromPacks as any).mockReturnValue(
@@ -201,6 +233,63 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
             url,
             expect.any(Response)
         );
+    });
+
+    it('promeut un hit du cache normal vers le cache offline explicite', async () => {
+        const url = 'https://opentopomap.org/12/2100/1400.png';
+        normalSpy._store.set(
+            url,
+            new Response(new Blob(['x'.repeat(150)], { type: 'image/png' }))
+        );
+
+        await expect(
+            fetchWithCache(url, true, 12, 2100, 1400, true, {
+                requireOfflineStorage: true,
+            })
+        ).resolves.toBeInstanceOf(Blob);
+        expect(offlineSpy.put).toHaveBeenCalledWith(url, expect.any(Response));
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('signale l’échec si une ressource corridor ne peut pas être persistée', async () => {
+        const url = 'https://opentopomap.org/12/2100/1400.png';
+        normalSpy._store.set(
+            url,
+            new Response(new Blob(['x'.repeat(150)], { type: 'image/png' }))
+        );
+        offlineSpy.put.mockRejectedValueOnce(
+            new DOMException('Quota reached', 'QuotaExceededError')
+        );
+
+        await expect(
+            fetchWithCache(url, true, 12, 2100, 1400, true, {
+                requireOfflineStorage: true,
+            })
+        ).resolves.toBeNull();
+    });
+
+    it('ne lance aucune requête si un corridor impose les sources locales', async () => {
+        const url = 'https://opentopomap.org/12/2100/1400.png';
+
+        await expect(
+            fetchWithCache(url, true, 12, 2100, 1400, true, {
+                allowNetwork: false,
+                requireOfflineStorage: true,
+            })
+        ).resolves.toBeNull();
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('inspecte et supprime uniquement les URLs offline demandées', async () => {
+        const kept = 'https://tiles.test/kept';
+        const removed = 'https://tiles.test/removed';
+        offlineSpy._store.set(kept, new Response(new Blob(['kept'])));
+        offlineSpy._store.set(removed, new Response(new Blob(['removed'])));
+
+        await expect(hasOfflineTileResource(removed)).resolves.toBe(true);
+        await expect(deleteOfflineTileResources([removed])).resolves.toBe(1);
+        expect(offlineSpy._store.has(kept)).toBe(true);
+        expect(offlineSpy._store.has(removed)).toBe(false);
     });
 
     it('mesure mondialement une tuile lisible depuis le cache sans exiger le relief', async () => {

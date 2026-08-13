@@ -24,6 +24,10 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `routeReadiness` | Pure layered readiness report; local route/light remain independent from optional offline, network and Android evidence. | `buildRouteReadinessReport` |
 | `routeCorridor` | Pure geometry-to-tile planning plus bounded local coverage measurement; no network or download side effect. | `buildRouteCorridorPlan`, `measureCorridorCoverage` |
 | `RouteCorridorReadinessService` | Serializes per-route measurements and invalidates short-lived evidence when route/map/local-pack context changes. | `getInput`, `shouldMeasure`, `measure` |
+| `routeCorridorDownload` | Typed, deduplicated corridor resource queue with bounded concurrency, honest partial results and conservative cancellation into existing offline CacheStorage. | `buildCorridorDownloadQueue`, `downloadRouteCorridor` |
+| `CorridorManifestRepository` | Separate versioned IndexedDB registry for corridor lifecycle and resource ownership; leaves Prepared Routes untouched. | `list`, `get`, `save`, `applyChanges` |
+| `RouteCorridorInstallService` | Installs/restarts corridors, keeps the old Free corridor active until complete replacement and performs ownership-aware cleanup. | `install` |
+| `routeCorridorPreflight` | Measures storage headroom and classifies the current connection without turning unknown evidence into a blocker. | `getRouteCorridorPreflight` |
 | `releaseFlags` | Release rollout decisions, separate from Free/Pro entitlements. | `isEnabled`, `refresh`, `setDeveloperOverride` |
 | `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |

@@ -1,7 +1,8 @@
 # Readiness et corridor hors ligne v5.86
 
-> État au 2026-08-13 : readiness local et planification/mesure du corridor implémentées. Le
-> téléchargement, le remplacement Free et les enrichissements réseau/appareil restent à réaliser.
+> État au 2026-08-13 : readiness local, planification/mesure, téléchargement et registre
+> persistant des corridors implémentés et branchés dans la Bibliothèque. Les validations réelles
+> mode avion/appareil et les enrichissements réseau/appareil restent à réaliser.
 > v5.85.1 reste en validation séparée.
 
 ## Contrat du rapport
@@ -33,9 +34,10 @@ Le corridor doit prolonger les stockages existants, sans cache parallèle :
 | :--- | :--- |
 | Service Worker / Workbox | Shell PWA et assets versionnés. |
 | CacheStorage normal | Cache réseau opportuniste. |
-| `suntrail-offline-zones` | Tuiles demandées explicitement pour zones et futurs corridors. |
+| `suntrail-offline-zones` | Blobs demandés explicitement pour zones et corridors. |
 | OPFS / PMTiles | Packs pays volumineux. |
-| IndexedDB | Routes, futur index de couverture et état des téléchargements. |
+| IndexedDB `suntrail-routes` | Contrat et bibliothèque des Prepared Routes, inchangés. |
+| IndexedDB `suntrail-route-corridors` | Manifestes versionnés, état, propriété et activation des corridors. |
 
 Une bbox de zone ou un simple état `installed` ne suffit pas à annoncer une couverture complète.
 `routeCorridor.ts` intersecte chaque segment avec les tuiles du corridor, déduplique les résultats,
@@ -53,7 +55,30 @@ La mesure est bornée à huit inspections simultanées et les routes sont trait�
 de cinq minutes est invalidé si la route, la source cartographique, MapTiler, les sentiers ou les
 packs installés changent. Aucune requête réseau n'est effectuée.
 
-## Invariants pour les lots suivants
+`routeCorridorDownload.ts` construit une file dédupliquée et typée (couleur, élévation,
+sentiers), puis la traite avec au plus quatre requêtes simultanées par défaut. Un blob absent est
+un échec explicite et produit un résultat `partial`. L'annulation interrompt les requêtes en cours
+mais conserve les ressources déjà acquises ; relancer le même plan reprend via les hits packs/cache.
+
+`RouteCorridorInstallService` écrit un manifeste `downloading` avant le transfert, puis un état
+`completed`, `partial` ou `cancelled`. En Free, un corridor actif différent impose une confirmation.
+L'ancien reste actif tant que le remplaçant n'est pas complet ; l'activation et le remplacement des
+manifestes sont atomiques. En Pro, plusieurs corridors peuvent rester actifs.
+
+Le nettoyage intervient seulement après cette activation. Une ressource gérée est transférée si un
+autre corridor la référence ; une tuile encore couverte par une zone manuelle est protégée. Les
+ressources présentes avant le corridor, notamment celles des packs et zones existantes, ne deviennent
+pas sa propriété. Un échec de nettoyage peut donc laisser un blob orphelin, mais ne peut ni désactiver
+l'ancien corridor trop tôt ni casser le nouveau.
+
+La carte de route propose le corridor Free de 1 km ou, en Pro, 0,5/1/2 km. Elle affiche la progression
+et permet l'annulation. Une connexion cellulaire impose une confirmation explicite. La marge de
+stockage vient de `navigator.storage.estimate()` : si elle est inconnue, aucun faux blocage n'est
+créé ; si elle est inférieure à l'estimation maximale, l'utilisateur confirme en sachant que packs
+et caches locaux seront réutilisés. En mode hors ligne, le moteur relit seulement les sources locales
+et annonce un résultat partiel si elles ne suffisent pas.
+
+## Invariants
 
 - géométrie du corridor dérivée uniquement de la route ; aucune dépendance météo ou sync ;
 - une zone manuelle Free et un corridor Free de 1 km restent deux objets distincts ;
@@ -67,5 +92,8 @@ packs installés changent. Aucune requête réseau n'est effectuée.
 Les tests couvrent le rapport à horloge fixée, les états `unknown`, l'arrivée après la nuit, les
 rayons 0,5/1/2 km, la déduplication, l'antiméridien, le plafond de volume, les caches corrompus ou
 incomplets, l'exclusion des packs CDN, un pack Suisse sans préfiltre pays, un cache hors catalogue
-européen et l'invalidation de contexte. Les tests appareil, le téléchargement/reprise et le
-redémarrage mode avion avec corridor restent ouverts.
+européen, l'invalidation de contexte, la progression, les résultats partiels, l'annulation
+conservatrice, l'adressage des layers d'un pack, la persistance/réouverture des manifestes, le
+remplacement atomique Free, la coexistence Pro, la protection des zones manuelles, le préflight
+réseau/quota et l'absence de requête en mode strictement local. Le redémarrage mode avion avec
+corridor et les validations appareil restent ouverts.
