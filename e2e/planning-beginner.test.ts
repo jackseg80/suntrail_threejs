@@ -37,6 +37,34 @@ test.describe('Beginner route planning', () => {
         const x = box!.x + box!.width * 0.35;
         const firstY = box!.y + box!.height * 0.4;
         const secondY = box!.y + box!.height * 0.53;
+        const holdOnMap = async (y: number) => {
+            await page.locator('#canvas-container').evaluate(
+                async (element, point) => {
+                    element.dispatchEvent(
+                        new PointerEvent('pointerdown', {
+                            bubbles: true,
+                            button: 0,
+                            pointerId: 1,
+                            isPrimary: true,
+                            clientX: point.x,
+                            clientY: point.y,
+                        })
+                    );
+                    await new Promise((resolve) => setTimeout(resolve, 550));
+                    element.dispatchEvent(
+                        new PointerEvent('pointerup', {
+                            bubbles: true,
+                            button: 0,
+                            pointerId: 1,
+                            isPrimary: true,
+                            clientX: point.x,
+                            clientY: point.y,
+                        })
+                    );
+                },
+                { x, y }
+            );
+        };
 
         // Outside Plan mode, a regular tap remains a selection and adds no waypoint.
         await page.mouse.click(x, firstY);
@@ -54,10 +82,14 @@ test.describe('Beginner route planning', () => {
             /départ|start|Startpunkt|partenza/i
         );
 
-        // In Plan mode, each regular terrain tap creates a waypoint.
+        // In Prepare mode, a regular terrain tap remains available for moving the map.
         await page.mouse.click(x, firstY);
+        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(0);
+
+        // A deliberate 500 ms hold is required to add each waypoint.
+        await holdOnMap(firstY);
         await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(1);
-        await page.mouse.click(x, secondY);
+        await holdOnMap(secondY);
         await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(2);
 
         await page.locator('#rb-reverse-btn').click();
@@ -87,10 +119,7 @@ test.describe('Beginner route planning', () => {
         await explore.click();
 
         // The expert long-press shortcut still adds a point outside Plan mode.
-        await page.mouse.move(x, firstY);
-        await page.mouse.down();
-        await page.waitForTimeout(600);
-        await page.mouse.up();
+        await holdOnMap(firstY);
         await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(1);
         await expect(page.locator('body')).not.toHaveClass(
             /route-planning-mode/

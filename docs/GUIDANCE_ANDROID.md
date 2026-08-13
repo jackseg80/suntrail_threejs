@@ -1,6 +1,7 @@
 # SunTrail v5.85 — Guidage Android natif
 
-> État au 2026-08-12 : implémentation locale, flag `nativeGuidance` désactivé par défaut.
+> État au 2026-08-13 : pré-release GitHub interne avec correctifs terrain, flag `nativeGuidance`
+> désactivé par défaut.
 > L'instrumentation Galaxy S23/API 36 est verte (5/5) ; la clôture reste bloquée par API 24/33,
 > les validations terrain A53/S23 et les sorties longues.
 
@@ -43,7 +44,9 @@ reste la source de vérité détaillée.
 
 À la réouverture de la WebView, la route relue dans IndexedDB est aussi recréée comme calque
 `prepared-*` sur la carte. Ce calque éphémère est nécessaire au tracé et au bouton Profil ; il ne
-modifie ni la `PreparedRouteV1` ni la copie native Room.
+modifie ni la `PreparedRouteV1` ni la copie native Room. La restauration passe par le même chemin
+que l'ouverture normale d'une route sauvegardée et annule le timer de recalcul A/B, y compris sa
+course en microtâche : la géométrie, la distance et les statistiques persistées restent exactes.
 
 ## Matcher Java et parité v5.84
 
@@ -66,23 +69,23 @@ aller-retour, épingles, croisement, bruit, saut, récupération, arrivée) et c
 
 La source Java est `GuidanceThresholds.java`; elle doit évoluer avec une fixture et le golden :
 
-| Seuil | Valeur | Rôle |
-|---|---:|---|
-| accuracy max | 60 m | au-delà : `acquiring`, sans alerte |
-| position stale | 15 s | position refusée, progression inchangée |
-| bons samples | 2 | acquisition avant `onRoute` |
-| hors-route | max(40 m, 1,5 × accuracy) | seuil dynamique |
-| maintien hors-route | 20 s | évite les alertes brèves |
-| récupération | 0,6 × seuil pendant 10 s | hystérésis |
-| affichage `recovered` | 5 s | état transitoire visible |
-| cooldown alerte | 120 s | pas de répétition agressive |
-| arrivée | 25 m pendant 10 s | confirmation finale |
-| recul max | 35 m | continuité de progression |
-| recherche avant | 600 m | boucles/lacets/croisements |
-| vitesse plausible | 12 m/s | rejet des sauts GPS |
-| base saut GPS | 250 m | tolérance fixe minimale |
-| look-ahead | 35 m | bearing de route |
-| cue passée | 12 m | sélection de la prochaine indication |
+| Seuil                 |                    Valeur | Rôle                                    |
+| --------------------- | ------------------------: | --------------------------------------- |
+| accuracy max          |                      60 m | au-delà : `acquiring`, sans alerte      |
+| position stale        |                      15 s | position refusée, progression inchangée |
+| bons samples          |                         2 | acquisition avant `onRoute`             |
+| hors-route            | max(40 m, 1,5 × accuracy) | seuil dynamique                         |
+| maintien hors-route   |                      20 s | évite les alertes brèves                |
+| récupération          |  0,6 × seuil pendant 10 s | hystérésis                              |
+| affichage `recovered` |                       5 s | état transitoire visible                |
+| cooldown alerte       |                     120 s | pas de répétition agressive             |
+| arrivée               |         25 m pendant 10 s | confirmation finale                     |
+| recul max             |                      35 m | continuité de progression               |
+| recherche avant       |                     600 m | boucles/lacets/croisements              |
+| vitesse plausible     |                    12 m/s | rejet des sauts GPS                     |
+| base saut GPS         |                     250 m | tolérance fixe minimale                 |
+| look-ahead            |                      35 m | bearing de route                        |
+| cue passée            |                      12 m | sélection de la prochaine indication    |
 
 ## Snapshot et bridge
 
@@ -90,6 +93,13 @@ Le contrat partagé contient `routeId`, `status`, `progressMeters`, `remainingMe
 `crossTrackMeters`, `eta`, `bearing`, `nextCue`, `distanceToNextCueMeters`, `accuracyMeters`,
 `positionAgeMs` et `updatedAt`. Les événements sont `off-route`, `recovered`, `arrived`.
 `onLocationUpdate` alimente la carte avec le même fix Fused, sans matcher WebView parallèle.
+
+Le marqueur cartographique complète le point rouge par une flèche purement visuelle. Au-dessus de
+**0,55 m/s**, elle privilégie `coords.heading`, donc le cap de déplacement GPS ; à faible vitesse,
+elle utilise le cap absolu lissé du téléphone. Sans cap fini, elle est masquée. Ce seuil est partagé
+avec l'entrée du suivi caméra et ne modifie ni le matcher Java ni les écritures REC. Le rail droit
+contenant le bouton de position reste visible pendant l'auto-masquage d'inactivité ; seul un geste
+de déplacement de carte peut encore le masquer temporairement.
 
 ## Foreground, notification et permissions
 

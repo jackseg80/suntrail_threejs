@@ -1,16 +1,16 @@
 # v5.85 — Protocole terrain Android A53/S23
 
-> Gate de release, pas un compte rendu anticipé. Le 2026-08-12, le Galaxy S23 a exécuté
-> l'instrumentation API 36 (5/5). Toutes les validations manuelles et les sorties terrain restent
-> rouges ; aucune conclusion d'autonomie ne peut être tirée sur appareil branché à 14 %.
+> Gate de release, pas un compte rendu anticipé. Le Galaxy S23 a exécuté l'instrumentation API 36
+> (5/5) puis une sortie exploratoire Guidance+REC de 2 h 07. Cette sortie prouve une partie de la
+> reprise, mais ne remplace ni le retest des correctifs du 2026-08-13 ni les séries comparatives.
 
 ## Matrice obligatoire
 
-| Cible | API | Rôle | État |
-|---|---:|---|---|
-| appareil/émulateur bas | 24 | compatibilité minimale, Room v1→v2, notification | 🔴 non exécuté |
-| Galaxy A53 | 33 | cible batterie/performance et trois sorties longues | 🔴 appareil absent |
-| Galaxy S23 `SM-S911B` | 36 | cible récente, reprise/processus/permissions | 🟡 instrumentation 5/5 ; terrain rouge |
+| Cible                  | API | Rôle                                                | État                                                     |
+| ---------------------- | --: | --------------------------------------------------- | -------------------------------------------------------- |
+| appareil/émulateur bas |  24 | compatibilité minimale, Room v1→v2, notification    | 🔴 non exécuté                                           |
+| Galaxy A53             |  33 | cible batterie/performance et trois sorties longues | 🔴 appareil absent                                       |
+| Galaxy S23 `SM-S911B`  |  36 | cible récente, reprise/processus/permissions        | 🟡 instrumentation 5/5 ; sortie exploratoire à revalider |
 
 ## Exécution instrumentée S23 — 2026-08-12
 
@@ -24,9 +24,28 @@
 - Le runner Gradle désinstalle la build debug et le paquet de test à la fin ; aucun service
   SunTrail ne restait actif après l'exécution.
 
-Installer l'APK debug v5.85.0/903 uniquement pour le test local. Activer le flag développeur
-`nativeGuidance=true`, vérifier que `guidanceForeground=true`, puis accorder localisation précise
-et notifications. Ne pas téléverser de bundle Play et ne pas publier.
+## Sortie exploratoire S23 — 2026-08-12, diagnostic 2026-08-13
+
+- Observation du testeur : **8,13 km en 2 h 07**, Guidance+REC, écran éteint ; après plusieurs
+  fermetures apparentes de l'application, le REC et le panneau Guidance ont toujours repris.
+- Preuve ADB : foreground service total `2 h 07 min 12 s`, GNSS foreground `2 h 07 min 07 s`,
+  dont `1 h 20 min 23 s` écran éteint/doze. Les compteurs sont cumulés depuis leur dernier reset
+  et ne constituent donc pas une mesure de batterie par heure.
+- Aucun ANR ni crash Java v5.85 enregistré. L'historique Android montre deux destructions du
+  processus principal/WebView par signal 9 avec pression mémoire associée ; la continuité du
+  service `:tracking` et la reprise fonctionnelle sont positives.
+- Défaut découvert : après reprise, les jalons A/B restaient corrects mais un recalcul différé
+  pouvait remplacer la route sauvegardée de 0,9 km par une boucle de 3,7 km. Le correctif du
+  2026-08-13 restaure maintenant la PreparedRoute exacte et annule ce recalcul ; **retest requis**.
+- Deux améliorations accompagnent ce correctif : rail GPS non masqué par l'inactivité et petite
+  flèche de cap utilisant le déplacement GPS en marche, puis la boussole à faible vitesse.
+- Cette sortie ne compte pas dans les trois runs comparatifs : pas de relevés homogènes
+  T0/T30/T60 de batterie, CPU et mémoire, et la build a été corrigée ensuite.
+
+La pré-release GitHub interne `v5.85.0` fournit l'AAB signé ; installer l'APK debug v5.85.0/903
+uniquement pour le test local. Activer le flag développeur `nativeGuidance=true`, vérifier que
+`guidanceForeground=true`, puis accorder localisation précise et notifications. Ne pas téléverser
+de bundle Play : cette pré-release ne lève aucune gate de terrain.
 
 ## Préflight par appareil
 
@@ -62,14 +81,14 @@ et notifications. Ne pas téléverser de bundle Play et ne pas publier.
 Sur A53 puis S23, exécuter **trois runs REC-only d'une heure**, puis **trois runs Guidance+REC
 d'une heure**, sur trajet comparable. Pour chaque run, relever à T0/T30/T60 :
 
-| Mesure | Collecte |
-|---|---|
-| batterie | pourcentage et mAh/charge counter si disponible |
-| CPU | `dumpsys cpuinfo` + moyenne/pic observés |
-| mémoire | PSS total, Java/native/graphics via `dumpsys meminfo` |
-| GPS | fixes reçus/acceptés/rejetés, accuracy, stale, trous et distance |
-| stabilité | ANR, crash, redémarrage service, notification absente |
-| fonctionnel | progression monotone, REC points, événements Guidance |
+| Mesure      | Collecte                                                         |
+| ----------- | ---------------------------------------------------------------- |
+| batterie    | pourcentage et mAh/charge counter si disponible                  |
+| CPU         | `dumpsys cpuinfo` + moyenne/pic observés                         |
+| mémoire     | PSS total, Java/native/graphics via `dumpsys meminfo`            |
+| GPS         | fixes reçus/acceptés/rejetés, accuracy, stale, trous et distance |
+| stabilité   | ANR, crash, redémarrage service, notification absente            |
+| fonctionnel | progression monotone, REC points, événements Guidance            |
 
 Comparer pour chaque paire `Guidance+REC - REC-only`. Cible initiale A53 : surcoût batterie
 **≤ 1 point par heure**. Signaler médiane, pire run et contexte ; ne pas conclure avec une seule

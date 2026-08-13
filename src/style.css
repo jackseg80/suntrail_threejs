@@ -2200,9 +2200,7 @@ body.ui-hidden #bottom-bar {
     transform: translate(-50%, -200px);
     opacity: 0;
 }
-body.ui-hidden #gps-main-btn,
-body.ui-hidden #coords-pill,
-body.ui-hidden .fab-stack {
+body.ui-hidden #coords-pill {
     transform: translateX(100px);
     opacity: 0;
 }

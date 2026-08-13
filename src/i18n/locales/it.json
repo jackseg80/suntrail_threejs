@@ -280,14 +280,14 @@
     },
     "routeBar": {
         "computing": "Calcolo…",
-        "onePoint": "Partenza A inserita · tocca la mappa per B",
+        "onePoint": "Partenza A inserita · pressione lunga sulla mappa per B",
         "error": "Itinerario non disponibile · modifica i punti"
     },
     "planning": {
-        "tapToAddStart": "Tocca la mappa per inserire la partenza A",
+        "tapToAddStart": "Pressione lunga sulla mappa per inserire la partenza A",
         "loop": "Anello",
         "hint": {
-            "longPress": "Suggerimento esperto: fuori dalla modalità Prepara, una pressione lunga aggiunge comunque un punto."
+            "longPress": "Una pressione lunga sulla mappa aggiunge un punto."
         },
         "aria": {
             "region": "Modalità di pianificazione itinerario",

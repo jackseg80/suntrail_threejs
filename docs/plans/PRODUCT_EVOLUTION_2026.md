@@ -1,11 +1,11 @@
 # SunTrail — Plan d'évolution produit révisé v5.82 → v6.1
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
-> Révision : 2026-08-12 après implémentation locale v5.85.
+> Révision : 2026-08-13 après pré-release interne v5.85.
 > v5.83.3 / Android 901 reste la dernière release corrective publique. v5.84.0 / Android 902 est
 > clôturée comme pré-release GitHub interne après validation Galaxy S23 et gates ; aucun
-> téléversement Play Console. v5.85 est implémentée localement et l'instrumentation S23/API 36
-> est verte (5/5), mais les gates API 24/33, terrain A53/S23 et sorties longues restent rouges ;
+> téléversement Play Console. v5.85 est publiée en pré-release GitHub interne et l'instrumentation
+> S23/API 36 est verte (5/5), mais les gates API 24/33, terrain A53/S23 et sorties longues restent rouges ;
 > `nativeGuidance` demeure désactivé par défaut.
 
 ## 1. Ordre de réalisation

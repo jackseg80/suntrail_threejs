@@ -281,14 +281,14 @@
     },
     "routeBar": {
         "computing": "Computing…",
-        "onePoint": "Start A set · tap the map for B",
+        "onePoint": "Start A set · long-press the map for B",
         "error": "Route unavailable · adjust the points"
     },
     "planning": {
-        "tapToAddStart": "Tap the map to place start A",
+        "tapToAddStart": "Long-press the map to place start A",
         "loop": "Loop",
         "hint": {
-            "longPress": "Expert tip: outside Prepare mode, a long press also adds a point."
+            "longPress": "Long-press the map to add a point."
         },
         "aria": {
             "region": "Route planning mode",

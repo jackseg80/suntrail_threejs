@@ -324,6 +324,7 @@ export interface State {
     userLocation: { lat: number; lon: number; alt: number } | null;
     userLocationAccuracy: number | null;
     userSpeedMps: number | null;
+    userCourseHeading: number | null;
     userHeading: number | null;
     isFollowingUser: boolean;
     userMarker: THREE.Group | null;
@@ -467,6 +468,7 @@ const initialState: State = {
     userLocation: null,
     userLocationAccuracy: null,
     userSpeedMps: null,
+    userCourseHeading: null,
     userHeading: null,
     isFollowingUser: false,
     userMarker: null,

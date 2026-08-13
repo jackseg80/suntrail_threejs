@@ -281,14 +281,14 @@
     },
     "routeBar": {
         "computing": "Berechnung…",
-        "onePoint": "Start A gesetzt · für B auf die Karte tippen",
+        "onePoint": "Start A gesetzt · für B lange auf die Karte drücken",
         "error": "Route nicht verfügbar · Punkte anpassen"
     },
     "planning": {
-        "tapToAddStart": "Auf die Karte tippen, um Start A zu setzen",
+        "tapToAddStart": "Lange auf die Karte drücken, um Start A zu setzen",
         "loop": "Rundtour",
         "hint": {
-            "longPress": "Expertentipp: Außerhalb des Planen-Modus fügt langes Drücken ebenfalls einen Punkt hinzu."
+            "longPress": "Lange auf die Karte drücken, um einen Punkt hinzuzufügen."
         },
         "aria": {
             "region": "Routenplanungsmodus",

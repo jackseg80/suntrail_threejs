@@ -1,11 +1,11 @@
-# SunTrail — Guide IA (version source v5.85.0 — gates terrain ouvertes)
+# SunTrail — Guide IA (version source v5.85.0 — pré-release interne, gates terrain ouvertes)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-12 — v5.85.0 / Android `903` est implémentée localement, non clôturée.
+> Mis à jour le 2026-08-13 — v5.85.0 / Android `903` est publiée en pré-release GitHub interne.
 > Le guidage Java/Room dans `:tracking` est derrière `nativeGuidance=false` ; l'instrumentation
 > S23/API 36 est verte (5/5), mais API 24/33, terrain A53/S23 et sorties longues restent des gates
-> rouges. Le commit local v5.85 est autorisé ; aucun tag, push, AAB, déploiement Play/public ou
-> démarrage v5.86 n'est autorisé. Prepared Routes et REC sont préservés.
+> rouges. L'AAB signé est attaché à la pré-release ; aucun téléversement Play Console ni démarrage
+> v5.85.1/v5.86 n'est autorisé. Prepared Routes et REC sont préservés.
 
 ## Projet
 
@@ -27,8 +27,9 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Suivi foreground (v5.84.0, jalon interne clôturé)** : `GuidanceEngine` TypeScript pur, `GuidancePlanV1`
   séparé, indications ORS/OSRM/GPX, progression/ETA/écart et alertes visuelles/haptiques écran
   actif. Aucun guidage natif/background, notification ou reprise après fermeture.
-- **Guidage Android (v5.85.0, commit local)** : port Java du matcher, route/session Room v2, modes
-  recording/guidance/both, snapshot et notification persistante avec reprise. Gates terrain ouvertes.
+- **Guidage Android (v5.85.0, pré-release interne)** : port Java du matcher, route/session Room v2,
+  modes recording/guidance/both, snapshot et notification persistante avec reprise. Gates terrain
+  A53/API 24/33 et sorties longues ouvertes.
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.

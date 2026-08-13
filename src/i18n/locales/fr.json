@@ -281,14 +281,14 @@
     },
     "routeBar": {
         "computing": "Calcul…",
-        "onePoint": "Départ A placé · touchez la carte pour B",
+        "onePoint": "Départ A placé · appui long sur la carte pour B",
         "error": "Itinéraire indisponible · modifiez les points"
     },
     "planning": {
-        "tapToAddStart": "Touchez la carte pour placer le départ A",
+        "tapToAddStart": "Appui long sur la carte pour placer le départ A",
         "loop": "Boucle",
         "hint": {
-            "longPress": "Astuce expert : hors du mode Planifier, un appui long ajoute aussi un point."
+            "longPress": "Un appui long sur la carte ajoute un point."
         },
         "aria": {
             "region": "Mode de planification d’itinéraire",

@@ -3,9 +3,9 @@ import type { PreparedRouteV1 } from '../preparedRoutes/preparedRoute';
 import type { GuidanceSnapshot, GuidanceUpdate } from './guidanceTypes';
 
 const mocks = vi.hoisted(() => ({
-    displayPreparedRoute: vi.fn(),
     getActiveSession: vi.fn(),
     getRouteById: vi.fn(),
+    restoreSavedRoute: vi.fn(),
     stopGuidance: vi.fn(),
     subscribe: vi.fn(() => vi.fn()),
     addGuidanceListener: vi.fn(() => vi.fn()),
@@ -31,14 +31,14 @@ vi.mock('../profile', () => ({
     updateElevationProfile: vi.fn(),
 }));
 vi.mock('../preparedRoutes/preparedRouteService', () => ({
-    preparedRouteService: { getById: mocks.getRouteById },
+    preparedRouteService: {
+        getById: mocks.getRouteById,
+        restoreSavedRoute: mocks.restoreSavedRoute,
+    },
 }));
 vi.mock('../recordingService', () => ({ recordingService: {} }));
 vi.mock('../releaseFlags', () => ({
     releaseFlags: { isEnabled: (flag: string) => flag === 'nativeGuidance' },
-}));
-vi.mock('../routingService', () => ({
-    displayPreparedRoute: mocks.displayPreparedRoute,
 }));
 vi.mock('../state', () => ({
     state: {
@@ -104,8 +104,8 @@ describe('GuidanceForegroundService native recovery', () => {
 
         await expect(service.recoverNativeSession()).resolves.toBe(true);
 
-        expect(mocks.displayPreparedRoute).toHaveBeenCalledOnce();
-        expect(mocks.displayPreparedRoute).toHaveBeenCalledWith(route);
+        expect(mocks.restoreSavedRoute).toHaveBeenCalledOnce();
+        expect(mocks.restoreSavedRoute).toHaveBeenCalledWith(route);
         expect(applyUpdate).toHaveBeenCalledWith({
             snapshot,
             events: ['recovered'],

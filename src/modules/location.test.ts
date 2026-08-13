@@ -55,6 +55,7 @@ describe('location.ts', () => {
         state.userMarker = null;
         state.isFollowingUser = false;
         state.userSpeedMps = null;
+        state.userCourseHeading = null;
         state.lastTrackingUpdate = 0;
         setUserFollowViewport('center');
     });
@@ -78,6 +79,56 @@ describe('location.ts', () => {
 
             expect(state.userMarker!.position.x).not.toBe(firstPos.x);
             expect(state.userMarker!.position.z).not.toBe(firstPos.z);
+        });
+
+        it('shows the phone direction while stationary', () => {
+            state.userLocation = { lat: 45, lon: 6, alt: 1000 };
+            state.userHeading = 90;
+            state.userSpeedMps = 0;
+
+            updateUserMarker();
+
+            const direction =
+                state.userMarker!.getObjectByName('user-direction');
+            expect(direction?.visible).toBe(true);
+            expect(direction?.rotation.y).toBeCloseTo(-Math.PI / 2, 6);
+        });
+
+        it('prefers the GPS course while walking', () => {
+            state.userLocation = { lat: 45, lon: 6, alt: 1000 };
+            state.userHeading = 30;
+            state.userCourseHeading = 180;
+            state.userSpeedMps = 1.2;
+
+            updateUserMarker();
+
+            const direction =
+                state.userMarker!.getObjectByName('user-direction');
+            expect(direction?.visible).toBe(true);
+            expect(direction?.rotation.y).toBeCloseTo(-Math.PI, 6);
+        });
+
+        it('ignores an invalid GPS course and falls back to the phone direction', () => {
+            state.userLocation = { lat: 45, lon: 6, alt: 1000 };
+            state.userHeading = 45;
+            state.userCourseHeading = -1;
+            state.userSpeedMps = 1.2;
+
+            updateUserMarker();
+
+            const direction =
+                state.userMarker!.getObjectByName('user-direction');
+            expect(direction?.rotation.y).toBeCloseTo(-Math.PI / 4, 6);
+        });
+
+        it('hides the direction arrow until a reliable heading is available', () => {
+            state.userLocation = { lat: 45, lon: 6, alt: 1000 };
+
+            updateUserMarker();
+
+            expect(
+                state.userMarker!.getObjectByName('user-direction')?.visible
+            ).toBe(false);
         });
     });
 

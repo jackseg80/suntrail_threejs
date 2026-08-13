@@ -1,6 +1,7 @@
 # SunTrail — Roadmap produit révisée (version source v5.85.0 — gates terrain ouvertes)
 
-> Révision : 2026-08-12, après implémentation locale et instrumentation S23/API 36.
+> Révision : 2026-08-12, après implémentation locale, instrumentation S23/API 36 et audit
+> ciblé performance/autonomie.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -37,13 +38,15 @@ heure de passage et conditions.
 | **v5.83.0** | Planifier, évaluer et retrouver une route après redémarrage | PreparedRoute local, bibliothèque, difficulté/effort, soleil utile |
 | **v5.84.0 interne clôturée** | Valider le moteur de suivi sans promesse publique incomplète | GuidanceEngine TS, progression/ETA/écart, prochaine indication, foreground |
 | **v5.85.0** | Guider réellement sur Android, écran éteint et après interruption | Matcher natif, route Room, notification, récupération, tests appareils |
+| **v5.85.1** | Randonner plus longtemps avec une carte fluide | Autonomie, rendu au repos, REC long, cache VRAM/tuiles et guidage efficient |
 | **v5.86.0** | Savoir si la sortie est prête et emporter son corridor | Readiness en couches, corridor Free remplaçable, offline fiable |
 | **v6.0.0** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
 | **v6.1.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, exports et finition |
 
 La synchronisation ne bloque plus le guidage. v5.84 est un jalon technique interne/fermé ; elle
 n'est pas promue publiquement comme un guidage complet. Le durcissement natif devient v5.85,
-avant readiness et cloud, car Android terrain est la priorité produit.
+suivi d'une stabilisation corrective v5.85.1, avant readiness et cloud, car Android terrain et
+l'autonomie sont la priorité produit.
 
 ## v5.82.0 — Fondations UX finalisées
 
@@ -126,8 +129,8 @@ OSRM/absence de donnée sont testés ; « inconnue » est un résultat valide, j
 
 > **Clôturé le 2026-08-11 comme pré-release GitHub interne.** Le moteur, les cues, l'UI et les
 > E2E ciblés sont validés ; la validation Galaxy S23 a été acceptée pour le périmètre foreground.
-> v5.85 a été autorisée et est en validation terrain ; v5.86 reste interdite tant que ses gates
-> ne sont pas closes.
+> v5.85 a été autorisée et est en validation terrain ; v5.85.1 reste interdite tant que ses gates
+> ne sont pas closes. v5.86 ne commence qu'après la stabilisation corrective.
 
 Livrer le cœur de navigation avant le cloud :
 
@@ -159,9 +162,9 @@ déploiement public.
 
 ## v5.85.0 — Guidage Android robuste
 
-> Implémentation locale réalisée le 2026-08-12, avec instrumentation S23/API 36 verte (5/5).
-> La version n'est pas clôturée : API 24/33, protocole fonctionnel A53/S23 et sorties longues
-> restent à démontrer. Ne pas commencer v5.86.
+> Pré-release GitHub interne publiée le 2026-08-13, avec instrumentation S23/API 36 verte (5/5).
+> La promotion terrain/stable n'est pas clôturée : API 24/33, protocole fonctionnel A53/S23 et
+> sorties longues restent à démontrer. Ne pas commencer v5.85.1 avant leur clôture.
 
 Étendre les briques Java/Room existantes :
 
@@ -180,6 +183,43 @@ REC seul ; tout dépassement est expliqué et bloque la généralisation.
 
 **Gate :** matrice API 24/33/36 et appareils réels, sans publication sur émulateur seul. Protocole
 et gates rouges : [V5_85_A53_S23_FIELD_VALIDATION.md](docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md).
+
+## v5.85.1 — Performance & autonomie terrain
+
+> Version corrective à ouvrir uniquement après la clôture des gates terrain de v5.85.0. Elle
+> n'ajoute aucune promesse fonctionnelle ; REC, routes préparées, guidage natif et reprise doivent
+> conserver strictement leurs contrats.
+
+Réduire le travail permanent et le coût croissant des longues sorties, en privilégiant des gains
+mesurables et réversibles :
+
+- rendre la boussole seulement lorsque la caméra ou son animation change ; préserver le deep sleep
+  de la carte quand l'application est immobile ;
+- remplacer les reconstructions complètes de trace REC par une stratégie incrémentale ou fortement
+  bornée, avec persistance débouncée et flush garanti à l'arrêt, à la pause et au passage en
+  arrière-plan ;
+- éviter le recalcul intégral des statistiques REC lorsque la feuille Sortie est fermée ;
+- corriger le remplacement des textures du cache, les clés et le cycle de vie du préchargement LOD,
+  ainsi que le comportement de zoom sortant ;
+- supprimer les travaux UI permanents sans effet utilisateur : polling Free de l'inclinomètre,
+  intervalle de stockage, timer de focus de recherche et imports/hydratations non critiques ;
+- réduire les écritures Room, snapshots, broadcasts et recherches de segments du guidage natif,
+  sans perdre une transition d'état, une alerte ou une reprise ;
+- éliminer les doublons de démarrage et différer les dépendances non critiques, notamment celles
+  liées au GPX, aux packs et aux feuilles secondaires.
+
+**Gates :**
+
+1. mêmes résultats de guidage sur les fixtures Java/TypeScript, et mêmes transitions
+   recording/guidance/both, y compris arrêt séparé et reprise après WebView tuée ;
+2. aucun crash, fuite WebGL ou texture résiduelle après 30 minutes de panoramique/zoom et plusieurs
+   changements de LOD ;
+3. mesures A53 et S23 comparant idle, navigation carte, REC seul et guidage + REC, sur trois runs
+   homogènes ; le gain est rapporté face à une baseline v5.85.0, sans budget inventé avant mesure ;
+4. `npm run check`, `npm test`, build et budget de bundle verts ; tests Android réels complétés sur
+   les API supportées ;
+5. aucune régression de fluidité, de récupération REC, d'offline ou d'accessibilité constatée dans
+   le protocole terrain.
 
 ## v5.86.0 — Prêt à partir & corridor hors ligne
 

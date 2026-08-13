@@ -144,12 +144,20 @@ export class PreparedRouteService {
     public async load(id: string): Promise<PreparedRouteV1> {
         const route = await this.getRepository().get(id);
         if (!route) throw new Error('preparedRoutes.error.notFound');
+        this.restoreSavedRoute(route);
+        return route;
+    }
+
+    /**
+     * Réaffiche exactement la copie persistée, sans laisser la restauration des
+     * waypoints déclencher un nouveau calcul réseau entre leurs extrémités.
+     */
+    public restoreSavedRoute(route: PreparedRouteV1): void {
         displayPreparedRoute(route);
         cancelScheduledAutoCompute();
         this.applyRouteMetadata(route);
         state.routeDraftDirty = false;
         state.routeLastSavedAt = route.updatedAt;
-        return route;
     }
 
     /** Lecture sans effet UI, notamment pour rattacher une WebView au guidage natif. */

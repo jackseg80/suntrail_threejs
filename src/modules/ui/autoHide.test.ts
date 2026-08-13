@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const { mockState } = vi.hoisted(() => ({
     mockState: {
@@ -18,6 +20,8 @@ vi.mock('./core/SheetManager', () => ({
 
 import { initAutoHide, resetAutoHideTimer, cleanupAutoHide } from './autoHide';
 import { sheetManager } from './core/SheetManager';
+
+const styles = readFileSync(resolve('src/style.css'), 'utf8');
 
 describe('autoHide', () => {
     beforeEach(() => {
@@ -104,5 +108,15 @@ describe('autoHide', () => {
             vi.advanceTimersByTime(10000);
             expect(document.body.classList.contains('ui-hidden')).toBe(true);
         });
+    });
+
+    it('keeps the map positioning rail accessible while the decorative UI is hidden', () => {
+        const autoHideRules = styles.match(
+            /\/\* AUTO HIDE \*\/([\s\S]*?)\/\* HIDE ON MOVE/
+        )?.[1];
+
+        expect(autoHideRules).toBeTruthy();
+        expect(autoHideRules).not.toContain('#gps-main-btn');
+        expect(autoHideRules).not.toContain('.fab-stack');
     });
 });

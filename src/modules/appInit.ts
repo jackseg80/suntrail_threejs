@@ -517,6 +517,11 @@ async function initSecondaryUI(): Promise<void> {
 
 let _longPressJustFired = false;
 
+// L'appui long historique reste volontairement court et tolérant pour être
+// utilisable sur le terrain. Seul le toucher court est neutralisé en Préparer.
+const WAYPOINT_LONG_PRESS_DELAY_MS = 500;
+const WAYPOINT_LONG_PRESS_MOVE_TOLERANCE_PX = 8;
+
 const POI_CATEGORY_LABELS: Record<string, string> = {
     guidepost: 'Signalisation',
     viewpoint: 'Point de vue',
@@ -577,9 +582,9 @@ async function handleMapClick(e: MouseEvent) {
         return;
     }
 
-    // v5.82: a simple terrain tap only creates a waypoint in explicit planning mode.
+    // En Préparer, le toucher court reste disponible pour manipuler la carte.
+    // L'ajout d'un waypoint est exclusivement réservé à l'appui long, géré plus bas.
     if (state.isRoutePlanningMode) {
-        placeWaypointAt(e.clientX, e.clientY, true);
         return;
     }
 
@@ -989,7 +994,7 @@ function setupLongPress() {
             _longPressJustFired = true;
             void haptic('medium');
             placeWaypointAt(e.clientX, e.clientY);
-        }, 500);
+        }, WAYPOINT_LONG_PRESS_DELAY_MS);
     });
 
     container.addEventListener(
@@ -997,8 +1002,10 @@ function setupLongPress() {
         (e: PointerEvent) => {
             if (!timer || activePointers > 1) return;
             if (
-                Math.abs(e.clientX - startX) > 8 ||
-                Math.abs(e.clientY - startY) > 8
+                Math.abs(e.clientX - startX) >
+                    WAYPOINT_LONG_PRESS_MOVE_TOLERANCE_PX ||
+                Math.abs(e.clientY - startY) >
+                    WAYPOINT_LONG_PRESS_MOVE_TOLERANCE_PX
             ) {
                 clearTimeout(timer);
                 timer = null;

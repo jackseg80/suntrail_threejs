@@ -13,7 +13,6 @@ import type { PreparedRouteV1 } from '../preparedRoutes/preparedRoute';
 import { preparedRouteService } from '../preparedRoutes/preparedRouteService';
 import { recordingService } from '../recordingService';
 import { releaseFlags } from '../releaseFlags';
-import { displayPreparedRoute } from '../routingService';
 import { state } from '../state';
 import {
     nativeGPSService,
@@ -237,8 +236,9 @@ export class GuidanceForegroundService {
         }
         // La session Room restaure le moteur, mais pas les calques WebGL éphémères de la WebView.
         // Réafficher la route sauvegardée recrée le calque `prepared-*` attendu par la carte et
-        // le bouton Profil, sans modifier la PreparedRoute ni la session native.
-        displayPreparedRoute(route);
+        // le bouton Profil. Le chemin partagé annule aussi le recalcul réactif des seuls
+        // waypoints : la géométrie persistée reste donc strictement identique après reprise.
+        preparedRouteService.restoreSavedRoute(route);
         this.route = route;
         this.nativeActive = true;
         this.expanded = false;

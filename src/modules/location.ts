@@ -25,6 +25,62 @@ const FOLLOW_CAMERA_DISTANCE = 1500;
 const FOLLOW_MOVEMENT_START_MPS = 0.55;
 const FOLLOW_MOVEMENT_STOP_MPS = 0.25;
 
+function normalizeHeading(heading: number | null | undefined): number | null {
+    if (typeof heading !== 'number' || !Number.isFinite(heading)) return null;
+    if (heading < 0 || heading > 360) return null;
+    return ((heading % 360) + 360) % 360;
+}
+
+function getUserMarkerHeading(): number | null {
+    const courseHeading = normalizeHeading(state.userCourseHeading);
+    if (
+        (state.userSpeedMps ?? 0) >= FOLLOW_MOVEMENT_START_MPS &&
+        courseHeading !== null
+    ) {
+        return courseHeading;
+    }
+    return normalizeHeading(state.userHeading);
+}
+
+function createDirectionArrow(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'user-direction';
+
+    const createTriangle = (
+        tip: number,
+        halfWidth: number,
+        base: number,
+        color: number,
+        y: number,
+        renderOrder: number
+    ) => {
+        const shape = new THREE.Shape();
+        shape.moveTo(0, tip);
+        shape.lineTo(-halfWidth, base);
+        shape.lineTo(halfWidth, base);
+        shape.closePath();
+        const geometry = new THREE.ShapeGeometry(shape);
+        // Le nord cartographique correspond à -Z dans la projection WebMercator.
+        geometry.rotateX(-Math.PI / 2);
+        const material = new THREE.MeshBasicMaterial({
+            color,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.y = y;
+        mesh.renderOrder = renderOrder;
+        group.add(mesh);
+    };
+
+    // Fin liseré blanc pour conserver le contraste sur carte claire ou sombre.
+    createTriangle(72, 18, 18, 0xffffff, 4, 998);
+    createTriangle(65, 12, 22, 0xff0000, 4.5, 999);
+    group.visible = false;
+    return group;
+}
+
 /**
  * Démarre une nouvelle session de suivi caméra. L'initialisation du zoom et de
  * l'inclinaison ne doit être jouée qu'une fois, et surtout pas à chaque fix GPS.
@@ -191,8 +247,14 @@ export async function startLocationTracking() {
             (position, err) => {
                 if (err || !position) return;
 
-                const { latitude, longitude, altitude, accuracy, speed } =
-                    position.coords;
+                const {
+                    latitude,
+                    longitude,
+                    altitude,
+                    accuracy,
+                    speed,
+                    heading,
+                } = position.coords;
 
                 // Met à jour la précision GPS pour l'affichage dans le panneau Système
                 state.userLocationAccuracy = accuracy || null;
@@ -204,6 +266,7 @@ export async function startLocationTracking() {
                     typeof speed === 'number' ? speed : null,
                     accuracy ?? null
                 );
+                state.userCourseHeading = normalizeHeading(heading);
 
                 // Mise à jour de la position utilisateur pour l'UI
                 // Note: L'enregistrement des points est géré EXCLUSIVEMENT par nativeGPSService.ts (natif Android)
@@ -243,6 +306,7 @@ export function stopLocationTracking() {
     }
     lastMotionSample = null;
     state.userSpeedMps = null;
+    state.userCourseHeading = null;
     followHeadingMovementActive = false;
 }
 
@@ -318,7 +382,9 @@ export function updateUserMarker() {
         const dot = new THREE.Sprite(spriteMat);
         dot.scale.set(0.045, 0.045, 1);
         dot.name = 'user-dot';
+        dot.renderOrder = 1000;
         state.userMarker.add(dot);
+        state.userMarker.add(createDirectionArrow());
         state.scene.add(state.userMarker);
     }
 
@@ -327,6 +393,17 @@ export function updateUserMarker() {
     // v5.32.22 : Gérer la visibilité des composants 2D/3D du marqueur
     const sphere = state.userMarker.getObjectByName('user-sphere');
     if (sphere) sphere.visible = !state.IS_2D_MODE;
+
+    const direction = state.userMarker.getObjectByName('user-direction');
+    if (direction) {
+        const heading = getUserMarkerHeading();
+        direction.visible = heading !== null;
+        if (heading !== null) {
+            // La géométrie pointe au nord (-Z) ; une rotation négative place
+            // 90° vers l'est (+X), indépendamment de l'orientation de la caméra.
+            direction.rotation.y = -THREE.MathUtils.degToRad(heading);
+        }
+    }
 
     state.userMarker.position.set(pos.x, finalY, pos.z);
 }
@@ -341,6 +418,7 @@ export function clearUserMarker() {
     }
     state.userLocation = null;
     state.userSpeedMps = null;
+    state.userCourseHeading = null;
     state.isFollowingUser = false;
     lastMotionSample = null;
     followHeadingMovementActive = false;

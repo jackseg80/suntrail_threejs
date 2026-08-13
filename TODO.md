@@ -1,8 +1,8 @@
-# SunTrail — TODO (version source v5.85.0 — validation terrain requise)
+# SunTrail — TODO (v5.85.0 pré-release interne — validation terrain requise)
 
-> Dernière mise à jour : 2026-08-12
+> Dernière mise à jour : 2026-08-13
 
-## 🟡 v5.85.0 — guidage Android natif implémenté, commit local autorisé
+## 🟡 v5.85.0 — guidage Android natif en pré-release interne
 
 - [x] Service `:tracking` partagé en modes `recording`, `guidance`, `both`, source Fused unique.
 - [x] Anciennes API REC conservées recording-only et arrêts REC/Guidance/les deux indépendants.
@@ -11,13 +11,21 @@
 - [x] Bridge/UI derrière `nativeGuidance=false`, reprise WebView/processus et statut `recovered`.
 - [x] Permission/GPS/stale/route/corruption/stockage, notification, WakeLock et actions traités.
 - [x] JUnit/parité exécutés ; instrumentation Galaxy S23/API 36 : 5/5 tests, 0 échec.
+- [x] Sortie exploratoire S23 Guidance+REC : 8,13 km / 2 h 07, écran éteint et reprises REC +
+      Guidance après destructions de WebView ; aucun crash Java ni ANR v5.85 observé.
+- [x] Correctifs terrain : géométrie PreparedRoute exacte après reprise, bouton de position
+      toujours accessible après auto-hide et flèche cap GPS/boussole couverts par tests.
+- [x] Préparer : appui court réservé à la manipulation de carte ; ajout par l'appui long historique,
+      couvert par test unitaire.
+- [x] Commit, tag, push et pré-release GitHub interne avec AAB signé CI ; aucun téléversement Play.
+- [ ] Revalider sur S23 qu'une route courte conserve exactement sa géométrie et sa distance après
+      fermeture/réouverture, puis contrôler visuellement le bouton et la flèche en marche.
 - [ ] Exécuter l'instrumentation réelle sur API 24 et 33.
 - [ ] Valider Galaxy A53 et Galaxy S23 sur le terrain : écran éteint, mode avion, swipe-away et relance.
 - [ ] Exécuter 3 × 1 h REC-only puis 3 × 1 h Guidance+REC sur chaque appareil, avec mesures.
 - [ ] Démontrer sur A53 un surcoût ≤ 1 point batterie/h ou documenter une décision de blocage.
 - [ ] Revalider Play Console avant d'attribuer définitivement le `versionCode 903`.
-- [ ] Clôture, tag et release uniquement après autorisation explicite ; le commit local de
-      l'implémentation est autorisé. Ne pas commencer v5.86.
+- [ ] Clôturer la validation terrain avant toute promotion Play/stable. Ne pas commencer v5.85.1/v5.86.
 
 Protocole :
 [docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md](docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md).
@@ -61,12 +69,12 @@ Protocole :
 
 - [x] Validation manuelle Galaxy S23 acceptée le 2026-08-09 : aucun P0/P1 signalé.
 - [x] Observation Sortie/Bibliothèque classée P2 : redondance transitoire prévue, à résoudre
-  fonctionnellement par la bibliothèque locale `PreparedRoute` de v5.83.
+      fonctionnellement par la bibliothèque locale `PreparedRoute` de v5.83.
 
 ## ✅ Publication externe v5.82.0 — clôturée
 
 - [x] Play Console vérifiée : le plus grand `versionCode` réellement utilisé est `896` ; `897` est
-  donc attribué à v5.82.0 et le bundle signé a été généré.
+      donc attribué à v5.82.0 et le bundle signé a été généré.
 - [x] Commit, tag `v5.82.0`, CI et release GitHub publique avec AAB signé vérifiés le 2026-08-09.
 - [x] Publication v5.82 clôturée ; v5.83 peut démarrer.
 
@@ -87,38 +95,38 @@ Prompt de clôture :
 - [x] 1 536 tests unitaires, build, bundle 2,20 MiB et audit i18n validés.
 - [x] Runner Playwright officiel Chromium : 6 smoke et 4 scénarios Prepared Routes validés.
 - [x] Correctifs terrain S23 : Boucle persistée, conflit GPX/route annulé, nom GPX et A/B
-  synchronisés, difficulté inconnue sans faux pourcentage, largeur mobile et traductions dynamiques.
+      synchronisés, difficulté inconnue sans faux pourcentage, largeur mobile et traductions dynamiques.
 - [x] Deuxième passe terrain : cadrage des routes préparées, remplacement visible du GPX Free,
-  protection des boucles GPX contre le recalcul A/B et contenus Bibliothèque bornés au panneau.
+      protection des boucles GPX contre le recalcul A/B et contenus Bibliothèque bornés au panneau.
 - [x] Build Android, tests unitaires, lint, APK debug et installation S23 (`versionCode 898`) validés.
 - [x] Retest S23 du thème natif : sélecteur, calendrier et confirmation de suppression compacts,
-  sans visuel SplashScreen ni contenu hors écran ; changements de langue validés sur appareil.
+      sans visuel SplashScreen ni contenu hors écran ; changements de langue validés sur appareil.
 - [x] Retest S23 du conflit GPX/Bibliothèque : import visible sans sauvegarde préalable,
-  nom/statistiques immédiats et réouverture d'une route préparée avec fly et géométrie correcte.
+      nom/statistiques immédiats et réouverture d'une route préparée avec fly et géométrie correcte.
 - [x] Contrat de trace clarifié : brouillon Préparer, trace consultée et REC indépendant ; aucune
-  sélection de bibliothèque ne remplace automatiquement le brouillon.
+      sélection de bibliothèque ne remplace automatiquement le brouillon.
 - [x] Bandeau Préparer nommé, action explicite « Préparer cette trace », protection
-  Sauvegarder/Remplacer/Annuler et commandes de visibilité avec compteur.
+      Sauvegarder/Remplacer/Annuler et commandes de visibilité avec compteur.
 - [x] Tests unitaires ciblés sur arbitrage, protection du brouillon, visibilité et priorité REC.
 - [x] E2E Chromium final : 4/4 Prepared Routes/IndexedDB/legacy/GPX boucle et 6/6 smoke.
 - [x] `cap:sync` sans diff suivi inattendu, puis tests Android, lint et APK debug validés.
 - [x] Contrat GPX clarifié : géométrie complète distincte des jalons ; boucle détectée avec
-  départ, deux passages intermédiaires et arrivée superposée au départ.
+      départ, deux passages intermédiaires et arrivée superposée au départ.
 - [x] Régression automatisée GPX boucle → sauvegarde → réouverture du profil ajoutée sur la
-  vraie IndexedDB Chromium ; boutons Prepared Routes/visibilité unifiés avec le thème.
+      vraie IndexedDB Chromium ; boutons Prepared Routes/visibilité unifiés avec le thème.
 - [x] Retest Galaxy S23 des jalons de boucle, de la réouverture du profil et des boutons unifiés.
 - [x] Correctif v5.83.1 : résumé Préparer lisible en portrait et mode carte au second clic,
-  validés sur Galaxy S23.
+      validés sur Galaxy S23.
 - [x] v5.83.2 : détection de la langue système au premier démarrage (fr/de/it/en, repli fr),
-  préférence sauvegardée prioritaire, tests ajoutés (1551 au total) et `npm run check` OK.
+      préférence sauvegardée prioritaire, tests ajoutés (1551 au total) et `npm run check` OK.
 - [x] Autorisation explicite reçue : CI, AAB et publication v5.83.2 (tag + push).
 - [x] v5.83.3 : langue par défaut passée au français → anglais (`state.lang`, constructeur i18n,
-  repli `detectSystemLocale()`, chaîne de repli `t()` et noms de packs).
+      repli `detectSystemLocale()`, chaîne de repli `t()` et noms de packs).
 
 ## 🟡 Programme produit engagé
 
 - [x] **v5.83.1** — correctif d'interface Préparer ; routes, brouillon et contrat de traces
-  validés sur Galaxy S23.
+      validés sur Galaxy S23.
 - [x] **v5.83.2** — détection de la langue système au premier démarrage, publiée.
 - [x] **v5.83.3** — anglais par défaut, publiée.
 - [x] **v5.84.0 interne** — clôturée par pré-release GitHub interne, sans déploiement Play.

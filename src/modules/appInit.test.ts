@@ -215,6 +215,87 @@ describe('appInit.ts — Initialization Sequence', () => {
         expect(scheduleAutoCompute).toHaveBeenCalledTimes(2);
         expect(clearRoute).toHaveBeenCalled();
     });
+
+    it('keeps the historical long press while ignoring short taps in Prepare mode', async () => {
+        vi.useFakeTimers();
+        try {
+            const { state } = await import('./state');
+            const { findTerrainIntersection, getAltitudeAt } =
+                await import('./analysis');
+            vi.mocked(findTerrainIntersection).mockReturnValue(
+                new THREE.Vector3(20, 0, 30)
+            );
+            vi.mocked(getAltitudeAt).mockReturnValue(1200);
+            Object.assign(state, {
+                renderer: {},
+                camera: new THREE.PerspectiveCamera(),
+                scene: new THREE.Scene(),
+                originTile: { x: 0, y: 0, z: 14 },
+                RELIEF_EXAGGERATION: 1,
+                isRoutePlanningMode: true,
+                routeWaypoints: [],
+            });
+
+            await appInit();
+            const canvas = document.getElementById('canvas-container')!;
+
+            // Un tap court sert uniquement à déplacer/explorer la carte.
+            canvas.dispatchEvent(
+                new MouseEvent('click', { clientX: 100, clientY: 100 })
+            );
+            expect(state.routeWaypoints).toHaveLength(0);
+
+            // Un déplacement annule l'appui long : aucun waypoint parasite.
+            canvas.dispatchEvent(
+                new MouseEvent('pointerdown', {
+                    button: 0,
+                    clientX: 100,
+                    clientY: 100,
+                })
+            );
+            canvas.dispatchEvent(
+                new MouseEvent('pointermove', {
+                    clientX: 113,
+                    clientY: 100,
+                })
+            );
+            await vi.advanceTimersByTimeAsync(500);
+            canvas.dispatchEvent(new MouseEvent('pointerup'));
+            expect(state.routeWaypoints).toHaveLength(0);
+
+            // L'appui long historique de 500 ms confirme l'ajout.
+            canvas.dispatchEvent(
+                new MouseEvent('pointerdown', {
+                    button: 0,
+                    clientX: 100,
+                    clientY: 100,
+                })
+            );
+            await vi.advanceTimersByTimeAsync(500);
+            expect(state.routeWaypoints).toHaveLength(1);
+            canvas.dispatchEvent(new MouseEvent('pointerup'));
+            canvas.dispatchEvent(
+                new MouseEvent('click', { clientX: 100, clientY: 100 })
+            );
+            expect(state.routeWaypoints).toHaveLength(1);
+
+            // Le raccourci expert historique reste également disponible hors
+            // de Préparer : seul le toucher court a été neutralisé.
+            state.isRoutePlanningMode = false;
+            canvas.dispatchEvent(
+                new MouseEvent('pointerdown', {
+                    button: 0,
+                    clientX: 100,
+                    clientY: 100,
+                })
+            );
+            await vi.advanceTimersByTimeAsync(500);
+            canvas.dispatchEvent(new MouseEvent('pointerup'));
+            expect(state.routeWaypoints).toHaveLength(2);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 });
 
 describe('showLoadingError / resetLoadingError', () => {
