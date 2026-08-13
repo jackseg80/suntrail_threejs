@@ -1,9 +1,7 @@
 # SunTrail v5.85 — Guidage Android natif
 
-> État au 2026-08-13 : pré-release GitHub interne avec correctifs terrain, flag `nativeGuidance`
-> désactivé par défaut.
-> L'instrumentation Galaxy S23/API 36 est verte (5/5) ; la clôture reste bloquée par API 24/33,
-> les validations terrain A53/S23 et les sorties longues.
+> État au 2026-08-13 : v5.85.0 clôturée selon confirmation du propriétaire ; optimisations
+> v5.85.1 implémentées dans le worktree. Le flag `nativeGuidance` reste désactivé par défaut.
 
 ## Architecture et invariants
 
@@ -52,7 +50,9 @@ course en microtâche : la géométrie, la distance et les statistiques persist�
 
 `guidance/GuidanceEngine.java` est un port pur Java du moteur v5.84 :
 
-1. projection locale métrique de chaque échantillon sur tous les segments ;
+1. première projection locale métrique sur tous les segments, puis fenêtre de continuité
+   progression/recul ; fallback au scan complet lorsque le meilleur score local atteint la
+   pénalité historique de 500, afin de conserver le résultat exact hors fenêtre ;
 2. choix par cross-track et pénalité de continuité (progression attendue, recul maximal,
    fenêtre avant, distance de segments) ;
 3. progression monotone, restant, ETA selon l'allure, bearing vers look-ahead ou retour direct ;
@@ -113,6 +113,12 @@ La notification persistante indique mode, restant/état, REC et incident. Ses ac
 pause/reprise Guidance, arrêt Guidance, arrêt REC. Une alerte séparée, vibrante et non vocale,
 signale hors-route/arrivée. Aucune voix turn-by-turn ni recalcul réseau n'est introduit.
 
+En v5.85.1, le tick de sécurité reste à 1 Hz pour détecter permission retirée et position stale,
+mais un tick sans changement ne diffuse plus de snapshot et n'écrit plus Room. Les positions GPS
+acceptées restent diffusées à la WebView ; leur état de reprise est persisté au plus toutes les
+10 secondes, tandis que toute transition ou alerte est persistée immédiatement. Une construction
+de notification ne demande plus qu'un seul snapshot au moteur.
+
 ## Dégradations contrôlées
 
 - GPS coupé / mode avion : incident `gps-disabled`, position vieillissante puis `acquiring` ;
@@ -124,7 +130,8 @@ signale hors-route/arrivée. Aucune voix turn-by-turn ni recalcul réseau n'est 
 - Stockage plein : incident `storage-full`, REC est arrêté pour éviter une fausse conservation ;
   Guidance continue en mémoire avec notification, sans boucle d'écriture Room.
 - Écran éteint, swipe-away, WebView/processus principal tué : service `:tracking`, notification,
-  WakeLock et Room maintiennent/reprennent la session ; preuves physiques encore requises.
+  WakeLock et Room maintiennent/reprennent la session. Le protocole physique v5.85 est conservé
+  comme référence ; v5.85.1 doit requalifier l'autonomie après ses changements de cadence.
 
 Les validations physiques et leurs gates sont définies dans
 [`V5_85_A53_S23_FIELD_VALIDATION.md`](plans/V5_85_A53_S23_FIELD_VALIDATION.md).

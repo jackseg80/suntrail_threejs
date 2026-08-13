@@ -2,6 +2,19 @@
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
+## 0. Correctifs terrain v5.85.1
+
+| Optimisation | Valeur / comportement | Fichier |
+| :--- | :--- | :--- |
+| Boussole idle | rendu uniquement dans une frame carte utile, maximum 30 Hz | `scene.ts` |
+| Mesh REC live | entrée bornée à 2 500 points, rebuild long débouncé à 5 s | `gpxLayers.ts`, `nativeGPSService.ts` |
+| Recovery REC | snapshot Preferences débouncé à 15 s, flush background/STOP | `nativeGPSService.ts`, `ui/mobile.ts` |
+| Stats REC notification | au plus toutes les 30 s et seulement si le nombre de points change | `nativeGPSService.ts` |
+| Cache textures | remplacement traité comme éviction de l'ancienne valeur | `boundedCache.ts`, `tileCache.ts` |
+| Prefetch LOD | clé source active, tuile cache-only non épinglée, déduplication in-flight | `terrain.ts`, `terrain/Tile.ts`, `terrain/tileQueue.ts` |
+| Guidage natif | projection dans la fenêtre 35 m arrière / 600 m avant avec fallback exact ; Room au plus toutes les 10 s sur fixes acceptés | `GuidanceEngine.ts`, `GuidanceEngine.java`, `RecordingService.java` |
+| Polling UI | stockage événementiel, inclinomètre Free sans intervalle, focus recherche événementiel | `ui.ts`, `InclinometerWidget.ts`, `SearchSheet.ts` |
+
 ## 1. Map & Terrain Performance
 
 ## 1a. Startup Path (v5.81.2)

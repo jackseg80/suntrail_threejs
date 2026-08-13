@@ -50,6 +50,7 @@ const _terrainMatrix = new THREE.Matrix4();
 export const fadingOutTiles = new Set<Tile>();
 let lastRenderedZoom: number = -1;
 let lastMapSource: string = '';
+const prefetchKeys = new Set<string>();
 
 export function resetTerrain(): void {
     clearLabels();
@@ -59,6 +60,7 @@ export function resetTerrain(): void {
         tile.dispose();
     }
     fadingOutTiles.clear();
+    prefetchKeys.clear();
     lastRenderedZoom = -1;
     for (const tile of activeTiles.values()) {
         removeTile(tile);
@@ -375,11 +377,12 @@ export async function updateVisibleTiles(
             }
         }
 
+        const previousRenderedZoom = lastRenderedZoom;
         lastRenderedZoom = zoom;
 
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
-                const isZoomingOut = lodChanging && zoom < lastRenderedZoom;
+                const isZoomingOut = lodChanging && zoom < previousRenderedZoom;
                 if (
                     lodChanging &&
                     tile.mesh &&
@@ -475,9 +478,18 @@ export function prefetchAdjacentLODs(): void {
                 const tx = ct.x + dx;
                 const ty = ct.y + dy;
                 if (tx < 0 || tx >= maxT || ty < 0 || ty >= maxT) continue;
-                const pKey = `${tx}_${ty}_${nextZoom}`;
-                if (!hasInCache(getTileCacheKey(pKey, nextZoom))) {
-                    loadQueue.add(new Tile(tx, ty, nextZoom, pKey));
+                const pKey = `${state.MAP_SOURCE}_${tx}_${ty}_${nextZoom}`;
+                if (
+                    !activeTiles.has(pKey) &&
+                    !prefetchKeys.has(pKey) &&
+                    !hasInCache(getTileCacheKey(pKey, nextZoom))
+                ) {
+                    prefetchKeys.add(pKey);
+                    loadQueue.add(
+                        new Tile(tx, ty, nextZoom, pKey, true, () =>
+                            prefetchKeys.delete(pKey)
+                        )
+                    );
                     added++;
                 }
             }
@@ -493,9 +505,18 @@ export function prefetchAdjacentLODs(): void {
                 const tx = ct.x + dx;
                 const ty = ct.y + dy;
                 if (tx < 0 || tx >= maxT || ty < 0 || ty >= maxT) continue;
-                const pKey = `${tx}_${ty}_${prevZoom}`;
-                if (!hasInCache(getTileCacheKey(pKey, prevZoom))) {
-                    loadQueue.add(new Tile(tx, ty, prevZoom, pKey));
+                const pKey = `${state.MAP_SOURCE}_${tx}_${ty}_${prevZoom}`;
+                if (
+                    !activeTiles.has(pKey) &&
+                    !prefetchKeys.has(pKey) &&
+                    !hasInCache(getTileCacheKey(pKey, prevZoom))
+                ) {
+                    prefetchKeys.add(pKey);
+                    loadQueue.add(
+                        new Tile(tx, ty, prevZoom, pKey, true, () =>
+                            prefetchKeys.delete(pKey)
+                        )
+                    );
                     added++;
                 }
             }

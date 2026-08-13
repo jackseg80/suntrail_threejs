@@ -34,6 +34,7 @@ vi.mock('../location', () => ({
 vi.mock('../nativeGPSService', () => ({
     nativeGPSService: {
         syncPoints: vi.fn().mockResolvedValue(undefined),
+        flushPointPersistence: vi.fn().mockResolvedValue(undefined),
     },
 }));
 
@@ -123,15 +124,18 @@ describe('initMobileUI()', () => {
     });
 
     describe('appStateChange handler', () => {
-        it('remembers recording state when app goes to background', () => {
+        it('flushes recovery points when app goes to background', async () => {
             mockState.isRecording = true;
             initMobileUI();
             const handler = (App.addListener as any).mock.calls.find(
                 (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
-            handler({ isActive: false });
+            await handler({ isActive: false });
             expect(mockState.isRecording).toBe(true);
+            expect(
+                nativeGPSService.flushPointPersistence
+            ).toHaveBeenCalledOnce();
         });
 
         it('syncs points on resume when was recording', async () => {
@@ -144,7 +148,7 @@ describe('initMobileUI()', () => {
             )![1] as (data: any) => void;
 
             // First: background
-            handler({ isActive: false });
+            await handler({ isActive: false });
             // Then: resume
             await handler({ isActive: true });
 
@@ -161,7 +165,7 @@ describe('initMobileUI()', () => {
                 (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
-            handler({ isActive: false });
+            await handler({ isActive: false });
             await handler({ isActive: true });
 
             expect(startLocationTracking).toHaveBeenCalled();
@@ -177,7 +181,7 @@ describe('initMobileUI()', () => {
                 (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
-            handler({ isActive: false });
+            await handler({ isActive: false });
             await handler({ isActive: true });
 
             expect(startLocationTracking).not.toHaveBeenCalled();
@@ -205,7 +209,7 @@ describe('initMobileUI()', () => {
                 (c: any[]) => c[0] === 'appStateChange'
             )![1] as (data: any) => void;
 
-            handler({ isActive: false });
+            await handler({ isActive: false });
             await handler({ isActive: true });
 
             expect(nativeGPSService.syncPoints).not.toHaveBeenCalled();

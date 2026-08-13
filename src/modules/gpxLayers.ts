@@ -463,6 +463,27 @@ function disposeTrackMesh(mesh: THREE.Mesh | null): void {
 
 let gpxUpdateTimeout: any = null;
 let recordedUpdateTimeout: any = null;
+const MAX_RECORDED_RENDER_POINTS = 2500;
+
+/**
+ * Bounds terrain draping and TubeGeometry work for very long recordings.
+ * The persisted/exported track remains complete; only its live visual mesh is sampled.
+ */
+export function limitTrackPointsForRendering<T>(
+    points: readonly T[],
+    maxPoints: number = MAX_RECORDED_RENDER_POINTS
+): T[] {
+    if (points.length <= maxPoints) return [...points];
+    if (maxPoints < 2) return [points[points.length - 1]];
+
+    const sampled: T[] = [points[0]];
+    const step = (points.length - 1) / (maxPoints - 1);
+    for (let i = 1; i < maxPoints - 1; i++) {
+        sampled.push(points[Math.round(i * step)]);
+    }
+    sampled.push(points[points.length - 1]);
+    return sampled;
+}
 
 export function updateAllGPXMeshes(): void {
     if (gpxUpdateTimeout) clearTimeout(gpxUpdateTimeout);
@@ -605,8 +626,9 @@ function _doUpdateRecordedTrackMesh(): void {
     const thickness = computeTrackThickness(2.5, 250);
     const originTile = state.originTile;
 
+    const renderPoints = limitTrackPointsForRendering(uniquePoints);
     const threePoints = drapeToTerrain(
-        uniquePoints,
+        renderPoints,
         originTile,
         0,
         GPX_SURFACE_OFFSET

@@ -71,6 +71,7 @@ describe('tileQueue', () => {
     beforeEach(() => {
         clearLoadQueue();
         vi.clearAllMocks();
+        mockActiveTiles.clear();
         mockState.isProcessingTiles = false;
     });
 
@@ -200,6 +201,19 @@ describe('tileQueue', () => {
             expect(loadQueue.has(tileParent)).toBe(true);
         });
 
+        it('releases the dedupe key when a queued prefetch becomes obsolete', () => {
+            const tile = makeFakeTile('source_0_0_12', 12);
+            const settled = vi.fn();
+            (tile as any).cacheOnly = true;
+            (tile as any).onLoadSettled = settled;
+            addToLoadQueue(tile);
+
+            prioritizeNewZoom(14);
+
+            expect(loadQueue.has(tile)).toBe(false);
+            expect(settled).toHaveBeenCalledOnce();
+        });
+
         it('preserves parent zoom tiles (newZoom - 1)', () => {
             const tileParent = makeFakeTile('13/0/0', 13);
             mockActiveTiles.add(tileParent.key);
@@ -247,6 +261,26 @@ describe('tileQueue', () => {
 
             expect(mockCancelTileLoad).toHaveBeenCalledWith(42);
 
+            vi.useRealTimers();
+        });
+    });
+
+    describe('cache-only prefetch', () => {
+        it('loads an inactive prefetch tile and releases its dedupe key', async () => {
+            vi.useFakeTimers();
+            const tile = makeFakeTile('source_0_0_15', 15);
+            const settled = vi.fn();
+            (tile as any).cacheOnly = true;
+            (tile as any).onLoadSettled = settled;
+            mockState.camera = null;
+            addToLoadQueue(tile);
+
+            await processLoadQueue();
+            await Promise.resolve();
+
+            expect(tile.load).toHaveBeenCalledOnce();
+            expect(settled).toHaveBeenCalledOnce();
+            vi.clearAllTimers();
             vi.useRealTimers();
         });
     });

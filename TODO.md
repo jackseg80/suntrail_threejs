@@ -1,34 +1,38 @@
-# SunTrail — TODO (v5.85.0 pré-release interne — validation terrain requise)
+# SunTrail — TODO (v5.85.1 optimisation — validation en cours)
 
 > Dernière mise à jour : 2026-08-13
 
-## 🟡 v5.85.0 — guidage Android natif en pré-release interne
+## 🟡 v5.85.1 — performance et autonomie terrain
 
-- [x] Service `:tracking` partagé en modes `recording`, `guidance`, `both`, source Fused unique.
-- [x] Anciennes API REC conservées recording-only et arrêts REC/Guidance/les deux indépendants.
-- [x] Route/session/snapshot Room v2, migration additive, schéma exporté et copie défensive.
-- [x] Port Java pur du matcher/machine d'état et golden des neuf fixtures v5.84 à tolérances fixes.
-- [x] Bridge/UI derrière `nativeGuidance=false`, reprise WebView/processus et statut `recovered`.
-- [x] Permission/GPS/stale/route/corruption/stockage, notification, WakeLock et actions traités.
-- [x] JUnit/parité exécutés ; instrumentation Galaxy S23/API 36 : 5/5 tests, 0 échec.
-- [x] Sortie exploratoire S23 Guidance+REC : 8,13 km / 2 h 07, écran éteint et reprises REC +
-      Guidance après destructions de WebView ; aucun crash Java ni ANR v5.85 observé.
-- [x] Correctifs terrain : géométrie PreparedRoute exacte après reprise, bouton de position
-      toujours accessible après auto-hide et flèche cap GPS/boussole couverts par tests.
-- [x] Préparer : appui court réservé à la manipulation de carte ; ajout par l'appui long historique,
-      couvert par test unitaire.
-- [x] Commit, tag, push et pré-release GitHub interne avec AAB signé CI ; aucun téléversement Play.
-- [ ] Revalider sur S23 qu'une route courte conserve exactement sa géométrie et sa distance après
-      fermeture/réouverture, puis contrôler visuellement le bouton et la flèche en marche.
-- [ ] Exécuter l'instrumentation réelle sur API 24 et 33.
-- [ ] Valider Galaxy A53 et Galaxy S23 sur le terrain : écran éteint, mode avion, swipe-away et relance.
-- [ ] Exécuter 3 × 1 h REC-only puis 3 × 1 h Guidance+REC sur chaque appareil, avec mesures.
-- [ ] Démontrer sur A53 un surcoût ≤ 1 point batterie/h ou documenter une décision de blocage.
-- [ ] Revalider Play Console avant d'attribuer définitivement le `versionCode 903`.
-- [ ] Clôturer la validation terrain avant toute promotion Play/stable. Ne pas commencer v5.85.1/v5.86.
+- [x] Boussole rendue uniquement avec une frame carte utile ; deep sleep préservé.
+- [x] Remplacement du cache LRU libérant les anciennes textures ; préchargement LOD réellement
+      chargé, réutilisable par la source active, non épinglé et dédupliqué ; zoom sortant corrigé.
+- [x] Mesh REC live borné à 2 500 points, reconstruction longue débouncée à 5 s et trace complète
+      conservée pour récupération/export.
+- [x] Snapshot de récupération REC débouncé à 15 s avec flush background/STOP ; stats notification
+      recalculées seulement si les points ont changé et au plus toutes les 30 s.
+- [x] Stats REC de la feuille Sortie non recalculées lorsqu'elle est fermée.
+- [x] Polling Free de l'inclinomètre, polling stockage et timer permanent de focus recherche supprimés.
+- [x] Météo initiale et lecture de session native dupliquées supprimées ; `gpxparser` différé ; packs
+      prêts avant terrain et feuilles secondaires lancées après le chemin critique WebGL.
+- [x] Guidage TS/Java : projection bornée avec fallback exact ; ticker natif silencieux si inchangé,
+      persistance des positions acceptées limitée à 10 s et notification à snapshot unique.
+- [x] Version source `5.85.1`, Android `versionName 5.85.1` / `versionCode 904` provisoire.
+- [x] Web final : `npm run check`, 1 607 tests Vitest, build, budget bundle 2,27 MiB, audit i18n
+      sans clé manquante et `npm run cap:sync` réussis.
+- [ ] Rejouer les 24 E2E Chromium sur un runner autorisant le lancement navigateur (`spawn EPERM`
+      sur l'hôte Codex, avant exécution du code des tests).
+- [ ] Exécuter tests/lint/assemblage Android avec un JDK ; cet hôte n'a ni `JAVA_HOME` ni `java`.
+- [ ] Mesurer idle/carte/REC/Guidance+REC sur A53 et S23, trois runs homogènes face à v5.85.0.
+- [ ] Vérifier absence de fuite WebGL/texture après 30 min de pan/zoom et changements LOD.
+- [ ] Revalider le maximum Play Console avant de figer `versionCode 904` et toute publication.
 
-Protocole :
-[docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md](docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md).
+## ✅ v5.85.0 — guidage Android natif clôturé
+
+La clôture de v5.85.0 a été confirmée par le propriétaire du projet le 2026-08-13. Le détail
+historique du protocole reste dans
+[docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md](docs/plans/V5_85_A53_S23_FIELD_VALIDATION.md) ;
+v5.85.1 est désormais le chantier actif.
 
 ## ✅ v5.84.0 — moteur de suivi interne clôturé
 
@@ -130,7 +134,8 @@ Prompt de clôture :
 - [x] **v5.83.2** — détection de la langue système au premier démarrage, publiée.
 - [x] **v5.83.3** — anglais par défaut, publiée.
 - [x] **v5.84.0 interne** — clôturée par pré-release GitHub interne, sans déploiement Play.
-- [ ] **v5.85.0** — implémentée localement ; clôture bloquée par instrumentation et terrain.
+- [x] **v5.85.0** — clôture confirmée ; base de référence de v5.85.1.
+- [ ] **v5.85.1** — optimisations implémentées localement ; web vert, Android/E2E et terrain ouverts.
 - [ ] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne.
 - [ ] **v6.0.0** — compte optionnel et synchronisation PC–Android.
 - [ ] **v6.1.0** — outils experts et finition professionnelle.

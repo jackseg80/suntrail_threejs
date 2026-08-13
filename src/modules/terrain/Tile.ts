@@ -75,7 +75,14 @@ export class Tile {
     elevScale = 1.0;
     colorOffset = new THREE.Vector2();
     colorScale = 1.0;
-    constructor(tx: number, ty: number, zoom: number, key: string) {
+    constructor(
+        tx: number,
+        ty: number,
+        zoom: number,
+        key: string,
+        public readonly cacheOnly: boolean = false,
+        public readonly onLoadSettled?: () => void
+    ) {
         this.tx = tx;
         this.ty = ty;
         this.zoom = zoom;
@@ -201,7 +208,7 @@ export class Tile {
                 this.overlayTex.generateMipmaps = false;
                 this.overlayTex.minFilter = THREE.LinearFilter;
             }
-            markCacheKeyActive(cacheKey);
+            if (!this.cacheOnly) markCacheKeyActive(cacheKey);
 
             if (
                 !this.pixelData &&
@@ -211,7 +218,7 @@ export class Tile {
                 // On continue le processus de chargement pour restaurer pixelData
             } else {
                 this.status = 'loaded';
-                this.buildMesh(state.RESOLUTION);
+                if (!this.cacheOnly) this.buildMesh(state.RESOLUTION);
                 return;
             }
         }
@@ -304,9 +311,10 @@ export class Tile {
                 this.overlayTex,
                 this.normalTex
             );
-            markCacheKeyActive(cacheKey);
+            if (!this.cacheOnly) markCacheKeyActive(cacheKey);
             this.status = 'loaded';
-            if ((this.status as string) !== 'disposed') queueBuildMesh(this);
+            if (!this.cacheOnly && (this.status as string) !== 'disposed')
+                queueBuildMesh(this);
         } catch (e) {
             this.status = 'failed';
         }

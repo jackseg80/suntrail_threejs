@@ -803,11 +803,6 @@ export async function initScene(): Promise<void> {
 
         tickWeatherTime(delta);
 
-        if (now - lastCompassTime >= 33) {
-            lastCompassTime = now;
-            renderCompass();
-        }
-
         if (
             isMobile &&
             state.PERFORMANCE_PRESET !== 'ultra' &&
@@ -902,6 +897,10 @@ export async function initScene(): Promise<void> {
             state.zoneSelectionActive;
 
         if (needsUpdate) {
+            if (now - lastCompassTime >= 33) {
+                lastCompassTime = now;
+                renderCompass();
+            }
             if (state.camera) {
                 state.camera.updateMatrixWorld();
                 _sharedMatrix.multiplyMatrices(

@@ -4,6 +4,7 @@ import {
     activateGPXLayer,
     addGPXLayer,
     hideAllGPXLayers,
+    limitTrackPointsForRendering,
     removeGPXLayer,
     showOnlyGPXLayer,
     updateAllGPXMeshes,
@@ -66,6 +67,19 @@ const rawData = {
         },
     ],
 };
+
+describe('REC render budget', () => {
+    it('keeps the complete short track and bounds long live meshes', () => {
+        const short = [1, 2, 3];
+        expect(limitTrackPointsForRendering(short, 5)).toEqual(short);
+
+        const long = Array.from({ length: 10_000 }, (_, index) => index);
+        const sampled = limitTrackPointsForRendering(long, 2500);
+        expect(sampled).toHaveLength(2500);
+        expect(sampled[0]).toBe(0);
+        expect(sampled.at(-1)).toBe(9999);
+    });
+});
 
 describe('Multi-GPX Layers (v5.10)', () => {
     beforeEach(() => {

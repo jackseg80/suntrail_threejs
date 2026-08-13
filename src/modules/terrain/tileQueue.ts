@@ -102,7 +102,7 @@ export async function processLoadQueue() {
         // v5.28.48 : Filtrage immédiat des tuiles qui ne sont plus dans activeTiles (LOD obsolète)
         let pruned = false;
         for (const t of loadQueue) {
-            if (!activeTiles.has(t.key)) {
+            if (!t.cacheOnly && !activeTiles.has(t.key)) {
                 loadQueue.delete(t);
                 pruned = true;
             }
@@ -151,7 +151,10 @@ export async function processLoadQueue() {
         // On lance le chargement de manière asynchrone (fire-and-forget pour la file).
         // Le statut 'loaded' déclenchera automatiquement queueBuildMesh() à la fin du chargement réel.
         batch.forEach((tile) => {
-            if (tile.status === 'idle' && activeTiles.has(tile.key)) {
+            if (
+                tile.status === 'idle' &&
+                (tile.cacheOnly || activeTiles.has(tile.key))
+            ) {
                 loadingCount++;
                 state.isProcessingTiles = true;
                 const TIMEOUT_MS = 30000;
@@ -174,6 +177,7 @@ export async function processLoadQueue() {
                     .finally(() => {
                         clearTimeout(timer);
                         loadingCount--;
+                        tile.onLoadSettled?.();
                         if (!isProcessingQueue && loadQueue.size > 0)
                             processLoadQueue();
                     })
@@ -204,6 +208,7 @@ export function prioritizeNewZoom(newZoom: number): void {
     for (const t of loadQueue) {
         if (t.zoom !== newZoom && t.zoom !== newZoom - 1) {
             loadQueue.delete(t);
+            t.onLoadSettled?.();
         }
     }
     // Remove old-zoom tiles from build queue (except parent LOD)
@@ -218,6 +223,7 @@ export function prioritizeNewZoom(newZoom: number): void {
 }
 
 export function clearLoadQueue() {
+    for (const tile of loadQueue) tile.onLoadSettled?.();
     loadQueue.clear();
     sortedCache = null;
     buildQueue.length = 0;
@@ -232,7 +238,7 @@ export function addToLoadQueue(tile: Tile) {
 }
 
 export function removeFromLoadQueue(tile: Tile) {
-    loadQueue.delete(tile);
+    if (loadQueue.delete(tile)) tile.onLoadSettled?.();
     sortedCache = null;
     if (buildQueueKeys.has(tile.key)) {
         buildQueueKeys.delete(tile.key);

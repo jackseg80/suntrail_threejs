@@ -113,6 +113,7 @@ export function initMobileUI(): void {
             // Le natif continue d'enregistrer automatiquement dans SQLite
             if (state.isRecording) {
                 _wasRecordingWhenBackgrounded = true;
+                await nativeGPSService.flushPointPersistence();
             }
         } else {
             // App revient en foreground

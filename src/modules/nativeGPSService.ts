@@ -106,13 +106,20 @@ const RecordingNative = Capacitor.isNativePlatform()
 const STORAGE_KEY_POINTS = STORAGE_KEYS.RECORDED_POINTS;
 const STORAGE_KEY_COURSE_ID = STORAGE_KEYS.CURRENT_COURSE_ID;
 const STORAGE_KEY_START_TIME = STORAGE_KEYS.RECORDING_START_TIME;
+const POINT_PERSIST_DEBOUNCE_MS = 15_000;
+const MESH_UPDATE_DEBOUNCE_MS = 5_000;
+const NOTIFICATION_STATS_INTERVAL_MS = 30_000;
 
 class NativeGPSService {
     private currentCourseId: string | null = null;
     private isListening = false;
     private meshUpdateTimeout: number | null = null;
     private pendingMeshUpdate = false;
+    private pointPersistTimeout: number | null = null;
+    private pointPersistPending = false;
+    private pointPersistFlush: Promise<void> | null = null;
     private statsUpdateInterval: number | null = null;
+    private lastStatsPointCount = 0;
     private _listenerHandles: Array<{ remove(): void }> = [];
     private _syncing = false;
     private guidanceListeners = new Set<
@@ -123,8 +130,8 @@ class NativeGPSService {
     /**
      * Initialisation et récupération au démarrage (v5.28.1)
      */
-    async init(): Promise<void> {
-        if (!RecordingNative) return;
+    async init(): Promise<NativeSession | null> {
+        if (!RecordingNative) return null;
 
         try {
             const nativeSession = await this.getActiveSession();
@@ -207,7 +214,7 @@ class NativeGPSService {
                             await Preferences.remove({
                                 key: STORAGE_KEY_START_TIME,
                             });
-                            return;
+                            return nativeSession;
                         }
 
                         if (state.DEBUG_MODE)
@@ -233,8 +240,10 @@ class NativeGPSService {
                     }
                 }
             }
+            return nativeSession;
         } catch (e) {
             console.error('[NativeGPSService] Init failure:', e);
+            return null;
         }
     }
 
@@ -278,6 +287,7 @@ class NativeGPSService {
             value: result.courseId,
         });
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
+        this.cancelPendingPointPersistence();
 
         this.setupListeners();
         return this.currentCourseId;
@@ -307,8 +317,13 @@ class NativeGPSService {
             if (finalPoints.length > 0) {
                 const uniqueNew = this.cleanNewPoints(finalPoints);
                 state.recordedPoints = [...state.recordedPoints, ...uniqueNew];
+                if (uniqueNew.length > 0) this.schedulePointPersistence();
             }
         }
+
+        // Capture the last WebView snapshot before the native stop. Room stays
+        // authoritative, but this keeps crash recovery coherent during STOP.
+        await this.flushPointPersistence();
 
         await RecordingNative.stopCourse();
         this.currentCourseId = null;
@@ -409,6 +424,46 @@ class NativeGPSService {
         } catch (e) {
             console.warn('[NativeGPSService] Failed to persist points:', e);
         }
+    }
+
+    private schedulePointPersistence(): void {
+        this.pointPersistPending = true;
+        if (this.pointPersistTimeout !== null) return;
+        this.pointPersistTimeout = window.setTimeout(() => {
+            this.pointPersistTimeout = null;
+            void this.flushPointPersistence();
+        }, POINT_PERSIST_DEBOUNCE_MS);
+    }
+
+    /** Flushes the debounced recovery snapshot before background/stop. */
+    async flushPointPersistence(): Promise<void> {
+        if (this.pointPersistTimeout !== null) {
+            clearTimeout(this.pointPersistTimeout);
+            this.pointPersistTimeout = null;
+        }
+        if (!this.pointPersistPending) {
+            await this.pointPersistFlush;
+            return;
+        }
+        if (!this.pointPersistFlush) {
+            this.pointPersistFlush = (async () => {
+                while (this.pointPersistPending) {
+                    this.pointPersistPending = false;
+                    await this.persistPoints();
+                }
+            })().finally(() => {
+                this.pointPersistFlush = null;
+            });
+        }
+        await this.pointPersistFlush;
+    }
+
+    private cancelPendingPointPersistence(): void {
+        if (this.pointPersistTimeout !== null) {
+            clearTimeout(this.pointPersistTimeout);
+            this.pointPersistTimeout = null;
+        }
+        this.pointPersistPending = false;
     }
 
     /**
@@ -554,22 +609,28 @@ class NativeGPSService {
             }
         }).then((h) => this._listenerHandles.push(h));
 
-        // Intervalle de mise à jour des stats dans la notification (toutes les 10s)
+        // Notification REC: no full-track recomputation while no point changed.
         // Points déjà nettoyés par syncPoints → skipCleaning pour éviter le re-calcul haversine
         this.statsUpdateInterval = window.setInterval(() => {
-            if (state.isRecording && state.recordedPoints.length >= 2) {
+            const pointCount = state.recordedPoints.length;
+            if (
+                state.isRecording &&
+                pointCount >= 2 &&
+                pointCount !== this.lastStatsPointCount
+            ) {
                 const stats = calculateTrackStats(
                     state.recordedPoints,
                     5,
                     true
                 );
+                this.lastStatsPointCount = pointCount;
                 RecordingNative.updateNotificationStats({
                     distance: stats.distance,
                     elevation: stats.dPlus,
                     elevationMinus: stats.dMinus,
                 });
             }
-        }, 10000);
+        }, NOTIFICATION_STATS_INTERVAL_MS);
     }
 
     /**
@@ -631,7 +692,7 @@ class NativeGPSService {
 
             if (uniqueNew.length > 0) {
                 state.recordedPoints = [...state.recordedPoints, ...uniqueNew];
-                this.persistPoints();
+                this.schedulePointPersistence();
 
                 const totalPoints = state.recordedPoints.length;
                 if (totalPoints < 10) {
@@ -645,7 +706,7 @@ class NativeGPSService {
                                 this.pendingMeshUpdate = false;
                             }
                             this.meshUpdateTimeout = null;
-                        }, 500);
+                        }, MESH_UPDATE_DEBOUNCE_MS);
                     }
                 }
             }
@@ -675,6 +736,7 @@ class NativeGPSService {
             clearInterval(this.statsUpdateInterval);
             this.statsUpdateInterval = null;
         }
+        this.lastStatsPointCount = 0;
     }
 }
 

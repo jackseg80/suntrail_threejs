@@ -1,3 +1,35 @@
+## [5.85.1] - 2026-08-13 — optimisation terrain, validation en cours
+
+### Performance
+
+- La boussole suit désormais les frames utiles de la carte et ne réveille plus seule le GPU
+  pendant le deep sleep.
+- Le cache LRU libère les textures remplacées. Le préchargement LOD utilise les clés de la source
+  active, traverse réellement la file, reste non épinglé et se déduplique ; le zoom sortant ne
+  prend plus le chemin de fondu du zoom entrant.
+- Le mesh REC live est borné à 2 500 points et les longues traces sont reconstruites au plus toutes
+  les 5 s. La persistance Preferences est débouncée à 15 s avec flush background/STOP ; la trace
+  complète reste la source d'export et de récupération.
+- Les statistiques REC cachées, le polling Free de l'inclinomètre, l'intervalle stockage et le
+  timer permanent de focus recherche ne consomment plus de CPU sans effet visible.
+- Le matcher TS/Java limite la projection à la fenêtre de continuité et retombe sur le scan complet
+  lorsque nécessaire. Les ticks Android inchangés n'écrivent plus Room et ne diffusent plus de
+  snapshot ; les positions acceptées sont persistées au plus toutes les 10 s.
+
+### Démarrage et bundle
+
+- Une seule météo initiale et une seule lecture de session native ; `gpxparser` est chargé seulement
+  à la sauvegarde REC, les packs sont prêts avant le terrain et les feuilles secondaires démarrent
+  après le chemin critique WebGL.
+
+### Version et validation
+
+- Version source `5.85.1`, Android `versionName 5.85.1` / `versionCode 904` provisoire jusqu'au
+  contrôle du maximum Play Console.
+- Check, 1 607 tests Vitest, build, budget bundle 2,27 MiB, i18n et synchronisation Capacitor sont
+  verts. E2E Chromium est bloqué par `spawn EPERM` sur l'hôte et Gradle par l'absence de JDK ; les
+  mesures A53/S23 restent ouvertes. Aucun tag, déploiement ou publication ne fait partie du worktree.
+
 ## [5.85.0] - 2026-08-13 — pré-release GitHub interne, gates terrain ouvertes
 
 ### Ajouté
@@ -45,7 +77,8 @@
   8,13 km / 2 h 07 a démontré la continuité foreground et la reprise après plusieurs destructions
   de WebView, mais elle a aussi révélé le recalcul de route corrigé ci-dessus. Les validations
   API 24/33, le retest du correctif, l'A53 et les séries comparatives restent rouges ; la
-  pré-release ne lève pas ces gates et v5.85.1/v5.86 ne démarrent pas avant preuve.
+  pré-release ne levait pas encore ces gates. Cette photographie historique a ensuite été clôturée
+  par le propriétaire du projet le 2026-08-13 avant l'ouverture de v5.85.1.
 
 ### Validation automatisée
 

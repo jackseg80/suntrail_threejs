@@ -26,7 +26,17 @@ export class BoundedCache<K, V> {
 
     set(key: K, value: V): void {
         if (this.cache.has(key)) {
+            const previous = this.cache.get(key);
             this.cache.delete(key);
+            // Replacing a cache entry transfers ownership to the new value.
+            // Release the previous resources exactly as for an LRU eviction.
+            if (
+                previous !== undefined &&
+                !Object.is(previous, value) &&
+                this.onEvict
+            ) {
+                this.onEvict(key, previous);
+            }
         }
         this.cache.set(key, value);
         this.trim();

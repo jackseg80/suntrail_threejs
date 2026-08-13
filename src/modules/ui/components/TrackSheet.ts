@@ -263,8 +263,10 @@ export class TrackSheet extends BaseComponent {
         );
         this.addSubscription(
             state.subscribe('recordedPoints', () => {
-                this.updateStats();
-                this.updateEmptyState();
+                if (this.element?.classList.contains('is-open')) {
+                    this.updateStats();
+                    this.updateEmptyState();
+                }
             })
         );
         this.addSubscription(
@@ -284,6 +286,15 @@ export class TrackSheet extends BaseComponent {
 
         this.updateRecUI();
         this.updateStats();
+
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id !== 'track') return;
+            this.updateStats();
+            this.updateEmptyState();
+            this.renderUnifiedTrackList();
+        };
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
 
         // Écouter la récupération d'un enregistrement interrompu (v5.19.1)
         const onRecovered = () => this.showRecoveryPrompt();

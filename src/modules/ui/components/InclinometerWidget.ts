@@ -195,11 +195,13 @@ export class InclinometerWidget {
                 shouldShow && !state.isFollowingUser ? 'block' : 'none';
         }
 
-        if (shouldShow) this.startPolling();
+        const proActive = isProActive();
+        if (shouldShow && proActive) this.startPolling();
         else {
             this.stopPolling();
             this.closeDetail();
         }
+        if (shouldShow && !proActive) this.renderLockedState();
     }
 
     private startPolling(): void {
@@ -215,25 +217,14 @@ export class InclinometerWidget {
     }
 
     private update(): void {
-        if (!this.el || !state.controls || !state.camera || !state.originTile)
-            return;
+        if (!this.el) return;
 
         // Si pas Pro : on affiche juste le verrou (v5.54)
         if (!isProActive()) {
-            this.el.style.borderColor = 'var(--border)';
-            this.el.innerHTML = `<span style="display:flex; align-items:center; gap:8px;">⛰ —° (—%) <span style="display:inline-flex; align-items:center; opacity:0.6;">${ICON_LOCK}</span></span>`;
-            const svg = this.el.querySelector('svg');
-            if (svg) {
-                svg.setAttribute('width', '14');
-                svg.setAttribute('height', '14');
-            }
-            if (this.reticle) {
-                this.reticle.style.borderColor = 'var(--border)';
-                (this.reticle.firstChild as HTMLElement).style.background =
-                    'rgba(255,255,255,0.2)';
-            }
+            this.renderLockedState();
             return;
         }
+        if (!state.controls || !state.camera || !state.originTile) return;
 
         let targetX: number;
         let targetZ: number;
@@ -356,6 +347,22 @@ export class InclinometerWidget {
         }
 
         if (this._isExpanded && this.detailEl) this.updateDetailContent();
+    }
+
+    private renderLockedState(): void {
+        if (!this.el) return;
+        this.el.style.borderColor = 'var(--border)';
+        this.el.innerHTML = `<span style="display:flex; align-items:center; gap:8px;">⛰ —° (—%) <span style="display:inline-flex; align-items:center; opacity:0.6;">${ICON_LOCK}</span></span>`;
+        const svg = this.el.querySelector('svg');
+        if (svg) {
+            svg.setAttribute('width', '14');
+            svg.setAttribute('height', '14');
+        }
+        if (this.reticle) {
+            this.reticle.style.borderColor = 'var(--border)';
+            (this.reticle.firstChild as HTMLElement).style.background =
+                'rgba(255,255,255,0.2)';
+        }
     }
 
     // ── Interaction Réticule ──────────────────────────────────────────

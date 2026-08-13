@@ -341,11 +341,11 @@ public final class GuidanceEngine {
 
     private Projection selectProjection(GuidancePosition position) {
         GuidancePoint point = new GuidancePoint(position.lat, position.lon, 0);
-        List<Projection> candidates = new ArrayList<>(segments.size());
-        for (int index = 0; index < segments.size(); index++) {
-            candidates.add(projectOnSegment(point, segments.get(index), index));
-        }
         if (lastAcceptedPosition == null) {
+            List<Projection> candidates = new ArrayList<>(segments.size());
+            for (int index = 0; index < segments.size(); index++) {
+                candidates.add(projectOnSegment(point, segments.get(index), index));
+            }
             double nearest = candidates.stream().mapToDouble(value -> value.crossTrackMeters).min().orElse(0);
             return candidates.stream()
                 .filter(value -> value.crossTrackMeters <= nearest + 8)
@@ -361,9 +361,37 @@ public final class GuidanceEngine {
             thresholds.maximumPlausibleSpeedMps * elapsedSeconds);
         double expectedProgress = Math.min(totalMeters, progressMeters + predictedAdvance);
 
-        Projection best = candidates.get(0);
+        double lowerProgress = Math.max(0,
+            expectedProgress - thresholds.maximumBackwardMeters);
+        double upperProgress = Math.min(totalMeters,
+            expectedProgress + thresholds.continuitySearchMeters);
+        Projection best = null;
         double bestScore = Double.POSITIVE_INFINITY;
-        for (Projection candidate : candidates) {
+        for (int index = 0; index < segments.size(); index++) {
+            Segment segment = segments.get(index);
+            double segmentEnd = segment.cumulativeStartMeters + segment.lengthMeters;
+            if (segmentEnd < lowerProgress || segment.cumulativeStartMeters > upperProgress) continue;
+            Projection candidate = projectOnSegment(point, segment, index);
+            double delta = candidate.progressMeters - expectedProgress;
+            boolean outside = delta < -thresholds.maximumBackwardMeters ||
+                delta > thresholds.continuitySearchMeters;
+            double continuityPenalty = Math.abs(delta) * (delta < 0 ? 0.8 : 0.28) +
+                (outside ? 500 : 0);
+            double segmentPenalty = Math.abs(candidate.segmentIndex - currentSegmentIndex) * 0.15;
+            double score = candidate.crossTrackMeters + continuityPenalty + segmentPenalty;
+            if (score < bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+        // Excluded candidates necessarily carry the 500-point continuity penalty.
+        // A local score below that bound is exactly the same winner as a full scan.
+        if (best != null && bestScore < 500) return best;
+
+        best = null;
+        bestScore = Double.POSITIVE_INFINITY;
+        for (int index = 0; index < segments.size(); index++) {
+            Projection candidate = projectOnSegment(point, segments.get(index), index);
             double delta = candidate.progressMeters - expectedProgress;
             boolean outside = delta < -thresholds.maximumBackwardMeters ||
                 delta > thresholds.continuitySearchMeters;

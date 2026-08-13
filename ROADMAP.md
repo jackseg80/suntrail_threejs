@@ -1,7 +1,7 @@
-# SunTrail — Roadmap produit révisée (version source v5.85.0 — gates terrain ouvertes)
+# SunTrail — Roadmap produit révisée (version source v5.85.1 — optimisation en validation)
 
-> Révision : 2026-08-12, après implémentation locale, instrumentation S23/API 36 et audit
-> ciblé performance/autonomie.
+> Révision : 2026-08-13, après clôture de v5.85.0 confirmée par le propriétaire du projet et
+> implémentation locale du chantier ciblé performance/autonomie v5.85.1.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -14,7 +14,7 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-08-12
+## État réel au 2026-08-13
 
 - La dernière release corrective publique reste **v5.83.3** / **901**. **v5.84.0** / Android
   **902** est clôturée comme pré-release GitHub interne, sans téléversement Play Console.
@@ -23,11 +23,13 @@ heure de passage et conditions.
 - Le moteur foreground, ses fixtures, le plan de guidage local, l'UI et l'indépendance REC sont
   implémentés. Les gates automatisés et la validation Galaxy S23 sont acceptés pour ce périmètre
   foreground.
-- v5.85.0 est implémentée localement : matcher Java, Room v2, session native, bridge,
-  notification et tests automatisés. L'instrumentation S23/API 36 est verte (5/5) ;
-  `nativeGuidance` reste désactivé par défaut et les gates API 24/33, terrain A53/S23 et sorties
-  d'une heure restent ouvertes.
-- Après comparaison Komoot/Garmin, v5.84 inclura la prochaine indication et sa distance au sein
+- La clôture de v5.85.0 a été confirmée par le propriétaire du projet le 2026-08-13 ; son matcher
+  Java, Room v2, session native, bridge et notification forment la baseline de performance.
+- v5.85.1 est implémentée localement : rendu idle, REC long, cache/préchargement LOD, travail UI,
+  démarrage et guidage natif ont été optimisés sans nouvelle fonction produit. Check, 1 607 tests,
+  build, bundle 2,27 MiB, i18n et synchronisation Capacitor sont verts ; E2E/Gradle et les mesures
+  A53/S23 restent à consigner avant publication.
+- Après comparaison Komoot/Garmin, v5.84 inclut la prochaine indication et sa distance au sein
   du moteur foreground, sans étendre la promesse aux fonctions natives/background de v5.85.
 
 ## Séquence de livraison révisée
@@ -37,7 +39,7 @@ heure de passage et conditions.
 | **v5.82.0** | Comprendre et utiliser la préparation sans geste caché | Finalisé dans le worktree, sans PreparedRoute |
 | **v5.83.0** | Planifier, évaluer et retrouver une route après redémarrage | PreparedRoute local, bibliothèque, difficulté/effort, soleil utile |
 | **v5.84.0 interne clôturée** | Valider le moteur de suivi sans promesse publique incomplète | GuidanceEngine TS, progression/ETA/écart, prochaine indication, foreground |
-| **v5.85.0** | Guider réellement sur Android, écran éteint et après interruption | Matcher natif, route Room, notification, récupération, tests appareils |
+| **v5.85.0 clôturée** | Guider réellement sur Android, écran éteint et après interruption | Matcher natif, route Room, notification, récupération, tests appareils |
 | **v5.85.1** | Randonner plus longtemps avec une carte fluide | Autonomie, rendu au repos, REC long, cache VRAM/tuiles et guidage efficient |
 | **v5.86.0** | Savoir si la sortie est prête et emporter son corridor | Readiness en couches, corridor Free remplaçable, offline fiable |
 | **v6.0.0** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
@@ -129,8 +131,8 @@ OSRM/absence de donnée sont testés ; « inconnue » est un résultat valide, j
 
 > **Clôturé le 2026-08-11 comme pré-release GitHub interne.** Le moteur, les cues, l'UI et les
 > E2E ciblés sont validés ; la validation Galaxy S23 a été acceptée pour le périmètre foreground.
-> v5.85 a été autorisée et est en validation terrain ; v5.85.1 reste interdite tant que ses gates
-> ne sont pas closes. v5.86 ne commence qu'après la stabilisation corrective.
+> v5.85.0 est clôturée et v5.85.1 est le chantier actif. v5.86 ne commence qu'après la
+> stabilisation corrective.
 
 Livrer le cœur de navigation avant le cloud :
 
@@ -162,9 +164,8 @@ déploiement public.
 
 ## v5.85.0 — Guidage Android robuste
 
-> Pré-release GitHub interne publiée le 2026-08-13, avec instrumentation S23/API 36 verte (5/5).
-> La promotion terrain/stable n'est pas clôturée : API 24/33, protocole fonctionnel A53/S23 et
-> sorties longues restent à démontrer. Ne pas commencer v5.85.1 avant leur clôture.
+> Clôture confirmée par le propriétaire du projet le 2026-08-13. Cette version constitue la
+> baseline fonctionnelle et énergétique de v5.85.1.
 
 Étendre les briques Java/Room existantes :
 
@@ -186,9 +187,8 @@ et gates rouges : [V5_85_A53_S23_FIELD_VALIDATION.md](docs/plans/V5_85_A53_S23_F
 
 ## v5.85.1 — Performance & autonomie terrain
 
-> Version corrective à ouvrir uniquement après la clôture des gates terrain de v5.85.0. Elle
-> n'ajoute aucune promesse fonctionnelle ; REC, routes préparées, guidage natif et reprise doivent
-> conserver strictement leurs contrats.
+> Chantier ouvert le 2026-08-13 après clôture confirmée de v5.85.0. Il n'ajoute aucune promesse
+> fonctionnelle ; REC, routes préparées, guidage natif et reprise conservent leurs contrats.
 
 Réduire le travail permanent et le coût croissant des longues sorties, en privilégiant des gains
 mesurables et réversibles :
@@ -220,6 +220,9 @@ mesurables et réversibles :
    les API supportées ;
 5. aucune régression de fluidité, de récupération REC, d'offline ou d'accessibilité constatée dans
    le protocole terrain.
+
+**État worktree :** implémentation terminée ; validation automatisée finale et preuves physiques
+A53/S23 encore ouvertes. Aucun commit, tag, push ou déploiement n'est implicite.
 
 ## v5.86.0 — Prêt à partir & corridor hors ligne
 

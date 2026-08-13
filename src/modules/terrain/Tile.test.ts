@@ -57,8 +57,12 @@ vi.mock('../buildings', () => ({ loadBuildingsForTile: vi.fn() }));
 vi.mock('../hydrology', () => ({ loadHydrologyForTile: vi.fn() }));
 
 import { Tile } from './Tile';
-import { removeFromLoadQueue } from './tileQueue';
-import { markCacheKeyInactive } from '../tileCache';
+import { queueBuildMesh, removeFromLoadQueue } from './tileQueue';
+import {
+    getFromCache,
+    markCacheKeyActive,
+    markCacheKeyInactive,
+} from '../tileCache';
 
 describe('Tile', () => {
     beforeEach(() => {
@@ -115,6 +119,27 @@ describe('Tile', () => {
         it('returns true when camera is null (always visible)', () => {
             const tile = new Tile(0, 0, 14, '14/0/0');
             expect(tile.isVisible()).toBe(true);
+        });
+    });
+
+    describe('cache-only prefetch', () => {
+        it('reuses cached textures without pinning or building a mesh', async () => {
+            const cached = {
+                elev: {} as any,
+                pixelData: new Uint8ClampedArray([1]),
+                color: {} as any,
+                overlay: null,
+                normal: null,
+            };
+            vi.mocked(getFromCache).mockReturnValueOnce(cached);
+            const tile = new Tile(0, 0, 14, 'source_0_0_14', true);
+
+            await tile.load();
+
+            expect(tile.status).toBe('loaded');
+            expect(markCacheKeyActive).not.toHaveBeenCalled();
+            expect(queueBuildMesh).not.toHaveBeenCalled();
+            expect(tile.mesh).toBeNull();
         });
     });
 

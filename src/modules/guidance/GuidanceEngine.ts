@@ -374,10 +374,10 @@ export class GuidanceEngine {
 
     private selectProjection(position: GuidancePosition): ProjectionCandidate {
         const point = { lat: position.lat, lon: position.lon, ele: 0 };
-        const candidates = this.segments.map((segment, index) =>
-            projectOnSegment(point, segment, this.project, index)
-        );
         if (!this.lastAcceptedPosition) {
+            const candidates = this.segments.map((segment, index) =>
+                projectOnSegment(point, segment, this.project, index)
+            );
             const nearestDistance = Math.min(
                 ...candidates.map((candidate) => candidate.crossTrackMeters)
             );
@@ -406,7 +406,7 @@ export class GuidanceEngine {
             this.progressMeters + predictedAdvance
         );
 
-        const scored = candidates.map((candidate) => {
+        const scoreCandidate = (candidate: ProjectionCandidate): number => {
             const delta = candidate.progressMeters - expectedProgress;
             const outsideContinuity =
                 delta < -this.thresholds.maximumBackwardMeters ||
@@ -417,16 +417,64 @@ export class GuidanceEngine {
             const segmentPenalty =
                 Math.abs(candidate.segmentIndex - this.currentSegmentIndex) *
                 0.15;
-            return {
-                candidate,
-                score:
-                    candidate.crossTrackMeters +
-                    continuityPenalty +
-                    segmentPenalty,
-            };
-        });
-        scored.sort((a, b) => a.score - b.score);
-        return scored[0].candidate;
+            return (
+                candidate.crossTrackMeters + continuityPenalty + segmentPenalty
+            );
+        };
+
+        const lowerProgress = Math.max(
+            0,
+            expectedProgress - this.thresholds.maximumBackwardMeters
+        );
+        const upperProgress = Math.min(
+            this.totalMeters,
+            expectedProgress + this.thresholds.continuitySearchMeters
+        );
+        let best: ProjectionCandidate | null = null;
+        let bestScore = Number.POSITIVE_INFINITY;
+        for (let index = 0; index < this.segments.length; index++) {
+            const segment = this.segments[index];
+            const segmentEnd =
+                segment.cumulativeStartMeters + segment.lengthMeters;
+            if (
+                segmentEnd < lowerProgress ||
+                segment.cumulativeStartMeters > upperProgress
+            ) {
+                continue;
+            }
+            const candidate = projectOnSegment(
+                point,
+                segment,
+                this.project,
+                index
+            );
+            const score = scoreCandidate(candidate);
+            if (score < bestScore) {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+
+        // Every excluded candidate receives the 500-point continuity penalty.
+        // Below that bound the local result is therefore identical to a full scan.
+        if (best && bestScore < 500) return best;
+
+        best = null;
+        bestScore = Number.POSITIVE_INFINITY;
+        for (let index = 0; index < this.segments.length; index++) {
+            const candidate = projectOnSegment(
+                point,
+                this.segments[index],
+                this.project,
+                index
+            );
+            const score = scoreCandidate(candidate);
+            if (score < bestScore) {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+        return best!;
     }
 
     private pointAtProgress(progressMeters: number): RoutePoint {

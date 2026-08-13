@@ -56,6 +56,7 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -144,6 +145,8 @@ public class RecordingService extends Service {
     private long lastGpsConfigUpdate;
     private long lastNotificationUpdate;
     private long lastRouteIntegrityCheck;
+    private long lastGuidancePersistence;
+    private String lastGuidanceStatus;
     private volatile boolean routeIntegrityCheckPending;
     private volatile boolean storageFailureLatched;
     private static final float IMMOBILITY_DISTANCE_THRESHOLD = 30.0f;
@@ -158,18 +161,24 @@ public class RecordingService extends Service {
             if (!guidanceActive || guidanceEngine == null) return;
             long now = System.currentTimeMillis();
             if (!hasLocationPermission()) {
+                boolean issueChanged = !"permission-denied".equals(issue);
                 issue = "permission-denied";
                 if (locationUpdatesStarted && fusedClient != null && locationCallback != null) {
                     fusedClient.removeLocationUpdates(locationCallback);
                     locationUpdatesStarted = false;
                 }
-                persistSession();
-                broadcastSessionChanged();
-                updateNotification();
+                if (issueChanged) {
+                    persistSession();
+                    broadcastSessionChanged();
+                    updateNotification();
+                }
             } else {
                 if ("permission-denied".equals(issue)) {
                     issue = isLocationEnabled() ? null : "gps-disabled";
                     ensureLocationUpdates();
+                    persistSession();
+                    broadcastSessionChanged();
+                    updateNotification();
                 }
                 applyGuidanceUpdate(guidanceEngine.tick(now));
             }
@@ -332,6 +341,8 @@ public class RecordingService extends Service {
         }
         explicitShutdown = false;
         guidanceActive = true;
+        lastGuidanceStatus = null;
+        lastGuidancePersistence = 0;
         issue = isLocationEnabled() ? null : "gps-disabled";
         persistFastState();
         broadcastSessionChanged();
@@ -415,6 +426,8 @@ public class RecordingService extends Service {
         guidanceActive = false;
         guidanceEngine = null;
         guidanceSession = null;
+        lastGuidanceStatus = null;
+        lastGuidancePersistence = 0;
         mainHandler.removeCallbacks(guidanceTicker);
         dbExecutor.execute(() -> {
             try {
@@ -568,8 +581,19 @@ public class RecordingService extends Service {
 
     private void applyGuidanceUpdate(GuidanceUpdate update) {
         if (!guidanceActive) return;
-        broadcastGuidanceUpdate(update);
-        persistSession();
+        GuidanceSnapshot snapshot = update.snapshot;
+        boolean statusChanged = !Objects.equals(lastGuidanceStatus, snapshot.status);
+        boolean hasEvents = !update.events.isEmpty();
+        lastGuidanceStatus = snapshot.status;
+        if (update.acceptedPosition || statusChanged || hasEvents) {
+            broadcastGuidanceUpdate(update);
+        }
+        long now = System.currentTimeMillis();
+        if (statusChanged || hasEvents ||
+            (update.acceptedPosition && now - lastGuidancePersistence >= 10_000L)) {
+            persistSession();
+            lastGuidancePersistence = now;
+        }
         for (String event : update.events) {
             if ("off-route".equals(event)) showGuidanceAlert("Hors itinéraire", "Revenez vers la trace SunTrail.");
             else if ("arrived".equals(event)) showGuidanceAlert("Arrivée", "Vous avez atteint la fin de la route.");
@@ -713,8 +737,9 @@ public class RecordingService extends Service {
         else title = isImmobile ? "Immobile — SunTrail REC" : "SunTrail — REC actif";
 
         StringBuilder text = new StringBuilder();
-        if (guidanceActive && guidanceEngine != null) {
-            GuidanceSnapshot snapshot = guidanceEngine.getSnapshot(System.currentTimeMillis());
+        GuidanceSnapshot snapshot = guidanceActive && guidanceEngine != null
+            ? guidanceEngine.getSnapshot(System.currentTimeMillis()) : null;
+        if (snapshot != null) {
             text.append(String.format(Locale.getDefault(), "%.1f km restants · %s",
                 snapshot.remainingMeters / 1000.0, statusLabel(snapshot.status)));
         }
@@ -739,8 +764,7 @@ public class RecordingService extends Service {
             .setCategory(NotificationCompat.CATEGORY_SERVICE);
 
         if (guidanceActive) {
-            boolean paused = guidanceEngine != null && "paused".equals(
-                guidanceEngine.getSnapshot(System.currentTimeMillis()).status);
+            boolean paused = snapshot != null && "paused".equals(snapshot.status);
             builder.addAction(android.R.drawable.ic_media_pause, paused ? "Reprendre" : "Pause",
                 servicePendingIntent(paused ? ACTION_RESUME_GUIDANCE : ACTION_PAUSE_GUIDANCE, 10));
             builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Arrêter guidage",

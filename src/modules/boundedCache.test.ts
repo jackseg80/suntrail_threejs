@@ -1,5 +1,33 @@
-import { describe, it, expect } from 'vitest';
-import { boundedCacheSet } from './boundedCache';
+import { describe, it, expect, vi } from 'vitest';
+import { BoundedCache, boundedCacheSet } from './boundedCache';
+
+describe('BoundedCache', () => {
+    it('evicts the previous value when a key is replaced', () => {
+        const onEvict = vi.fn();
+        const cache = new BoundedCache<string, { id: number }>({ onEvict });
+        const previous = { id: 1 };
+        const replacement = { id: 2 };
+
+        cache.set('tile', previous);
+        cache.set('tile', replacement);
+
+        expect(onEvict).toHaveBeenCalledOnce();
+        expect(onEvict).toHaveBeenCalledWith('tile', previous);
+        expect(cache.get('tile')).toBe(replacement);
+    });
+
+    it('does not evict when the exact same value is refreshed', () => {
+        const onEvict = vi.fn();
+        const cache = new BoundedCache<string, object>({ onEvict });
+        const value = {};
+
+        cache.set('tile', value);
+        cache.set('tile', value);
+
+        expect(onEvict).not.toHaveBeenCalled();
+        expect(cache.size).toBe(1);
+    });
+});
 
 describe('boundedCacheSet', () => {
     it('should set values normally under limit', () => {

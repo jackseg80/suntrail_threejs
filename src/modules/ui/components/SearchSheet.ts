@@ -84,13 +84,13 @@ export class SearchSheet extends BaseComponent {
                 this.handleInput.bind(this)
             );
 
-            const focusTimer = setInterval(() => {
-                if (this.element?.classList.contains('is-open')) {
-                    this.geoInput?.focus();
-                    clearInterval(focusTimer);
-                }
-            }, 200);
-            this.addSubscription(() => clearInterval(focusTimer));
+            const onSheetOpened = ({ id }: { id: string }) => {
+                if (id === 'search-sheet') this.geoInput?.focus();
+            };
+            eventBus.on('sheetOpened', onSheetOpened);
+            this.addSubscription(() =>
+                eventBus.off('sheetOpened', onSheetOpened)
+            );
 
             const onSheetClosed = ({ id }: { id: string | null }) => {
                 if (id === 'search-sheet') {

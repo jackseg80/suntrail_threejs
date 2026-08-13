@@ -37,6 +37,7 @@ import type { NativeGPSPoint } from './nativeGPSService';
 describe('NativeGPSService (v5.29.38)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.clearAllTimers();
         state.recordedPoints = [];
         state.isRecording = false;
         mockPreferences.get.mockResolvedValue({ value: null });
@@ -44,6 +45,9 @@ describe('NativeGPSService (v5.29.38)', () => {
             isRunning: false,
         });
         (nativeGPSService as any)._syncing = false;
+        (nativeGPSService as any).pointPersistPending = false;
+        (nativeGPSService as any).pointPersistTimeout = null;
+        (nativeGPSService as any).pointPersistFlush = null;
     });
 
     it('should initialize correctly and recover active course', async () => {
@@ -126,10 +130,14 @@ describe('NativeGPSService (v5.29.38)', () => {
 describe('NativeGPSService syncPoints (v5.76.0)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.clearAllTimers();
         state.recordedPoints = [];
         state.isRecording = false;
         (nativeGPSService as any)._syncing = false;
         (nativeGPSService as any).currentCourseId = 'test-course';
+        (nativeGPSService as any).pointPersistPending = false;
+        (nativeGPSService as any).pointPersistTimeout = null;
+        (nativeGPSService as any).pointPersistFlush = null;
         mockPreferences.get.mockResolvedValue({ value: null });
     });
 
@@ -199,6 +207,36 @@ describe('NativeGPSService syncPoints (v5.76.0)', () => {
             expect(p).not.toHaveProperty('id');
             expect(p).not.toHaveProperty('accuracy');
         }
+    });
+
+    it('debounces the Preferences recovery snapshot', async () => {
+        vi.useFakeTimers();
+        state.recordedPoints = Array.from({ length: 10 }, (_, index) => ({
+            lat: 46.5 + index * 0.0001,
+            lon: 7.5 + index * 0.0001,
+            alt: 1000 + index,
+            timestamp: (index + 1) * 10_000,
+        }));
+        mockRecordingNative.getPoints.mockResolvedValue({
+            points: makeNativePoints([
+                {
+                    lat: 46.5011,
+                    lon: 7.5011,
+                    alt: 1011,
+                    timestamp: 110_000,
+                },
+            ]),
+        });
+
+        await nativeGPSService.syncPoints();
+        expect(mockPreferences.set).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(15_000);
+        expect(mockPreferences.set).toHaveBeenCalledOnce();
+        expect(mockPreferences.set).toHaveBeenCalledWith(
+            expect.objectContaining({ key: 'suntrail_recorded_points' })
+        );
+        vi.useRealTimers();
     });
 
     it('should handle boundary between existing and new points', () => {

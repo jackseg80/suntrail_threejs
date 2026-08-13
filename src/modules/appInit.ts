@@ -105,7 +105,9 @@ export async function appInit(): Promise<void> {
     const cacheInitPromise = import('./tileLoader').then((m) =>
         m.initCacheLayer()
     );
-    void import('./packManager').then((m) => m.packManager.initialize());
+    const packInitPromise = import('./packManager').then((m) =>
+        m.packManager.initialize()
+    );
 
     const savedSettings = loadSettings();
     let firstLaunch = false;
@@ -193,13 +195,12 @@ export async function appInit(): Promise<void> {
 
     // Lancer la scène — s'assurer que la couche cache et les clés Gist sont prêtes avant
     // v5.80.2 : Parallélisme — le Gist et le cache tournent pendant tout le setup UI
-    await Promise.all([cacheInitPromise, gistPromise]);
-    // v5.80.2 : Lancer les imports des sheets secondaires en parallèle de la scène
-    // (tous les accès Three.js sont protégés par optional chaining / guards)
+    await Promise.all([cacheInitPromise, gistPromise, packInitPromise]);
+    await launchScene();
+    // Start secondary chunks only after the terrain critical path is running.
     void initSecondaryUI().then(() => {
         if (state.DEBUG_MODE) console.log('[UI] Secondary UI Hydrated');
     });
-    await launchScene();
 
     // Premier lancement : benchmark micro différé (+15s) quand le système est stable
     if (firstLaunch && !isTestMode) {
@@ -431,7 +432,6 @@ async function launchScene() {
 async function startApp() {
     try {
         await initScene();
-        fetchWeather(state.TARGET_LAT, state.TARGET_LON);
         fetchLocalPeaks(state.TARGET_LAT, state.TARGET_LON);
 
         const ids = [

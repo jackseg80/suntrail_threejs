@@ -17,6 +17,7 @@ import { state } from '../state';
 import {
     nativeGPSService,
     type NativeGuidanceUpdate,
+    type NativeSession,
 } from '../nativeGPSService';
 import { GuidanceEngine } from './GuidanceEngine';
 import type {
@@ -218,14 +219,19 @@ export class GuidanceForegroundService {
     }
 
     /** Rattache l'UI à une session :tracking survivante après destruction de WebView. */
-    public async recoverNativeSession(): Promise<boolean> {
+    public async recoverNativeSession(
+        knownSession?: NativeSession | null
+    ): Promise<boolean> {
         if (
             !releaseFlags.isEnabled('nativeGuidance') ||
             !Capacitor.isNativePlatform()
         ) {
             return false;
         }
-        const session = await nativeGPSService.getActiveSession();
+        const session =
+            knownSession === undefined
+                ? await nativeGPSService.getActiveSession()
+                : knownSession;
         if (!session?.guidance || !session.routeId || !session.snapshot) {
             return false;
         }

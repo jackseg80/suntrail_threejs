@@ -10,7 +10,6 @@ import { showToast } from './toast';
 import { startLocationTracking } from './location';
 import { haptic } from './haptics';
 import { i18n } from '../i18n/I18nService';
-import gpxParser from 'gpxparser';
 import {
     startRecordingService,
     stopRecordingService,
@@ -184,6 +183,7 @@ export class RecordingService {
         }
 
         const gpxString = this.buildGPXString(name);
+        const { default: gpxParser } = await import('gpxparser');
         const parser = new gpxParser();
         parser.parse(gpxString);
         if (!parser.tracks?.length) return false;
