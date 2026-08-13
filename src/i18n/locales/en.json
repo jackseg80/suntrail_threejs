@@ -227,6 +227,47 @@
             "notFound": "This route is no longer on this device."
         }
     },
+    "readiness": {
+        "title": "Ready to go?",
+        "networkOptional": "The local report is immediate; weather and device status remain optional.",
+        "sections": {
+            "route": "Route",
+            "light": "Daylight",
+            "offline": "Offline",
+            "conditions": "Conditions",
+            "device": "Device"
+        },
+        "status": {
+            "available": "available",
+            "stale": "stale",
+            "unknown": "unknown",
+            "error": "error"
+        },
+        "route": {
+            "difficulty-unknown": "Technical difficulty is unknown on this route.",
+            "difficulty-partial": "Technical difficulty is documented on only part of the route.",
+            "guidance-not-ready": "This geometry cannot provide reliable guidance.",
+            "guidance-approximate": "Guidance for this route remains approximate."
+        },
+        "light": {
+            "start-time-missing": "Choose a start time to calculate the daylight margin.",
+            "after-dark": "The estimated arrival is after sunset.",
+            "near-sunset": "The margin before sunset is less than one hour."
+        },
+        "offline": {
+            "not-measured": "Offline coverage for this route has not been measured yet.",
+            "invalid-measurement": "The offline coverage measurement is inconsistent."
+        },
+        "conditions": {
+            "not-loaded": "Optional network conditions are not loaded.",
+            "network-error": "Network conditions are unavailable."
+        },
+        "device": {
+            "not-checked": "Device status has not been checked yet."
+        },
+        "stale": "This data must be refreshed.",
+        "invalid-evidence": "The supplied evidence is invalid."
+    },
     "routePlanner": {
         "title": "Route Planner",
         "hint": {

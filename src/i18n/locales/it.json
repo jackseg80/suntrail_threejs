@@ -226,6 +226,47 @@
             "notFound": "Questo percorso non è più presente sul dispositivo."
         }
     },
+    "readiness": {
+        "title": "Pronto a partire?",
+        "networkOptional": "Il rapporto locale è immediato; meteo e stato del dispositivo restano opzionali.",
+        "sections": {
+            "route": "Percorso",
+            "light": "Luce",
+            "offline": "Offline",
+            "conditions": "Condizioni",
+            "device": "Dispositivo"
+        },
+        "status": {
+            "available": "disponibile",
+            "stale": "datato",
+            "unknown": "sconosciuto",
+            "error": "errore"
+        },
+        "route": {
+            "difficulty-unknown": "La difficoltà tecnica di questo percorso è sconosciuta.",
+            "difficulty-partial": "La difficoltà tecnica è documentata solo su una parte del percorso.",
+            "guidance-not-ready": "Questa geometria non consente una guida affidabile.",
+            "guidance-approximate": "La guida per questo percorso resta approssimativa."
+        },
+        "light": {
+            "start-time-missing": "Scegli un orario di partenza per calcolare il margine di luce.",
+            "after-dark": "L’arrivo stimato è dopo il tramonto.",
+            "near-sunset": "Il margine prima del tramonto è inferiore a un’ora."
+        },
+        "offline": {
+            "not-measured": "La copertura offline di questo percorso non è ancora stata misurata.",
+            "invalid-measurement": "La misura della copertura offline non è coerente."
+        },
+        "conditions": {
+            "not-loaded": "Le condizioni di rete opzionali non sono caricate.",
+            "network-error": "Le condizioni di rete non sono disponibili."
+        },
+        "device": {
+            "not-checked": "Lo stato del dispositivo non è ancora stato verificato."
+        },
+        "stale": "Questi dati devono essere aggiornati.",
+        "invalid-evidence": "La prova fornita non è valida."
+    },
     "routePlanner": {
         "title": "Pianificatore di itinerario",
         "hint": {

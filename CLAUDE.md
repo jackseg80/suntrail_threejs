@@ -2,8 +2,8 @@
 
 > Point d'entrée unique pour tous les agents IA.
 > Mis à jour le 2026-08-13 — clôture v5.85.0 confirmée par le propriétaire du projet.
-> v5.85.1 / Android `904` est implémentée dans le worktree ; web automatisé vert, Android/E2E et
-> terrain encore à valider.
+> v5.85.1 est figée au commit local `b30a1c1` ; web automatisé vert, Android/E2E et terrain encore
+> à valider séparément. v5.86 est ouverte avec un premier lot readiness local, sans corridor.
 > Aucun commit, tag, push, téléversement Play Console ni déploiement n'est implicite. Prepared
 > Routes, REC et les contrats du guidage sont préservés ; `904` reste provisoire avant contrôle Play.
 
@@ -31,6 +31,9 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   recording/guidance/both, snapshot et notification persistante avec reprise.
 - **Optimisation terrain (v5.85.1)** : deep sleep boussole, REC long/persistance bornés, cache et
   préchargement LOD corrigés, travaux UI permanents supprimés et guidage natif moins bavard.
+- **Readiness local (v5.86.0 en cours)** : rapport déterministe en cinq sections ; route/lumière
+  immédiates, offline/météo/appareil explicitement inconnus sans preuve. Voir
+  [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md).
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -71,6 +74,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Interface & UX** | [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md) | TouchControls, Offline interaction, Modules. |
 | **Suivi foreground** | [docs/GUIDANCE_FOREGROUND.md](docs/GUIDANCE_FOREGROUND.md) | Algorithme, seuils, payload, cues et limites v5.84. |
 | **Guidage Android** | [docs/GUIDANCE_ANDROID.md](docs/GUIDANCE_ANDROID.md) | Java/Room, bridge, notification, reprise, seuils et gates v5.85. |
+| **Readiness & corridor** | [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md) | Contrat en couches, état réel et responsabilités de stockage v5.86. |
 | **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 

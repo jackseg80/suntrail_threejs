@@ -227,6 +227,47 @@
             "notFound": "Diese Route ist nicht mehr auf diesem Gerät vorhanden."
         }
     },
+    "readiness": {
+        "title": "Startklar?",
+        "networkOptional": "Der lokale Bericht ist sofort verfügbar; Wetter und Gerätestatus bleiben optional.",
+        "sections": {
+            "route": "Route",
+            "light": "Tageslicht",
+            "offline": "Offline",
+            "conditions": "Bedingungen",
+            "device": "Gerät"
+        },
+        "status": {
+            "available": "verfügbar",
+            "stale": "veraltet",
+            "unknown": "unbekannt",
+            "error": "Fehler"
+        },
+        "route": {
+            "difficulty-unknown": "Der technische Schwierigkeitsgrad dieser Route ist unbekannt.",
+            "difficulty-partial": "Der technische Schwierigkeitsgrad ist nur für einen Teil der Route dokumentiert.",
+            "guidance-not-ready": "Diese Geometrie erlaubt keine zuverlässige Führung.",
+            "guidance-approximate": "Die Führung für diese Route bleibt ungefähr."
+        },
+        "light": {
+            "start-time-missing": "Startzeit wählen, um die Tageslichtreserve zu berechnen.",
+            "after-dark": "Die geschätzte Ankunft liegt nach Sonnenuntergang.",
+            "near-sunset": "Die Reserve vor Sonnenuntergang beträgt weniger als eine Stunde."
+        },
+        "offline": {
+            "not-measured": "Die Offline-Abdeckung dieser Route wurde noch nicht gemessen.",
+            "invalid-measurement": "Die gemessene Offline-Abdeckung ist widersprüchlich."
+        },
+        "conditions": {
+            "not-loaded": "Optionale Netzwerkbedingungen sind nicht geladen.",
+            "network-error": "Netzwerkbedingungen sind nicht verfügbar."
+        },
+        "device": {
+            "not-checked": "Der Gerätestatus wurde noch nicht geprüft."
+        },
+        "stale": "Diese Daten müssen aktualisiert werden.",
+        "invalid-evidence": "Der bereitgestellte Nachweis ist ungültig."
+    },
     "routePlanner": {
         "title": "Routenplaner",
         "hint": {

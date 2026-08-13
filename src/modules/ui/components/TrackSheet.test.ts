@@ -284,6 +284,16 @@ describe('TrackSheet - Prepared Routes library', () => {
         expect(
             document.querySelector('.prepared-route-warning')
         ).not.toBeNull();
+        expect(document.querySelector('.prepared-readiness')).not.toBeNull();
+        expect(
+            document.querySelector('.prepared-readiness')?.textContent
+        ).toContain('readiness.offline.not-measured');
+        expect(
+            document.querySelector('.prepared-readiness')?.textContent
+        ).not.toContain('readiness.route.guidance-approximate');
+        expect(
+            document.querySelector('[data-route-action="guidance"]')
+        ).not.toBeNull();
         expect(
             document.querySelector('.prepared-route-card')?.textContent
         ).not.toContain('0%');

@@ -42,6 +42,10 @@ import templateHTML from '../templates/track.html?raw';
 import { preparedRouteService } from '../../preparedRoutes/preparedRouteService';
 import { releaseFlags } from '../../releaseFlags';
 import { setRoutePlanningMode } from '../../routeManager';
+import {
+    buildRouteReadinessReport,
+    type ReadinessSectionStatus,
+} from '../../readiness/routeReadiness';
 
 const pendingGeocode = new Set<string>();
 
@@ -57,6 +61,16 @@ function escapeText(value: string): string {
                 '"': '&quot;',
             })[char] ?? char
     );
+}
+
+function renderReadinessStatus(
+    section: string,
+    status: ReadinessSectionStatus
+): string {
+    return `<span class="prepared-readiness-status" data-status="${status}">
+        ${escapeText(i18n.t(`readiness.sections.${section}`))}
+        <b>${escapeText(i18n.t(`readiness.status.${status}`))}</b>
+    </span>`;
 }
 
 export class TrackSheet extends BaseComponent {
@@ -720,12 +734,50 @@ export class TrackSheet extends BaseComponent {
                     route.guidanceQuality === 'approximate'
                         ? `<p class="prepared-route-warning">${escapeText(i18n.t('preparedRoutes.quality.approximateWarning'))}</p>`
                         : '';
+                const readiness = releaseFlags.isEnabled('routeReadiness')
+                    ? buildRouteReadinessReport(route)
+                    : null;
+                const readinessSignals = readiness
+                    ? [
+                          ...readiness.sections.route.signals.filter(
+                              (signal) =>
+                                  signal.code !==
+                                  'readiness.route.guidance-approximate'
+                          ),
+                          ...readiness.sections.light.signals,
+                          ...readiness.sections.offline.signals,
+                      ]
+                    : [];
+                const readinessMarkup = readiness
+                    ? `<section class="prepared-readiness" aria-label="${escapeText(i18n.t('readiness.title'))}">
+                        <strong>${escapeText(i18n.t('readiness.title'))}</strong>
+                        <div class="prepared-readiness-statuses">
+                            ${renderReadinessStatus('route', readiness.sections.route.status)}
+                            ${renderReadinessStatus('light', readiness.sections.light.status)}
+                            ${renderReadinessStatus('offline', readiness.sections.offline.status)}
+                            ${renderReadinessStatus('conditions', readiness.sections.conditions.status)}
+                            ${renderReadinessStatus('device', readiness.sections.device.status)}
+                        </div>
+                        ${
+                            readinessSignals.length > 0
+                                ? `<ul>${readinessSignals
+                                      .map(
+                                          (signal) =>
+                                              `<li data-severity="${signal.severity}">${escapeText(i18n.t(signal.code))}</li>`
+                                      )
+                                      .join('')}</ul>`
+                                : ''
+                        }
+                        <small>${escapeText(i18n.t('readiness.networkOptional'))}</small>
+                    </section>`
+                    : '';
                 return `<article class="prepared-route-card" data-route-id="${route.id}">
                     <div class="prepared-route-card-main">
                         <strong>${escapeText(route.name)}</strong>
                         <span>${route.stats.distance.toFixed(1)} km · D+ ${Math.round(route.stats.ascent)} m · ${difficultyText}</span>
                         <span>${i18n.t(`preparedRoutes.effort.${route.stats.effort.level}`)} · ETA ${route.stats.light.etaAt ? new Date(route.stats.light.etaAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · ${light}</span>
                         ${warning}
+                        ${readinessMarkup}
                     </div>
                     <div class="prepared-route-actions">
                         ${releaseFlags.isEnabled('guidanceForeground') ? `<button type="button" data-route-action="guidance" data-route-id="${route.id}" class="prepared-route-guidance">${i18n.t('guidance.actions.start')}</button>` : ''}

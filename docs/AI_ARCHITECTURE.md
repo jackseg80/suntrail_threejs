@@ -21,6 +21,7 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `RouteRepository` | Sole IndexedDB access for `PreparedRouteV1`; injected `IDBFactory`, atomic writes and additive upgrades. | `list`, `get`, `saveMany`, `delete`, `close` |
 | `GuidanceEngine` | Pure polyline projection, robust progress, ETA/cross-track/bearing and state hysteresis. No DOM/Three.js. | `start`, `update`, `tick`, `pause`, `resume`, `stop` |
 | `GuidanceForegroundService` | Foreground UI orchestration over the existing `state.userLocation` stream; REC remains independent. | `start`, `pause`, `resume`, `stop` |
+| `routeReadiness` | Pure layered readiness report; local route/light remain independent from optional offline, network and Android evidence. | `buildRouteReadinessReport` |
 | `releaseFlags` | Release rollout decisions, separate from Free/Pro entitlements. | `isEnabled`, `refresh`, `setDeveloperOverride` |
 | `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |

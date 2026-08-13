@@ -4075,6 +4075,68 @@ body.profile-interacting #bottom-bar {
     color: var(--gold);
 }
 
+.prepared-readiness {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+
+.prepared-readiness > strong {
+    font-size: var(--text-sm);
+}
+
+.prepared-readiness-statuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.prepared-readiness-status {
+    display: inline-flex;
+    gap: 4px;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-2);
+    font-size: var(--text-xs);
+}
+
+.prepared-readiness-status[data-status='available'] b {
+    color: var(--success, #3fbf7f);
+}
+
+.prepared-readiness-status[data-status='stale'] b,
+.prepared-readiness-status[data-status='unknown'] b {
+    color: var(--gold);
+}
+
+.prepared-readiness-status[data-status='error'] b,
+.prepared-readiness li[data-severity='critical'] {
+    color: var(--danger, #ef5350);
+}
+
+.prepared-readiness ul {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-2);
+    font-size: var(--text-xs);
+}
+
+.prepared-readiness li[data-severity='warning'] {
+    color: var(--gold);
+}
+
+.prepared-readiness small {
+    color: var(--text-2);
+    font-size: var(--text-xs);
+}
+
 .prepared-route-actions {
     display: flex;
     align-items: center;

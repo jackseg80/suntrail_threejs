@@ -227,6 +227,47 @@
             "notFound": "Cette route n’existe plus sur cet appareil."
         }
     },
+    "readiness": {
+        "title": "Prêt à partir ?",
+        "networkOptional": "Le bilan local est immédiat ; météo et état appareil restent optionnels.",
+        "sections": {
+            "route": "Route",
+            "light": "Lumière",
+            "offline": "Hors ligne",
+            "conditions": "Conditions",
+            "device": "Appareil"
+        },
+        "status": {
+            "available": "disponible",
+            "stale": "ancien",
+            "unknown": "inconnu",
+            "error": "erreur"
+        },
+        "route": {
+            "difficulty-unknown": "Difficulté technique inconnue sur ce tracé.",
+            "difficulty-partial": "Difficulté technique documentée seulement sur une partie du tracé.",
+            "guidance-not-ready": "Cette géométrie ne permet pas de démarrer un guidage fiable.",
+            "guidance-approximate": "Le guidage de cette route reste approximatif."
+        },
+        "light": {
+            "start-time-missing": "Choisissez une heure de départ pour calculer la marge avant la nuit.",
+            "after-dark": "L’arrivée estimée est après le coucher du soleil.",
+            "near-sunset": "La marge avant le coucher du soleil est inférieure à une heure."
+        },
+        "offline": {
+            "not-measured": "La couverture hors ligne de cette route n’est pas encore mesurée.",
+            "invalid-measurement": "La mesure de couverture hors ligne est incohérente."
+        },
+        "conditions": {
+            "not-loaded": "Les conditions réseau optionnelles ne sont pas chargées.",
+            "network-error": "Les conditions réseau ne sont pas disponibles."
+        },
+        "device": {
+            "not-checked": "L’état de l’appareil n’a pas encore été vérifié."
+        },
+        "stale": "Ces données doivent être actualisées.",
+        "invalid-evidence": "La preuve fournie est invalide."
+    },
     "routePlanner": {
         "title": "Planificateur d'itinéraire",
         "hint": {
