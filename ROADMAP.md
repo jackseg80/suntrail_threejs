@@ -226,13 +226,15 @@ A53/S23 encore ouvertes. Aucun commit, tag, push ou déploiement n'est implicite
 
 ## v5.86.0 — Prêt à partir & corridor hors ligne
 
-**État au 2026-08-13 :** readiness local et lots corridor 2/3/4 implémentés dans le worktree :
+**Clôture GitHub au 2026-08-13 :** readiness local et lots corridor 2/3/4 validés :
 contrat déterministe, route/lumière immédiates, plan Free 1 km LOD 5→14, couverture mesurée sans
 réseau depuis caches/packs locaux et moteur de téléchargement typé avec progression, résultat
 partiel et annulation conservatrice. Le manifeste persistant et le remplacement atomique Free
 préservent corridors partagés et zones manuelles. La Bibliothèque expose téléchargement,
-progression, annulation, choix Pro et confirmations cellulaire/quota. Validations mode avion/appareil
-restent ouvertes. Détails :
+progression, annulation, choix Pro et confirmations cellulaire/quota. Le propriétaire a validé un
+corridor Norvège après fermeture complète et relance hors connexion, avec bibliothèque et suivi
+jusqu'au LOD 14. La release GitHub est autorisée ; l'upload Play reste séparé, sans maximum Play
+vérifié. Détails :
 [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md).
 
 Le `RouteReadinessReport` fonctionne en couches :

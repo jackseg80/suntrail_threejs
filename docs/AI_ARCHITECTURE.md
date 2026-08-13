@@ -1,7 +1,7 @@
-# AI Architecture Guide (v5.84.0 — jalon interne clôturé)
+# AI Architecture Guide (v5.86.0 — readiness et corridor hors ligne clôturés)
 
-> Référence de la pré-release GitHub interne v5.84 foreground ; aucune promesse native/background
-> ni déploiement Play/public.
+> Référence des services locaux v5.84 à v5.86. La release v5.86 est GitHub uniquement ; aucun
+> déploiement Play/public n'est induit par ce document.
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 

@@ -1,3 +1,32 @@
+## [5.86.0] - 2026-08-13 — prêt à partir et corridor hors ligne
+
+### Ajouté
+
+- **Readiness local en couches** : route, lumière et couverture hors ligne sont déterministes et
+  immédiats ; les conditions réseau et l'appareil restent explicitement inconnus sans preuve.
+- **Corridor mondial hors ligne** : téléchargement Free à 1 km jusqu'au LOD 14, rayon Pro
+  0,5/1/2 km, progression, annulation, reprise et résultat partiel honnête.
+- **Persistance sûre** : manifeste IndexedDB dédié, CacheStorage, remplacement Free atomique et
+  nettoyage qui préserve les corridors partagés ainsi que les zones manuelles existantes.
+- **Préflight réseau et stockage** : confirmation explicite sur données mobiles, avertissement de
+  quota et fonctionnement local uniquement lorsqu'il n'y a pas de réseau.
+
+### Corrigé
+
+- La précision affichée dans **Système & Données** est limitée à deux décimales, sans modifier la
+  précision GPS conservée par le guidage.
+
+### Validation et publication
+
+- `npm run check`, 1 659 tests Vitest, build, budget PWA, audit i18n et `cap:sync` sont verts.
+- E2E Chromium Prepared Routes : 6/6, dont téléchargement, manifeste, CacheStorage, rechargement
+  et couverture à 100 % avec réseau externe bloqué.
+- Validation terrain communiquée par le propriétaire : corridor Norvège, fermeture complète,
+  relance hors connexion, bibliothèque et suivi hors ligne jusqu'au LOD 14.
+- Version source `5.86.0`, Android `versionName 5.86.0` / `versionCode 904`. La release GitHub est
+  autorisée ; aucun téléversement Play Console n'est effectué et ce code reste provisoire pour Play
+  jusqu'à vérification de son maximum réellement utilisé.
+
 ## [5.85.1] - 2026-08-13 — optimisation terrain, validation en cours
 
 ### Performance
@@ -24,8 +53,8 @@
 
 ### Version et validation
 
-- Version source `5.85.1`, Android `versionName 5.85.1` / `versionCode 904` provisoire jusqu'au
-  contrôle du maximum Play Console.
+- Version source `5.85.1` figée au commit local `b30a1c1`, sans release ni attribution Play. Son
+  code de travail provisoire a été repris par la release GitHub v5.86.0, toujours sans upload Play.
 - Check, 1 607 tests Vitest, build, budget bundle 2,27 MiB, i18n et synchronisation Capacitor sont
   verts. E2E Chromium est bloqué par `spawn EPERM` sur l'hôte et Gradle par l'absence de JDK ; les
   mesures A53/S23 restent ouvertes. Aucun tag, déploiement ou publication ne fait partie du worktree.

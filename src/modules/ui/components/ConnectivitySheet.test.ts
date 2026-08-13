@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const { mockState } = vi.hoisted(() => {
     const state: Record<string, any> = {
         IS_OFFLINE: false,
+        userLocation: null,
+        userLocationAccuracy: null,
         subscribe: vi.fn(() => vi.fn()),
     };
     return { mockState: state };
@@ -83,6 +85,7 @@ vi.mock('../templates/connectivity.html?raw', () => ({
             <button id="close-connectivity">Fermer</button>
             <input type="checkbox" id="offline-toggle" />
             <div class="network-status"></div>
+            <div id="gps-accuracy"></div>
             <button id="conn-clear-cache">Vider le cache</button>
             <button id="conn-download-zone"><span>Zone offline</span></button>
         </div>`,
@@ -99,6 +102,8 @@ describe('ConnectivitySheet', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockState.IS_OFFLINE = false;
+        mockState.userLocation = null;
+        mockState.userLocationAccuracy = null;
         container = document.createElement('div');
         container.id = 'sheet-container';
         document.body.appendChild(container);
@@ -158,6 +163,16 @@ describe('ConnectivitySheet', () => {
         const btn = document.getElementById('conn-clear-cache')!;
         btn.click();
         expect(deleteTerrainCache).toHaveBeenCalled();
+    });
+
+    it('affiche la précision GPS avec deux décimales au maximum', () => {
+        mockState.userLocationAccuracy = 12.34567;
+        const sheet = new ConnectivitySheet();
+        sheet.hydrate();
+
+        expect(document.getElementById('gps-accuracy')?.textContent).toBe(
+            '12.35 m'
+        );
     });
 
     it('disposes cleanly', () => {

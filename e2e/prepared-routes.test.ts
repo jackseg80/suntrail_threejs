@@ -5,6 +5,9 @@ import { APP_TEST_URL } from './app';
 
 const DATABASE_NAME = 'suntrail-prepared-routes';
 const STORE_NAME = 'routes';
+const CORRIDOR_DATABASE_NAME = 'suntrail-route-corridors';
+const CORRIDOR_STORE_NAME = 'manifests';
+const OFFLINE_CACHE_NAME = 'suntrail-offline-zones';
 
 async function openPreparedRoutesApp(
     page: Page,
@@ -138,6 +141,37 @@ async function countPreparedRoutes(page: Page): Promise<number> {
             }),
         { databaseName: DATABASE_NAME, storeName: STORE_NAME }
     );
+}
+
+async function readCorridorManifests(
+    page: Page
+): Promise<Array<Record<string, unknown>>> {
+    return page.evaluate(
+        ({ databaseName, storeName }) =>
+            new Promise<Array<Record<string, unknown>>>((resolve, reject) => {
+                const request = indexedDB.open(databaseName);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    const database = request.result;
+                    const transaction = database.transaction(
+                        storeName,
+                        'readonly'
+                    );
+                    const all = transaction.objectStore(storeName).getAll();
+                    all.onsuccess = () => resolve(all.result);
+                    all.onerror = () => reject(all.error);
+                    transaction.oncomplete = () => database.close();
+                };
+            }),
+        { databaseName: CORRIDOR_DATABASE_NAME, storeName: CORRIDOR_STORE_NAME }
+    );
+}
+
+async function countOfflineResources(page: Page): Promise<number> {
+    return page.evaluate(async (cacheName) => {
+        const cache = await caches.open(cacheName);
+        return (await cache.keys()).length;
+    }, OFFLINE_CACHE_NAME);
 }
 
 test.describe('Prepared Routes with real Chromium IndexedDB', () => {
@@ -306,6 +340,90 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
             .poll(() => countPreparedRoutes(page), { timeout: 10_000 })
             .toBe(0);
         expect(Date.now() - startedAt).toBeLessThan(120_000);
+    });
+
+    test('keeps a downloaded corridor measurable after reload with external network blocked', async ({
+        page,
+        context,
+    }) => {
+        test.setTimeout(120_000);
+        const png = Buffer.concat([
+            Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+                'base64'
+            ),
+            Buffer.alloc(128),
+        ]);
+        await page.route(
+            /(?:tile\.opentopomap\.org|wmts\.geo\.admin\.ch|api\.maptiler\.com\/tiles|tile\.waymarkedtrails\.org|tile\.openstreetmap\.org)/,
+            async (route) => {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'image/png',
+                    headers: { 'access-control-allow-origin': '*' },
+                    body: png,
+                });
+            }
+        );
+        await mockOSRM(page);
+        await mockGeocoding(page);
+        await openPreparedRoutesApp(page);
+        await planAndSave(page, 'Corridor E2E persistant');
+
+        await page.locator('.nav-tab[data-tab="library"]').click();
+        const card = page.locator('.prepared-route-card', {
+            hasText: 'Corridor E2E persistant',
+        });
+        await card.locator('[data-route-action="corridor"]').click();
+        await expect(page.locator('#confirm-dialog-overlay')).toContainText(
+            'réseau mobile'
+        );
+        await page.locator('.confirm-dialog-accept').click();
+        await expect(
+            card.locator('.prepared-readiness-coverage')
+        ).toContainText(/100\s*%/, { timeout: 60_000 });
+
+        const manifestsBeforeReload = await readCorridorManifests(page);
+        expect(manifestsBeforeReload).toHaveLength(1);
+        expect(manifestsBeforeReload[0]).toMatchObject({
+            active: true,
+            entitlement: 'free',
+            radiusMeters: 1_000,
+            minLod: 5,
+            maxLod: 14,
+            status: 'completed',
+        });
+        expect(
+            manifestsBeforeReload[0].successfulResourceCount
+        ).toBeGreaterThan(0);
+        expect(manifestsBeforeReload[0].successfulResourceCount).toBe(
+            manifestsBeforeReload[0].totalResourceCount
+        );
+        expect(await countOfflineResources(page)).toBeGreaterThan(0);
+
+        await page.unrouteAll({ behavior: 'wait' });
+        await context.route(/^(?!http:\/\/127\.0\.0\.1:5173)/, async (route) =>
+            route.abort('internetdisconnected')
+        );
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(
+            () => (window as { suntrailReady?: boolean }).suntrailReady === true
+        );
+        await page.waitForFunction(
+            () => document.body.dataset.preparedRoutes === 'enabled'
+        );
+
+        await page.locator('.nav-tab[data-tab="library"]').click();
+        const reloadedCard = page.locator('.prepared-route-card', {
+            hasText: 'Corridor E2E persistant',
+        });
+        await expect(
+            reloadedCard.locator('.prepared-readiness-coverage')
+        ).toContainText(/100\s*%/, { timeout: 30_000 });
+        expect(await readCorridorManifests(page)).toEqual(
+            manifestsBeforeReload
+        );
+        expect(await countOfflineResources(page)).toBeGreaterThan(0);
     });
 
     test('upgrades a real version 1 database additively', async ({ page }) => {

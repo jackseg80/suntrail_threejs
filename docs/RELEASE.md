@@ -159,6 +159,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **901** | **5.83.3** | **v5.83.3** | **Anglais par défaut et correctifs de locale.** | **2026-08-10** |
 | **902** | **5.84.0** | **v5.84.0** | **Jalon interne/fermé clôturé : moteur de suivi foreground validé sur Galaxy S23, pré-release GitHub avec AAB signé ; aucun téléversement Play Console.** | **2026-08-11** |
 | **903 (provisoire pour Play)** | **5.85.0** | **v5.85.0 (pré-release)** | **Guidage Android natif ; instrumentation S23/API 36 5/5 verte et AAB signé CI attaché à la pré-release GitHub interne. Play Console non revérifiée et aucun téléversement n'est effectué : ne pas considérer ce code attribué pour Play avant cette gate.** | **2026-08-13** |
+| **904 (provisoire pour Play)** | **5.86.0** | **v5.86.0** | **Readiness local et corridor hors ligne : release GitHub autorisée après E2E de persistance et validation terrain Norvège. Aucun téléversement Play Console ; vérifier son maximum avant toute attribution définitive.** | **2026-08-13** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

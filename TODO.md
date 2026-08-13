@@ -1,6 +1,22 @@
-# SunTrail — TODO (v5.85.1 optimisation — validation en cours)
+# SunTrail — TODO (v5.86.0 clôturée sur GitHub ; v5.85.1 en validation séparée)
 
 > Dernière mise à jour : 2026-08-13
+
+## ✅ v5.86.0 — prêt à partir et corridor hors ligne
+
+- [x] Rapport readiness local en couches : route, lumière et offline immédiats ; données réseau et
+      appareil explicitement inconnues sans preuve.
+- [x] Corridor mondial Free 1 km LOD 5→14, rayon Pro 0,5/1/2 km, progression, annulation et reprise.
+- [x] Manifeste IndexedDB séparé, CacheStorage, remplacement Free atomique et protection des zones
+      manuelles ; Prepared Routes, REC et guidage restent inchangés.
+- [x] Préflight données mobiles/quota et fonctionnement local-only sans réseau.
+- [x] E2E Chromium réel : téléchargement, fermeture, rechargement sans réseau externe et couverture
+      à 100 % ; Prepared Routes 6/6 verts.
+- [x] Validation terrain propriétaire : Norvège, fermeture complète, relance hors connexion,
+      bibliothèque et suivi disponibles jusqu'au LOD 14.
+- [x] Correctif d'affichage Signal GPS à deux décimales, couvert par test ciblé.
+- [x] Release GitHub v5.86.0 autorisée ; aucun upload Play Console. `versionCode 904` reste
+      provisoire jusqu'au contrôle manuel du maximum Play.
 
 ## 🟡 v5.85.1 — performance et autonomie terrain
 
@@ -17,7 +33,7 @@
       prêts avant terrain et feuilles secondaires lancées après le chemin critique WebGL.
 - [x] Guidage TS/Java : projection bornée avec fallback exact ; ticker natif silencieux si inchangé,
       persistance des positions acceptées limitée à 10 s et notification à snapshot unique.
-- [x] Version source `5.85.1`, Android `versionName 5.85.1` / `versionCode 904` provisoire.
+- [x] Version source `5.85.1` figée au commit local `b30a1c1`, sans release ni attribution Play.
 - [x] Web final : `npm run check`, 1 607 tests Vitest, build, budget bundle 2,27 MiB, audit i18n
       sans clé manquante et `npm run cap:sync` réussis.
 - [ ] Rejouer les 24 E2E Chromium sur un runner autorisant le lancement navigateur (`spawn EPERM`
@@ -136,7 +152,7 @@ Prompt de clôture :
 - [x] **v5.84.0 interne** — clôturée par pré-release GitHub interne, sans déploiement Play.
 - [x] **v5.85.0** — clôture confirmée ; base de référence de v5.85.1.
 - [ ] **v5.85.1** — optimisations implémentées localement ; web vert, Android/E2E et terrain ouverts.
-- [ ] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne.
+- [x] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne, clôturée sur GitHub.
 - [ ] **v6.0.0** — compte optionnel et synchronisation PC–Android.
 - [ ] **v6.1.0** — outils experts et finition professionnelle.
 

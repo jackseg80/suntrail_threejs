@@ -1,9 +1,10 @@
 # Readiness et corridor hors ligne v5.86
 
-> État au 2026-08-13 : readiness local, planification/mesure, téléchargement et registre
-> persistant des corridors implémentés et branchés dans la Bibliothèque. Les validations réelles
-> mode avion/appareil et les enrichissements réseau/appareil restent à réaliser.
-> v5.85.1 reste en validation séparée.
+> Clôture v5.86.0 au 2026-08-13 : readiness local, planification/mesure, téléchargement et registre
+> persistant des corridors sont validés dans la Bibliothèque. Le propriétaire a validé un corridor
+> Norvège après fermeture complète et relance hors connexion, avec bibliothèque et suivi jusqu'au
+> LOD 14. Les enrichissements réseau/appareil restent optionnels et inconnus sans preuve ; v5.85.1
+> reste en validation séparée.
 
 ## Contrat du rapport
 

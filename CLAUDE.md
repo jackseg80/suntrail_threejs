@@ -1,13 +1,14 @@
-# SunTrail — Guide IA (version source v5.85.1 — optimisation en validation)
+# SunTrail — Guide IA (version source v5.86.0 — prêt à partir et corridor hors ligne)
 
 > Point d'entrée unique pour tous les agents IA.
 > Mis à jour le 2026-08-13 — clôture v5.85.0 confirmée par le propriétaire du projet.
-> v5.85.1 est figée au commit local `b30a1c1` ; web automatisé vert, Android/E2E et terrain encore
-> à valider séparément. v5.86 est ouverte avec readiness local et corridor téléchargeable depuis
-> la Bibliothèque ; confirmations réseau/quota et remplacement Free sont branchés, validations
-> terrain ouvertes.
+> v5.85.1 est figée au commit local `b30a1c1` ; ses validations Android/E2E et terrain restent
+> séparées et ouvertes. v5.86.0 est clôturée pour la release GitHub : readiness local et corridor
+> téléchargeable depuis la Bibliothèque, confirmations réseau/quota et remplacement Free validés,
+> y compris la persistance hors connexion sur un corridor Norvège.
 > Aucun commit, tag, push, téléversement Play Console ni déploiement n'est implicite. Prepared
-> Routes, REC et les contrats du guidage sont préservés ; `904` reste provisoire avant contrôle Play.
+> Routes, REC et les contrats du guidage sont préservés ; `versionCode 904` reste provisoire avant
+> contrôle Play et aucun téléversement Play Console n'est implicite.
 
 ## Projet
 

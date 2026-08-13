@@ -378,9 +378,13 @@ export class ConnectivitySheet extends BaseComponent {
             // ARIA: live region for dynamic GPS accuracy
             accuracyEl.setAttribute('aria-live', 'polite');
             // Affiche la précision GPS réelle ou '--' si pas de signal
-            const acc =
-                state.userLocationAccuracy ?? (state.userLocation ? '5' : '--');
-            accuracyEl.innerHTML = `${acc} <span class="conn-unit">m</span>`;
+            const accuracy =
+                state.userLocationAccuracy ?? (state.userLocation ? 5 : null);
+            const accuracyText =
+                typeof accuracy === 'number' && Number.isFinite(accuracy)
+                    ? accuracy.toFixed(2)
+                    : '--';
+            accuracyEl.innerHTML = `${accuracyText} <span class="conn-unit">m</span>`;
         }
     }
 }
