@@ -33,14 +33,19 @@
       `cap:sync`.
 - [x] Corriger sur S23 les tuiles noires du mode suivi (textures encore affichées libérées par
       l'éviction + `ImageBitmap.close()` empêchant la ré-upload) et revalider le suivi réel.
+- [x] Isoler la conso SunTrail via `dumpsys batterystats` (sortie 2026-08-19) : SunTrail ≈ 66 % du
+      drain mesuré, dominé par le CPU (WebView/WebGL) puis GNSS. Voir
+      [docs/plans/V5_86_BATTERY_VALIDATION.md](docs/plans/V5_86_BATTERY_VALIDATION.md).
 - [ ] Reconstruire l'AAB release R8 actuel, l'inspecter puis l'installer sur le S23. Le wrapper
       Gradle doit d'abord pouvoir télécharger sa distribution dans un environnement autorisé.
 - [ ] Valider séparément un REC réel avec notification/reprise et une reprise Guidance après mort
       de processus normale. Le scénario `force-stop` restaure l'interface Guidance mais Android
       interdit la relance du service foreground ; il ne constitue pas une preuve de reprise native.
-- [ ] Rejouer sur S23 un REC comparatif de 30 min minimum, principalement écran éteint, et relever
-      niveau batterie, mémoire graphique et évictions système : la sortie du 2026-08-15 a observé
-      85 % → 64 % en 1 h 21 avec une mémoire WebGL excessive avant ce correctif.
+- [ ] Rejouer sur S23 un REC comparatif ≥ 60 min, principalement écran éteint, avec
+      `dumpsys batterystats --reset` avant et dump après, et reporter dans l'historique
+      `docs/plans/V5_86_BATTERY_VALIDATION.md` : objectif ≤ ~10 %/h écran éteint. La sortie du
+      2026-08-15 a observé 85 % → 64 % en 1 h 21 avec une mémoire WebGL excessive avant ce
+      correctif.
 - [ ] Commit, tag, push, GitHub Release et upload Play uniquement après autorisation explicite.
 
 ## ✅ v5.86.0 — prêt à partir et corridor hors ligne
