@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { state } from './state';
+import { isMobileDevice } from './utils';
 import {
     addToCache,
     getFromCache,
@@ -11,6 +12,8 @@ import {
     markCacheKeyActive,
     markCacheKeyInactive,
     purgeOldPixelData,
+    retainCachedTileData,
+    releaseCachedTileData,
 } from './tileCache';
 
 // Mock de utils pour isMobileDevice
@@ -33,6 +36,7 @@ describe('tileCache.ts', () => {
     beforeEach(() => {
         disposeAllCachedTiles();
         state.PERFORMANCE_PRESET = 'balanced';
+        vi.mocked(isMobileDevice).mockReturnValue(false);
     });
 
     it('should add and retrieve items from cache', () => {
@@ -79,6 +83,104 @@ describe('tileCache.ts', () => {
         expect(spyElev).toHaveBeenCalled();
         expect(spyColor).toHaveBeenCalled();
         expect(getCacheSize()).toBe(0);
+    });
+
+    it('does not close ImageBitmaps on eviction (bitmap kept for re-upload)', () => {
+        const elev = new THREE.Texture();
+        const color = new THREE.Texture();
+        const closeElev = vi.fn();
+        const closeColor = vi.fn();
+        elev.image = { close: closeElev } as any;
+        color.image = { close: closeColor } as any;
+
+        addToCache('bitmap-tile', elev, null, color, null, null);
+        disposeAllCachedTiles();
+
+        // La texture GPU est libérée, mais le bitmap reste ouvert : une tuile
+        // encore liée par un cas limite peut ré-uploader (carte noire v5.86.1).
+        expect(getCacheSize()).toBe(0);
+        expect(closeElev).not.toHaveBeenCalled();
+        expect(closeColor).not.toHaveBeenCalled();
+    });
+
+    it('keeps textures alive while a live tile retains them, disposing only on release', () => {
+        const elev = new THREE.Texture();
+        const color = new THREE.Texture();
+        const disposeElev = vi.spyOn(elev, 'dispose');
+        const disposeColor = vi.spyOn(color, 'dispose');
+
+        addToCache('live-tile', elev, null, color, null, null);
+        retainCachedTileData({ elev, color, overlay: null, normal: null });
+        disposeAllCachedTiles();
+
+        // Une tuile vivante affiche encore ces textures : l'éviction ne doit
+        // surtout pas les libérer (carte noire en mode suivi v5.86.1).
+        expect(disposeElev).not.toHaveBeenCalled();
+        expect(disposeColor).not.toHaveBeenCalled();
+        expect(getCacheSize()).toBe(0);
+
+        releaseCachedTileData({ elev, color, overlay: null, normal: null });
+
+        expect(disposeElev).toHaveBeenCalledOnce();
+        expect(disposeColor).toHaveBeenCalledOnce();
+    });
+
+    it('keeps a retained texture through LRU eviction until the tile releases it', () => {
+        vi.mocked(isMobileDevice).mockReturnValue(true);
+        state.PERFORMANCE_PRESET = 'performance'; // max mobile = 120
+        const elev = new THREE.Texture();
+        const color = new THREE.Texture();
+        const disposeElev = vi.spyOn(elev, 'dispose');
+
+        addToCache('kept', elev, null, color, null, null);
+        retainCachedTileData({ elev, color, overlay: null, normal: null });
+        for (let i = 0; i < 130; i++) {
+            addToCache(
+                `filler_${i}`,
+                new THREE.Texture(),
+                null,
+                new THREE.Texture(),
+                null,
+                null
+            );
+        }
+
+        expect(hasInCache('kept')).toBe(false);
+        // Évincée du cache mais toujours affichée par sa tuile : pas de libération.
+        expect(disposeElev).not.toHaveBeenCalled();
+
+        releaseCachedTileData({ elev, color, overlay: null, normal: null });
+        expect(disposeElev).toHaveBeenCalledOnce();
+    });
+
+    it('caps Fluide on mobile while preserving active tiles', () => {
+        vi.mocked(isMobileDevice).mockReturnValue(true);
+        state.PERFORMANCE_PRESET = 'performance';
+
+        for (let i = 0; i < 120; i++) {
+            addToCache(
+                `mobile_${i}`,
+                new THREE.Texture(),
+                null,
+                new THREE.Texture(),
+                null,
+                null
+            );
+        }
+        markCacheKeyActive('mobile_0');
+        addToCache(
+            'mobile_new',
+            new THREE.Texture(),
+            null,
+            new THREE.Texture(),
+            null,
+            null
+        );
+
+        expect(getCacheSize()).toBe(120);
+        expect(hasInCache('mobile_0')).toBe(true);
+        expect(hasInCache('mobile_1')).toBe(false);
+        markCacheKeyInactive('mobile_0');
     });
 
     it('trimCache() réduit le cache à la taille max du preset actuel', () => {

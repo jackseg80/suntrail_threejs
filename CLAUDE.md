@@ -1,14 +1,13 @@
-# SunTrail — Guide IA (version source v5.86.0 — prêt à partir et corridor hors ligne)
+# SunTrail — Guide IA (version source v5.86.1 — Android 15/16 edge-to-edge et R8)
 
 > Point d'entrée unique pour tous les agents IA.
 > Mis à jour le 2026-08-13 — clôture v5.85.0 confirmée par le propriétaire du projet.
 > v5.85.1 est figée au commit local `b30a1c1` ; ses validations Android/E2E et terrain restent
-> séparées et ouvertes. v5.86.0 est clôturée pour la release GitHub : readiness local et corridor
-> téléchargeable depuis la Bibliothèque, confirmations réseau/quota et remplacement Free validés,
-> y compris la persistance hors connexion sur un corridor Norvège.
+> séparées et ouvertes. v5.86.0 est clôturée sur GitHub et son AAB `versionCode 904` a été importé
+> dans Google Play. v5.86.1 utilise `versionCode 905` pour la compatibilité edge-to-edge Android
+> 15/16 et l'assouplissement démontré des règles R8.
 > Aucun commit, tag, push, téléversement Play Console ni déploiement n'est implicite. Prepared
-> Routes, REC et les contrats du guidage sont préservés ; `versionCode 904` reste provisoire avant
-> contrôle Play et aucun téléversement Play Console n'est implicite.
+> Routes, REC, Guidance, récupération native, offline/corridors et Free/Pro sont préservés.
 
 ## Projet
 
@@ -34,10 +33,16 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   recording/guidance/both, snapshot et notification persistante avec reprise.
 - **Optimisation terrain (v5.85.1)** : deep sleep boussole, REC long/persistance bornés, cache et
   préchargement LOD corrigés, travaux UI permanents supprimés et guidage natif moins bavard.
-- **Readiness & corridor mesuré (v5.86.0 en cours)** : rapport déterministe en cinq sections ;
+- **Readiness & corridor mesuré (v5.86.0 clôturée)** : rapport déterministe en cinq sections ;
   route/lumière immédiates, corridor Free 1 km planifié LOD 5→14, couverture locale mesurée sans
   réseau, téléchargement/progression/annulation dans la Bibliothèque et remplacement persistant ;
   météo/appareil restent inconnus sans preuve. Voir [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md).
+- **Android 15/16, R8 & mémoire terrain (v5.86.1)** : insets Capacitor/WebView unifiés sur quatre
+  côtés, mode immersif conservé, provenance AndroidX du cutout documentée, règles R8 globales
+  supprimées et cache Android inactif borné ; un compteur de références protège les textures
+  affichées de l'éviction, qui ne libère que les textures inactives (bitmaps conservés pour
+  ré-upload, tuiles noires du mode suivi corrigées).
+  Voir [docs/ANDROID_LINT.md](docs/ANDROID_LINT.md).
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -79,6 +84,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Suivi foreground** | [docs/GUIDANCE_FOREGROUND.md](docs/GUIDANCE_FOREGROUND.md) | Algorithme, seuils, payload, cues et limites v5.84. |
 | **Guidage Android** | [docs/GUIDANCE_ANDROID.md](docs/GUIDANCE_ANDROID.md) | Java/Room, bridge, notification, reprise, seuils et gates v5.85. |
 | **Readiness & corridor** | [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md) | Contrat en couches, état réel et responsabilités de stockage v5.86. |
+| **Android 15/16 & R8** | [docs/ANDROID_LINT.md](docs/ANDROID_LINT.md) | Edge-to-edge, cutout fusionné et règles de réduction release v5.86.1. |
 | **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 

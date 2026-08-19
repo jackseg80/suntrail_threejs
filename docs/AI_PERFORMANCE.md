@@ -30,7 +30,7 @@ Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 | Constant | Value | File | Rationale |
 | :--- | :--- | :--- | :--- |
 | `BUILD_BUDGET_MS` | 10ms | `tileQueue.ts` | Max time per frame spent mounting meshes. Prevents micro-stutter on mobile. |
-| `TILE_CACHE_SIZE` | 80 - 800 | `tileCache.ts` | Number of tile textures kept in RAM. Dynamic per preset (Balanced Mobile = 200). |
+| `TILE_CACHE_SIZE` | 80 - 800 | `tileCache.ts` | Number of tile texture entries retained in RAM. Android caps inactive retention at 120 in Balanced/Performance and 160 in Ultra; visible tiles remain pinned. |
 | `LOD_HYSTERESIS` | 0.05 (5%) | `Tile.ts` | Dead-zone for LOD switching. Prevents "flickering" between high/low res tiles. |
 | `ZOOM_BOOST_SATELLITE` | 2.0 | `scene.ts` | Over-sampling factor for satellite imagery (crisper textures). |
 | `ZOOM_BOOST_SWISSTOPO` | 1.0 | `scene.ts` | Reference factor for Swiss map (optimal native readability). |

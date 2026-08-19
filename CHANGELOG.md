@@ -1,3 +1,67 @@
+## [5.86.1] - 2026-08-13 — Android 15/16 edge-to-edge et R8
+
+### Corrigé
+
+- Sur Android, le cache de tuiles conserve désormais au plus 120 entrées en profils Équilibré et
+  Fluide (160 en Ultra manuel). Les tuiles visibles restent épinglées ; seules les textures déjà
+  quittées et le préchargement ancien sont évincés.
+- Un compteur de références par texture garantit qu'une tuile encore affichée par un mesh n'est
+  jamais libérée par l'éviction LRU : la libération WebGL ne concerne que les textures réellement
+  inactives. Les `ImageBitmap` ne sont volontairement pas fermés, afin que toute texture encore
+  liée dans un cas limite puisse être ré-uploadée au frame suivant (corrige les tuiles noires
+  persistantes apparues en mode suivi avec la première version du correctif mémoire).
+- Les quatre insets natifs Capacitor et les `safe-area` WebView sont combinés sans double marge ;
+  les contrôles terrain, feuilles, navigation, Préparer et Guidance restent hors encoche et barres
+  système en portrait comme en paysage.
+- Le mode immersif existant reste limité à la barre de statut. Aucun opt-out edge-to-edge ni
+  surcharge `windowLayoutInDisplayCutoutMode` n'est ajouté : Android 15/16 conserve son
+  comportement imposé et `adjustResize` reste responsable de l'IME.
+
+### Optimisation Android
+
+- Les `-keep` globaux SunTrail, AndroidX, Capacitor, OkHttp et Gson sont supprimés. Les points
+  d'entrée reposent sur le manifeste et les règles consumer de Capacitor, Room et Gson ; les
+  informations source/ligne restent disponibles pour les traces désobfusquées.
+- L'occurrence `shortEdges` signalée par Play est attribuée aux ressources fusionnées
+  `androidx.core:core-splashscreen:1.2.0` pour API 27–29 ; la variante API 30+ utilise `always` et
+  aucun thème applicatif actif ne redéfinit cette valeur.
+
+### Version et portée
+
+- Version source et Android `5.86.1`, `versionCode 905`. Le code 904 de v5.86.0 a déjà été importé
+  dans Google Play et ne doit jamais être réutilisé.
+- Aucun contrat REC, Prepared Routes, Guidance, récupération native, offline/corridors ou Free/Pro
+  n'est modifié. Les validations physiques Android 15/16 restent distinctes des gates automatisées.
+- La mesure S23 REC de 1 h 21 ayant observé 85 % → 64 % et des évictions mémoire WebView, la
+  validation autonomie/mémoire de ce correctif reste ouverte jusqu'au rerun terrain comparatif.
+
+### Validation du lot edge-to-edge/R8 précédent
+
+- Avant le correctif mémoire ci-dessus, `npm run check`, 1 662 tests Vitest, builds web/Capacitor,
+  budget PWA 2,31 MiB et `cap:sync` sont verts.
+- Bundle release R8, 6 tests unitaires Android, lint release (0 erreur, 3 avertissements connus)
+  et compilation de l'APK d'instrumentation sont verts.
+- Bundletool confirme dans l'AAB final `versionName 5.86.1`, `versionCode 905`, minSdk 24 et
+  targetSdk 36. Le taux R8 non optimisé baisse de 84,31 % à 61,93 % ; `shortEdges` est absent de
+  `resources.pb`, tandis que `always` reste présent.
+- Galaxy S23 `SM-S911B`, Android 16/API 36 : les 4 tests instrumentés non destructifs Room/Guidance
+  passent sur le build 905. Le test TrackingService destructif pour Room/`TrackingPrefs` n'est pas
+  exécuté afin de préserver les données terrain.
+- Le build release R8 905 démarre et rend la carte en portrait/paysage. Encoche, gestes, navigation
+  trois boutons (inset bas 126 px), IME (inset 991 px), Exploration, Préparer, Bibliothèque,
+  Sortie/REC, Réglages et Guidance restent accessibles hors des zones système.
+- Guidance démarre avec sa notification foreground et ses actions Pause/Arrêter, puis s'arrête
+  proprement. Un `force-stop` restaure l'interface au relancement mais pas le service, comportement
+  Android attendu après arrêt forcé : REC réel et reprise après mort normale restent à valider.
+
+### Validation du correctif mémoire terrain
+
+- `npm run check` et 1 664 tests Vitest sont verts ; le build web, le budget bundle et `cap:sync`
+  sont également verts après le correctif.
+- L'AAB release R8 doit être reconstruit et inspecté avec ce code source avant installation S23 :
+  le téléchargement local de Gradle est bloqué par l'environnement d'exécution, pas par une erreur
+  de compilation du projet.
+
 ## [5.86.0] - 2026-08-13 — prêt à partir et corridor hors ligne
 
 ### Ajouté
@@ -23,9 +87,7 @@
   et couverture à 100 % avec réseau externe bloqué.
 - Validation terrain communiquée par le propriétaire : corridor Norvège, fermeture complète,
   relance hors connexion, bibliothèque et suivi hors ligne jusqu'au LOD 14.
-- Version source `5.86.0`, Android `versionName 5.86.0` / `versionCode 904`. La release GitHub est
-  autorisée ; aucun téléversement Play Console n'est effectué et ce code reste provisoire pour Play
-  jusqu'à vérification de son maximum réellement utilisé.
+- L'AAB `versionCode 904` a été importé dans Google Play et ce code ne doit pas être réutilisé.
 
 ## [5.85.1] - 2026-08-13 — optimisation terrain, validation en cours
 

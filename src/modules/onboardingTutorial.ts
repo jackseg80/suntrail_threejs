@@ -282,7 +282,7 @@ function _show(resolve: () => void): void {
                 margin: 0 0 40px;
             }
             .ob-footer {
-                padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+                padding: 24px 24px calc(24px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
@@ -291,7 +291,7 @@ function _show(resolve: () => void): void {
             }
             @media (max-width: 600px) {
                 .ob-footer {
-                    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px) + 72px);
+                    padding-bottom: calc(24px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 72px);
                 }
             }
             .ob-actions {

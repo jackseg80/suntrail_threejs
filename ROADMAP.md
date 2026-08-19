@@ -1,7 +1,6 @@
-# SunTrail — Roadmap produit révisée (version source v5.85.1 — optimisation en validation)
+# SunTrail — Roadmap produit révisée (version source v5.86.1 — validation Android 15/16)
 
-> Révision : 2026-08-13, après clôture de v5.85.0 confirmée par le propriétaire du projet et
-> implémentation locale du chantier ciblé performance/autonomie v5.85.1.
+> Révision : 2026-08-14, après publication GitHub de v5.86.0 et cadrage produit de v5.86.2.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -14,10 +13,12 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-08-13
+## État réel au 2026-08-14
 
-- La dernière release corrective publique reste **v5.83.3** / **901**. **v5.84.0** / Android
-  **902** est clôturée comme pré-release GitHub interne, sans téléversement Play Console.
+- **v5.86.0** est publiée sur GitHub et son AAB Android **904** a déjà été importé dans Google
+  Play ; ce `versionCode` est consommé.
+- **v5.86.1** / Android **905** est le lot local Android 15/16 et R8 en validation. Aucun statut
+  de publication n'est implicite dans cette roadmap.
 - Prepared Routes, la bibliothèque IndexedDB, la compatibilité GPX/REC, la difficulté expliquée,
   les corrections mobiles et la validation Galaxy S23 sont clôturées.
 - Le moteur foreground, ses fixtures, le plan de guidage local, l'UI et l'indépendance REC sont
@@ -42,13 +43,17 @@ heure de passage et conditions.
 | **v5.85.0 clôturée** | Guider réellement sur Android, écran éteint et après interruption | Matcher natif, route Room, notification, récupération, tests appareils |
 | **v5.85.1** | Randonner plus longtemps avec une carte fluide | Autonomie, rendu au repos, REC long, cache VRAM/tuiles et guidage efficient |
 | **v5.86.0** | Savoir si la sortie est prête et emporter son corridor | Readiness en couches, corridor Free remplaçable, offline fiable |
+| **v5.86.1** | Rester utilisable sur Android 15/16 sans sacrifier le terrain | Edge-to-edge, cutout documenté et réduction R8 ciblée |
+| **v5.86.2** | Lire l'activité en cours sans confondre Sortie et Bibliothèque | Tableau de bord contextuel, import déplacé, promesse Free/Pro honnête |
+| **v5.87.0** | Conserver des traces pleine fidélité sans apparition/disparition implicite | `TrackRepository`, migration et règles de capacité non destructives |
 | **v6.0.0** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
 | **v6.1.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, exports et finition |
 
 La synchronisation ne bloque plus le guidage. v5.84 est un jalon technique interne/fermé ; elle
 n'est pas promue publiquement comme un guidage complet. Le durcissement natif devient v5.85,
-suivi d'une stabilisation corrective v5.85.1, avant readiness et cloud, car Android terrain et
-l'autonomie sont la priorité produit.
+suivi d'une stabilisation corrective v5.85.1, puis de readiness. Les correctifs Android 15/16,
+la clarification de Sortie et la persistance des traces précèdent le cloud, car l'usage terrain
+et la compréhension des données locales restent prioritaires.
 
 ## v5.82.0 — Fondations UX finalisées
 
@@ -262,6 +267,92 @@ près du tracé et checklist d'équipement liée aux risques, avec couverture et
 **Gate :** rapport utile offline sans météo, corridor remplaçable Free et redémarrage en mode
 avion avec couverture mesurée honnêtement.
 
+## v5.86.1 — Compatibilité Android 15/16 & R8
+
+Android 15/16 impose l'edge-to-edge avec `targetSdk 36`. SunTrail conserve son mode immersif
+limité à la barre de statut et s'appuie sur la gestion `WindowInsets` de Capacitor 8 : les tokens
+CSS prennent le maximum entre les `env(safe-area-inset-*)` WebView et les quatre variables natives
+injectées par Capacitor. Aucun opt-out edge-to-edge ni mode cutout applicatif n'est ajouté.
+
+La ressource `shortEdges` provient d'AndroidX Core SplashScreen 1.2.0 sur API 27–29 ; API 30+
+utilise `always`. Les règles R8 globales sont interdites : manifeste, annotations et règles
+consumer gardent les points d'entrée, et toute exception future doit être ciblée et prouvée par
+un build release ou une sortie R8.
+
+Le cache terrain Android borne la rétention inactive à 120 entrées en profils Équilibré/Fluide et
+160 en Ultra manuel, sans évincer les tuiles visibles ; un compteur de références par texture
+garantit que l'éviction ne libère que les textures réellement inactives, sans fermer les
+`ImageBitmap` du worker (ré-upload possible — corrige les tuiles noires du mode suivi). Cette
+limite protège la mémoire WebGL sans modifier REC, Guidance ou les détails rendus autour de la
+caméra.
+
+**Gate :** release R8 et AAB 905 inspectés, tests automatiques verts, puis validation physique
+Android 15/16 séparée couvrant orientations, encoche, gestes/trois boutons, IME, Guidance, REC,
+notification et reprise.
+
+## v5.86.2 — Sortie active & frontière Free/Pro honnête
+
+`Sortie` devient le tableau de bord de ce qui se passe maintenant, pas une seconde bibliothèque :
+
+- au repos, démarrer un REC, choisir une route dans **Bibliothèque** ou en préparer une ;
+- avec une route de référence, afficher une carte compacte et les actions terrain pertinentes ;
+- en Guidance, afficher prochaine indication, distance, écart, restant et ETA depuis le snapshot
+  existant ;
+- en REC, afficher au premier niveau durée, distance, allure moyenne et D+, puis altitude, D− et
+  qualité GPS au second niveau ;
+- en Guidance + REC, conserver deux blocs lisibles et l'indépendance des deux moteurs ;
+- après arrêt, présenter un résumé simple temporaire et un accès explicite à la Bibliothèque.
+
+`Importer GPX` quitte `Sortie` et devient une action de **Bibliothèque**. La liste des routes
+préparées et l'historique de traces restent également dans Bibliothèque ; Sortie ne montre que la
+route actuellement consultée ou suivie. Les identifiants DOM historiques nécessaires à la
+navigation et aux tests sont conservés ou migrés avec compatibilité explicite.
+
+Contrat Free/Pro de ce lot :
+
+- les routes préparées locales restent illimitées pour Free et Pro, dans la limite du stockage de
+  l'appareil ; ce choix est distinct du futur quota de synchronisation cloud ;
+- REC illimité, nom personnalisé, statistiques essentielles en direct, résumé simple de fin,
+  Guidance essentielle et alertes de sécurité restent Free ;
+- Free conserve un seul GPX importé affiché à la fois ; Pro conserve le multi-affichage, dans la
+  limite technique actuelle de dix calques chargés ;
+- l'export de fichier reste Pro. En Free, l'action est bloquée avant toute écriture dans le cache
+  et ne peut plus annoncer à tort « GPX téléchargé » ; la sauvegarde interne nécessaire à la
+  récupération REC reste un mécanisme distinct et n'est pas supprimée au nom de ce gate ;
+- le minimum offline Free est concret : une zone manuelle actuelle et un corridor actif de 1 km,
+  remplaçable. Pro conserve plusieurs corridors et le choix 0,5/1/2 km ;
+- aucun nouveau gate n'est ajouté en passant sur readiness, conditions détaillées, solaire par
+  segments, Guidance ou statistiques déjà acquises. Toute évolution de ces droits demande une
+  décision produit et une release séparées ;
+- aucun upsell permanent n'est affiché pendant l'activité. Les propositions Pro sont
+  contextuelles : export, second tracé simultané ou analyse avancée réellement disponible.
+
+L'historique actuel de cinq traces à géométrie simplifiée est décrit comme une limite technique
+transitoire, jamais comme une bibliothèque Pro ni comme un stockage pleine fidélité. Les textes
+« éphémère » et la clé morte `recWarning5min` sont retirés dans toutes les locales.
+
+**Gate :** view-model déterministe pour repos/route/Guidance/REC/combiné/terminé, priorité des
+statistiques REC préservée, import accessible depuis Bibliothèque, export Free sans fichier ni
+toast de succès, tests i18n et d'entitlements, E2E des transitions et validations automatisées
+usuelles. La validation physique S23 reste séparée et couvre portrait/paysage, gestes/trois
+boutons, IME, Guidance, REC, notification et reprise.
+
+## v5.87.0 — Dépôt de traces pleine fidélité
+
+Créer un `TrackRepository` local séparé de `RouteRepository` pour conserver géométrie complète,
+horodatage et statistiques des REC/imports après redémarrage. Migrer les cinq entrées legacy sans
+inventer les points perdus : une trace simplifiée reste étiquetée comme telle et un réimport est
+demandé lorsqu'une géométrie fiable est nécessaire.
+
+La cible commerciale « historique récent borné en Free, archive pleine fidélité et analyse en
+Pro » reste à valider avant implémentation. Le design de migration et de downgrade doit être
+non destructif : aucune trace existante n'est supprimée ou rendue irrécupérable lors d'un changement
+d'offre. Ce lot ne modifie ni les routes préparées locales illimitées ni les contrats REC,
+Guidance, offline/corridors et sécurité.
+
+**Gate :** migration idempotente, import/REC/redémarrage/export, quota et downgrade testés avec
+des géométries volumineuses ; décision Free/Pro documentée avant toute nouvelle règle d'entitlement.
+
 ## v6.0.0 — Compte optionnel & synchronisation PC–Android
 
 Préparer l'infrastructure avant d'exposer les contrôles :
@@ -297,7 +388,11 @@ Le parcours débutant ne gagne aucune étape obligatoire.
 
 ## Décisions transverses verrouillées
 
-- Sécurité, suivi essentiel, alertes hors trace, REC et bibliothèque locale sont gratuits.
+- Sécurité, suivi essentiel, alertes hors trace, REC, nommage, résumé simple et routes préparées
+  locales illimitées selon le stockage appareil sont gratuits.
+- La valeur Pro repose sur la capacité et les usages avancés réellement disponibles : plusieurs
+  traces affichées, export de fichier, offline à l'échelle et analyse approfondie. Elle ne retire
+  pas au passage une fonction Free déjà acquise.
 - Les entitlements Free/Pro et les release flags sont deux systèmes séparés.
 - Aucune télémétrie de coordonnées ou géométrie. Les événements produit éventuels sont opt-in,
   agrégés et documentés RGPD ; les critères UX restent testables sans analytics de production.

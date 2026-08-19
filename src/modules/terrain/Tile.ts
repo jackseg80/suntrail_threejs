@@ -18,7 +18,8 @@ import {
     getTileCacheKey,
     markCacheKeyActive,
     markCacheKeyInactive,
-    hasInCache,
+    retainCachedTileData,
+    releaseCachedTileData,
 } from '../tileCache';
 import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
@@ -218,6 +219,12 @@ export class Tile {
                 // On continue le processus de chargement pour restaurer pixelData
             } else {
                 this.status = 'loaded';
+                retainCachedTileData({
+                    elev: this.elevationTex,
+                    color: this.colorTex,
+                    overlay: this.overlayTex,
+                    normal: this.normalTex,
+                });
                 if (!this.cacheOnly) this.buildMesh(state.RESOLUTION);
                 return;
             }
@@ -311,6 +318,14 @@ export class Tile {
                 this.overlayTex,
                 this.normalTex
             );
+            if ((this.status as string) !== 'disposed') {
+                retainCachedTileData({
+                    elev: this.elevationTex,
+                    color: this.colorTex,
+                    overlay: this.overlayTex,
+                    normal: this.normalTex,
+                });
+            }
             if (!this.cacheOnly) markCacheKeyActive(cacheKey);
             this.status = 'loaded';
             if (!this.cacheOnly && (this.status as string) !== 'disposed')
@@ -678,23 +693,12 @@ export class Tile {
             this.mesh = null;
         }
 
-        const cacheKey = getTileCacheKey(this.key, this.zoom);
-        const inCache = hasInCache(cacheKey);
-
-        if (!inCache) {
-            if (this.elevationTex) {
-                this.elevationTex.dispose();
-            }
-            if (this.colorTex) {
-                this.colorTex.dispose();
-            }
-            if (this.overlayTex) {
-                this.overlayTex.dispose();
-            }
-            if (this.normalTex) {
-                this.normalTex.dispose();
-            }
-        }
+        releaseCachedTileData({
+            elev: this.elevationTex,
+            color: this.colorTex,
+            overlay: this.overlayTex,
+            normal: this.normalTex,
+        });
 
         this.elevationTex = null;
         this.colorTex = null;

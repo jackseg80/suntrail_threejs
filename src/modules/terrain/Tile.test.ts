@@ -38,6 +38,8 @@ vi.mock('../tileCache', () => ({
     markCacheKeyActive: vi.fn(),
     markCacheKeyInactive: vi.fn(),
     hasInCache: vi.fn(() => false),
+    retainCachedTileData: vi.fn(),
+    releaseCachedTileData: vi.fn(),
 }));
 vi.mock('../tileLoader', () => ({
     loadTileData: vi.fn().mockResolvedValue({}),

@@ -76,7 +76,8 @@ function _show(resolve: (v: boolean) => void): void {
         justifyContent: 'center',
         zIndex: '9999',
         padding: '16px',
-        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+        paddingBottom:
+            'calc(16px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)))',
     });
 
     document.body.appendChild(overlay);

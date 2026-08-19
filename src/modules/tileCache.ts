@@ -20,16 +20,93 @@ export interface CachedTileData {
 const activeCacheKeys = new Set<string>();
 
 /**
+ * Compteur de références des textures par tuile vivante (mesh encore en scène).
+ * Une texture dont le compteur est > 0 ne doit JAMAIS être libérée : la fermer
+ * rendrait noires les tuiles qui l'affichent (bitmap fermé = ré-upload impossible).
+ */
+const textureRefs = new WeakMap<THREE.Texture, number>();
+/**
+ * Textures actuellement possédées par le cache (entrée non évincée).
+ * Une texture toujours dans le cache est libérée par l'éviction, pas par la
+ * tuile qui la partage.
+ */
+const cachedTextures = new Set<THREE.Texture>();
+
+/**
+ * Libère la texture GPU. On ferme volontairement JAMAIS l'ImageBitmap :
+ * si une texture encore liée à un mesh est libérée par un cas limite, le
+ * moteur peut la ré-uploader depuis le bitmap encore valide et la tuile
+ * récupère. Fermer le bitmap rendait la tuile noire permanente en mode suivi
+ * (v5.86.1). Le GPU est libéré par dispose() ; le bitmap natif reste géré par
+ * le GC de la WebView.
+ */
+function disposeCachedTexture(texture: THREE.Texture | null): void {
+    if (!texture) return;
+    texture.dispose();
+}
+
+/**
+ * Textures référencées par une tuile (élévation/relief, couleur, overlay,
+ * normal). Les champs sont nullables car une tuile en cours de chargement ou
+ * non affichée n'a pas encore de texture assignée.
+ */
+export interface TileTextureRefs {
+    elev: THREE.Texture | null;
+    color: THREE.Texture | null;
+    overlay: THREE.Texture | null;
+    normal: THREE.Texture | null;
+}
+
+function allTextures(data: TileTextureRefs): (THREE.Texture | null)[] {
+    return [data.elev, data.color, data.overlay, data.normal];
+}
+
+/**
+ * Une tuile vivante commence à afficher ces textures (mesh construit ou en
+ * cours de construction). Incrémente le compteur pour empêcher toute libération
+ * prématurée par l'éviction LRU (corrige la carte noire en mode suivi v5.86.1).
+ */
+export function retainCachedTileData(data: TileTextureRefs): void {
+    for (const t of allTextures(data)) {
+        if (t) textureRefs.set(t, (textureRefs.get(t) || 0) + 1);
+    }
+}
+
+/**
+ * Une tuile cesse d'afficher ces textures (mesh détruit). La libération native
+ * n'a lieu qu'une fois que plus aucune tuile vivante ni le cache ne les
+ * référencent.
+ */
+export function releaseCachedTileData(data: TileTextureRefs): void {
+    for (const t of allTextures(data)) {
+        if (!t) continue;
+        const n = (textureRefs.get(t) || 1) - 1;
+        if (n <= 0) {
+            textureRefs.delete(t);
+            if (!cachedTextures.has(t)) disposeCachedTexture(t);
+        } else {
+            textureRefs.set(t, n);
+        }
+    }
+}
+
+/**
  * Cache interne pour les données de tuiles (v5.29.38 : LRU + Pinning).
  */
 const dataCache = new BoundedCache<string, CachedTileData>({
     maxSize: 120, // Valeur par défaut (balanced mobile)
     isPinned: (key) => activeCacheKeys.has(key),
     onEvict: (_key, data) => {
-        data.elev.dispose();
-        data.color.dispose();
-        if (data.overlay) data.overlay.dispose();
-        if (data.normal) data.normal.dispose();
+        for (const t of allTextures(data)) {
+            if (!t) continue;
+            cachedTextures.delete(t);
+            // Ne libérer que les textures sans aucune tuile vivante : les autres
+            // restent affichées par leur mesh et seront libérées à son dispose.
+            if ((textureRefs.get(t) || 0) === 0) {
+                textureRefs.delete(t);
+                disposeCachedTexture(t);
+            }
+        }
     },
 });
 
@@ -45,9 +122,13 @@ export function markCacheKeyInactive(key: string): void {
  */
 function getMaxCacheSize(): number {
     const mobile = isMobileDevice();
-    if (state.PERFORMANCE_PRESET === 'ultra') return mobile ? 500 : 800;
-    if (state.PERFORMANCE_PRESET === 'performance') return mobile ? 360 : 500;
-    if (state.PERFORMANCE_PRESET === 'balanced') return mobile ? 200 : 400;
+    // v5.86.1 : le relevé terrain S23 a montré une forte pression mémoire
+    // WebView avec le plafond précédent de 360 entrées. Les tuiles visibles restent épinglées ;
+    // cette limite réduit uniquement la rétention inactive et le préchargement
+    // passé. Les plafonds desktop restent inchangés.
+    if (state.PERFORMANCE_PRESET === 'ultra') return mobile ? 160 : 800;
+    if (state.PERFORMANCE_PRESET === 'performance') return mobile ? 120 : 500;
+    if (state.PERFORMANCE_PRESET === 'balanced') return mobile ? 120 : 400;
     return 80; // eco
 }
 
@@ -127,13 +208,17 @@ export function addToCache(
     normalTex: THREE.Texture | null
 ): void {
     dataCache.resize(getMaxCacheSize());
-    dataCache.set(key, {
+    const data: CachedTileData = {
         elev: elevTex,
         pixelData,
         color: colorTex,
         overlay: overlayTex,
         normal: normalTex,
-    });
+    };
+    for (const t of allTextures(data)) {
+        if (t) cachedTextures.add(t);
+    }
+    dataCache.set(key, data);
 }
 
 /**

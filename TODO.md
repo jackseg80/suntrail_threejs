@@ -1,6 +1,47 @@
-# SunTrail — TODO (v5.86.0 clôturée sur GitHub ; v5.85.1 en validation séparée)
+# SunTrail — TODO (v5.86.1 Android en cours ; v5.85.1 en validation séparée)
 
 > Dernière mise à jour : 2026-08-13
+
+## 🟡 v5.86.1 — Android 15/16 edge-to-edge et R8
+
+- [x] Attribuer `versionName 5.86.1` / `versionCode 905` ; le code 904 de v5.86.0 est déjà
+      consommé par son import Google Play et ne doit pas être réutilisé.
+- [x] Relier les safe areas WebView aux quatre insets natifs injectés par Capacitor 8, sans changer
+      le mode immersif, `adjustResize` ni les contrats terrain.
+- [x] Identifier `shortEdges` dans `androidx.core:core-splashscreen:1.2.0` et ne pas ajouter de
+      surcharge manifeste/thème sans preuve d'un thème actif concerné.
+- [x] Remplacer les règles R8 globales par les règles consumer des dépendances et les seules
+      informations source/ligne nécessaires aux traces.
+- [x] Borner le cache terrain Android inactif (120 entrées en Équilibré/Fluide, 160 en Ultra manuel)
+      et protéger les tuiles affichées par un compteur de références : l'éviction LRU ne libère que
+      les textures réellement inactives, sans fermer les `ImageBitmap` (ré-upload possible, tuiles
+      noires du mode suivi corrigées).
+- [x] Avant le correctif mémoire, valider check, 1 662 tests, builds web/Capacitor, budget 2,31 MiB
+      et `cap:sync`.
+- [x] Avant le correctif mémoire, valider AAB release R8 905, 6 tests unitaires Android, lint
+      (0 erreur), compilation des tests instrumentés et inspection bundletool ; `shortEdges` est
+      absent de l'AAB réduit.
+- [x] Exécuter sur Galaxy S23/API 36 les 4 tests instrumentés non destructifs Room/Guidance et
+      contexte. Le test `TrackingServiceInstrumentedTest`, qui vide Room et `TrackingPrefs`, reste
+      volontairement exclu pour préserver les données terrain du téléphone.
+- [x] Valider physiquement sur Galaxy S23 Android 16 les orientations, l'encoche, les gestes et la
+      navigation trois boutons, l'IME, la carte et les feuilles Exploration, Préparer,
+      Bibliothèque, Sortie/REC et Réglages.
+- [x] Valider Guidance sur le build release R8 : démarrage, interface, notification foreground et
+      actions Pause/Arrêter, puis arrêt propre sans modifier la route préparée.
+- [x] Après le correctif mémoire, valider check, 1 666 tests Vitest, build web, budget bundle et
+      `cap:sync`.
+- [x] Corriger sur S23 les tuiles noires du mode suivi (textures encore affichées libérées par
+      l'éviction + `ImageBitmap.close()` empêchant la ré-upload) et revalider le suivi réel.
+- [ ] Reconstruire l'AAB release R8 actuel, l'inspecter puis l'installer sur le S23. Le wrapper
+      Gradle doit d'abord pouvoir télécharger sa distribution dans un environnement autorisé.
+- [ ] Valider séparément un REC réel avec notification/reprise et une reprise Guidance après mort
+      de processus normale. Le scénario `force-stop` restaure l'interface Guidance mais Android
+      interdit la relance du service foreground ; il ne constitue pas une preuve de reprise native.
+- [ ] Rejouer sur S23 un REC comparatif de 30 min minimum, principalement écran éteint, et relever
+      niveau batterie, mémoire graphique et évictions système : la sortie du 2026-08-15 a observé
+      85 % → 64 % en 1 h 21 avec une mémoire WebGL excessive avant ce correctif.
+- [ ] Commit, tag, push, GitHub Release et upload Play uniquement après autorisation explicite.
 
 ## ✅ v5.86.0 — prêt à partir et corridor hors ligne
 
@@ -15,8 +56,8 @@
 - [x] Validation terrain propriétaire : Norvège, fermeture complète, relance hors connexion,
       bibliothèque et suivi disponibles jusqu'au LOD 14.
 - [x] Correctif d'affichage Signal GPS à deux décimales, couvert par test ciblé.
-- [x] Release GitHub v5.86.0 autorisée ; aucun upload Play Console. `versionCode 904` reste
-      provisoire jusqu'au contrôle manuel du maximum Play.
+- [x] Release GitHub v5.86.0 réalisée et AAB `versionCode 904` importé dans Google Play ; ce code
+      est consommé et reste associé à v5.86.0.
 
 ## 🟡 v5.85.1 — performance et autonomie terrain
 
@@ -41,7 +82,8 @@
 - [ ] Exécuter tests/lint/assemblage Android avec un JDK ; cet hôte n'a ni `JAVA_HOME` ni `java`.
 - [ ] Mesurer idle/carte/REC/Guidance+REC sur A53 et S23, trois runs homogènes face à v5.85.0.
 - [ ] Vérifier absence de fuite WebGL/texture après 30 min de pan/zoom et changements LOD.
-- [ ] Revalider le maximum Play Console avant de figer `versionCode 904` et toute publication.
+- [ ] Conserver les validations E2E/Gradle/A53/S23 de v5.85.1 séparées de v5.86.1 ; ne pas les
+      déclarer closes à partir des preuves de cette release corrective.
 
 ## ✅ v5.85.0 — guidage Android natif clôturé
 

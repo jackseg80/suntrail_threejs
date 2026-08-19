@@ -239,7 +239,7 @@ describe('onboardingTutorial', () => {
             const overlay = document.getElementById('onboarding-overlay')!;
             const style = overlay.querySelector('style')!;
             expect(style.textContent).toContain(
-                'padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px))'
+                'padding: 24px 24px calc(24px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)))'
             );
         });
 
@@ -255,7 +255,7 @@ describe('onboardingTutorial', () => {
             const style = overlay.querySelector('style')!;
             expect(style.textContent).toContain('@media (max-width: 600px)');
             expect(style.textContent).toContain(
-                'padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px) + 72px)'
+                'padding-bottom: calc(24px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 72px)'
             );
         });
     });
