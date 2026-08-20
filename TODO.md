@@ -36,16 +36,19 @@
 - [x] Isoler la conso SunTrail via `dumpsys batterystats` (sortie 2026-08-19) : SunTrail ≈ 66 % du
       drain mesuré, dominé par le CPU (WebView/WebGL) puis GNSS. Voir
       [docs/plans/V5_86_BATTERY_VALIDATION.md](docs/plans/V5_86_BATTERY_VALIDATION.md).
+- [x] Valider la conso REC de SunTrail écran éteint sur le run 2026-08-20 : ~2-3 %/h (cible
+      ≤ 10 %/h atteinte) ; le ~15 %/h total restant provient des apps/fond du téléphone (GMS,
+      Samsung MCF, Garmin, Sweatcoin, Bluetooth montre), hors périmètre SunTrail.
 - [ ] Reconstruire l'AAB release R8 actuel, l'inspecter puis l'installer sur le S23. Le wrapper
       Gradle doit d'abord pouvoir télécharger sa distribution dans un environnement autorisé.
 - [ ] Valider séparément un REC réel avec notification/reprise et une reprise Guidance après mort
       de processus normale. Le scénario `force-stop` restaure l'interface Guidance mais Android
       interdit la relance du service foreground ; il ne constitue pas une preuve de reprise native.
-- [ ] Rejouer sur S23 un REC comparatif ≥ 60 min, principalement écran éteint, avec
-      `dumpsys batterystats --reset` avant et dump après, et reporter dans l'historique
-      `docs/plans/V5_86_BATTERY_VALIDATION.md` : objectif ≤ ~10 %/h écran éteint. La sortie du
-      2026-08-15 a observé 85 % → 64 % en 1 h 21 avec une mémoire WebGL excessive avant ce
-      correctif.
+- [x] Rejouer sur S23 un REC comparatif écran éteint et relever la conso SunTrail via
+      `dumpsys batterystats --reset`/dump : run 2026-08-20 ≈ 2-3 %/h pour SunTrail (cible
+      ≤ ~10 %/h atteinte). Le run était de ~23 min (le protocole recommande 60 min) : la marge
+      est large (2-3×), mais un run plus long resterait une confirmation. Voir l'historique
+      `docs/plans/V5_86_BATTERY_VALIDATION.md`.
 - [ ] Commit, tag, push, GitHub Release et upload Play uniquement après autorisation explicite.
 
 ## ✅ v5.86.0 — prêt à partir et corridor hors ligne

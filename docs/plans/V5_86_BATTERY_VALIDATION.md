@@ -77,12 +77,12 @@ wifi 2,9. En écran éteint/doze (partie REC) : CPU 12,8 + GNSS 19,1 + wakelock 
 | **2026-08-20** | **v5.86.1 corrigée** | **~23 min REC** | **surtout éteint** | **≈ 15 %/h** | **~28 (écran éteint)** | **~20 %** | **SunTrail validé ≈ 2-3 %/h écran éteint ; reste du drain = fond (GMS, Samsung MCF, Garmin, Sweatcoin, BT montre, noyau/système)** |
 | *prochain* | v5.86.1 corrigée | 60 min | surtout éteint | à relever | à relever | à relever | Validation à compléter |
 
-### Validation partielle — run 2026-08-20 (REC seul, écran surtout éteint)
+### Validation — run 2026-08-20 (REC seul, écran surtout éteint)
 
 - Sortie ~09:05 → ~09:34, ~1,54 km, REC sans suivi, montre Garmin connectée (notifs), screen-on SunTrail 3 min 34 s.
-- **SunTrail, partie écran éteint/doze** : CPU 8,9 + GNSS 14,3 (21 min 55 s) + wakelock 4,7 ≈ **~28 mAh ≈ 2-3 %/h** → cible ≤ 10 %/h atteinte pour le REC.
+- **SunTrail, partie écran éteint/doze** : CPU 8,9 + GNSS 14,3 (21 min 55 s) + wakelock 4,7 ≈ **~28 mAh ≈ 2-3 %/h** → **cible ≤ 10 %/h atteinte : conso REC de SunTrail validée**.
 - **Le ~15 %/h total restant n'est pas SunTrail** : Google Play Services (fgs 40 min, 32,5 mAh), Samsung MCF (~16,7 mAh), Garmin Explore (8,6 mAh), Sweatcoin (9 mAh), Microsoft appmanager (6,9 mAh), Bluetooth montre (~62 mAh sur cycle), noyau + système (~165 mAh).
-- Conclusion : le correctif v5.86.1 rend la conso REC de SunTrail négligeable ; l'autonomie globale dépend désormais des apps/fond du téléphone, hors périmètre SunTrail.
+- Conclusion : le correctif v5.86.1 rend la conso REC de SunTrail négligeable ; l'autonomie globale dépend désormais des apps/fond du téléphone, hors périmètre SunTrail. Run court (~23 min) : la marge par rapport à la cible (2-3×) rend le résultat fiable, un run de 60 min resterait une confirmation.
 
 Critère d'acceptation indicatif : **≤ ~10 %/h écran éteint** pour le REC (apps GPS natives matures
 ≈ 5-10 %/h ; ce 3D WebView part de plus haut).

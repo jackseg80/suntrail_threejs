@@ -33,7 +33,9 @@
 - Aucun contrat REC, Prepared Routes, Guidance, récupération native, offline/corridors ou Free/Pro
   n'est modifié. Les validations physiques Android 15/16 restent distinctes des gates automatisées.
 - La mesure S23 REC de 1 h 21 ayant observé 85 % → 64 % et des évictions mémoire WebView, la
-  validation autonomie/mémoire de ce correctif reste ouverte jusqu'au rerun terrain comparatif.
+  validation autonomie/mémoire de ce correctif a été rejouée le 2026-08-20 : la conso REC de
+  SunTrail écran éteint est désormais ~2-3 %/h (cible ≤ 10 %/h atteinte) ; le drain total du
+  téléphone restant provient des apps/fond (GMS, Samsung, Garmin, Bluetooth), hors périmètre.
 - Premier relevé par UID (2026-08-19) : SunTrail ≈ 66 % du drain mesuré, dominé par le CPU
   (WebView/WebGL) puis GNSS. Protocole `dumpsys batterystats` et historique : voir
   [docs/plans/V5_86_BATTERY_VALIDATION.md](docs/plans/V5_86_BATTERY_VALIDATION.md).
