@@ -20,6 +20,11 @@ const { mockRecording } = vi.hoisted(() => ({
         getCurrentCourse: vi
             .fn()
             .mockResolvedValue({ courseId: 'test-123', isRunning: false }),
+        getPendingStoppedCourse: vi
+            .fn()
+            .mockResolvedValue({ courseId: '', startTime: 0 }),
+        acknowledgePendingStoppedCourse: vi.fn().mockResolvedValue(undefined),
+        getActiveSession: vi.fn().mockResolvedValue(null),
         getPoints: vi.fn().mockResolvedValue({ points: [] }),
         addListener: vi.fn().mockResolvedValue({ remove: vi.fn() }),
         removeAllListeners: vi.fn(),
@@ -39,6 +44,10 @@ describe('GPS Chrono Persistence (v5.29.1)', () => {
         mockRecording.getCurrentCourse.mockResolvedValue({
             courseId: 'test-123',
             isRunning: false,
+        });
+        mockRecording.getPendingStoppedCourse.mockResolvedValue({
+            courseId: '',
+            startTime: 0,
         });
     });
 

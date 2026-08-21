@@ -5,6 +5,7 @@
 import gpxParser from 'gpxparser';
 import { state, isProActive, type GPXLayer } from './state';
 import { haptic } from './haptics';
+import { normalizeTrackName } from './trackName';
 import { activateGPXLayer, addGPXLayer, removeGPXLayer } from './gpxLayers';
 import { updateVisibleTiles } from './terrain';
 import { lngLatToTile } from './geo';
@@ -72,7 +73,11 @@ export class GPXService {
             // previous scene layer does not touch its preserved local history.
             if (!isProActive()) {
                 state.gpxLayers
-                    .filter((layer) => !layer.isManualRoute)
+                    .filter(
+                        (layer) =>
+                            layer.source === 'import' ||
+                            (!layer.source && !layer.isManualRoute)
+                    )
                     .forEach((layer) => removeGPXLayer(layer.id));
             }
 
@@ -98,9 +103,14 @@ export class GPXService {
                 void updateVisibleTiles();
             }
 
-            const name = fileName.replace(/\.gpx$/i, '');
+            // Keep the exact human name (including accents) in the library.
+            const name = normalizeTrackName(fileName.replace(/\.gpx$/i, ''));
             const layer = addGPXLayer(gpx as unknown as GPXRawData, name, {
                 forceVisible: true,
+                source: 'import',
+                // An imported GPX becomes a prepared itinerary. It must not
+                // also appear as a recorded activity in the recent list.
+                persistHistory: false,
             });
             activateGPXLayer(layer.id);
             void haptic('success');

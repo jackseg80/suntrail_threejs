@@ -108,6 +108,21 @@ describe('GPXService', () => {
             expect(mockHaptic).toHaveBeenCalledWith('success');
         });
 
+        it('keeps accented filenames unchanged in the library name', async () => {
+            mockParse.mockImplementation(function (this: any) {
+                this.tracks = validTrack.tracks;
+            });
+
+            await gpxService.handleGPXImport(
+                '<gpx>...</gpx>',
+                'Randonnée à l’Étang.gpx'
+            );
+
+            expect(mockAddGPXLayer.mock.calls[0][1]).toBe(
+                'Randonnée à l’Étang'
+            );
+        });
+
         it('replaces only the loaded imported layer for Free and preserves manual layers', async () => {
             mockParse.mockImplementation(function (this: any) {
                 this.tracks = validTrack.tracks;
@@ -125,7 +140,11 @@ describe('GPXService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalledWith(
                 expect.anything(),
                 'next',
-                { forceVisible: true }
+                {
+                    forceVisible: true,
+                    persistHistory: false,
+                    source: 'import',
+                }
             );
         });
 

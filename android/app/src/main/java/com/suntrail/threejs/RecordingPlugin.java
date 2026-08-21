@@ -3,13 +3,17 @@ package com.suntrail.threejs;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.os.PowerManager;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -36,6 +40,8 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -160,9 +166,61 @@ public class RecordingPlugin extends Plugin {
     @PluginMethod public void startForeground(PluginCall call) { startRecording(call, false); call.resolve(); }
     @PluginMethod public void stopForeground(PluginCall call) { sendServiceAction(RecordingService.ACTION_STOP_RECORDING); call.resolve(); }
     @PluginMethod public void stopCourse(PluginCall call) {
-        sendServiceAction(RecordingService.ACTION_STOP_RECORDING);
+        // The WebView owns naming and saving after this explicit stop. Keep
+        // notification STOP separate so only it can be recovered later.
+        sendServiceAction(RecordingService.ACTION_STOP_COURSE);
         currentCourseId = null;
         call.resolve();
+    }
+
+    /**
+     * Publie un GPX dans Téléchargements via MediaStore. Android 10+ autorise
+     * cette écriture sans permission de stockage étendue et le fichier reste
+     * immédiatement visible au sélecteur système utilisé par l'import.
+     */
+    @PluginMethod
+    public void saveTextToDownloads(PluginCall call) {
+        String filename = call.getString("filename", "").trim();
+        String content = call.getString("content", "");
+        if (filename.isEmpty() || filename.contains("/") || filename.contains("\\")) {
+            call.reject("A plain export filename is required");
+            return;
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            call.reject("Public Downloads export requires Android 10 or newer");
+            return;
+        }
+
+        dbExecutor.execute(() -> {
+            ContentResolver resolver = getContext().getContentResolver();
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+            values.put(MediaStore.MediaColumns.MIME_TYPE, "application/gpx+xml");
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+
+            Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) {
+                call.reject("Unable to create GPX in Downloads");
+                return;
+            }
+
+            try (OutputStream stream = resolver.openOutputStream(uri, "w")) {
+                if (stream == null) throw new IllegalStateException("Unable to open GPX output");
+                stream.write(content.getBytes(StandardCharsets.UTF_8));
+                stream.flush();
+                ContentValues completed = new ContentValues();
+                completed.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                resolver.update(uri, completed, null, null);
+                JSObject result = new JSObject();
+                result.put("filename", filename);
+                result.put("uri", uri.toString());
+                call.resolve(result);
+            } catch (Exception error) {
+                resolver.delete(uri, null, null);
+                call.reject("Unable to write GPX in Downloads", error);
+            }
+        });
     }
 
     private void startRecording(PluginCall call, boolean newCourse) {
@@ -287,6 +345,20 @@ public class RecordingPlugin extends Plugin {
             result.put("originTile", tile);
         }
         call.resolve(result);
+    }
+    @PluginMethod public void getPendingStoppedCourse(PluginCall call) {
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
+        JSObject result = new JSObject();
+        result.put("courseId", prefs.getString("pendingStoppedCourseId", ""));
+        result.put("startTime", prefs.getLong("pendingStoppedStartTime", 0L));
+        call.resolve(result);
+    }
+    @PluginMethod public void acknowledgePendingStoppedCourse(PluginCall call) {
+        getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE).edit()
+            .remove("pendingStoppedCourseId")
+            .remove("pendingStoppedStartTime")
+            .apply();
+        call.resolve();
     }
 
     @SuppressLint("BatteryLife")

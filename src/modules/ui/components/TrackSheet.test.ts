@@ -94,16 +94,22 @@ vi.mock('../../gpxLayers', () => ({
     updateRecordedTrackMesh: vi.fn(),
 }));
 vi.mock('../../gpxService', () => ({
-    gpxService: { handleGPXImport: vi.fn() },
+    gpxService: {
+        handleGPXImport: vi.fn(),
+        buildGPXStringFromLayer: vi.fn(() => '<gpx />'),
+    },
 }));
 vi.mock('../../recordingService', () => ({
     recordingService: {
         toggleRecording: vi.fn(),
         stopRecording: vi.fn(),
         generateSuggestedName: vi.fn(),
+        saveToFile: vi.fn(),
     },
 }));
-vi.mock('../../geoStats', () => ({ calculateTrackStats: vi.fn() }));
+vi.mock('../../geoStats', () => ({
+    calculateTrackStats: vi.fn(() => ({ distance: 0, dPlus: 0, dMinus: 0 })),
+}));
 vi.mock('../../utils', () => ({ fmtDuration: vi.fn(() => '00:00') }));
 vi.mock('../../iap', () => ({ showUpgradePrompt: vi.fn() }));
 vi.mock('../../gpxHistoryService', () => ({
@@ -144,7 +150,13 @@ vi.mock('../../readiness/routeCorridorInstall', () => ({
 vi.mock('../../readiness/routeCorridorPreflight', () => ({
     getRouteCorridorPreflight: mockGetCorridorPreflight,
 }));
-vi.mock('../icons', () => ({ ICON_CLOSE: '✕', ICON_LOCK: '🔒' }));
+vi.mock('../icons', () => ({
+    ICON_CLOSE: '✕',
+    ICON_COPY: '⧉',
+    ICON_LOCK: '🔒',
+    ICON_MAP_LAYERS: '⌑',
+    ICON_STAR: '☆',
+}));
 vi.mock('../core/SheetManager', () => ({
     sheetManager: { open: vi.fn(), close: vi.fn() },
 }));
@@ -158,13 +170,15 @@ import { TrackSheet } from './TrackSheet';
 import { state } from '../../state';
 import { sheetManager } from '../core/SheetManager';
 import {
-    activateGPXLayer,
+    addGPXLayer,
     hideAllGPXLayers,
     removeGPXLayer,
     showOnlyGPXLayer,
 } from '../../gpxLayers';
+import { showUpgradePrompt } from '../../iap';
 import { loadHistory, removeFromHistory } from '../../gpxHistoryService';
 import { updateElevationProfile } from '../../profile';
+import { recordingService } from '../../recordingService';
 
 describe('TrackSheet — showSaveTrackPrompt', () => {
     let sheet: TrackSheet;
@@ -190,9 +204,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
         await expect(promise).resolves.toBe('Ma Rando');
     });
 
-    it('resolve avec null sur Annuler', async () => {
+    it('resolve avec null sur Ne pas enregistrer', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
-        document.getElementById('rec-save-cancel')?.click();
+        document.getElementById('rec-save-discard')?.click();
         await expect(promise).resolves.toBeNull();
     });
 
@@ -232,9 +246,9 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
 
     it('nettoie le DOM et le listener Escape après dismiss', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
-        document.getElementById('rec-save-cancel')?.click();
+        document.getElementById('rec-save-discard')?.click();
         await promise;
-        expect(document.getElementById('rec-save-cancel')).toBeNull();
+        expect(document.getElementById('rec-save-discard')).toBeNull();
     });
 });
 
@@ -341,10 +355,10 @@ describe('TrackSheet - Prepared Routes library', () => {
         ).toBe(true);
         expect(
             (document.getElementById('gpx-layers-list') as HTMLElement).hidden
-        ).toBe(false);
+        ).toBe(true);
         expect(
             document.getElementById('gpx-layers-list')?.parentElement?.id
-        ).toBe('outing-tracks-anchor');
+        ).toBe('legacy-tracks-anchor');
     });
 
     it('renders an approximate warning and keeps local actions available to Free', async () => {
@@ -380,6 +394,55 @@ describe('TrackSheet - Prepared Routes library', () => {
             ).toHaveBeenCalledWith('route-local-1')
         );
         expect(mockIsProActive).toHaveReturnedWith(false);
+    });
+
+    it('keeps every route accessible in Free and gates only map overlay', () => {
+        (sheet as any).renderPreparedRoutes();
+
+        expect(
+            document.querySelector('[data-route-action="open"]')
+        ).not.toBeNull();
+        expect(
+            document.querySelector('[data-route-action="guidance"]')
+        ).not.toBeNull();
+        const overlay = document.querySelector(
+            '[data-route-action="overlay"]'
+        ) as HTMLButtonElement;
+        expect(overlay.classList.contains('is-pro-locked')).toBe(true);
+        expect(
+            document.querySelectorAll('.prepared-route-primary-actions button')
+        ).toHaveLength(2);
+        expect(
+            document.querySelectorAll(
+                '.prepared-route-secondary-actions button'
+            )
+        ).toHaveLength(4);
+        expect(overlay.textContent).toContain('⌑');
+        expect(overlay.querySelector('span')).toBeNull();
+        overlay.click();
+        expect(showUpgradePrompt).toHaveBeenCalledWith('multi_gpx');
+        expect(addGPXLayer).not.toHaveBeenCalled();
+    });
+
+    it('lets Pro add a prepared route as a map overlay', () => {
+        mockIsProActive.mockReturnValue(true);
+        (sheet as any).renderPreparedRoutes();
+
+        (
+            document.querySelector(
+                '[data-route-action="overlay"]'
+            ) as HTMLButtonElement
+        ).click();
+
+        expect(addGPXLayer).toHaveBeenCalledWith(
+            expect.objectContaining({ tracks: expect.any(Array) }),
+            'Tour local Free',
+            expect.objectContaining({
+                id: 'prepared-overlay-route-local-1',
+                source: 'prepared',
+                persistHistory: false,
+            })
+        );
     });
 
     it('affiche une couverture locale mesurée sans masquer le guidage', () => {
@@ -657,6 +720,7 @@ describe('TrackSheet — updateRecUI', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockIsProActive.mockReturnValue(false);
         vi.mocked(loadHistory).mockReturnValue([]);
         document.body.dataset.trackDestination = 'outing';
         document.body.innerHTML = `
@@ -666,7 +730,6 @@ describe('TrackSheet — updateRecUI', () => {
                     <span class="trk-rec-label">REC</span>
                 </button>
                 <button id="import-gpx-sheet"></button>
-                <div id="rec-recording-upsell" class="rec-upsell-banner"></div>
             </div>
         `;
         sheet = new TrackSheet();
@@ -751,16 +814,23 @@ describe('TrackSheet — trace roles and visibility', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockIsProActive.mockReturnValue(false);
         document.body.innerHTML = `
             <div id="track">
                 <div id="gpx-layers-list"></div>
-                <div id="track-stats-context"></div>
+                <div id="outing-dashboard">
+                    <section id="outing-rec-card" data-outing-state="recording"></section>
+                </div>
                 <div id="track-dist"></div>
+                <div id="track-pace"></div>
                 <div id="track-points"></div>
                 <div id="track-dplus"></div>
                 <div id="track-dminus"></div>
                 <div id="track-duration"></div>
+                <div id="track-altitude"></div>
+                <div id="track-gps-quality"></div>
             </div>`;
+        document.body.dataset.trackDestination = 'library';
         (state as any).gpxLayers = [
             {
                 id: 'gpx-viewed',
@@ -786,51 +856,12 @@ describe('TrackSheet — trace roles and visibility', () => {
         (state as any).routeComputation = null;
         (state as any).routeDraftDirty = false;
         (state as any).routeDraftSourceLayerId = null;
-        sheet = new TrackSheet();
-        (sheet as any).element = document.getElementById('track');
-    });
-
-    afterEach(() => {
-        document.body.innerHTML = '';
-        delete document.body.dataset.trackDestination;
-        vi.mocked(loadHistory).mockReturnValue([]);
-        (state as any).gpxLayers = [];
-    });
-
-    it('shows the viewed trace separately and prepares it only through the explicit action', async () => {
-        (sheet as any).renderUnifiedTrackList();
-
-        expect(document.querySelector('.track-layers-overview')).not.toBeNull();
-        expect(
-            document.querySelector('[data-action="prepare-draft"]')
-        ).not.toBeNull();
-        expect(
-            mockPreparedRouteService.prepareGPXLayerAsDraft
-        ).not.toHaveBeenCalled();
-
-        (
-            document.querySelector(
-                '[data-action="prepare-draft"]'
-            ) as HTMLButtonElement
-        ).click();
-
-        await vi.waitFor(() =>
-            expect(
-                mockPreparedRouteService.prepareGPXLayerAsDraft
-            ).toHaveBeenCalledWith((state as any).gpxLayers[0])
-        );
-        expect(activateGPXLayer).toHaveBeenCalledWith('gpx-viewed');
-        expect(mockSetRoutePlanningMode).toHaveBeenCalledWith(true, {
-            announceHint: false,
-        });
-    });
-
-    it('shows only loaded tracks in Outing while Library keeps the GPX history', () => {
         vi.mocked(loadHistory).mockReturnValue([
             {
                 id: 'gpx-viewed',
                 name: 'Tour GPX',
                 color: '#00ff00',
+                source: 'rec',
                 timestamp: Date.now(),
                 locationName: 'Test',
                 centerLat: 46.5,
@@ -842,8 +873,98 @@ describe('TrackSheet — trace roles and visibility', () => {
                     maxLon: 7.51,
                 },
                 simplifiedPoints: [
-                    { lat: 46.49, lon: 7.49 },
-                    { lat: 46.51, lon: 7.51 },
+                    { lat: 46.49, lon: 7.49, ele: 1000 },
+                    { lat: 46.51, lon: 7.51, ele: 1010 },
+                ],
+                stats: (state as any).gpxLayers[0].stats,
+            },
+        ] as any);
+        sheet = new TrackSheet();
+        (sheet as any).element = document.getElementById('track');
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+        delete document.body.dataset.trackDestination;
+        vi.mocked(loadHistory).mockReturnValue([]);
+        (state as any).gpxLayers = [];
+    });
+
+    it('presents REC history as an activity with an explicit repeat action', () => {
+        (sheet as any).renderUnifiedTrackList();
+
+        expect(document.querySelector('.track-layers-overview')).toBeNull();
+        expect(
+            document.querySelector(
+                '.library-status-badge[data-status="recorded"]'
+            )?.textContent
+        ).toBe('preparedRoutes.library.statusRecorded');
+        expect(
+            document.querySelector('[data-action="legacy-convert"]')
+        ).not.toBeNull();
+        expect(
+            document.querySelectorAll(
+                '.library-activity-primary-actions button'
+            )
+        ).toHaveLength(2);
+        expect(
+            document.querySelector('.library-activity-view')?.textContent
+        ).toBe('preparedRoutes.library.view');
+        expect(
+            document.querySelector('.library-activity-secondary-actions')
+        ).not.toBeNull();
+        expect(
+            mockPreparedRouteService.prepareGPXLayerAsDraft
+        ).not.toHaveBeenCalled();
+    });
+
+    it('shows export as a clear Pro action without locking the activity', async () => {
+        (sheet as any).renderUnifiedTrackList();
+        const freeExport = document.querySelector(
+            '[data-action="export"]'
+        ) as HTMLButtonElement;
+        expect(freeExport.classList.contains('is-pro-locked')).toBe(true);
+        freeExport.click();
+        expect(showUpgradePrompt).toHaveBeenCalledWith('export_gpx');
+
+        mockIsProActive.mockReturnValue(true);
+        (state as any).gpxLayers = [];
+        vi.mocked(recordingService.saveToFile).mockResolvedValue('tour.gpx');
+        (sheet as any).renderUnifiedTrackList();
+        (
+            document.querySelector(
+                '[data-action="export"]'
+            ) as HTMLButtonElement
+        ).click();
+
+        await vi.waitFor(() =>
+            expect(recordingService.saveToFile).toHaveBeenCalledWith(
+                'Tour GPX',
+                expect.stringContaining('<gpx')
+            )
+        );
+    });
+
+    it('keeps loaded tracks and GPX history in Library only', () => {
+        vi.mocked(loadHistory).mockReturnValue([
+            {
+                id: 'gpx-viewed',
+                name: 'Tour GPX',
+                color: '#00ff00',
+                source: 'rec',
+                timestamp: Date.now(),
+                locationName: 'Test',
+                centerLat: 46.5,
+                centerLon: 7.5,
+                bounds: {
+                    minLat: 46.49,
+                    maxLat: 46.51,
+                    minLon: 7.49,
+                    maxLon: 7.51,
+                },
+                simplifiedPoints: [
+                    { lat: 46.49, lon: 7.49, ele: 1000 },
+                    { lat: 46.51, lon: 7.51, ele: 1010 },
                 ],
                 stats: (state as any).gpxLayers[0].stats,
             },
@@ -851,6 +972,7 @@ describe('TrackSheet — trace roles and visibility', () => {
                 id: 'gpx-archived',
                 name: 'Trace archivée',
                 color: '#888888',
+                source: 'import',
                 timestamp: Date.now(),
                 locationName: 'Test',
                 centerLat: 46.6,
@@ -862,8 +984,8 @@ describe('TrackSheet — trace roles and visibility', () => {
                     maxLon: 7.61,
                 },
                 simplifiedPoints: [
-                    { lat: 46.59, lon: 7.59 },
-                    { lat: 46.61, lon: 7.61 },
+                    { lat: 46.59, lon: 7.59, ele: 900 },
+                    { lat: 46.61, lon: 7.61, ele: 920 },
                 ],
                 stats: (state as any).gpxLayers[0].stats,
             },
@@ -875,16 +997,27 @@ describe('TrackSheet — trace roles and visibility', () => {
         ).toContain('Tour GPX');
         expect(
             document.getElementById('gpx-layers-list')?.textContent
-        ).not.toContain('Trace archivée');
-        expect(
-            document.getElementById('gpx-layers-list')?.textContent
-        ).toContain('track.layers.loadedTitle');
-
-        document.body.dataset.trackDestination = 'library';
-        (sheet as any).renderUnifiedTrackList();
-        expect(
-            document.getElementById('gpx-layers-list')?.textContent
         ).toContain('Trace archivée');
+        expect(document.querySelector('.track-layers-overview')).toBeNull();
+        expect(
+            document.querySelectorAll(
+                '.library-status-badge[data-status="recorded"]'
+            )
+        ).toHaveLength(1);
+        expect(
+            document.querySelectorAll(
+                '.library-status-badge[data-status="follow"]'
+            )
+        ).toHaveLength(1);
+
+        document.body.dataset.trackDestination = 'outing';
+        (sheet as any).renderUnifiedTrackList();
+        expect(document.getElementById('gpx-layers-list')?.textContent).toBe(
+            ''
+        );
+        expect(document.getElementById('gpx-layers-list')?.style.display).toBe(
+            'none'
+        );
     });
 
     it('recomputes the catalogue immediately when switching destinations', () => {
@@ -951,26 +1084,18 @@ describe('TrackSheet — trace roles and visibility', () => {
         expect(
             document.getElementById('gpx-layers-list')?.textContent
         ).not.toContain('Trace archivée');
-        expect(
-            document.getElementById('gpx-layers-list')?.textContent
-        ).toContain('Tour GPX');
+        expect(document.getElementById('gpx-layers-list')?.textContent).toBe(
+            ''
+        );
         expect(
             document.getElementById('gpx-layers-list')?.parentElement?.id
-        ).toBe('outing-tracks-anchor');
+        ).toBe('legacy-tracks-anchor');
+        expect(
+            (document.getElementById('gpx-layers-list') as HTMLElement).hidden
+        ).toBe(true);
     });
 
-    it('unloads from Outing without deleting history, but deletes from Library', () => {
-        (sheet as any).renderUnifiedTrackList();
-        (
-            document.querySelector(
-                '[data-action="remove"]'
-            ) as HTMLButtonElement
-        ).click();
-        expect(removeGPXLayer).toHaveBeenCalledWith('gpx-viewed');
-        expect(removeFromHistory).not.toHaveBeenCalled();
-
-        vi.clearAllMocks();
-        document.body.dataset.trackDestination = 'library';
+    it('deletes a Library entry from both the loaded layers and history', () => {
         (sheet as any).renderUnifiedTrackList();
         (
             document.querySelector(
@@ -981,7 +1106,7 @@ describe('TrackSheet — trace roles and visibility', () => {
         expect(removeFromHistory).toHaveBeenCalledWith('gpx-viewed');
     });
 
-    it('keeps a dirty manual draft until replacement is explicitly confirmed', async () => {
+    it('creates an itinerary from an activity without replacing a dirty draft', async () => {
         (state as any).routeWaypoints = [
             { lat: 46.5, lon: 7.5 },
             { lat: 46.6, lon: 7.6 },
@@ -992,27 +1117,28 @@ describe('TrackSheet — trace roles and visibility', () => {
 
         (
             document.querySelector(
-                '[data-action="prepare-draft"]'
+                '[data-action="legacy-convert"]'
             ) as HTMLButtonElement
         ).click();
         await vi.waitFor(() =>
             expect(
-                document.getElementById('prepared-draft-replace')
+                document.getElementById('confirm-dialog-overlay')
             ).not.toBeNull()
         );
+        document
+            .querySelector<HTMLButtonElement>('.confirm-dialog-accept')
+            ?.click();
+        await vi.waitFor(() =>
+            expect(mockPreparedRouteService.convertLegacy).toHaveBeenCalled()
+        );
+        expect((state as any).routeDraftDirty).toBe(true);
         expect(
             mockPreparedRouteService.prepareGPXLayerAsDraft
         ).not.toHaveBeenCalled();
-
-        document.getElementById('prepared-draft-replace')?.click();
-        await vi.waitFor(() =>
-            expect(
-                mockPreparedRouteService.prepareGPXLayerAsDraft
-            ).toHaveBeenCalled()
-        );
     });
 
-    it('offers quick visibility actions without touching REC', () => {
+    it('offers multi-visibility controls to Pro without touching REC', () => {
+        mockIsProActive.mockReturnValue(true);
         (sheet as any).renderUnifiedTrackList();
 
         (
@@ -1031,16 +1157,18 @@ describe('TrackSheet — trace roles and visibility', () => {
     });
 
     it('keeps REC statistics explicit even while a reference trace is selected', () => {
+        document.body.dataset.trackDestination = 'outing';
         (state as any).isRecording = true;
+        (state as any).recordingStartTime = 1000;
         (state as any).recordedPoints = [
             { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 1000 },
         ];
 
         (sheet as any).updateStats();
 
-        expect(
-            document.getElementById('track-stats-context')?.textContent
-        ).toBe('track.statsContext.recording');
+        expect(document.getElementById('outing-dashboard')?.dataset.phase).toBe(
+            'recording'
+        );
         expect(document.getElementById('track-points')?.textContent).toBe('1');
     });
 });
@@ -1051,6 +1179,9 @@ describe('TrackSheet — DOM rendering', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockIsProActive.mockReturnValue(false);
+        (state as any).isRecording = false;
+        (state as any).recordedPoints = [];
         container = document.createElement('div');
         container.id = 'sheet-container';
         document.body.appendChild(container);
@@ -1084,6 +1215,7 @@ describe('TrackSheet — DOM rendering', () => {
                     <span class="trk-rec-label">REC</span>
                 </button>
                 <button id="import-gpx-sheet"></button>
+                <input id="gpx-upload" type="file">
                 <div id="track-history"></div>
             </div>
         `;
@@ -1114,6 +1246,44 @@ describe('TrackSheet — DOM rendering', () => {
         expect(document.getElementById('track-dplus')).not.toBeNull();
         expect(document.getElementById('track-dminus')).not.toBeNull();
         expect(document.getElementById('track-points')).not.toBeNull();
+    });
+
+    it('lets a Free user name a completed REC before saving it internally', async () => {
+        (state as any).isRecording = true;
+        (state as any).recordedPoints = [
+            { lat: 46.5, lon: 7.5, timestamp: 1_000 },
+            { lat: 46.51, lon: 7.51, timestamp: 2_000 },
+        ];
+        vi.mocked(recordingService.generateSuggestedName).mockResolvedValue(
+            'Sortie suggérée'
+        );
+        vi.mocked(recordingService.stopRecording).mockImplementation(
+            async (_name, options) => {
+                const selected =
+                    await options?.resolveName?.('Sortie suggérée');
+                return selected || 'Sortie suggérée';
+            }
+        );
+        sheet.render();
+
+        document.getElementById('rec-btn-sheet')?.click();
+        await vi.waitFor(() =>
+            expect(document.getElementById('rec-save-name')).not.toBeNull()
+        );
+        const input = document.getElementById(
+            'rec-save-name'
+        ) as HTMLInputElement;
+        input.value = 'Ma sortie Free';
+        document.getElementById('rec-save-confirm')?.click();
+
+        await vi.waitFor(() =>
+            expect(recordingService.stopRecording).toHaveBeenCalledWith(
+                undefined,
+                expect.objectContaining({
+                    resolveName: expect.any(Function),
+                })
+            )
+        );
     });
 
     it('empty state is visible when no tracks', () => {

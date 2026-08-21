@@ -1,11 +1,11 @@
-# SunTrail — Guide IA (version source v5.86.1 — Android 15/16 edge-to-edge et R8)
+# SunTrail — Guide IA (version source v5.86.2 — Sortie contextuelle et Bibliothèque)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-13 — clôture v5.85.0 confirmée par le propriétaire du projet.
+> Mis à jour le 2026-08-21 — v5.86.2 clôturée et publiée sur GitHub par autorisation explicite.
 > v5.85.1 est figée au commit local `b30a1c1` ; ses validations Android/E2E et terrain restent
 > séparées et ouvertes. v5.86.0 est clôturée sur GitHub et son AAB `versionCode 904` a été importé
-> dans Google Play. v5.86.1 utilise `versionCode 905` pour la compatibilité edge-to-edge Android
-> 15/16 et l'assouplissement démontré des règles R8.
+> dans Google Play. v5.86.1 / `versionCode 905` est également visible dans Play Console ;
+> v5.86.2 / `versionCode 906` est publiée sur GitHub, sans téléversement Play.
 > Aucun commit, tag, push, téléversement Play Console ni déploiement n'est implicite. Prepared
 > Routes, REC, Guidance, récupération native, offline/corridors et Free/Pro sont préservés.
 
@@ -43,6 +43,10 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   affichées de l'éviction, qui ne libère que les textures inactives (bitmaps conservés pour
   ré-upload, tuiles noires du mode suivi corrigées).
   Voir [docs/ANDROID_LINT.md](docs/ANDROID_LINT.md).
+- **Sortie contextuelle (v5.86.2)** : un view-model pur sépare repos, route, Guidance, REC,
+  Guidance + REC et résumé de fin. Bibliothèque réunit les itinéraires « À suivre » et activités
+  « Enregistré » dans « Mes parcours » ; nom et résumé REC essentiels restent Free, tandis que
+  l'export fichier et l'ajout multi-carte sont Pro. Aucun dépôt pleine fidélité ni migration n'est introduit.
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -52,8 +56,9 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Modernisation** : Icônes SVG vectorielles dual-tone remplaçant les emojis dans les contrôles critiques.
 - **Icon Module** : `src/modules/ui/icons.ts` centralise les SVGs standards.
 - **Consistance** : UpgradeSheet, AcceptanceWall et SettingsSheet refondus ; catégories Réglages et compte/RGPD isolés en composants dédiés.
-- **Navigation (v5.83.0)** : quatre destinations principales ; `data-tab="track"` reste l'adaptateur
-  de Sortie et `library` ouvre le même `TrackSheet` avec routes préparées et traces récentes.
+- **Navigation (v5.86.2)** : quatre destinations principales ; `data-tab="track"` reste l'adaptateur
+  de Sortie contextuelle et `library` ouvre le même `TrackSheet` sur « Mes parcours ». Les origines
+  GPX, création SunTrail et REC restent secondaires. Aucun catalogue n'est rendu dans Sortie.
 - **Contrat des traces (v5.83.0)** : Préparer possède un unique brouillon nommé, la sélection
   Bibliothèque/Sortie ne change que la trace consultée (carte/profil), et REC reste indépendant.
   Toute substitution d'un brouillon modifié demande Sauvegarder, Remplacer ou Annuler.
@@ -89,12 +94,15 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 
-### Monétisation & Gates (v5.57.0)
+### Monétisation & Gates (v5.86.2)
 - **Pack Suisse HD** : Gratuit sur le Web. PRO sur Android.
 - **Solaire** : 24h gratuit. Calendrier = PRO.
 - **Offline** : 1 zone gratuite. Illimité = PRO.
 - **LOD** : Plafond LOD 14 pour les gratuits (PRO → LOD 18).
 - **REC GPS** : Toujours gratuit (Sécurité).
+- **Nom + résumé REC essentiel** : gratuits ; export fichier GPX = PRO, bloqué avant toute écriture.
+- **Parcours affichés** : tous accessibles ; 1 à la fois en Free, « Ajouter à la carte » jusqu'à
+  10 calques en Pro.
 
 ### Packs Pays (Country Packs — v5.70.0)
 

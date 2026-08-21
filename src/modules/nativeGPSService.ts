@@ -13,7 +13,7 @@ import { LocationPoint } from './geo';
 import { updateRecordedTrackMesh } from './gpxLayers';
 import { cleanGPSTrack } from './gpsDeduplication';
 import { calculateTrackStats } from './geoStats';
-import { recordingService } from './recordingService';
+import { stopRecordingWithFeedback } from './recordingStopFlow';
 import { STORAGE_KEYS } from '../constants/storage';
 import type {
     GuidanceEvent,
@@ -86,12 +86,21 @@ interface RecordingPlugin {
         isRunning: boolean;
         originTile?: { x: number; y: number; z: number };
     }>;
+    getPendingStoppedCourse(): Promise<{
+        courseId: string;
+        startTime: number;
+    }>;
+    acknowledgePendingStoppedCourse(): Promise<void>;
     updateNotificationStats(options: {
         distance: number;
         elevation: number;
         elevationMinus?: number;
     }): Promise<void>;
     requestBatteryOptimizationExemption(): Promise<{ granted: boolean }>;
+    saveTextToDownloads(options: {
+        filename: string;
+        content: string;
+    }): Promise<{ filename: string; uri: string }>;
     addListener(event: string, callback: (event: any) => void): Promise<any>;
     removeAllListeners(): Promise<void>;
 }
@@ -178,6 +187,29 @@ class NativeGPSService {
 
                 this.setupListeners();
             } else {
+                const pendingStoppedCourse =
+                    await RecordingNative.getPendingStoppedCourse();
+                if (pendingStoppedCourse.courseId) {
+                    this.currentCourseId = pendingStoppedCourse.courseId;
+                    state.currentCourseId = pendingStoppedCourse.courseId;
+                    state.isRecording = false;
+                    state.recordingStartTime =
+                        pendingStoppedCourse.startTime || null;
+                    if (nativeCourse?.originTile) {
+                        state.originTile = nativeCourse.originTile;
+                    }
+                    const points = await this.getAllPoints(
+                        pendingStoppedCourse.courseId,
+                        0
+                    );
+                    state.recordedPoints = this.filterPointsConsistency(points);
+                    updateRecordedTrackMesh();
+                    await stopRecordingWithFeedback({
+                        nativeAlreadyStopped: true,
+                    });
+                    await this.clearStoppedCourseState();
+                    return nativeSession;
+                }
                 // 2. Si pas de course native, tenter une recovery via Preferences
                 const savedCourseId = await Preferences.get({
                     key: STORAGE_KEY_COURSE_ID,
@@ -533,6 +565,27 @@ class NativeGPSService {
         }
     }
 
+    /** Exporte un fichier utilisateur dans Téléchargements via MediaStore Android. */
+    async saveTextToDownloads(
+        filename: string,
+        content: string
+    ): Promise<string | null> {
+        if (!RecordingNative) return null;
+        try {
+            const result = await RecordingNative.saveTextToDownloads({
+                filename,
+                content,
+            });
+            return result.filename || filename;
+        } catch (error) {
+            console.warn(
+                '[NativeGPSService] Downloads export unavailable, falling back to Documents:',
+                error
+            );
+            return null;
+        }
+    }
+
     /**
      * Configure les listeners.
      */
@@ -604,9 +657,7 @@ class NativeGPSService {
                 console.log(
                     '[NativeGPSService] Service stopped from notification'
                 );
-            if (state.isRecording) {
-                recordingService.stopRecording();
-            }
+            void this.finalizeNotificationStop();
         }).then((h) => this._listenerHandles.push(h));
 
         // Notification REC: no full-track recomputation while no point changed.
@@ -715,6 +766,29 @@ class NativeGPSService {
         } finally {
             this._syncing = false;
         }
+    }
+
+    private async finalizeNotificationStop(): Promise<void> {
+        // Android has already removed the foreground notification, but Room
+        // may contain a final batch that the sleeping WebView has not seen.
+        this.stopStatsUpdates();
+        await this.syncPoints();
+        if (state.isRecording || state.recordedPoints.length > 0) {
+            await stopRecordingWithFeedback({ nativeAlreadyStopped: true });
+        }
+        await this.clearStoppedCourseState();
+    }
+
+    private async clearStoppedCourseState(): Promise<void> {
+        await RecordingNative?.acknowledgePendingStoppedCourse();
+        this.currentCourseId = null;
+        state.currentCourseId = '';
+        state.isPaused = false;
+        state.isRecording = false;
+        state.recordingStartTime = null;
+        await Preferences.remove({ key: STORAGE_KEY_START_TIME });
+        await Preferences.remove({ key: STORAGE_KEY_COURSE_ID });
+        await Preferences.remove({ key: STORAGE_KEY_POINTS });
     }
 
     /**

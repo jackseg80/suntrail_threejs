@@ -1,4 +1,4 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.84.0 — jalon interne clôturé)
+# SunTrail — Navigation & Modules Fonctionnels (v5.86.2 — Sortie contextuelle)
 
 > Référence de la pré-release foreground interne v5.84. Point d'entrée :
 > [CLAUDE.md](../CLAUDE.md).
@@ -7,9 +7,9 @@
 
 ## Parcours principal v5.82.0
 
-- **Explorer** ouvre la recherche ; **Préparer** active un mode explicite ; **Sortie**
-  regroupe l'enregistrement/import ; **Bibliothèque** cible la liste locale dans le même
-  `TrackSheet`. Réglages, aide et compte restent secondaires.
+- **Explorer** ouvre la recherche ; **Préparer** active un mode explicite ; **Sortie** expose la
+  route courante, Guidance et REC ; **Bibliothèque** réunit import, itinéraires à suivre et activités
+  enregistrées dans « Mes parcours », au sein du même `TrackSheet`.
 - `data-tab="search|prepare|track|library|settings"` constitue le contrat courant.
   `track` et les IDs historiques du sheet sont conservés pour les modules et tests existants.
 - En mode `state.isRoutePlanningMode`, un tap terrain ajoute un waypoint. Hors de ce mode,
@@ -22,6 +22,22 @@
 - L'onboarding comporte trois écrans et mène vers Explorer, Planifier ou Importer. Il est
   fermable avec Échap et piège le focus dans le dialogue.
 
+### Tableau de bord Sortie v5.86.2
+
+`buildOutingDashboard()` est le contrat déterministe de présentation :
+
+- `rest` propose Bibliothèque ou Préparer, sans faux catalogue vide ;
+- `route` montre une mini-carte, les statistiques compactes et les actions profil/guidage ;
+- `guidance` montre prochaine indication, distance, écart, restant et ETA ;
+- `recording` donne la priorité à la durée réelle, distance, allure et D+, avec altitude, D−,
+  précision GPS et points en détail ;
+- `combined` conserve deux cartes distinctes Guidance et REC ;
+- `completed` affiche un résumé temporaire et un accès explicite à Bibliothèque.
+
+Les identifiants historiques `track`, `gpx-upload` et `gpx-layers-list` sont conservés, mais les
+deux derniers ne sont rendus qu'en Bibliothèque. Aucun upsell permanent ne doit interrompre une
+activité ; le gate export Free intervient avant Blob, cache ou fichier.
+
 ### Recherche contextualisée
 
 `rankSearchResults()` pondère correspondance du nom, pays de la vue et distance à la cible.
@@ -33,8 +49,9 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - **Préparer** accepte taps carte ou recherche A/B, puis nom, heure prévue, allure, favori,
   notes et tags. La liste de waypoints permet déplacement par coordonnées, ordre, suppression,
   inversion et undo/redo.
-- **Bibliothèque** reste le même `TrackSheet` que **Sortie**, mais affiche les routes IndexedDB,
-  leurs actions locales et les cinq traces récentes legacy dans une section distincte.
+- **Bibliothèque** reste le même `TrackSheet` que **Sortie**, mais ne montre plus des catégories
+  techniques séparées. Les routes IndexedDB sont « À suivre » ; les REC historiques sont
+  « Enregistré ». L'origine GPX, SunTrail ou GPS reste un badge secondaire.
 - Une route sauvegardée se rouvre sans appel routing : géométrie complète et statistiques sont
   restaurées. Un brouillon en échec n'écrase pas le dernier snapshot validé.
 - Un GPX ouvert conserve chacun de ses points dans la géométrie, sans créer autant de marqueurs
@@ -45,16 +62,16 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - ORS fournit SAC/couverture ; OSRM ou données absentes affichent une difficulté inconnue expliquée.
   Un GPX importé sans données SAC vérifiables reste lui aussi « inconnu » ; effort, ETA et soleil
   restent calculés indépendamment.
-- La sélection d’une trace récente est une consultation (carte, fly, profil/pente), pas un
-  changement de brouillon. « Préparer cette trace » est l’unique transition explicite d’un GPX
-  vers l’atelier.
+- La sélection d’une activité reste une consultation (carte, fly, profil/pente), pas un changement
+  de brouillon. « Refaire » crée un itinéraire séparé, marqué approximatif lorsque seule la
+  géométrie historique simplifiée est disponible.
 - Le bandeau Préparer affiche toujours le type et le nom de sa propre route. Si un autre profil
   est consulté, ses données ne remplacent pas les kilomètres/dénivelés du brouillon.
 - Avant de remplacer un brouillon modifié, l’utilisateur choisit Sauvegarder puis ouvrir,
   Remplacer sans sauvegarder ou Annuler.
-- Sortie affiche un compteur de traces réellement visibles, la trace consultée et des commandes
-  Masquer les autres / Tout masquer. Le REC est signalé comme indépendant et reste la source des
-  statistiques de Sortie pendant l’enregistrement.
+- Free ouvre tous les parcours mais n'en affiche qu'un à la fois. Pro ajoute explicitement des
+  parcours à la carte, jusqu'à dix calques, et montre les commandes multi-affichage. Le REC actif
+  reste indépendant et demeure la source des statistiques de Sortie pendant l’enregistrement.
 - Les routes PreparedRoute fermées restent uniquement dans IndexedDB. Elles ne créent aucun
   calque Three.js avant leur ouverture ; l’historique récent reste limité à cinq entrées et les
   calques chargés à dix.

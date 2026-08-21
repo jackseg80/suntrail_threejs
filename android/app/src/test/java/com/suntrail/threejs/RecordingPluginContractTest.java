@@ -15,7 +15,9 @@ public class RecordingPluginContractTest {
         String[] methods = {
             "startCourse", "startForeground", "stopCourse", "stopForeground",
             "getCurrentCourse", "getPoints", "getRecordedPoints", "getPointCount",
+            "getPendingStoppedCourse", "acknowledgePendingStoppedCourse",
             "clearRecordedPoints", "updateNotificationStats",
+            "saveTextToDownloads",
             "startGuidance", "stopGuidance", "pauseGuidance", "resumeGuidance",
             "stopAll", "getActiveSession", "getGuidanceSnapshot"
         };

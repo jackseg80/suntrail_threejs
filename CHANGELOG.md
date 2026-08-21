@@ -1,3 +1,80 @@
+## [5.86.2] - 2026-08-21 — Sortie contextuelle et frontière Bibliothèque
+
+### Ajouté
+
+- `Sortie` repose sur un view-model déterministe couvrant repos, route consultée, Guidance, REC,
+  Guidance + REC et résumé de fin. Une route consultée dispose d'une carte compacte et d'actions
+  profil/guidage ; Guidance expose indication, distance, écart, restant et ETA.
+- Le bloc REC met au premier niveau la durée réelle, la distance, l'allure ou la vitesse moyenne
+  mémorisée et le D+, puis l'altitude, le D− et la qualité GPS. En mode combiné, le panneau
+  Guidance adapte une ligne REC compacte au lieu de dupliquer un second tableau de bord.
+
+### Modifié
+
+- Le packaging Android reconstruit désormais systématiquement Vite avec la base Capacitor
+  relative avant `cap sync`. Un contrôle bloquant refuse les URL locales absolues ou les actifs
+  absents, afin d'éviter une WebView limitée au HTML brut sans CSS ni JavaScript.
+- `Bibliothèque` présente désormais un seul catalogue « Mes parcours » : les GPX et créations
+  SunTrail sont « À suivre », les REC sont « Enregistré », et leur origine reste secondaire.
+  `Sortie` ne présente que la route courante, le guidage et l'activité en cours.
+- Un REC Free peut être nommé et sauvegardé dans la couche interne avec son résumé essentiel.
+  L'export de fichier reste Pro et est refusé avant génération de Blob ou écriture Documents/cache ;
+  aucun succès « GPX téléchargé » n'est annoncé lorsque l'export n'a pas eu lieu.
+- Les anciens textes de tracé Free « éphémère », le rappel `recWarning5min` et l'upsell REC
+  permanent sont retirés des quatre locales. Tous les parcours restent accessibles : Free en
+  affiche un à la fois ; Pro dispose de « Ajouter à la carte » jusqu'à dix calques. Routes locales
+  et REC restent illimités, sans changement offline.
+- L'import GPX crée directement une route préparée sauvegardée et prête à suivre. Les activités
+  REC restent des activités récentes et ne sont plus confondues avec les imports par les droits
+  Free ; ouvrir un autre import remplace la référence affichée sans verrouiller les REC.
+- « Refaire » transforme explicitement une activité historique en itinéraire « À suivre » et
+  annonce son caractère approximatif lorsque seule la géométrie simplifiée est disponible.
+- L'export affiche son verrou Pro sur chaque activité sans verrouiller la carte ; ouvrir et suivre
+  restent Free, tandis que la superposition est l'action Pro clairement identifiée.
+- Tous les boutons STOP REC utilisent la même finalisation : arrêt natif immédiat, message de
+  traitement pendant le géocodage, puis nom de lieu modifiable. Le STOP de la notification
+  récupère d'abord le dernier lot Room avant la sauvegarde et la demande de nom.
+- Le service terrain natif unique couvre REC, Guidance et leur mode combiné avec une seule source
+  GPS/WakeLock. La notification calcule elle-même distance et vitesse depuis Room, affiche la
+  prochaine indication utile et conserve un canal séparé prioritaire pour hors-trace/arrivée.
+- L'export GPX Android écrit désormais dans **Téléchargements** via `MediaStore`, avec un nom
+  Unicode lisible de la forme « Lieu · date HHhMM · SunTrail », déterministe quelle que soit la
+  locale de l'appareil. Il reste découvrable depuis le sélecteur Android et ne remplace pas le
+  comportement téléchargement Web.
+- Après une mise à jour, une WebView qui combine un shell PWA obsolète avec des chunks hachés
+  absents détecte l'échec d'import dynamique, retire uniquement le précache Workbox et son worker,
+  puis recharge une fois. Les cartes hors ligne, données locales, réglages et enregistrements ne
+  sont pas purgés.
+
+### Version et portée
+
+- Version source et Android `5.86.2`, `versionCode 906`, choisi après vérification du maximum
+  global Play Console (`905`). Aucun `TrackRepository` ni migration n'est inclus. Le tag et la
+  release GitHub sont clôturés le 2026-08-21 ; aucun téléversement Play n'est effectué.
+- Les validations automatisées et l'inspection AAB sont consignées séparément des essais physiques
+  Galaxy S23 ; aucun résultat appareil n'est déduit d'un test local.
+
+### Validation locale
+
+- Le build Android corrigé est contrôlé avant synchronisation : les sept pages utilisent des
+  URL locales relatives et tous les actifs référencés existent dans `dist`.
+- TypeScript, Prettier, ESLint, 1 684 tests Vitest, build production, budget PWA 2,33 MiB, audit
+  i18n des quatre locales et `cap:sync` sont verts. Les tests ciblés couvrent le view-model, la
+  frontière UI, le nom Free, l'absence d'écriture/export Free et la superposition Pro.
+- Gradle 9.4.1 valide les tests JVM de l'app, lint release et le bundle release R8 signé. La tâche globale
+  `assembleDebugAndroidTest` de tous les plugins reste en échec sur un conflit Kotlin 1.6/1.8
+  interne à `capacitor-cordova-android-plugins`, sans affecter l'APK de tests de l'app.
+- L'AAB release final de 28 762 457 octets est signé localement et porte 5.86.2/906 ; les assets
+  Capacitor synchronisés sont inclus avant la construction.
+- Le contrôle du build local confirme Sortie au repos sans import et Bibliothèque avec import,
+  routes préparées et catalogue. Chromium E2E n'a pas démarré sur cet hôte (`spawn EPERM`, puis
+  préflight Playwright bloqué hors sandbox) ; aucune validation S23 n'est revendiquée.
+- Après les derniers correctifs, TypeScript/Prettier/ESLint, les tests Vitest ciblés de reprise,
+  les tests JVM Android, le build Capacitor et `assembleDebug` sont verts. L'APK debug de même
+  signature a été installé en mise à jour sur le S23 (données conservées). Le propriétaire a
+  accepté les parcours terrain de ce lot ; la reprise arrière-plan est confirmée sur le même S23
+  par ouverture du panneau Météo après retour dans l'application.
+
 ## [5.86.1] - 2026-08-13 — Android 15/16 edge-to-edge et R8
 
 ### Corrigé

@@ -225,7 +225,7 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         // dans l'atelier demande une action explicite, puis sa suppression ne
         // doit pas empêcher de rouvrir la route locale.
         await page.locator('.nav-tab[data-tab="prepare"]').click();
-        await page.locator('.nav-tab[data-tab="track"]').click();
+        await page.locator('.nav-tab[data-tab="library"]').click();
         await page.setInputFiles(
             '#gpx-upload',
             path.join(__dirname, 'test-data', 'E2E-Test-Track.gpx')
@@ -240,7 +240,7 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         );
 
         await page.locator('.nav-tab[data-tab="prepare"]').click();
-        await page.locator('.nav-tab[data-tab="track"]').click();
+        await page.locator('.nav-tab[data-tab="library"]').click();
         const importedToPrepare = page.locator('.gpx-layer-item', {
             hasText: 'E2E-Test-Track',
         });
@@ -266,7 +266,7 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         await expect(page.locator('#rs-end-search')).not.toHaveValue('');
 
         await page.locator('.nav-tab[data-tab="prepare"]').click();
-        await page.locator('.nav-tab[data-tab="track"]').click();
+        await page.locator('.nav-tab[data-tab="library"]').click();
         const importedRow = page.locator('.gpx-layer-item', {
             hasText: 'E2E-Test-Track',
         });
@@ -499,7 +499,7 @@ test.describe('Prepared Routes with real Chromium IndexedDB', () => {
         page,
     }) => {
         await openPreparedRoutesApp(page);
-        await page.locator('.nav-tab[data-tab="track"]').click();
+        await page.locator('.nav-tab[data-tab="library"]').click();
         await page.setInputFiles('#gpx-upload', {
             name: 'Boucle-GPX-E2E.gpx',
             mimeType: 'application/gpx+xml',

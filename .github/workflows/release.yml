@@ -55,6 +55,9 @@ jobs:
       - name: Verify bundle budget
         run: npm run check:bundle
 
+      - name: Verify Capacitor asset paths
+        run: npm run check:capacitor-assets
+
       # ── 5. Capacitor sync ────────────────────────────────────────────────────
       - name: Capacitor sync Android
         run: npx cap sync android

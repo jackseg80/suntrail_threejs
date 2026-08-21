@@ -12,6 +12,9 @@ import { closeElevationProfile, updateElevationProfile } from '../profile';
 import type { PreparedRouteV1 } from '../preparedRoutes/preparedRoute';
 import { preparedRouteService } from '../preparedRoutes/preparedRouteService';
 import { recordingService } from '../recordingService';
+import { stopRecordingWithFeedback } from '../recordingStopFlow';
+import { buildRecordingSummary } from '../outing/outingDashboard';
+import { STORAGE_KEYS } from '../../constants/storage';
 import { releaseFlags } from '../releaseFlags';
 import { state } from '../state';
 import {
@@ -121,6 +124,7 @@ export class GuidanceForegroundService {
             this.unsubscribeRecording = state.subscribe('isRecording', () =>
                 this.render()
             );
+            this.tickTimer = window.setInterval(() => this.render(), 1_000);
             await nativeGPSService.startGuidance(route, plan);
             const snapshot = await nativeGPSService.getGuidanceSnapshot();
             if (snapshot) {
@@ -338,6 +342,12 @@ export class GuidanceForegroundService {
                 <div><span>${i18n.t('guidance.progress')}</span><strong id="guidance-progress">0%</strong></div>
                 <div><span>${i18n.t('guidance.crossTrack')}</span><strong id="guidance-cross-track">—</strong></div>
             </div>
+            <div id="guidance-rec-summary" class="guidance-rec-summary" hidden>
+                <span>REC</span>
+                <strong id="guidance-rec-duration">0:00</strong>
+                <strong id="guidance-rec-distance">0.00 km</strong>
+                <strong id="guidance-rec-motion">—</strong>
+            </div>
             <div class="guidance-gps-row">
                 <span id="guidance-gps">${i18n.t('guidance.gps.acquiring')}</span>
                 <span id="guidance-bearing">—</span>
@@ -393,7 +403,7 @@ export class GuidanceForegroundService {
         this.recordingActionPending = true;
         this.render();
         try {
-            if (state.isRecording) await recordingService.stopRecording();
+            if (state.isRecording) await stopRecordingWithFeedback();
             else await recordingService.toggleRecording();
         } finally {
             this.recordingActionPending = false;
@@ -563,6 +573,49 @@ export class GuidanceForegroundService {
                 'aria-busy',
                 String(this.recordingActionPending)
             );
+        }
+        const recSummary = this.element.querySelector<HTMLElement>(
+            '#guidance-rec-summary'
+        );
+        if (recSummary) {
+            recSummary.hidden = !state.isRecording;
+            if (state.isRecording) {
+                const summary = buildRecordingSummary(state.recordedPoints, {
+                    now: Date.now(),
+                    recordingStartTime: state.recordingStartTime,
+                    userAltitudeMeters: state.userLocation?.alt ?? null,
+                    gpsAccuracyMeters: state.userLocationAccuracy,
+                });
+                const hours = summary.durationSeconds / 3_600;
+                const speed = hours > 0 ? summary.distanceKm / hours : null;
+                const seconds = summary.durationSeconds;
+                const h = Math.floor(seconds / 3_600);
+                const m = Math.floor((seconds % 3_600) / 60);
+                const s = seconds % 60;
+                set(
+                    '#guidance-rec-duration',
+                    h > 0
+                        ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+                        : `${m}:${String(s).padStart(2, '0')}`
+                );
+                set(
+                    '#guidance-rec-distance',
+                    `${summary.distanceKm.toFixed(2)} km`
+                );
+                const prefersSpeed =
+                    localStorage.getItem(STORAGE_KEYS.OUTING_MOTION_METRIC) ===
+                    'speed';
+                set(
+                    '#guidance-rec-motion',
+                    prefersSpeed
+                        ? speed && Number.isFinite(speed)
+                            ? `${speed.toFixed(1)} km/h`
+                            : '—'
+                        : summary.averagePaceSecondsPerKm
+                          ? `${Math.floor(summary.averagePaceSecondsPerKm / 60)}:${String(Math.round(summary.averagePaceSecondsPerKm) % 60).padStart(2, '0')} /km`
+                          : '—'
+                );
+            }
         }
         const profile = this.element.querySelector<HTMLButtonElement>(
             '[data-guidance-action="profile"]'

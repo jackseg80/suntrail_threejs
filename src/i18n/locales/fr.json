@@ -24,7 +24,7 @@
         },
         "empty": {
             "title": "Aucun parcours",
-            "subtitle": "Importez un fichier GPX ou démarrez l'enregistrement GPS"
+            "subtitle": "Démarrez un REC, choisissez une route dans Bibliothèque ou préparez-en une"
         },
         "btn": {
             "rec": "REC",
@@ -36,12 +36,10 @@
             "recStarted": "🔴 Enregistrement démarré",
             "recStopped": "⏹️ Enregistrement stoppé",
             "recSaved": "✅ Parcours enregistré",
-            "recWarning5min": "⏱ Limite 30 min — encore 5 minutes d'enregistrement",
-            "freeLimit": "💡 Tracé temporaire : il sera effacé à la fermeture de l'app. Passez à PRO pour l'exporter.",
-            "tooShort": "Tracé trop court pour export",
+            "recDiscarded": "Enregistrement non sauvegardé",
+            "tooShort": "Tracé trop court pour être enregistré",
             "exportError": "Erreur lors de l'export GPX",
-            "exported": "GPX téléchargé",
-            "savedInternal": "Tracé éphémère (mémoire vive uniquement)"
+            "exported": "Fichier GPX exporté"
         },
         "recovery": {
             "title": "Enregistrement récupéré",
@@ -89,6 +87,35 @@
         "recording": {
             "title": "Enregistrement GPS"
         },
+        "outing": {
+            "rest": {
+                "title": "Prêt pour une sortie",
+                "subtitle": "Enregistrez votre marche, choisissez une route dans Bibliothèque ou préparez-en une."
+            },
+            "route": {
+                "eyebrow": "Route consultée",
+                "previewAria": "Aperçu compact de la route"
+            },
+            "guidance": {
+                "eyebrow": "Guidance active",
+                "nextDistance": "Prochaine indication"
+            },
+            "recording": {
+                "eyebrow": "REC en cours",
+                "live": "Activité en direct",
+                "duration": "Durée réelle",
+                "pace": "Allure moyenne",
+                "speed": "Vitesse moyenne",
+                "details": "Détails terrain",
+                "altitude": "Altitude",
+                "gps": "Qualité GPS"
+            },
+            "completed": {
+                "eyebrow": "REC terminé",
+                "defaultName": "Dernière sortie",
+                "library": "Retrouver dans Bibliothèque"
+            }
+        },
         "layers": {
             "loadedTitle": "Traces chargées pour cette sortie",
             "visibleCount": "Traces affichées : {{count}}",
@@ -105,20 +132,24 @@
             "viewed": "Statistiques de la trace consultée : {{name}}",
             "none": "Aucune trace sélectionnée"
         },
-        "upsell": {
-            "postRec": "Tracé éphémère (mémoire vive uniquement). Passez à Pro pour exporter le fichier GPX sur votre téléphone.",
-            "proBtn": "Voir Pro ↗"
-        },
         "save": {
             "title": "Enregistrer le tracé",
-            "body": "Donnez un nom à votre rando :"
+            "body": "Donnez un nom à votre rando :",
+            "processing": "Traitement en cours…",
+            "processingBody": "SunTrail arrête le REC et cherche un nom logique à partir du lieu de départ.",
+            "keepSuggested": "Garder ce nom",
+            "discard": "Ne pas enregistrer"
         }
     },
     "preparedRoutes": {
         "actions": {
             "save": "Sauvegarder",
-            "create": "Préparer une route",
+            "create": "Créer un itinéraire",
             "open": "Ouvrir",
+            "addToMap": "Ajouter à la carte · Pro",
+            "removeFromMap": "Retirer de la carte",
+            "addToMapShort": "Carte",
+            "removeFromMapShort": "Retirer",
             "favorite": "Ajouter ou retirer des favoris",
             "duplicate": "Dupliquer",
             "delete": "Supprimer",
@@ -190,10 +221,20 @@
             "approximateWarning": "Route approximative : réimportez le GPX original ou recalculez avant tout futur guidage de confiance."
         },
         "library": {
-            "scope": "Routes préparées et traces récentes conservées sur cet appareil.",
-            "title": "Routes préparées",
-            "emptyTitle": "Aucune route préparée",
-            "emptyBody": "Planifiez A/B puis sauvegardez la route pour la retrouver hors ligne.",
+            "scope": "Vos itinéraires à suivre et vos activités enregistrées, réunis au même endroit.",
+            "title": "Mes parcours",
+            "emptyTitle": "Aucun parcours",
+            "emptyBody": "Importez un GPX, créez un itinéraire ou enregistrez une sortie.",
+            "statusFollow": "À suivre",
+            "statusRecorded": "Enregistré",
+            "originManual": "Créé dans SunTrail",
+            "originImport": "Import GPX",
+            "originRecording": "Enregistrement GPS",
+            "originLegacy": "Ancien historique",
+            "view": "Voir",
+            "moreActions": "Autres actions",
+            "repeat": "Refaire",
+            "createItinerary": "Créer l’itinéraire",
             "legacyTitle": "Traces récentes",
             "legacyHelp": "L’historique GPX reste inchangé. Une conversion depuis sa géométrie simplifiée est toujours approximative."
         },
@@ -209,11 +250,13 @@
             "deleted": "Route supprimée",
             "imported": "GPX complet sauvegardé dans la bibliothèque",
             "gpxPrepared": "Cette trace GPX est maintenant la route en préparation",
-            "legacyConverted": "Copie approximative créée ; l’historique original est conservé"
+            "legacyConverted": "Copie approximative créée ; l’historique original est conservé",
+            "activityPrepared": "Itinéraire créé à partir de cette activité"
         },
         "confirm": {
             "delete": "Supprimer cette route préparée de cet appareil ?",
-            "convertLegacy": "Cette entrée ne contient qu’une géométrie simplifiée. Créer une route explicitement approximative sans supprimer l’historique ?"
+            "convertLegacy": "Cette entrée ne contient qu’une géométrie simplifiée. Créer un itinéraire approximatif sans supprimer l’historique ?",
+            "repeatActivity": "Créer un itinéraire à suivre depuis cette activité ? L’historique conserve une géométrie simplifiée : le résultat sera approximatif."
         },
         "error": {
             "unavailable": "IndexedDB n’est pas disponible sur cet appareil.",

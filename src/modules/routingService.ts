@@ -465,6 +465,7 @@ export function displayPreparedRoute(route: PreparedRouteV1): void {
         silent: false,
         forceVisible: true,
         isManualRoute: true,
+        source: 'prepared',
         id: `prepared-${route.id}`,
     });
     _currentRouteLayerId = layer.id;

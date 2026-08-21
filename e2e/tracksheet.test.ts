@@ -8,9 +8,8 @@ test.describe('TrackSheet Functionality', () => {
     await dismissFirstLaunch(page);
     await waitForSheet(page, '#track');
 
-    // 2. Open Track Tab
-    const trackTab = page.locator('.nav-tab[data-tab="track"]');
-    await trackTab.click();
+    // 2. Import from Library, the sole catalogue/import destination.
+    await page.locator('.nav-tab[data-tab="library"]').click();
     await expect(page.locator('#track')).toHaveClass(/is-open/);
 
     // 3. Import GPX
@@ -24,26 +23,20 @@ test.describe('TrackSheet Functionality', () => {
     await expect(layerItem).toBeVisible();
     await expect(layerItem.locator('.gpx-layer-name')).toHaveText('E2E-Test-Track');
 
-    // 5. Verify Stats in the sheet
-    // Stats should be updated (not 0 anymore)
-    const dist = page.locator('#track-dist');
-    const dplus = page.locator('#track-dplus');
-    
-    // Check that they contain numbers (not just 0.0 or +0)
-    // Haversine distance for 46.5,7.5 to 46.51,7.51 is approx 1.35km
-    await expect(dist).not.toHaveText('0.0 km');
-    await expect(dplus).not.toHaveText('+0 m');
-    
-    // Detailed check
-    const distText = await dist.innerText();
-    expect(parseFloat(distText)).toBeGreaterThan(1.0);
+    // 5. Sortie only exposes the currently viewed route and its compact stats.
+    await page.locator('.nav-tab[data-tab="track"]').click();
+    await expect(page.locator('#outing-route-card')).toBeVisible();
+    await expect(page.locator('#outing-route-name')).toHaveText('E2E-Test-Track');
+    await expect(page.locator('#outing-route-stats')).toContainText('km');
+    await expect(page.locator('#track-dist')).toBeHidden();
+    await expect(page.locator('#track-dplus')).toBeHidden();
   });
 
   test('should toggle GPX layer visibility', async ({ page }) => {
     await openFreshApp(page);
     await dismissFirstLaunch(page);
     await waitForSheet(page, '#track');
-    await page.click('.nav-tab[data-tab="track"]');
+    await page.click('.nav-tab[data-tab="library"]');
 
     const filePath = path.join(__dirname, 'test-data', 'E2E-Test-Track.gpx');
     await page.setInputFiles('#gpx-upload', filePath);

@@ -24,7 +24,7 @@
         },
         "empty": {
             "title": "Nessun percorso",
-            "subtitle": "Importa un file GPX o avvia la registrazione GPS"
+            "subtitle": "Avvia REC, scegli un itinerario dalla Biblioteca o preparane uno"
         },
         "btn": {
             "rec": "REC",
@@ -36,10 +36,9 @@
             "recStarted": "🔴 Registrazione avviata",
             "recStopped": "⏹️ Registrazione fermata",
             "recSaved": "✅ Tracciato salvato",
-            "recWarning5min": "⏱ Limite 30 min — ancora 5 minuti di registrazione",
-            "freeLimit": "💡 Registrazione temporanea: la traccia verrà eliminata alla chiusura dell'app. Passa a PRO per esportarla.",
-            "tooShort": "Traccia troppo corta per l'esportazione",
-            "exported": "GPX scaricato",
+            "recDiscarded": "Registrazione non salvata",
+            "tooShort": "Traccia troppo corta per essere salvata",
+            "exported": "File GPX esportato",
             "exportError": "Errore esportazione GPX"
         },
         "recovery": {
@@ -88,6 +87,35 @@
         "recording": {
             "title": "Registrazione GPS"
         },
+        "outing": {
+            "rest": {
+                "title": "Pronto per un'uscita",
+                "subtitle": "Registra la camminata, scegli un itinerario dalla Biblioteca o preparane uno."
+            },
+            "route": {
+                "eyebrow": "Itinerario consultato",
+                "previewAria": "Anteprima compatta dell’itinerario"
+            },
+            "guidance": {
+                "eyebrow": "Guida attiva",
+                "nextDistance": "Prossima indicazione"
+            },
+            "recording": {
+                "eyebrow": "REC in corso",
+                "live": "Attività in diretta",
+                "duration": "Durata reale",
+                "pace": "Passo medio",
+                "speed": "Velocità media",
+                "details": "Dettagli sul campo",
+                "altitude": "Altitudine",
+                "gps": "Qualità GPS"
+            },
+            "completed": {
+                "eyebrow": "REC terminato",
+                "defaultName": "Ultima uscita",
+                "library": "Trova nella Biblioteca"
+            }
+        },
         "layers": {
             "loadedTitle": "Tracce caricate per questa uscita",
             "visibleCount": "Tracce visualizzate: {{count}}",
@@ -104,20 +132,24 @@
             "viewed": "Statistiche della traccia consultata: {{name}}",
             "none": "Nessuna traccia selezionata"
         },
-        "upsell": {
-            "postRec": "Traccia effimera (solo RAM). Passa a Pro per esportare il file GPX sul tuo telefono.",
-            "proBtn": "Vedi Pro ↗"
-        },
         "save": {
             "title": "Salva percorso",
-            "body": "Dai un nome alla tua escursione:"
+            "body": "Dai un nome alla tua escursione:",
+            "processing": "Elaborazione in corso…",
+            "processingBody": "SunTrail sta arrestando la registrazione e cercando un nome utile dal luogo di partenza.",
+            "keepSuggested": "Mantieni questo nome",
+            "discard": "Non salvare"
         }
     },
     "preparedRoutes": {
         "actions": {
             "save": "Salva",
-            "create": "Prepara un percorso",
+            "create": "Crea un itinerario",
             "open": "Apri",
+            "addToMap": "Aggiungi alla mappa · Pro",
+            "removeFromMap": "Rimuovi dalla mappa",
+            "addToMapShort": "Mappa",
+            "removeFromMapShort": "Rimuovi",
             "favorite": "Aggiungi o rimuovi dai preferiti",
             "duplicate": "Duplica",
             "delete": "Elimina",
@@ -189,10 +221,20 @@
             "approximateWarning": "Percorso approssimativo: reimporta il GPX originale o ricalcola prima di qualsiasi futura guida affidabile."
         },
         "library": {
-            "scope": "Percorsi preparati e tracce recenti conservati su questo dispositivo.",
-            "title": "Percorsi preparati",
-            "emptyTitle": "Nessun percorso preparato",
-            "emptyBody": "Pianifica A/B e salva il percorso per riaprirlo offline.",
+            "scope": "Itinerari da seguire e attività registrate riuniti nello stesso posto.",
+            "title": "I miei percorsi",
+            "emptyTitle": "Nessun percorso",
+            "emptyBody": "Importa un GPX, crea un itinerario o registra un’attività.",
+            "statusFollow": "Da seguire",
+            "statusRecorded": "Registrato",
+            "originManual": "Creato in SunTrail",
+            "originImport": "Importazione GPX",
+            "originRecording": "Registrazione GPS",
+            "originLegacy": "Cronologia precedente",
+            "view": "Visualizza",
+            "moreActions": "Altre azioni",
+            "repeat": "Ripeti",
+            "createItinerary": "Crea itinerario",
             "legacyTitle": "Tracce recenti",
             "legacyHelp": "La cronologia GPX resta invariata. Una conversione dalla geometria semplificata è sempre approssimativa."
         },
@@ -208,11 +250,13 @@
             "deleted": "Percorso eliminato",
             "imported": "GPX completo salvato nella libreria",
             "gpxPrepared": "Questa traccia GPX è ora il percorso in preparazione",
-            "legacyConverted": "Copia approssimativa creata; cronologia originale conservata"
+            "legacyConverted": "Copia approssimativa creata; cronologia originale conservata",
+            "activityPrepared": "Itinerario creato da questa attività"
         },
         "confirm": {
             "delete": "Eliminare questo percorso preparato dal dispositivo?",
-            "convertLegacy": "Questa voce contiene solo una geometria semplificata. Creare un percorso esplicitamente approssimativo senza eliminare la cronologia?"
+            "convertLegacy": "Questa voce contiene solo una geometria semplificata. Creare un itinerario approssimativo senza eliminare la cronologia?",
+            "repeatActivity": "Creare un itinerario da seguire da questa attività? La cronologia conserva una geometria semplificata, quindi il risultato sarà approssimativo."
         },
         "error": {
             "unavailable": "IndexedDB non è disponibile su questo dispositivo.",

@@ -14,6 +14,7 @@ const {
         stopCourse: vi.fn(),
         getCurrentCourse: vi.fn(),
         requestBatteryOptimizationExemption: vi.fn(),
+        saveTextToDownloads: vi.fn(),
     },
     mockForegroundService: {
         startRecordingService: vi.fn(),
@@ -59,6 +60,7 @@ vi.mock('./location', () => ({
 
 import { state } from './state';
 import { recordingService } from './recordingService';
+import { getPlaceName } from './geocodingService';
 
 describe('RecordingService (v5.29.36)', () => {
     beforeEach(() => {
@@ -123,5 +125,84 @@ describe('RecordingService (v5.29.36)', () => {
         expect(r1).toBe('Test');
         expect(r2).toBe('');
         expect(mockFilesystem.writeFile).toHaveBeenCalledTimes(1);
+    });
+
+    it("bloque l'export Free avant toute écriture/cache", async () => {
+        state.isPro = false;
+        state.recordedPoints = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: Date.now() - 1000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: Date.now() },
+        ];
+
+        await expect(
+            recordingService.saveToFile('Trace Free')
+        ).resolves.toBeNull();
+        expect(mockFilesystem.writeFile).not.toHaveBeenCalled();
+    });
+
+    it('exporte le GPX Android dans Téléchargements avant le repli Documents', async () => {
+        mockNativeGPSService.saveTextToDownloads.mockResolvedValue('Trace.gpx');
+        state.recordedPoints = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: Date.now() - 1000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: Date.now() },
+        ];
+
+        await expect(recordingService.saveToFile('Trace')).resolves.toMatch(
+            /\.gpx$/
+        );
+        expect(mockNativeGPSService.saveTextToDownloads).toHaveBeenCalledWith(
+            expect.stringMatching(/^Trace-\d+\.gpx$/),
+            expect.stringContaining('<gpx')
+        );
+        expect(mockFilesystem.writeFile).not.toHaveBeenCalled();
+    });
+
+    it('conserve la sauvegarde interne REC en Free sans exporter de fichier', async () => {
+        state.isPro = false;
+        state.isRecording = true;
+        state.recordedPoints = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: Date.now() - 1000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: Date.now() },
+        ];
+
+        await expect(
+            recordingService.stopRecording('Ma Trace Free')
+        ).resolves.toBe('Ma Trace Free');
+        expect(mockFilesystem.writeFile).not.toHaveBeenCalled();
+        expect(state.isRecording).toBe(false);
+    });
+
+    it('permet de ne pas enregistrer un REC déjà arrêté', async () => {
+        state.isRecording = true;
+        state.recordedPoints = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: Date.now() - 1000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: Date.now() },
+        ];
+
+        await expect(
+            recordingService.stopRecording(undefined, {
+                resolveName: async () => null,
+            })
+        ).resolves.toBe('');
+
+        expect(state.recordedPoints).toEqual([]);
+        expect(mockFilesystem.writeFile).not.toHaveBeenCalled();
+        expect(mockNativeGPSService.stopCourse).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses a readable suggested REC name without replacing accents', async () => {
+        (getPlaceName as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+            'Évian-les-Bains'
+        );
+        const name = await recordingService.generateSuggestedName([
+            { lat: 45, lon: 6, alt: 1000, timestamp: Date.now() - 1000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: Date.now() },
+        ]);
+
+        expect(name).toContain('Évian-les-Bains');
+        expect(name).toMatch(
+            /^Évian-les-Bains · \d{4}-\d{2}-\d{2} \d{2}h\d{2} · SunTrail$/
+        );
+        expect(name).not.toContain('_');
     });
 });

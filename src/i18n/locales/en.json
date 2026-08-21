@@ -24,7 +24,7 @@
         },
         "empty": {
             "title": "No track",
-            "subtitle": "Import a GPX file or start GPS recording"
+            "subtitle": "Start REC, choose a route from the Library, or prepare one"
         },
         "btn": {
             "rec": "REC",
@@ -36,12 +36,10 @@
             "recStarted": "🔴 Recording started",
             "recStopped": "⏹️ Recording stopped",
             "recSaved": "✅ Track saved",
-            "recWarning5min": "⏱ 30 min limit — 5 minutes of recording remaining",
-            "freeLimit": "💡 GPX file export is reserved for the PRO version",
-            "tooShort": "Track too short for export",
-            "exported": "GPX downloaded",
-            "exportError": "GPX export error",
-            "savedInternal": "Ephemeral track (RAM only)"
+            "recDiscarded": "Recording not saved",
+            "tooShort": "Track too short to save",
+            "exported": "GPX file exported",
+            "exportError": "GPX export error"
         },
         "recovery": {
             "title": "Recording recovered",
@@ -89,6 +87,35 @@
         "recording": {
             "title": "GPS Recording"
         },
+        "outing": {
+            "rest": {
+                "title": "Ready for an outing",
+                "subtitle": "Record your walk, choose a route from the Library, or prepare one."
+            },
+            "route": {
+                "eyebrow": "Viewed route",
+                "previewAria": "Compact route preview"
+            },
+            "guidance": {
+                "eyebrow": "Guidance active",
+                "nextDistance": "Next instruction"
+            },
+            "recording": {
+                "eyebrow": "REC in progress",
+                "live": "Live activity",
+                "duration": "Actual duration",
+                "pace": "Average pace",
+                "speed": "Average speed",
+                "details": "Field details",
+                "altitude": "Altitude",
+                "gps": "GPS quality"
+            },
+            "completed": {
+                "eyebrow": "REC completed",
+                "defaultName": "Latest outing",
+                "library": "Find in Library"
+            }
+        },
         "layers": {
             "loadedTitle": "Tracks loaded for this outing",
             "visibleCount": "Tracks shown: {{count}}",
@@ -105,20 +132,24 @@
             "viewed": "Statistics for the viewed track: {{name}}",
             "none": "No track selected"
         },
-        "upsell": {
-            "postRec": "Ephemeral track (RAM only). Upgrade to Pro to export the GPX file to your phone.",
-            "proBtn": "View Pro ↗"
-        },
         "save": {
             "title": "Save Track",
-            "body": "Give your hike a name:"
+            "body": "Give your hike a name:",
+            "processing": "Processing…",
+            "processingBody": "SunTrail is stopping REC and finding a useful name from the starting location.",
+            "keepSuggested": "Keep this name",
+            "discard": "Don't save"
         }
     },
     "preparedRoutes": {
         "actions": {
             "save": "Save",
-            "create": "Plan a route",
+            "create": "Create an itinerary",
             "open": "Open",
+            "addToMap": "Add to map · Pro",
+            "removeFromMap": "Remove from map",
+            "addToMapShort": "Map",
+            "removeFromMapShort": "Remove",
             "favorite": "Add or remove from favorites",
             "duplicate": "Duplicate",
             "delete": "Delete",
@@ -190,10 +221,20 @@
             "approximateWarning": "Approximate route: reimport the original GPX or recalculate before any future trusted guidance."
         },
         "library": {
-            "scope": "Prepared routes and recent tracks stored on this device.",
-            "title": "Prepared routes",
-            "emptyTitle": "No prepared route",
-            "emptyBody": "Plan A/B and save the route to reopen it offline.",
+            "scope": "Your itineraries to follow and recorded activities, together in one place.",
+            "title": "My routes",
+            "emptyTitle": "No routes yet",
+            "emptyBody": "Import a GPX, create an itinerary or record an activity.",
+            "statusFollow": "To follow",
+            "statusRecorded": "Recorded",
+            "originManual": "Created in SunTrail",
+            "originImport": "GPX import",
+            "originRecording": "GPS recording",
+            "originLegacy": "Older history",
+            "view": "View",
+            "moreActions": "More actions",
+            "repeat": "Repeat",
+            "createItinerary": "Create itinerary",
             "legacyTitle": "Recent tracks",
             "legacyHelp": "The GPX history is unchanged. A conversion from its simplified geometry is always approximate."
         },
@@ -209,11 +250,13 @@
             "deleted": "Route deleted",
             "imported": "Full GPX saved to the library",
             "gpxPrepared": "This GPX track is now the route being prepared",
-            "legacyConverted": "Approximate copy created; original history preserved"
+            "legacyConverted": "Approximate copy created; original history preserved",
+            "activityPrepared": "Itinerary created from this activity"
         },
         "confirm": {
             "delete": "Delete this prepared route from this device?",
-            "convertLegacy": "This entry only contains simplified geometry. Create an explicitly approximate route without deleting the history?"
+            "convertLegacy": "This entry only contains simplified geometry. Create an approximate itinerary without deleting the history?",
+            "repeatActivity": "Create an itinerary to follow from this activity? History keeps simplified geometry, so the result will be approximate."
         },
         "error": {
             "unavailable": "IndexedDB is unavailable on this device.",

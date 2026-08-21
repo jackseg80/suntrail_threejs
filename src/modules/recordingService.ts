@@ -22,6 +22,9 @@ import { getPlaceName } from './geocodingService';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
+import { eventBus } from './eventBus';
+import { buildRecordingSummary } from './outing/outingDashboard';
+import { normalizeTrackName, toGPXFilename } from './trackName';
 
 export class RecordingService {
     private _isSaving = false;
@@ -64,9 +67,6 @@ export class RecordingService {
         }
 
         showToast(i18n.t('track.toast.recStarted'));
-        if (!isProActive()) {
-            setTimeout(() => showToast(i18n.t('track.toast.freeLimit')), 1500);
-        }
 
         // Demander l'exemption batterie une seule fois (opt-in, dialogue Android)
         // Évite que Samsung/Xiaomi/OPPO tuent RecordingService pendant les longues randos
@@ -105,20 +105,60 @@ export class RecordingService {
      * @param customName Optional name provided by user
      * @returns The name used for saving
      */
-    async stopRecording(customName?: string): Promise<string> {
+    async stopRecording(
+        customName?: string,
+        options?: {
+            nativeAlreadyStopped?: boolean;
+            resolveName?: (suggestedName: string) => Promise<string | null>;
+        }
+    ): Promise<string> {
         if (this._isSaving) return '';
         this._isSaving = true;
         try {
-            await nativeGPSService.stopCourse();
-            await stopRecordingService();
-
-            let nameToUse = customName || '';
-            if (!nameToUse && state.recordedPoints.length >= 2) {
-                nameToUse = await this.generateSuggestedName();
+            const completedPoints = [...state.recordedPoints];
+            const completedAt = Date.now();
+            const recordingStartTime = state.recordingStartTime;
+            const userAltitudeMeters = state.userLocation?.alt ?? null;
+            const gpsAccuracyMeters = state.userLocationAccuracy;
+            // The UI must stop looking active immediately. Native STOP from
+            // the notification has already done this work.
+            state.isRecording = false;
+            if (!options?.nativeAlreadyStopped) {
+                await nativeGPSService.stopCourse();
+                await stopRecordingService();
             }
 
-            if (state.recordedPoints.length >= 2) {
-                await this.saveCurrentRecording(nameToUse);
+            let nameToUse = customName ? normalizeTrackName(customName) : '';
+            if (!nameToUse && completedPoints.length >= 2) {
+                const suggestedName =
+                    await this.generateSuggestedName(completedPoints);
+                const resolvedName = options?.resolveName
+                    ? await options.resolveName(suggestedName)
+                    : suggestedName;
+                if (resolvedName === null) {
+                    // REC is stopped either way. A user cancellation must not
+                    // leave points around to be proposed a second time.
+                    state.recordedPoints = [];
+                    updateRecordedTrackMesh();
+                    showToast(i18n.t('track.toast.recDiscarded'));
+                    return '';
+                }
+                nameToUse = normalizeTrackName(resolvedName, suggestedName);
+            }
+
+            if (completedPoints.length >= 2) {
+                const saved = await this.saveCurrentRecording(nameToUse);
+                if (!saved) throw new Error('Recording could not be saved');
+                eventBus.emit(
+                    'recordingCompleted',
+                    buildRecordingSummary(completedPoints, {
+                        name: nameToUse,
+                        now: completedAt,
+                        recordingStartTime,
+                        userAltitudeMeters,
+                        gpsAccuracyMeters,
+                    })
+                );
                 showToast(i18n.t('track.toast.recSaved'));
                 state.recordedPoints = [];
                 updateRecordedTrackMesh();
@@ -128,7 +168,6 @@ export class RecordingService {
                 updateRecordedTrackMesh();
             }
 
-            state.isRecording = false;
             this._isSaving = false;
             return nameToUse;
         } catch (e) {
@@ -140,18 +179,27 @@ export class RecordingService {
         }
     }
 
-    public async generateSuggestedName(): Promise<string> {
-        if (state.recordedPoints.length < 2) return '';
-        const startPt = state.recordedPoints[0];
+    public async generateSuggestedName(
+        points = state.recordedPoints
+    ): Promise<string> {
+        if (points.length < 2) return '';
+        const startPt = points[0];
         const place = await getPlaceName(startPt.lat, startPt.lon);
-        const dateStr = new Date().toISOString().slice(0, 10);
-        const timeStr = new Date()
-            .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            .replace(':', 'h');
+        const now = new Date();
+        const dateStr = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, '0'),
+            String(now.getDate()).padStart(2, '0'),
+        ].join('-');
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}h${String(
+            now.getMinutes()
+        ).padStart(2, '0')}`;
 
-        return place
-            ? `SunTrail_${place}_${dateStr}_${timeStr}`
-            : `SunTrail_${dateStr}_${timeStr}`;
+        return normalizeTrackName(
+            place
+                ? `${place} · ${dateStr} ${timeStr} · SunTrail`
+                : `${dateStr} ${timeStr} · SunTrail`
+        );
     }
 
     /**
@@ -162,7 +210,7 @@ export class RecordingService {
 
         try {
             const savedInternal = await this.saveToInternalLayer(name);
-            await this.saveToFile(name);
+            if (isProActive()) await this.saveToFile(name);
             return savedInternal;
         } catch (e) {
             console.error('[RecordingService] Save failed:', e);
@@ -171,17 +219,6 @@ export class RecordingService {
     }
 
     private async saveToInternalLayer(name: string): Promise<boolean> {
-        // Limite Pro : 10 tracés max
-        if (state.gpxLayers.length >= 10) {
-            const { showToast } = await import('./toast');
-            const { i18n } = await import('../i18n/I18nService');
-            void showToast(
-                i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached'
-            );
-            void haptic('warning');
-            return false;
-        }
-
         const gpxString = this.buildGPXString(name);
         const { default: gpxParser } = await import('gpxparser');
         const parser = new gpxParser();
@@ -197,24 +234,28 @@ export class RecordingService {
         customName: string,
         content?: string
     ): Promise<string | null> {
+        // L'export fichier est un droit Pro. Ce garde précède toute génération
+        // de Blob et toute écriture dans Téléchargements, Documents ou Cache.
+        if (!isProActive()) return null;
         if (!content && state.recordedPoints.length < 2) return null;
 
         const gpx = content || this.buildGPXString(customName);
-        const sanitizedName = customName
-            .replace(/[/\\?%*:|"<>]/g, '-')
-            .replace(/\s+/g, '_');
-        const filename = `${sanitizedName}-${Date.now()}.gpx`;
+        const filename = toGPXFilename(customName);
 
         if (Capacitor.isNativePlatform()) {
-            try {
-                const directory = isProActive()
-                    ? Directory.Documents
-                    : Directory.Cache;
+            const downloaded = await nativeGPSService.saveTextToDownloads(
+                filename,
+                gpx
+            );
+            if (downloaded) return downloaded;
 
+            // Android 9 et erreurs MediaStore gardent le comportement historique
+            // plutôt que de perdre l'export demandé.
+            try {
                 await Filesystem.writeFile({
                     path: filename,
                     data: gpx,
-                    directory: directory,
+                    directory: Directory.Documents,
                     encoding: Encoding.UTF8,
                 });
 

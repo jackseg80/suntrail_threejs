@@ -31,17 +31,33 @@
             class="track-library-scope"
             data-i18n="preparedRoutes.library.scope"
         >
-            Routes préparées et traces récentes conservées sur cet appareil.
+            Vos itinéraires à suivre et vos activités enregistrées, réunis au
+            même endroit.
         </p>
         <div class="prepared-library-header">
-            <h3 data-i18n="preparedRoutes.library.title">Routes préparées</h3>
-            <button
-                id="prepared-create-btn"
-                type="button"
-                data-i18n="preparedRoutes.actions.create"
-            >
-                Préparer une route
-            </button>
+            <h3 data-i18n="preparedRoutes.library.title">Mes parcours</h3>
+            <div class="prepared-library-actions">
+                <button
+                    id="import-gpx-sheet"
+                    type="button"
+                    data-i18n="track.btn.import"
+                >
+                    Importer GPX
+                </button>
+                <button
+                    id="prepared-create-btn"
+                    type="button"
+                    data-i18n="preparedRoutes.actions.create"
+                >
+                    Créer un itinéraire
+                </button>
+            </div>
+            <input
+                type="file"
+                id="gpx-upload"
+                accept=".gpx"
+                style="display: none"
+            />
         </div>
         <div
             id="prepared-storage-error"
@@ -52,72 +68,199 @@
         <div id="prepared-routes-list" class="prepared-routes-list"></div>
         <div id="prepared-routes-empty" class="prepared-routes-empty">
             <strong data-i18n="preparedRoutes.library.emptyTitle"
-                >Aucune route préparée</strong
+                >Aucun parcours</strong
             >
             <span data-i18n="preparedRoutes.library.emptyBody"
-                >Planifiez A/B puis sauvegardez la route pour la retrouver hors
-                ligne.</span
+                >Importez un GPX, créez un itinéraire ou enregistrez une
+                sortie.</span
             >
         </div>
-        <h3
-            class="legacy-library-title"
-            data-i18n="preparedRoutes.library.legacyTitle"
-        >
-            Traces récentes
-        </h3>
-        <p
-            class="legacy-library-help"
-            data-i18n="preparedRoutes.library.legacyHelp"
-        >
-            L’historique GPX reste inchangé. Une conversion depuis sa géométrie
-            simplifiée est toujours approximative.
-        </p>
         <div id="legacy-tracks-anchor"></div>
     </section>
-    <div
-        id="track-stats-context"
-        class="track-stats-context track-outing-only"
+    <section
+        id="outing-dashboard"
+        class="outing-dashboard track-outing-only"
+        data-phase="rest"
         aria-live="polite"
-    ></div>
-    <div class="track-stats track-outing-only">
-        <div class="stat-card">
-            <div class="stat-card-label" data-i18n="track.stats.distance">
-                Distance
-            </div>
-            <div class="stat-card-value" id="track-dist">
-                0.0
-                <span style="font-size: 13px; color: var(--text-2)">km</span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-label" data-i18n="track.stats.points">
-                Points
-            </div>
-            <div class="stat-card-value" id="track-points">0</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-label" data-i18n="track.stats.dplus">
-                Dénivelé +
-            </div>
-            <div class="stat-card-value green" id="track-dplus">
-                +0 <span style="font-size: 12px">m</span>
+    >
+        <div id="track-empty-state" class="empty-state outing-state-card">
+            <p class="empty-state-title" data-i18n="track.outing.rest.title">
+                Prêt pour une sortie
+            </p>
+            <p
+                class="empty-state-subtitle"
+                data-i18n="track.outing.rest.subtitle"
+            >
+                Enregistrez votre marche, choisissez une route ou préparez-en
+                une.
+            </p>
+            <div class="outing-inline-actions">
+                <button id="outing-open-library" type="button">
+                    <span data-i18n="nav.tab.library">Bibliothèque</span>
+                </button>
+                <button id="outing-prepare-route" type="button">
+                    <span data-i18n="nav.tab.prepare">Préparer</span>
+                </button>
             </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-card-label" data-i18n="track.stats.dminus">
-                Dénivelé −
+
+        <article id="outing-route-card" class="outing-state-card" hidden>
+            <div class="outing-card-heading">
+                <span data-i18n="track.outing.route.eyebrow"
+                    >Route consultée</span
+                >
+                <strong id="outing-route-name">—</strong>
             </div>
-            <div class="stat-card-value red" id="track-dminus">
-                −0 <span style="font-size: 12px">m</span>
+            <canvas
+                id="outing-route-map"
+                class="outing-route-map"
+                width="560"
+                height="220"
+                aria-label="Aperçu compact de la route"
+                data-i18n-aria-label="track.outing.route.previewAria"
+            ></canvas>
+            <p id="outing-route-stats" class="outing-card-meta">—</p>
+            <div class="outing-inline-actions">
+                <button id="outing-route-guidance" type="button" hidden>
+                    <span data-i18n="guidance.actions.start"
+                        >Démarrer le suivi</span
+                    >
+                </button>
+                <button id="outing-route-profile" type="button">
+                    <span data-i18n="track.imported.showProfile"
+                        >Voir le profil</span
+                    >
+                </button>
+                <button id="outing-route-library" type="button">
+                    <span data-i18n="nav.tab.library">Bibliothèque</span>
+                </button>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-label" data-i18n="track.stats.duration">
-                Temps estimé
+        </article>
+
+        <article id="outing-guidance-card" class="outing-state-card" hidden>
+            <div class="outing-card-heading">
+                <span data-i18n="track.outing.guidance.eyebrow"
+                    >Guidance active</span
+                >
+                <strong id="outing-guidance-cue">—</strong>
             </div>
-            <div class="stat-card-value" id="track-duration">—</div>
-        </div>
-    </div>
+            <div class="outing-metrics-grid">
+                <div>
+                    <span data-i18n="track.outing.guidance.nextDistance"
+                        >Prochaine indication</span
+                    ><strong id="outing-guidance-distance">—</strong>
+                </div>
+                <div>
+                    <span data-i18n="guidance.crossTrack">Écart</span
+                    ><strong id="outing-guidance-cross-track">—</strong>
+                </div>
+                <div>
+                    <span data-i18n="guidance.remaining">Restant</span
+                    ><strong id="outing-guidance-remaining">—</strong>
+                </div>
+                <div>
+                    <span data-i18n="guidance.eta">ETA</span
+                    ><strong id="outing-guidance-eta">—</strong>
+                </div>
+            </div>
+        </article>
+
+        <article id="outing-rec-card" class="outing-state-card" hidden>
+            <div class="outing-card-heading">
+                <span data-i18n="track.outing.recording.eyebrow"
+                    >REC en cours</span
+                >
+                <strong data-i18n="track.outing.recording.live"
+                    >Activité en direct</strong
+                >
+            </div>
+            <div id="track-stats-context" class="track-stats-context"></div>
+            <div class="track-stats outing-rec-primary">
+                <div class="stat-card">
+                    <div
+                        class="stat-card-label"
+                        data-i18n="track.outing.recording.duration"
+                    >
+                        Durée
+                    </div>
+                    <div class="stat-card-value" id="track-duration">0:00</div>
+                </div>
+                <div class="stat-card">
+                    <div
+                        class="stat-card-label"
+                        data-i18n="track.stats.distance"
+                    >
+                        Distance
+                    </div>
+                    <div class="stat-card-value" id="track-dist">0,00 km</div>
+                </div>
+                <div
+                    class="stat-card outing-motion-metric"
+                    role="button"
+                    tabindex="0"
+                    aria-live="polite"
+                >
+                    <div
+                        id="track-motion-label"
+                        class="stat-card-label"
+                        data-i18n="track.outing.recording.pace"
+                    >
+                        Allure moyenne
+                    </div>
+                    <div class="stat-card-value" id="track-pace">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label" data-i18n="track.stats.dplus">
+                        Dénivelé +
+                    </div>
+                    <div class="stat-card-value green" id="track-dplus">
+                        +0 m
+                    </div>
+                </div>
+            </div>
+            <details class="outing-rec-details">
+                <summary data-i18n="track.outing.recording.details">
+                    Détails terrain
+                </summary>
+                <div class="outing-metrics-grid">
+                    <div>
+                        <span data-i18n="track.outing.recording.altitude"
+                            >Altitude</span
+                        ><strong id="track-altitude">—</strong>
+                    </div>
+                    <div>
+                        <span data-i18n="track.stats.dminus">Dénivelé −</span
+                        ><strong id="track-dminus">−0 m</strong>
+                    </div>
+                    <div>
+                        <span data-i18n="track.outing.recording.gps"
+                            >Qualité GPS</span
+                        ><strong id="track-gps-quality">—</strong>
+                    </div>
+                    <div>
+                        <span data-i18n="track.stats.points">Points</span
+                        ><strong id="track-points">0</strong>
+                    </div>
+                </div>
+            </details>
+        </article>
+
+        <article id="outing-completed-card" class="outing-state-card" hidden>
+            <div class="outing-card-heading">
+                <span data-i18n="track.outing.completed.eyebrow"
+                    >REC terminé</span
+                >
+                <strong id="outing-completed-name">—</strong>
+            </div>
+            <p id="outing-completed-summary" class="outing-card-meta">—</p>
+            <button id="outing-completed-library" type="button">
+                <span data-i18n="track.outing.completed.library"
+                    >Retrouver dans Bibliothèque</span
+                >
+            </button>
+        </article>
+    </section>
+
     <div class="track-actions track-outing-only">
         <button class="track-btn rec" id="rec-btn-sheet">
             <span class="trk-rec-icon rec-icon-idle">
@@ -146,56 +289,6 @@
             </span>
             <span class="trk-rec-label" data-i18n="track.btn.rec">REC</span>
         </button>
-        <button class="track-btn secondary" id="import-gpx-sheet">
-            <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-            >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span data-i18n="track.btn.import">Import GPX</span>
-        </button>
-        <input
-            type="file"
-            id="gpx-upload"
-            accept=".gpx"
-            style="display: none"
-        />
     </div>
-    <div id="outing-tracks-anchor" class="track-outing-only"></div>
-    <div id="rec-recording-upsell" class="rec-upsell-banner track-outing-only">
-        <div
-            style="
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-weight: 700;
-                color: var(--gold);
-            "
-        >
-            <span>✨</span> <span>SunTrail PRO</span>
-        </div>
-        <p
-            style="margin: 0; opacity: 0.9; font-size: 11px; line-height: 1.4"
-            data-i18n="track.upsell.postRec"
-        >
-            Passez a Pro pour sauvegarder vos traces
-        </p>
-        <button
-            class="btn-go"
-            id="rec-upsell-btn"
-            style="padding: 6px; font-size: 11px; margin-top: 4px; width: 100%"
-            data-i18n="upgrade.trial.cta"
-        >
-            Essayer Pro Gratuitement
-        </button>
-    </div>
+    <div id="outing-tracks-anchor" class="track-outing-only" hidden></div>
 </div>

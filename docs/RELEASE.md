@@ -160,7 +160,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **902** | **5.84.0** | **v5.84.0** | **Jalon interne/fermé clôturé : moteur de suivi foreground validé sur Galaxy S23, pré-release GitHub avec AAB signé ; aucun téléversement Play Console.** | **2026-08-11** |
 | **903 (provisoire pour Play)** | **5.85.0** | **v5.85.0 (pré-release)** | **Guidage Android natif ; instrumentation S23/API 36 5/5 verte et AAB signé CI attaché à la pré-release GitHub interne. Play Console non revérifiée et aucun téléversement n'est effectué : ne pas considérer ce code attribué pour Play avant cette gate.** | **2026-08-13** |
 | **904 (consommé)** | **5.86.0** | **v5.86.0** | **AAB v5.86.0 importé dans Google Play : code attribué, ne jamais le réutiliser.** | **2026-08-13** |
-| **905 (attribué au worktree)** | **5.86.1** | **—** | **Compatibilité Android 15/16 edge-to-edge, optimisation R8 et cache terrain Android borné ; aucun tag ni upload Play sans autorisation explicite.** | **2026-08-13** |
+| **905 (consommé)** | **5.86.1** | **v5.86.1** | **AAB visible dans Play Console ; code attribué et non réutilisable.** | **2026-08-20** |
+| **906 (publié GitHub)** | **5.86.2** | **v5.86.2** | **Tableau de bord Sortie, frontière Bibliothèque, export GPX Android dans Téléchargements et reprise sûre du shell WebView après mise à jour. AAB signé attaché par GitHub Actions ; aucun upload Play.** | **2026-08-21** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

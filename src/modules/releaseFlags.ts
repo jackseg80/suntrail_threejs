@@ -15,7 +15,7 @@ export const DEFAULT_RELEASE_FLAGS: Readonly<ReleaseFlags> = Object.freeze({
     routeReadiness: true,
     routeCorridor: true,
     accountSync: false,
-    nativeGuidance: false,
+    nativeGuidance: true,
     expertWorkbench: false,
 });
 

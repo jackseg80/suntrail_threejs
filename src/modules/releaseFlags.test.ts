@@ -46,7 +46,7 @@ describe('ReleaseFlagRegistry', () => {
             source: 'build',
         });
         expect(registry.isEnabled('routeCorridor')).toBe(true);
-        expect(registry.isEnabled('nativeGuidance')).toBe(false);
+        expect(registry.isEnabled('nativeGuidance')).toBe(true);
         expect(registry.isEnabled('accountSync')).toBe(false);
     });
 

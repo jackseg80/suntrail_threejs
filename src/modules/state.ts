@@ -25,6 +25,8 @@ export interface GPXLayer {
     color: string;
     visible: boolean;
     isManualRoute?: boolean; // v5.54 : Distinguer le planificateur des imports GPX
+    /** Business origin. Never infer entitlements from isManualRoute. */
+    source?: 'import' | 'rec' | 'prepared' | 'manual';
     rawData: GPXRawData;
     points: THREE.Vector3[];
     mesh: THREE.Mesh | null;

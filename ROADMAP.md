@@ -1,6 +1,6 @@
-# SunTrail — Roadmap produit révisée (version source v5.86.1 — validation Android 15/16)
+# SunTrail — Roadmap produit révisée (version source v5.86.2 — Sortie contextuelle)
 
-> Révision : 2026-08-14, après publication GitHub de v5.86.0 et cadrage produit de v5.86.2.
+> Révision : 2026-08-21, après publication GitHub de v5.86.2 / `versionCode 906`.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -17,8 +17,8 @@ heure de passage et conditions.
 
 - **v5.86.0** est publiée sur GitHub et son AAB Android **904** a déjà été importé dans Google
   Play ; ce `versionCode` est consommé.
-- **v5.86.1** / Android **905** est le lot local Android 15/16 et R8 en validation. Aucun statut
-  de publication n'est implicite dans cette roadmap.
+- **v5.86.1** / Android **905** est visible dans Play Console. **v5.86.2** / Android **906** est
+  publiée sur GitHub pour Sortie/Bibliothèque ; aucun téléversement Play n'est implicite.
 - Prepared Routes, la bibliothèque IndexedDB, la compatibilité GPX/REC, la difficulté expliquée,
   les corrections mobiles et la validation Galaxy S23 sont clôturées.
 - Le moteur foreground, ses fixtures, le plan de guidage local, l'UI et l'indépendance REC sont
@@ -303,10 +303,10 @@ notification et reprise.
 - en Guidance + REC, conserver deux blocs lisibles et l'indépendance des deux moteurs ;
 - après arrêt, présenter un résumé simple temporaire et un accès explicite à la Bibliothèque.
 
-`Importer GPX` quitte `Sortie` et devient une action de **Bibliothèque**. La liste des routes
-préparées et l'historique de traces restent également dans Bibliothèque ; Sortie ne montre que la
-route actuellement consultée ou suivie. Les identifiants DOM historiques nécessaires à la
-navigation et aux tests sont conservés ou migrés avec compatibilité explicite.
+`Importer GPX` quitte `Sortie` et devient une action de **Bibliothèque**. « Mes parcours » réunit
+les itinéraires « À suivre » — importés ou créés — et les activités REC « Enregistré » ; l'origine
+reste une métadonnée secondaire. Sortie ne montre que la route actuellement consultée ou suivie.
+Les identifiants DOM historiques nécessaires aux modules restent compatibles.
 
 Contrat Free/Pro de ce lot :
 
@@ -314,8 +314,8 @@ Contrat Free/Pro de ce lot :
   l'appareil ; ce choix est distinct du futur quota de synchronisation cloud ;
 - REC illimité, nom personnalisé, statistiques essentielles en direct, résumé simple de fin,
   Guidance essentielle et alertes de sécurité restent Free ;
-- Free conserve un seul GPX importé affiché à la fois ; Pro conserve le multi-affichage, dans la
-  limite technique actuelle de dix calques chargés ;
+- Free ouvre tous les parcours mais n'en affiche qu'un à la fois ; Pro expose « Ajouter à la carte »
+  pour le multi-affichage, dans la limite technique actuelle de dix calques chargés ;
 - l'export de fichier reste Pro. En Free, l'action est bloquée avant toute écriture dans le cache
   et ne peut plus annoncer à tort « GPX téléchargé » ; la sauvegarde interne nécessaire à la
   récupération REC reste un mécanisme distinct et n'est pas supprimée au nom de ce gate ;

@@ -142,6 +142,7 @@ public class RecordingService extends Service {
     private long lastMovementTime;
     private boolean isImmobile;
     private float currentSpeedMps;
+    private double lastStatsAltitude = Double.NaN;
     private long lastGpsConfigUpdate;
     private long lastNotificationUpdate;
     private long lastRouteIntegrityCheck;
@@ -237,7 +238,15 @@ public class RecordingService extends Service {
             updateNotification();
             return START_STICKY;
         }
-        if (ACTION_STOP_COURSE.equals(action) || ACTION_STOP_RECORDING.equals(action)) {
+        if (ACTION_STOP_COURSE.equals(action)) {
+            // The WebView remains alive and finalizes the REC itself; do not
+            // create a pending course that would be saved again at restart.
+            stopRecordingMode(false);
+            return activeReturnCode();
+        }
+        if (ACTION_STOP_RECORDING.equals(action)) {
+            // Notification action: the WebView can be asleep or killed, so it
+            // needs a recoverable final course when the app returns.
             stopRecordingMode(true);
             return activeReturnCode();
         }
@@ -292,6 +301,7 @@ public class RecordingService extends Service {
                 currentCourseId = UUID.randomUUID().toString();
                 pointCount.set(0);
                 startTime = System.currentTimeMillis();
+                resetRecordingStats();
             } else {
                 SharedPreferences prefs = getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE);
                 currentCourseId = prefs.getString("currentCourseId", null);
@@ -304,8 +314,7 @@ public class RecordingService extends Service {
                     final String courseId = currentCourseId;
                     dbExecutor.execute(() -> {
                         try {
-                            pointCount.set(gpsDao.getPointCount(courseId));
-                            updateNotification();
+                            restoreRecordingStats(courseId);
                         } catch (SQLiteException error) {
                             handleStorageFailure(error);
                         }
@@ -393,7 +402,7 @@ public class RecordingService extends Service {
             currentCourseId = recordingPrefs.getString("currentCourseId", null);
             startTime = recordingPrefs.getLong("startTime", System.currentTimeMillis());
             final String courseId = currentCourseId;
-            if (courseId != null) dbExecutor.execute(() -> pointCount.set(gpsDao.getPointCount(courseId)));
+            if (courseId != null) dbExecutor.execute(() -> restoreRecordingStats(courseId));
         }
         ensureForeground();
         acquireWakeLock();
@@ -405,10 +414,18 @@ public class RecordingService extends Service {
 
     private void stopRecordingMode(boolean notifyBridge) {
         if (!recordingActive && currentCourseId == null) return;
+        String stoppedCourseId = currentCourseId;
+        long stoppedStartTime = startTime;
         recordingActive = false;
         flushPointBuffer();
-        getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE).edit()
-            .remove("currentCourseId").remove("startTime").apply();
+        SharedPreferences.Editor recordingEditor = getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE).edit()
+            .remove("currentCourseId").remove("startTime");
+        if (notifyBridge && stoppedCourseId != null && !stoppedCourseId.isEmpty()) {
+            recordingEditor
+                .putString("pendingStoppedCourseId", stoppedCourseId)
+                .putLong("pendingStoppedStartTime", stoppedStartTime);
+        }
+        recordingEditor.apply();
         currentCourseId = null;
         writeStateFile(false);
         persistFastState();
@@ -544,12 +561,22 @@ public class RecordingService extends Service {
             float distance2D = lastValidLocation.distanceTo(location);
             float minDistance = pointCount.get() < 5 ? 1.5f : MIN_DISTANCE_M;
             if (distance2D < minDistance) return;
-            double lastAltitude = orthometricAltitude(lastValidLocation);
+            double lastAltitude = Double.isFinite(lastStatsAltitude)
+                ? lastStatsAltitude
+                : orthometricAltitude(lastValidLocation);
             double altitudeDiff = altitude - lastAltitude;
             double distance3D = Math.sqrt(distance2D * distance2D + altitudeDiff * altitudeDiff);
             float speedMps = (float) (distance3D / (timeDiff / 1000.0));
             if (speedMps > MAX_SPEED_MPS) return;
             currentSpeedMps = speedMps;
+            statsDistance += distance3D / 1_000.0;
+            if (Double.isFinite(lastStatsAltitude)) {
+                double elevationDelta = altitude - lastStatsAltitude;
+                // Five-metre hysteresis keeps notification D+/D- useful
+                // without amplifying normal barometric/GPS noise.
+                if (elevationDelta >= 5.0) statsElevation += elevationDelta;
+                else if (elevationDelta <= -5.0) statsElevationMinus += -elevationDelta;
+            }
         }
 
         GPSPoint point = new GPSPoint(currentCourseId, location.getLatitude(), location.getLongitude(),
@@ -574,6 +601,7 @@ public class RecordingService extends Service {
             });
         }
         lastValidLocation = location;
+        lastStatsAltitude = altitude;
         lastValidTimestamp = timestamp;
         updateImmobilityStatus(location);
         updateAdaptiveGpsConfig();
@@ -706,6 +734,55 @@ public class RecordingService extends Service {
         });
     }
 
+    private void resetRecordingStats() {
+        statsDistance = 0.0;
+        statsElevation = 0.0;
+        statsElevationMinus = 0.0;
+        lastStatsAltitude = Double.NaN;
+        currentSpeedMps = 0.0f;
+    }
+
+    private void restoreRecordingStats(String courseId) {
+        List<GPSPoint> points = gpsDao.getPointsForCourse(courseId);
+        double distanceKm = 0.0;
+        double ascent = 0.0;
+        double descent = 0.0;
+        GPSPoint previous = null;
+        for (GPSPoint point : points) {
+            if (previous != null) {
+                float[] result = new float[1];
+                Location.distanceBetween(previous.lat, previous.lon, point.lat, point.lon, result);
+                double altitudeDelta = point.alt - previous.alt;
+                distanceKm += Math.sqrt(result[0] * result[0] + altitudeDelta * altitudeDelta) / 1_000.0;
+                if (altitudeDelta >= 5.0) ascent += altitudeDelta;
+                else if (altitudeDelta <= -5.0) descent += -altitudeDelta;
+            }
+            previous = point;
+        }
+        final GPSPoint last = previous;
+        final double restoredDistance = distanceKm;
+        final double restoredAscent = ascent;
+        final double restoredDescent = descent;
+        mainHandler.post(() -> {
+            pointCount.set(points.size());
+            statsDistance = restoredDistance;
+            statsElevation = restoredAscent;
+            statsElevationMinus = restoredDescent;
+            if (last != null) {
+                Location restored = new Location("suntrail-room");
+                restored.setLatitude(last.lat);
+                restored.setLongitude(last.lon);
+                restored.setAltitude(last.alt);
+                restored.setAccuracy(last.accuracy);
+                restored.setTime(last.timestamp);
+                lastValidLocation = restored;
+                lastValidTimestamp = last.timestamp;
+                lastStatsAltitude = last.alt;
+            }
+            updateNotification();
+        });
+    }
+
     private void ensureForeground() {
         Notification notification = buildNotification();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -740,15 +817,24 @@ public class RecordingService extends Service {
         GuidanceSnapshot snapshot = guidanceActive && guidanceEngine != null
             ? guidanceEngine.getSnapshot(System.currentTimeMillis()) : null;
         if (snapshot != null) {
-            text.append(String.format(Locale.getDefault(), "%.1f km restants · %s",
-                snapshot.remainingMeters / 1000.0, statusLabel(snapshot.status)));
+            if (snapshot.nextCue != null && snapshot.distanceToNextCueMeters != null) {
+                text.append(cueLabel(snapshot.nextCue.kind)).append(" dans ")
+                    .append(formatNotificationDistance(snapshot.distanceToNextCueMeters));
+            } else {
+                text.append(String.format(Locale.getDefault(), "%.1f km restants · %s",
+                    snapshot.remainingMeters / 1000.0, statusLabel(snapshot.status)));
+            }
         }
         if (recordingActive) {
             if (text.length() > 0) text.append(" · ");
             text.append(getElapsedTimeString());
             if (pointCount.get() == 0) text.append(" · GPS…");
-            else text.append(String.format(Locale.getDefault(), " · %d pts · %.2f km",
-                pointCount.get(), statsDistance));
+            else {
+                double elapsedHours = Math.max(1L, System.currentTimeMillis() - startTime) / 3_600_000.0;
+                double averageSpeedKmh = statsDistance / elapsedHours;
+                text.append(String.format(Locale.getDefault(), " · %.2f km · %.1f km/h",
+                    statsDistance, averageSpeedKmh));
+            }
         }
         if (issue != null) text.append(" · ").append(issueLabel(issue));
 
@@ -775,6 +861,19 @@ public class RecordingService extends Service {
                 servicePendingIntent(ACTION_STOP_RECORDING, 12));
         }
         return builder.build();
+    }
+
+    private String formatNotificationDistance(double meters) {
+        if (meters >= 1_000.0) return String.format(Locale.getDefault(), "%.1f km", meters / 1_000.0);
+        return String.format(Locale.getDefault(), "%.0f m", meters);
+    }
+
+    private String cueLabel(String kind) {
+        if ("left".equals(kind) || "sharp-left".equals(kind) || "slight-left".equals(kind)) return "Tournez à gauche";
+        if ("right".equals(kind) || "sharp-right".equals(kind) || "slight-right".equals(kind)) return "Tournez à droite";
+        if ("u-turn".equals(kind)) return "Demi-tour";
+        if ("arrive".equals(kind)) return "Arrivée";
+        return "Continuez";
     }
 
     private PendingIntent openPendingIntent() {

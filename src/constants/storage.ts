@@ -18,4 +18,5 @@ export const STORAGE_KEYS = {
     MAPTILER_KEY: 'maptiler_key',
     OFFLINE_ZONES_COUNT: 'suntrail_offline_zones_count',
     GPX_HISTORY: 'suntrail_gpx_history_v1',
+    OUTING_MOTION_METRIC: 'suntrail_outing_motion_metric_v1',
 } as const;

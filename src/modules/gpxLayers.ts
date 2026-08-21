@@ -196,7 +196,8 @@ export function addGPXLayer(
         silent?: boolean;
         forceVisible?: boolean;
         isManualRoute?: boolean;
-        source?: 'import' | 'rec';
+        source?: 'import' | 'rec' | 'prepared' | 'manual';
+        persistHistory?: boolean;
         id?: string;
     }
 ): GPXLayer {
@@ -281,8 +282,10 @@ export function addGPXLayer(
     // 2. Le PREMIER import GPX est TOUJOURS visible.
     // 3. Les imports GPX suivants (Multi-GPX) sont masqués en Free.
     const isManual = !!opts?.isManualRoute;
+    const source = opts?.source ?? (isManual ? 'manual' : ('import' as const));
     const importedGpxCount = state.gpxLayers.filter(
-        (l) => !l.isManualRoute
+        (layer) =>
+            layer.source === 'import' || (!layer.source && !layer.isManualRoute)
     ).length;
     const isFirstImport = !isManual && importedGpxCount === 0;
 
@@ -296,6 +299,7 @@ export function addGPXLayer(
         color,
         visible: initialVisible,
         isManualRoute: isManual, // v5.54 : Persistance du type
+        source,
         rawData,
         points: threePoints,
         mesh,
@@ -310,8 +314,8 @@ export function addGPXLayer(
     if (mesh) mesh.visible = initialVisible;
     state.gpxLayers = [...state.gpxLayers, layer];
 
-    if (!isManual) {
-        saveToHistory(layer, opts?.source || 'import');
+    if (!isManual && opts?.persistHistory !== false) {
+        saveToHistory(layer, source === 'rec' ? 'rec' : 'import');
         if (validPoints.length > 0) {
             const clat =
                 validPoints.reduce((s, p) => s + p.lat, 0) / validPoints.length;

@@ -9,6 +9,9 @@ const { mockPreferences, mockRecordingNative } = vi.hoisted(() => ({
     },
     mockRecordingNative: {
         getCurrentCourse: vi.fn(),
+        getPendingStoppedCourse: vi.fn(),
+        acknowledgePendingStoppedCourse: vi.fn(),
+        getActiveSession: vi.fn(),
         startCourse: vi.fn(),
         stopCourse: vi.fn(),
         getPoints: vi.fn(),
@@ -32,6 +35,7 @@ vi.mock('./recordingService', () => ({
 
 import { state } from './state';
 import { nativeGPSService } from './nativeGPSService';
+import { recordingService } from './recordingService';
 import type { NativeGPSPoint } from './nativeGPSService';
 
 describe('NativeGPSService (v5.29.38)', () => {
@@ -44,6 +48,11 @@ describe('NativeGPSService (v5.29.38)', () => {
         mockRecordingNative.getCurrentCourse.mockResolvedValue({
             isRunning: false,
         });
+        mockRecordingNative.getPendingStoppedCourse.mockResolvedValue({
+            courseId: '',
+            startTime: 0,
+        });
+        mockRecordingNative.getActiveSession.mockResolvedValue(null);
         (nativeGPSService as any)._syncing = false;
         (nativeGPSService as any).pointPersistPending = false;
         (nativeGPSService as any).pointPersistTimeout = null;
@@ -63,6 +72,54 @@ describe('NativeGPSService (v5.29.38)', () => {
         expect(state.isRecording).toBe(true);
         expect(state.currentCourseId).toBe('active-123');
         expect(state.originTile).toEqual({ x: 1, y: 2, z: 13 });
+    });
+
+    it('finalizes a notification STOP that happened while the WebView was dead', async () => {
+        mockRecordingNative.getCurrentCourse.mockResolvedValue({
+            isRunning: false,
+            originTile: { x: 1, y: 2, z: 13 },
+        });
+        mockRecordingNative.getPendingStoppedCourse.mockResolvedValue({
+            courseId: 'stopped-123',
+            startTime: 1_000,
+        });
+        mockRecordingNative.getPoints.mockResolvedValue({
+            points: [
+                {
+                    id: 1,
+                    lat: 46.5,
+                    lon: 7.5,
+                    alt: 500,
+                    timestamp: 1_000,
+                    accuracy: 5,
+                },
+                {
+                    id: 2,
+                    lat: 46.5001,
+                    lon: 7.5001,
+                    alt: 501,
+                    timestamp: 4_000,
+                    accuracy: 5,
+                },
+            ],
+        });
+        vi.mocked(recordingService.stopRecording).mockResolvedValue(
+            'Sortie récupérée'
+        );
+
+        await nativeGPSService.init();
+
+        expect(mockRecordingNative.getPoints).toHaveBeenCalledWith({
+            courseId: 'stopped-123',
+            since: 0,
+        });
+        expect(recordingService.stopRecording).toHaveBeenCalledWith(
+            undefined,
+            expect.objectContaining({ nativeAlreadyStopped: true })
+        );
+        expect(
+            mockRecordingNative.acknowledgePendingStoppedCourse
+        ).toHaveBeenCalledTimes(1);
     });
 
     it('should start a new course', async () => {

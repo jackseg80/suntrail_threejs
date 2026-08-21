@@ -15,6 +15,7 @@ type EventMap = {
     sheetClosed: { id: string | null };
     localeChanged: { locale: string };
     recordingRecovered: void;
+    recordingCompleted: import('./outing/outingDashboard').RecordingSummary;
     networkOnline: void;
     networkOffline: void;
     serviceDegraded: { service: string; disabled: boolean };

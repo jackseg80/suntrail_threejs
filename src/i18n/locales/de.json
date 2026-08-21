@@ -24,7 +24,7 @@
         },
         "empty": {
             "title": "Keine Tour",
-            "subtitle": "Importieren Sie eine GPX-Datei oder starten Sie die GPS-Aufzeichnung"
+            "subtitle": "REC starten, eine Route aus der Bibliothek wählen oder eine Route planen"
         },
         "btn": {
             "rec": "REC",
@@ -36,12 +36,10 @@
             "recStarted": "🔴 Aufnahme gestartet",
             "recStopped": "⏹️ Aufnahme gestoppt",
             "recSaved": "✅ Strecke gespeichert",
-            "recWarning5min": "⏱ 30-Min-Limit — noch 5 Minuten Aufnahme",
-            "freeLimit": "💡 Temporärer Track: Er wird beim Schliessen der App gelöscht. Wechseln Sie zu PRO, um ihn zu exportieren.",
-            "tooShort": "Strecke zu kurz für Export",
-            "exported": "GPX heruntergeladen",
-            "exportError": "GPX-Exportfehler",
-            "savedInternal": "Flüchtiger Track (nur RAM)"
+            "recDiscarded": "Aufzeichnung nicht gespeichert",
+            "tooShort": "Strecke zu kurz zum Speichern",
+            "exported": "GPX-Datei exportiert",
+            "exportError": "GPX-Exportfehler"
         },
         "recovery": {
             "title": "Aufzeichnung wiederhergestellt",
@@ -89,6 +87,35 @@
         "recording": {
             "title": "GPS-Aufzeichnung"
         },
+        "outing": {
+            "rest": {
+                "title": "Bereit für eine Tour",
+                "subtitle": "Zeichnen Sie Ihre Wanderung auf, wählen Sie eine Route aus der Bibliothek oder planen Sie eine."
+            },
+            "route": {
+                "eyebrow": "Angesehene Route",
+                "previewAria": "Kompakte Routenvorschau"
+            },
+            "guidance": {
+                "eyebrow": "Navigation aktiv",
+                "nextDistance": "Nächster Hinweis"
+            },
+            "recording": {
+                "eyebrow": "REC läuft",
+                "live": "Live-Aktivität",
+                "duration": "Tatsächliche Dauer",
+                "pace": "Durchschnittliches Tempo",
+                "speed": "Durchschnittsgeschwindigkeit",
+                "details": "Geländedetails",
+                "altitude": "Höhe",
+                "gps": "GPS-Qualität"
+            },
+            "completed": {
+                "eyebrow": "REC beendet",
+                "defaultName": "Letzte Tour",
+                "library": "In der Bibliothek anzeigen"
+            }
+        },
         "layers": {
             "loadedTitle": "Für diese Tour geladene Tracks",
             "visibleCount": "Angezeigte Tracks: {{count}}",
@@ -105,20 +132,24 @@
             "viewed": "Statistik des angesehenen Tracks: {{name}}",
             "none": "Kein Track ausgewählt"
         },
-        "upsell": {
-            "postRec": "Flüchtiger Track (nur RAM). Upgrade auf Pro, um die GPX-Datei auf Ihr Handy zu exportieren.",
-            "proBtn": "Pro ansehen ↗"
-        },
         "save": {
             "title": "Tour speichern",
-            "body": "Geben Sie Ihrer Wanderung einen Namen:"
+            "body": "Geben Sie Ihrer Wanderung einen Namen:",
+            "processing": "Verarbeitung läuft…",
+            "processingBody": "SunTrail beendet die Aufzeichnung und ermittelt einen passenden Namen anhand des Startorts.",
+            "keepSuggested": "Diesen Namen behalten",
+            "discard": "Nicht speichern"
         }
     },
     "preparedRoutes": {
         "actions": {
             "save": "Speichern",
-            "create": "Route planen",
+            "create": "Route erstellen",
             "open": "Öffnen",
+            "addToMap": "Zur Karte hinzufügen · Pro",
+            "removeFromMap": "Von der Karte entfernen",
+            "addToMapShort": "Karte",
+            "removeFromMapShort": "Entfernen",
             "favorite": "Favorit hinzufügen oder entfernen",
             "duplicate": "Duplizieren",
             "delete": "Löschen",
@@ -190,10 +221,20 @@
             "approximateWarning": "Ungefähre Route: Original-GPX erneut importieren oder neu berechnen, bevor später eine zuverlässige Führung möglich ist."
         },
         "library": {
-            "scope": "Vorbereitete Routen und aktuelle Tracks auf diesem Gerät.",
-            "title": "Vorbereitete Routen",
-            "emptyTitle": "Keine vorbereitete Route",
-            "emptyBody": "Planen Sie A/B und speichern Sie die Route für die Offline-Nutzung.",
+            "scope": "Routen zum Folgen und aufgezeichnete Aktivitäten gemeinsam an einem Ort.",
+            "title": "Meine Routen",
+            "emptyTitle": "Noch keine Route",
+            "emptyBody": "Importieren Sie ein GPX, erstellen Sie eine Route oder zeichnen Sie eine Aktivität auf.",
+            "statusFollow": "Zum Folgen",
+            "statusRecorded": "Aufgezeichnet",
+            "originManual": "In SunTrail erstellt",
+            "originImport": "GPX-Import",
+            "originRecording": "GPS-Aufzeichnung",
+            "originLegacy": "Älterer Verlauf",
+            "view": "Ansehen",
+            "moreActions": "Weitere Aktionen",
+            "repeat": "Erneut gehen",
+            "createItinerary": "Route erstellen",
             "legacyTitle": "Aktuelle Tracks",
             "legacyHelp": "Der GPX-Verlauf bleibt unverändert. Eine Konvertierung der vereinfachten Geometrie ist immer ungefähr."
         },
@@ -209,11 +250,13 @@
             "deleted": "Route gelöscht",
             "imported": "Vollständiges GPX in der Bibliothek gespeichert",
             "gpxPrepared": "Dieser GPX-Track ist jetzt die Route in Vorbereitung",
-            "legacyConverted": "Ungefähre Kopie erstellt; Originalverlauf bleibt erhalten"
+            "legacyConverted": "Ungefähre Kopie erstellt; Originalverlauf bleibt erhalten",
+            "activityPrepared": "Route aus dieser Aktivität erstellt"
         },
         "confirm": {
             "delete": "Diese vorbereitete Route von diesem Gerät löschen?",
-            "convertLegacy": "Dieser Eintrag enthält nur eine vereinfachte Geometrie. Eine ausdrücklich ungefähre Route erstellen, ohne den Verlauf zu löschen?"
+            "convertLegacy": "Dieser Eintrag enthält nur eine vereinfachte Geometrie. Eine ungefähre Route erstellen, ohne den Verlauf zu löschen?",
+            "repeatActivity": "Aus dieser Aktivität eine Route zum Folgen erstellen? Der Verlauf enthält nur vereinfachte Geometrie; das Ergebnis ist daher ungefähr."
         },
         "error": {
             "unavailable": "IndexedDB ist auf diesem Gerät nicht verfügbar.",

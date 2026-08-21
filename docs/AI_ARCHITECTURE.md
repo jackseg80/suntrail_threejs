@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.86.0 — readiness et corridor hors ligne clôturés)
+# AI Architecture Guide (v5.86.2 — tableau de bord Sortie déterministe)
 
 > Référence des services locaux v5.84 à v5.86. La release v5.86 est GitHub uniquement ; aucun
 > déploiement Play/public n'est induit par ce document.
@@ -13,6 +13,7 @@ To improve testability and keep UI components lean, business logic is extracted 
 | :--- | :--- | :--- |
 | `expertService` | Weather reporting, Solar analysis, SOS message generation. | `generateSOSMessage`, `generateWeatherReport` |
 | `recordingService`| Orchestration of GPS recording, permissions, and file saving. | `toggleRecording`, `stopRecording`, `saveToFile` |
+| `outingDashboard` | Pure projection of route, Guidance and REC state into six mutually explicit Sortie phases; computes actual REC summary metrics. | `buildOutingDashboard`, `buildRecordingSummary` |
 | `gpxService` | GPX data handling, parsing, and string generation. | `handleGPXImport`, `buildGPXStringFromLayer` |
 | `gpxLayers` | (v5.56.2) 3D rendering and management of GPX track layers. | `addGPXLayer`, `updateAllGPXMeshes` |
 | `geocodingService` | Reverse/forward geocoding via MapTiler + Nominatim fallback, metadata and contextual ranking. | `getPlaceName`, `searchLocations`, `classifyFeature`, `rankSearchResults` |
@@ -33,7 +34,8 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
 | `ZoneSelector` | (v5.57.0) Logic for visual offline zone selection. | `getViewportBBox`, `getTilesForBBox` |
 | `cachedZones` | (v5.57.0) Persistence and management of offline zones. | `saveZone`, `deleteZone`, `getCachedZones` |
-| `appInit` | (v5.56.15) Centralized application bootstrap and UI hydration. | `appInit` |
+| `appInit` | Centralized application bootstrap and UI hydration; v5.86.2 detects a stale lazy chunk after an update and delegates the one-shot safe shell recovery. | `appInit` |
+| `appShellRecovery` | Removes only the obsolete Workbox app shell and its worker after a hashed dynamic-import failure, then reloads once; offline maps and local data remain intact. | `recoverStaleAppShell` |
 
 ## 2. EventBus Mapping
 
@@ -54,6 +56,7 @@ The `eventBus` is the central hub for module-to-module communication.
 | `packHighlight` | `TopStatusBar` | `{ packId: string }` | Scrolls to & highlights a specific pack in PacksSheet (LOD badge click → pack). |
 | `terrainReady` | `scene` | none | First batch of tiles is loaded and rendered. |
 | `recordingRecovered` | `main` | none | GPS recording resumed after app restart. |
+| `recordingCompleted` | `recordingService` | `RecordingSummary` | Publishes the temporary internally saved REC summary; file export remains a separate Pro action. |
 | `preparedRoutesUpdated` | `PreparedRouteService` | none | Refreshes the local route library after storage changes. |
 | `trackDestinationChanged` | `NavigationBar` | `{ destination: 'outing' \| 'library' }` | Switches the shared `TrackSheet` between functional destinations. |
 | `guidanceSnapshot` | `GuidanceForegroundService` | `GuidanceSnapshot` | Publishes the current foreground matcher state. |
@@ -95,7 +98,8 @@ Use `state.subscribe(key, callback)` for reactive updates.
   current computation remain volatile; only validated `PreparedRouteV1` snapshots are persisted.
 - **Trace roles**: `routeWaypoints`/`routeComputation` are the sole Prepare draft source;
   `activeGPXLayerId` is the viewed reference for map/profile; `recordedPoints` is the independent
-  REC source and keeps priority in Outing statistics while recording.
+  REC source and keeps priority in `outingDashboard` while recording. Import and all catalogue
+  rows are rendered only for `trackDestinationChanged: library`.
 - Selecting a GPX never mutates the Prepare draft. `PreparedRouteService.prepareGPXLayerAsDraft`
   is called only by the explicit UI action after dirty-draft protection.
 - GPX `geometry` preserves every imported point. `waypoints` remains a compact editing model:

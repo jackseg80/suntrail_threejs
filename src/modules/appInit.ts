@@ -52,6 +52,11 @@ import { initAutoHide } from './ui/autoHide';
 import { initMobileUI } from './ui/mobile';
 import { sheetManager } from './ui/core/SheetManager';
 import { attachDraggablePanel } from './ui/draggablePanel';
+import {
+    isStaleDynamicImportFailure,
+    markAppShellHealthy,
+    recoverStaleAppShell,
+} from './appShellRecovery';
 
 export async function appInit(): Promise<void> {
     // Mode test (E2E) : environnement déterministe. La suite est écrite en
@@ -510,7 +515,24 @@ async function initSecondaryUI(): Promise<void> {
         new InclinometerWidget().init();
         initRouteManager();
         initPreparedRouteUI();
+        markAppShellHealthy(sessionStorage, __APP_VERSION__);
     } catch (e) {
+        if (isStaleDynamicImportFailure(e)) {
+            console.warn(
+                '[UI] Bundle d’interface obsolète détecté — rechargement sûr…'
+            );
+            void recoverStaleAppShell({
+                version: __APP_VERSION__,
+                sessionStorage,
+                cacheStorage: 'caches' in window ? caches : undefined,
+                serviceWorker:
+                    'serviceWorker' in navigator
+                        ? navigator.serviceWorker
+                        : undefined,
+                reload: () => window.location.reload(),
+            });
+            return;
+        }
         console.error('[UI] Secondary hydration failed:', e);
     }
 }

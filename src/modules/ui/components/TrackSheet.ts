@@ -22,9 +22,18 @@ import {
 import { updateElevationProfile, closeElevationProfile } from '../../profile';
 import { eventBus } from '../../eventBus';
 import { Capacitor } from '@capacitor/core';
-import { calculateTrackStats } from '../../geoStats';
-import { ICON_CLOSE, ICON_LOCK } from '../icons';
+import {
+    ICON_CLOSE,
+    ICON_COPY,
+    ICON_LOCK,
+    ICON_MAP_LAYERS,
+    ICON_STAR,
+} from '../icons';
 import { recordingService } from '../../recordingService';
+import {
+    promptRecordingName,
+    stopRecordingWithFeedback,
+} from '../../recordingStopFlow';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
 import {
@@ -58,6 +67,13 @@ import {
 } from '../../readiness/routeCorridorInstall';
 import type { CorridorDownloadProgress } from '../../readiness/routeCorridorDownload';
 import { getRouteCorridorPreflight } from '../../readiness/routeCorridorPreflight';
+import {
+    buildOutingDashboard,
+    type OutingRouteSummary,
+    type RecordingSummary,
+} from '../../outing/outingDashboard';
+import type { GuidanceSnapshot } from '../../guidance/guidanceTypes';
+import { STORAGE_KEYS } from '../../../constants/storage';
 
 const pendingGeocode = new Set<string>();
 
@@ -84,6 +100,40 @@ function escapeText(value: string): string {
     );
 }
 
+function formatElapsed(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return hours > 0
+        ? `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+        : `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatPace(secondsPerKm: number | null): string {
+    if (!secondsPerKm || !Number.isFinite(secondsPerKm)) return '—';
+    const roundedSeconds = Math.round(secondsPerKm);
+    const minutes = Math.floor(roundedSeconds / 60);
+    const seconds = roundedSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')} /km`;
+}
+
+function formatDistanceMeters(meters: number | null): string {
+    if (meters === null || !Number.isFinite(meters)) return '—';
+    return meters >= 1_000
+        ? `${(meters / 1_000).toFixed(1)} km`
+        : `${Math.round(meters)} m`;
+}
+
+function formatGuidanceCue(snapshot: GuidanceSnapshot): string {
+    const cue = snapshot.nextCue;
+    if (!cue) return i18n.t('guidance.cue.none');
+    const canonical = i18n.t(`guidance.cue.${cue.kind}`) || cue.kind;
+    if (cue.source === 'ors' || cue.source === 'geometry-derived') {
+        return canonical;
+    }
+    return cue.label ? `${canonical} · ${cue.label}` : canonical;
+}
+
 function renderReadinessStatus(
     section: string,
     status: ReadinessSectionStatus
@@ -100,6 +150,14 @@ function renderReadinessStatus(
 
 export class TrackSheet extends BaseComponent {
     private statTooltips: TooltipHandle[] = [];
+    private guidanceSnapshot: GuidanceSnapshot | null =
+        guidanceForegroundService.getSnapshot();
+    private completedRecording: RecordingSummary | null = null;
+    private outingTimer: number | null = null;
+    private motionMetric: 'pace' | 'speed' =
+        localStorage.getItem(STORAGE_KEYS.OUTING_MOTION_METRIC) === 'speed'
+            ? 'speed'
+            : 'pace';
     private readonly corridorDownloads = new Map<
         string,
         CorridorDownloadUIState
@@ -134,6 +192,7 @@ export class TrackSheet extends BaseComponent {
 
     public override dispose(): void {
         this.disposeStatTooltips();
+        if (this.outingTimer !== null) window.clearInterval(this.outingTimer);
         super.dispose();
     }
 
@@ -181,6 +240,26 @@ export class TrackSheet extends BaseComponent {
 
         this.attachStatTooltips();
 
+        const motionCard = document
+            .getElementById('track-pace')
+            ?.closest<HTMLElement>('.outing-motion-metric');
+        const toggleMotionMetric = () => {
+            this.motionMetric = this.motionMetric === 'pace' ? 'speed' : 'pace';
+            localStorage.setItem(
+                STORAGE_KEYS.OUTING_MOTION_METRIC,
+                this.motionMetric
+            );
+            this.updateOutingDashboard();
+            void haptic('selection');
+        };
+        motionCard?.addEventListener('click', toggleMotionMetric);
+        motionCard?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleMotionMetric();
+            }
+        });
+
         const recBtn = document.getElementById(
             'rec-btn-sheet'
         ) as HTMLButtonElement;
@@ -198,22 +277,7 @@ export class TrackSheet extends BaseComponent {
                 recBtn.setAttribute('aria-busy', 'true');
                 recBtn.disabled = true;
                 try {
-                    if (state.recordedPoints.length >= 2 && isProActive()) {
-                        const suggestedName =
-                            await recordingService.generateSuggestedName();
-                        const finalName =
-                            await this.showSaveTrackPrompt(suggestedName);
-                        if (finalName !== null) {
-                            await recordingService.stopRecording(
-                                finalName || suggestedName
-                            );
-                        } else {
-                            await recordingService.stopRecording();
-                        }
-                    } else {
-                        // Pour les Free ou tracés trop courts, stop direct
-                        await recordingService.stopRecording();
-                    }
+                    await stopRecordingWithFeedback();
                 } finally {
                     _saving = false;
                     recBtn.classList.remove('btn-loading');
@@ -246,6 +310,50 @@ export class TrackSheet extends BaseComponent {
                     ?.classList.remove('hidden');
             });
 
+        const openLibrary = () => {
+            const libraryTab = document.querySelector<HTMLButtonElement>(
+                '.nav-tab[data-tab="library"]'
+            );
+            if (libraryTab) libraryTab.click();
+            else
+                eventBus.emit('trackDestinationChanged', {
+                    destination: 'library',
+                });
+        };
+        document
+            .getElementById('outing-open-library')
+            ?.addEventListener('click', openLibrary);
+        document
+            .getElementById('outing-route-library')
+            ?.addEventListener('click', openLibrary);
+        document
+            .getElementById('outing-completed-library')
+            ?.addEventListener('click', openLibrary);
+        document
+            .getElementById('outing-prepare-route')
+            ?.addEventListener('click', () => {
+                sheetManager.close();
+                setRoutePlanningMode(true, { announceHint: false });
+            });
+        document
+            .getElementById('outing-route-profile')
+            ?.addEventListener('click', () => {
+                if (!state.activeGPXLayerId) return;
+                updateElevationProfile(state.activeGPXLayerId);
+            });
+        document
+            .getElementById('outing-route-guidance')
+            ?.addEventListener('click', () => {
+                const preparedId = this.getActivePreparedRouteId();
+                if (!preparedId) return;
+                const button = Array.from(
+                    this.element?.querySelectorAll<HTMLButtonElement>(
+                        '[data-route-action="guidance"]'
+                    ) ?? []
+                ).find((candidate) => candidate.dataset.routeId === preparedId);
+                button?.click();
+            });
+
         gpxUpload?.addEventListener('change', (e) => {
             const files = (e.target as HTMLInputElement).files;
             if (!files || files.length === 0) return;
@@ -260,10 +368,34 @@ export class TrackSheet extends BaseComponent {
                         const reader = new FileReader();
                         reader.onload = async (ev) => {
                             try {
-                                await gpxService.handleGPXImport(
+                                const layer = await gpxService.handleGPXImport(
                                     ev.target!.result as string,
                                     file.name
                                 );
+                                if (layer) {
+                                    const canOpen =
+                                        await this.protectCurrentDraft(
+                                            layer.name
+                                        );
+                                    const route =
+                                        await preparedRouteService.importGPXLayer(
+                                            layer
+                                        );
+                                    removeGPXLayer(layer.id);
+                                    if (canOpen) {
+                                        preparedRouteService.restoreSavedRoute(
+                                            route
+                                        );
+                                        setRoutePlanningMode(true, {
+                                            announceHint: false,
+                                        });
+                                    }
+                                    showToast(
+                                        i18n.t(
+                                            'preparedRoutes.toast.gpxPrepared'
+                                        )
+                                    );
+                                }
                             } catch (e) {
                                 console.error('[GPX] Import error:', e);
                                 const { showToast } =
@@ -289,17 +421,23 @@ export class TrackSheet extends BaseComponent {
             });
         });
 
-        // Bouton "Essayer Pro" du banner — attaché une fois à l'init
-        const upsellBtn = document.getElementById('rec-upsell-btn');
-        upsellBtn?.addEventListener('click', () =>
-            sheetManager.open('upgrade-sheet')
-        );
-
         this.addSubscription(
-            state.subscribe('isRecording', () => this.updateRecUI())
+            state.subscribe('isRecording', () => {
+                if (state.isRecording) this.completedRecording = null;
+                this.updateRecUI();
+            })
         );
         this.addSubscription(
-            state.subscribe('isPro', () => this.updateRecUI())
+            state.subscribe('isPro', () => {
+                this.updateRecUI();
+                if (
+                    document.body.dataset.trackDestination === 'library' &&
+                    this.element?.classList.contains('is-open')
+                ) {
+                    this.renderPreparedRoutes();
+                    this.renderUnifiedTrackList();
+                }
+            })
         );
         this.addSubscription(
             state.subscribe('trialEnd', () => this.updateRecUI())
@@ -311,6 +449,15 @@ export class TrackSheet extends BaseComponent {
                     this.updateEmptyState();
                 }
             })
+        );
+        this.addSubscription(
+            state.subscribe('recordingStartTime', () => this.updateStats())
+        );
+        this.addSubscription(
+            state.subscribe('userLocation', () => this.updateStats())
+        );
+        this.addSubscription(
+            state.subscribe('userLocationAccuracy', () => this.updateStats())
         );
         this.addSubscription(
             state.subscribe('gpxLayers', () => {
@@ -335,6 +482,7 @@ export class TrackSheet extends BaseComponent {
             this.updateStats();
             this.updateEmptyState();
             this.renderUnifiedTrackList();
+            this.syncOutingTimer();
         };
         eventBus.on('sheetOpened', onSheetOpened);
         this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
@@ -357,6 +505,31 @@ export class TrackSheet extends BaseComponent {
         eventBus.on('preparedRoutesUpdated', onPreparedRoutesUpdated);
         this.addSubscription(() =>
             eventBus.off('preparedRoutesUpdated', onPreparedRoutesUpdated)
+        );
+
+        const onGuidanceSnapshot = (snapshot: GuidanceSnapshot) => {
+            this.guidanceSnapshot = snapshot;
+            this.updateStats();
+        };
+        eventBus.on('guidanceSnapshot', onGuidanceSnapshot);
+        this.addSubscription(() =>
+            eventBus.off('guidanceSnapshot', onGuidanceSnapshot)
+        );
+        const onGuidanceStopped = () => {
+            this.guidanceSnapshot = null;
+            this.updateStats();
+        };
+        eventBus.on('guidanceStopped', onGuidanceStopped);
+        this.addSubscription(() =>
+            eventBus.off('guidanceStopped', onGuidanceStopped)
+        );
+        const onRecordingCompleted = (summary: RecordingSummary) => {
+            this.completedRecording = summary;
+            this.updateStats();
+        };
+        eventBus.on('recordingCompleted', onRecordingCompleted);
+        this.addSubscription(() =>
+            eventBus.off('recordingCompleted', onRecordingCompleted)
         );
 
         const onLocaleChanged = () => {
@@ -401,23 +574,7 @@ export class TrackSheet extends BaseComponent {
             }
         }
 
-        // v5.28.25 : Encart PRO permanent pour les gratuits (même au 1er lancement)
-        const updateUpsellVisibility = () => {
-            const banner = document.getElementById('rec-upsell-banner');
-            if (isProActive()) {
-                banner?.remove();
-            } else if (!banner) {
-                this.showPostRecUpsell();
-            }
-        };
-
-        updateUpsellVisibility();
-
-        // S'abonner aux changements de statut PRO pour masquer l'encart dynamiquement
-        this.addSubscription(state.subscribe('isPro', updateUpsellVisibility));
-        this.addSubscription(
-            state.subscribe('trialEnd', updateUpsellVisibility)
-        );
+        this.syncOutingTimer();
     }
 
     private createGlassModal(
@@ -445,78 +602,10 @@ export class TrackSheet extends BaseComponent {
         return overlay;
     }
 
-    private async showSaveTrackPrompt(
+    public async showSaveTrackPrompt(
         suggestedName: string
     ): Promise<string | null> {
-        return new Promise((resolve) => {
-            const overlay = this.createGlassModal(`
-                <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,12px)">
-                    ${i18n.t('track.save.title') || 'Enregistrer le tracé'}
-                </div>
-                <div style="font-size:var(--text-sm,14px);margin-bottom:var(--space-4,20px);opacity:0.85">
-                    ${isProActive() ? i18n.t('track.save.body') : "<b>Tracé éphémère</b> : il sera perdu à la fermeture de l'app. Nommez-le pour l'afficher :"}
-                </div>
-                <input type="text" id="rec-save-name" value="${suggestedName}" style="
-                    width: 100%; padding: 12px; margin-bottom: 24px;
-                    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
-                    border-radius: 12px; color: #fff; font-size: 15px; outline: none;
-                ">
-                <div style="display:flex;gap:var(--space-2,12px);justify-content:center">
-                    <button id="rec-save-confirm" style="
-                        flex: 1; padding:12px; border:none; border-radius:12px;
-                        background:var(--accent,#4f8cff); color:#fff; font-weight:600; cursor:pointer;
-                    ">${i18n.t('common.save') || 'Enregistrer'}</button>
-                    <button id="rec-save-cancel" style="
-                        flex: 1; padding:12px; border:1px solid rgba(255,255,255,0.2); border-radius:12px;
-                        background:transparent; color:var(--text-2,#a0a4bc); font-weight:600; cursor:pointer;
-                    ">${i18n.t('common.cancel') || 'Annuler'}</button>
-                </div>
-            `);
-
-            const input = document.getElementById(
-                'rec-save-name'
-            ) as HTMLInputElement;
-            input?.focus();
-            input?.select();
-
-            const dismiss = (value: string | null) => {
-                overlay.remove();
-                document.removeEventListener('keydown', onEscape);
-                resolve(value);
-            };
-
-            document
-                .getElementById('rec-save-confirm')
-                ?.addEventListener('click', () => {
-                    const name = input.value.trim() || suggestedName;
-                    dismiss(name);
-                });
-
-            document
-                .getElementById('rec-save-cancel')
-                ?.addEventListener('click', () => {
-                    dismiss(null);
-                });
-
-            // Clic sur le fond = annuler
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) dismiss(null);
-            });
-
-            // Touche Escape = annuler
-            const onEscape = (e: KeyboardEvent) => {
-                if (e.key === 'Escape') dismiss(null);
-            };
-            document.addEventListener('keydown', onEscape);
-
-            // Handle Enter key
-            input?.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const name = input.value.trim() || suggestedName;
-                    dismiss(name);
-                }
-            });
-        });
+        return promptRecordingName(suggestedName);
     }
 
     private async showDraftReplacementPrompt(
@@ -665,6 +754,7 @@ export class TrackSheet extends BaseComponent {
 
     private createEmptyState(): void {
         if (!this.element) return;
+        if (this.element.querySelector('#track-empty-state')) return;
         // this.element IS the #track div (first child of template-track)
         const emptyDiv = document.createElement('div');
         emptyDiv.className = 'empty-state';
@@ -682,11 +772,12 @@ export class TrackSheet extends BaseComponent {
 
     private createLayersListContainer(): void {
         if (!this.element) return;
+        if (this.element.querySelector('#gpx-layers-list')) return;
         const container = document.createElement('div');
         container.id = 'gpx-layers-list';
         container.className = 'gpx-layers-list';
         container.style.display = 'none';
-        const anchor = this.element.querySelector('#outing-tracks-anchor');
+        const anchor = this.element.querySelector('#legacy-tracks-anchor');
         (anchor ?? this.element).appendChild(container);
     }
 
@@ -705,16 +796,16 @@ export class TrackSheet extends BaseComponent {
         if (preparedSection) preparedSection.hidden = !isLibrary;
         const legacyList = document.getElementById('gpx-layers-list');
         const destinationAnchor = this.element.querySelector(
-            isLibrary ? '#legacy-tracks-anchor' : '#outing-tracks-anchor'
+            '#legacy-tracks-anchor'
         );
-        if (legacyList && destinationAnchor) {
+        if (legacyList && destinationAnchor && isLibrary) {
             destinationAnchor.appendChild(legacyList);
             legacyList.hidden = false;
+        } else if (legacyList) {
+            legacyList.hidden = true;
         }
-        // Le contenu dépend de la destination : Sortie ne montre que les
-        // traces chargées, Bibliothèque montre aussi l'historique local. Sans
-        // ce rendu immédiat, l'écran conservait le filtre précédent jusqu'au
-        // retour tardif d'un géocodage réseau.
+        // Le catalogue est recalculé immédiatement en Bibliothèque et purgé de
+        // Sortie, sans attendre le retour tardif d'un géocodage réseau.
         this.renderUnifiedTrackList();
         const title = this.element.querySelector('.sheet-title');
         if (title) {
@@ -724,6 +815,7 @@ export class TrackSheet extends BaseComponent {
         }
         if (isLibrary) this.renderPreparedRoutes();
         else this.updateEmptyState();
+        this.syncOutingTimer();
     }
 
     private renderPreparedRoutes(): void {
@@ -745,9 +837,20 @@ export class TrackSheet extends BaseComponent {
               storageError.message
             : '';
         const routes = state.preparedRoutes;
-        empty.hidden = routes.length > 0;
+        empty.hidden = routes.length > 0 || loadHistory().length > 0;
         container.innerHTML = routes
             .map((route) => {
+                const originKey =
+                    route.source === 'gpx-import'
+                        ? 'preparedRoutes.library.originImport'
+                        : route.source === 'legacy-conversion'
+                          ? 'preparedRoutes.library.originLegacy'
+                          : 'preparedRoutes.library.originManual';
+                const overlayId = this.getPreparedOverlayId(route.id);
+                const isOverlayVisible = state.gpxLayers.some(
+                    (layer) => layer.id === overlayId && layer.visible
+                );
+                const overlayLocked = !isProActive() && !isOverlayVisible;
                 const difficulty = route.stats.technicalDifficulty;
                 const difficultyText = difficulty.sacLevel
                     ? `${difficulty.status === 'partial' ? '≈ ' : ''}T${difficulty.sacLevel} · ${difficulty.coveragePercent}%`
@@ -824,8 +927,12 @@ export class TrackSheet extends BaseComponent {
                     </section>`
                     : '';
                 const corridorMarkup = this.renderCorridorControl(route.id);
-                return `<article class="prepared-route-card" data-route-id="${route.id}">
+                return `<article class="prepared-route-card library-route-card" data-route-id="${route.id}">
                     <div class="prepared-route-card-main">
+                        <div class="library-card-classification">
+                            <span class="library-status-badge" data-status="follow">${escapeText(i18n.t('preparedRoutes.library.statusFollow'))}</span>
+                            <span class="library-origin-label">${escapeText(i18n.t(originKey))}</span>
+                        </div>
                         <strong>${escapeText(route.name)}</strong>
                         <span>${route.stats.distance.toFixed(1)} km · D+ ${Math.round(route.stats.ascent)} m · ${difficultyText}</span>
                         <span>${i18n.t(`preparedRoutes.effort.${route.stats.effort.level}`)} · ETA ${route.stats.light.etaAt ? new Date(route.stats.light.etaAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · ${light}</span>
@@ -834,11 +941,18 @@ export class TrackSheet extends BaseComponent {
                         ${corridorMarkup}
                     </div>
                     <div class="prepared-route-actions">
-                        ${releaseFlags.isEnabled('guidanceForeground') ? `<button type="button" data-route-action="guidance" data-route-id="${route.id}" class="prepared-route-guidance">${i18n.t('guidance.actions.start')}</button>` : ''}
-                        <button type="button" data-route-action="open" data-route-id="${route.id}">${i18n.t('preparedRoutes.actions.open')}</button>
-                        <button type="button" data-route-action="favorite" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.favorite')}" aria-pressed="${route.favorite}">${route.favorite ? '★' : '☆'}</button>
-                        <button type="button" data-route-action="duplicate" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.duplicate')}">⧉</button>
-                        <button type="button" data-route-action="delete" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.delete')}">${ICON_CLOSE}</button>
+                        <div class="prepared-route-primary-actions${releaseFlags.isEnabled('guidanceForeground') ? '' : ' is-single'}">
+                            ${releaseFlags.isEnabled('guidanceForeground') ? `<button type="button" data-route-action="guidance" data-route-id="${route.id}" class="prepared-route-guidance">${i18n.t('guidance.actions.start')}</button>` : ''}
+                            <button type="button" data-route-action="open" data-route-id="${route.id}">${i18n.t('preparedRoutes.actions.open')}</button>
+                        </div>
+                        <div class="prepared-route-secondary-actions" role="group" aria-label="${escapeText(i18n.t('preparedRoutes.library.moreActions'))}">
+                            <button type="button" data-route-action="overlay" data-route-id="${route.id}" class="prepared-route-overlay${overlayLocked ? ' is-pro-locked' : ''}" aria-label="${escapeText(i18n.t(isOverlayVisible ? 'preparedRoutes.actions.removeFromMap' : 'preparedRoutes.actions.addToMap'))}${overlayLocked ? ' · PRO' : ''}" title="${escapeText(i18n.t(isOverlayVisible ? 'preparedRoutes.actions.removeFromMap' : 'preparedRoutes.actions.addToMap'))}${overlayLocked ? ' · PRO' : ''}">
+                                ${ICON_MAP_LAYERS}${overlayLocked ? '<small>PRO</small>' : ''}
+                            </button>
+                            <button type="button" data-route-action="favorite" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.favorite')}" title="${i18n.t('preparedRoutes.actions.favorite')}" aria-pressed="${route.favorite}">${ICON_STAR}</button>
+                            <button type="button" data-route-action="duplicate" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.duplicate')}" title="${i18n.t('preparedRoutes.actions.duplicate')}">${ICON_COPY}</button>
+                            <button type="button" data-route-action="delete" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.delete')}" title="${i18n.t('preparedRoutes.actions.delete')}">${ICON_CLOSE}</button>
+                        </div>
                     </div>
                 </article>`;
             })
@@ -864,6 +978,10 @@ export class TrackSheet extends BaseComponent {
                     const id = button.dataset.routeId;
                     const action = button.dataset.routeAction;
                     if (!id || !action) return;
+                    if (action === 'overlay') {
+                        this.togglePreparedRouteOverlay(id);
+                        return;
+                    }
                     if (action === 'corridor') {
                         const active = this.corridorDownloads.get(id);
                         if (active) {
@@ -913,6 +1031,15 @@ export class TrackSheet extends BaseComponent {
                             ) {
                                 return;
                             }
+                            const overlayId = this.getPreparedOverlayId(id);
+                            if (
+                                state.gpxLayers.some(
+                                    (layer) => layer.id === overlayId
+                                )
+                            ) {
+                                removeGPXLayer(overlayId);
+                            }
+                            if (!isProActive()) hideAllGPXLayers();
                             await preparedRouteService.load(id);
                             const started =
                                 await guidanceForegroundService.start(target, {
@@ -939,6 +1066,15 @@ export class TrackSheet extends BaseComponent {
                             ) {
                                 return;
                             }
+                            const overlayId = this.getPreparedOverlayId(id);
+                            if (
+                                state.gpxLayers.some(
+                                    (layer) => layer.id === overlayId
+                                )
+                            ) {
+                                removeGPXLayer(overlayId);
+                            }
+                            if (!isProActive()) hideAllGPXLayers();
                             await preparedRouteService.load(id);
                             sheetManager.close();
                             setRoutePlanningMode(true, {
@@ -962,6 +1098,14 @@ export class TrackSheet extends BaseComponent {
                             ))
                         ) {
                             await preparedRouteService.delete(id);
+                            const overlayId = this.getPreparedOverlayId(id);
+                            if (
+                                state.gpxLayers.some(
+                                    (layer) => layer.id === overlayId
+                                )
+                            ) {
+                                removeGPXLayer(overlayId);
+                            }
                             showToast(i18n.t('preparedRoutes.toast.deleted'));
                         }
                     } catch {
@@ -971,6 +1115,61 @@ export class TrackSheet extends BaseComponent {
                     }
                 });
             });
+    }
+
+    private getPreparedOverlayId(routeId: string): string {
+        return `prepared-overlay-${routeId}`;
+    }
+
+    private togglePreparedRouteOverlay(routeId: string): void {
+        const overlayId = this.getPreparedOverlayId(routeId);
+        const existing = state.gpxLayers.find(
+            (layer) => layer.id === overlayId
+        );
+        if (existing) {
+            removeGPXLayer(overlayId);
+            this.renderPreparedRoutes();
+            this.renderUnifiedTrackList();
+            return;
+        }
+        if (!isProActive()) {
+            showUpgradePrompt('multi_gpx');
+            return;
+        }
+        if (state.gpxLayers.length >= 10) {
+            showToast(i18n.t('gpx.limitPro') || 'Maximum 10 tracks reached');
+            return;
+        }
+        const route = state.preparedRoutes.find((item) => item.id === routeId);
+        if (!route) {
+            showToast(i18n.t('preparedRoutes.error.notFound'));
+            return;
+        }
+        addGPXLayer(
+            {
+                tracks: [
+                    {
+                        name: route.name,
+                        points: route.geometry.map((point, index) => ({
+                            lat: point.lat,
+                            lon: point.lon,
+                            ele: point.ele,
+                            time: new Date(index * 1000).toISOString(),
+                        })),
+                    },
+                ],
+            },
+            route.name,
+            {
+                id: overlayId,
+                source: 'prepared',
+                isManualRoute: true,
+                forceVisible: true,
+                persistHistory: false,
+            }
+        );
+        this.renderPreparedRoutes();
+        this.renderUnifiedTrackList();
     }
 
     private renderCorridorControl(routeId: string): string {
@@ -1232,6 +1431,26 @@ export class TrackSheet extends BaseComponent {
         img.src = `https://tile.opentopomap.org/${zoom}/${tx}/${ty}.png`;
     }
 
+    private buildHistoryGPXString(entry: GPXHistoryEntry): string {
+        const points = entry.simplifiedPoints
+            .map(
+                (point, index) => `
+      <trkpt lat="${point.lat}" lon="${point.lon}">
+        <ele>${point.ele.toFixed(1)}</ele>
+        <time>${new Date(entry.timestamp + index * 1000).toISOString()}</time>
+      </trkpt>`
+            )
+            .join('');
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="SunTrail 3D" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>${escapeText(entry.name)}</name>
+    <trkseg>${points}
+    </trkseg>
+  </trk>
+</gpx>`;
+    }
+
     private drawPolylineOnCanvas(
         ctx: CanvasRenderingContext2D,
         entry: GPXHistoryEntry,
@@ -1303,6 +1522,9 @@ export class TrackSheet extends BaseComponent {
         };
 
         try {
+            // Free can open every saved item, but keeps one library parcours
+            // visible at a time. Pro adds explicit multi-overlay controls.
+            if (!isProActive()) hideAllGPXLayers();
             addGPXLayer(rawData, entry.name, {
                 source: entry.source,
                 forceVisible: true,
@@ -1319,6 +1541,12 @@ export class TrackSheet extends BaseComponent {
         if (!container) return;
 
         const isLibrary = document.body.dataset.trackDestination === 'library';
+        if (!isLibrary) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            this.updateOutingDashboard();
+            return;
+        }
         const history = loadHistory();
 
         // Lazy geocoding for entries missing locationName
@@ -1356,13 +1584,10 @@ export class TrackSheet extends BaseComponent {
         }
 
         const loadedLayers = state.gpxLayers;
-        const manualRoutes = loadedLayers.filter((l) => l.isManualRoute);
-        const nonManualLoaded = loadedLayers.filter((l) => !l.isManualRoute);
-        const hasImportedGpx = nonManualLoaded.length > 0;
 
-        // Build a merged list: history entries first (with their loaded state), then manual routes
+        // The secondary store contains activities and legacy imports only.
+        // Loaded planning/overlay layers are deliberately not duplicated here.
         interface UnifiedRow {
-            type: 'history' | 'manual';
             id: string;
             name: string;
             color: string;
@@ -1374,7 +1599,6 @@ export class TrackSheet extends BaseComponent {
                 estimatedTime?: number;
             };
             isLoaded: boolean;
-            isLocked: boolean;
             visible: boolean;
             isActive: boolean;
             isProfileActive: boolean;
@@ -1383,27 +1607,18 @@ export class TrackSheet extends BaseComponent {
         }
 
         const mergedRows: UnifiedRow[] = [];
-        const seenIds = new Set<string>();
 
         // History entries
         for (let i = 0; i < history.length; i++) {
             const entry = history[i];
             const loadedLayer = loadedLayers.find((l) => l.id === entry.id);
             const isLoaded = !!loadedLayer;
-            const isFirstOrPro =
-                isProActive() ||
-                !hasImportedGpx ||
-                (loadedLayer && nonManualLoaded.indexOf(loadedLayer) === 0);
-            const isLocked = !isFirstOrPro && !isLoaded;
-
             mergedRows.push({
-                type: 'history',
                 id: entry.id,
                 name: entry.name,
                 color: loadedLayer ? loadedLayer.color : entry.color,
                 stats: loadedLayer ? loadedLayer.stats : entry.stats,
                 isLoaded,
-                isLocked,
                 visible: loadedLayer ? loadedLayer.visible : false,
                 isActive: !!loadedLayer && state.activeGPXLayerId === entry.id,
                 isProfileActive:
@@ -1415,60 +1630,9 @@ export class TrackSheet extends BaseComponent {
                 entry,
                 entryIndex: i,
             });
-            seenIds.add(entry.id);
         }
 
-        // Loaded non-manual layers NOT in history (fresh imports before page reload, edge case)
-        for (const layer of nonManualLoaded) {
-            if (!seenIds.has(layer.id)) {
-                mergedRows.push({
-                    type: 'history',
-                    id: layer.id,
-                    name: layer.name,
-                    color: layer.color,
-                    stats: layer.stats,
-                    isLoaded: true,
-                    isLocked:
-                        !isProActive() && nonManualLoaded.indexOf(layer) > 0,
-                    visible: layer.visible,
-                    isActive: state.activeGPXLayerId === layer.id,
-                    isProfileActive:
-                        state.activeGPXLayerId === layer.id &&
-                        !!document
-                            .getElementById('elevation-profile')
-                            ?.classList.contains('is-open'),
-                });
-            }
-        }
-
-        // Manual routes
-        for (let i = 0; i < manualRoutes.length; i++) {
-            const layer = manualRoutes[i];
-            mergedRows.push({
-                type: 'manual',
-                id: layer.id,
-                name: layer.name,
-                color: layer.color,
-                stats: layer.stats,
-                isLoaded: true,
-                isLocked: false,
-                visible: layer.visible,
-                isActive: state.activeGPXLayerId === layer.id,
-                isProfileActive:
-                    state.activeGPXLayerId === layer.id &&
-                    !!document
-                        .getElementById('elevation-profile')
-                        ?.classList.contains('is-open'),
-            });
-        }
-
-        // Sortie manages the traces currently loaded for the outing. The local
-        // catalogue (including unloaded GPX history) belongs to Bibliothèque.
-        // The same loaded trace is intentionally reachable from both contexts,
-        // but it is never duplicated in storage.
-        const displayedRows = isLibrary
-            ? mergedRows
-            : mergedRows.filter((row) => row.isLoaded);
+        const displayedRows = mergedRows;
 
         const visibleLayers = loadedLayers.filter((layer) => layer.visible);
         const recVisible =
@@ -1479,7 +1643,7 @@ export class TrackSheet extends BaseComponent {
             (layer) => layer.id === state.activeGPXLayerId
         );
 
-        if (displayedRows.length === 0 && !recVisible) {
+        if (displayedRows.length === 0) {
             container.innerHTML = '';
             container.style.display = 'none';
             return;
@@ -1494,7 +1658,8 @@ export class TrackSheet extends BaseComponent {
                   { name: activeLayer.name }
               )
             : i18n.t('track.layers.noViewed');
-        let html = `<div class="track-layers-overview" role="status">
+        let html = isProActive()
+            ? `<div class="track-layers-overview" role="status">
             <div class="track-layers-overview-copy">
                 <strong>${escapeText(i18n.t('track.layers.visibleCount', { count: String(visibleCount) }))}</strong>
                 <span>${escapeText(activeLabel)}</span>
@@ -1504,90 +1669,63 @@ export class TrackSheet extends BaseComponent {
                 <button type="button" data-layer-overview-action="only" ${activeLayer ? '' : 'disabled'}>${escapeText(i18n.t('track.layers.hideOthers'))}</button>
                 <button type="button" data-layer-overview-action="hide-all" ${visibleLayers.length > 0 ? '' : 'disabled'}>${escapeText(i18n.t('track.layers.hideAll'))}</button>
             </div>
-        </div>`;
-        if (!isLibrary && displayedRows.length > 0) {
-            html += `<div class="gpx-layers-header">${escapeText(i18n.t('track.layers.loadedTitle'))}</div>`;
-        }
-        let inManualSection = false;
+        </div>`
+            : '';
         const entryMap = new Map<number, GPXHistoryEntry>();
 
         for (let i = 0; i < displayedRows.length; i++) {
             const row = displayedRows[i];
-
-            if (row.type === 'manual' && !inManualSection) {
-                inManualSection = true;
-                html += `<div class="gpx-layers-header" style="margin-top:var(--space-3)">${i18n.t('track.manual.title') || 'Itinéraire planifié'}</div>`;
-            }
-
             const duration = row.stats.estimatedTime
                 ? fmtDuration(row.stats.estimatedTime)
                 : '—';
             const truncName =
                 row.name.length > 20 ? row.name.slice(0, 20) + '...' : row.name;
             const layerClass = row.isActive ? ' active' : '';
-            const lockedClass = row.isLocked ? ' gpx-layer-locked' : '';
 
-            if (row.type === 'manual') {
-                // Manual route: color dot, no mini-map
-                html += `
-                <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${row.id}" data-row-idx="${i}">
-                    <span class="gpx-layer-dot" style="background:${row.color}"></span>
-                    <div class="gpx-layer-info">
-                        <span class="gpx-layer-name">${truncName}</span>
-                        <span class="gpx-layer-stats">${row.stats.distance.toFixed(2)} km · D+ ${Math.round(row.stats.dPlus)} m · D− ${Math.round(row.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
-                    </div>
-                    <button class="gpx-layer-toggle" data-action="toggle" data-id="${row.id}" data-visible="${row.visible}"
-                            aria-label="${i18n.t('track.imported.toggleVisible')}" title="${i18n.t('track.imported.toggleVisible')}">
-                        ${
-                            row.visible
-                                ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-                                : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
-                        }
-                    </button>
-                    <button class="gpx-layer-profile${row.isProfileActive ? ' profile-active' : ''}" data-action="profile" data-id="${row.id}"
-                            aria-label="${i18n.t('track.imported.showProfile')}" title="${i18n.t('track.imported.showProfile')}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="${row.isProfileActive ? 'var(--accent)' : 'none'}" stroke="${row.isProfileActive ? 'var(--accent)' : 'currentColor'}" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    </button>
-                    <button class="gpx-layer-remove" data-action="remove" data-id="${row.id}" aria-label="${i18n.t('track.imported.remove')}" title="${i18n.t('track.imported.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                </div>`;
-            } else {
-                // History entry: mini-map instead of color dot
-                entryMap.set(
-                    i,
-                    row.entry || history.find((e) => e.id === row.id)!
-                );
-                const locName =
-                    row.entry?.locationName || row.entry?.countryName || '';
-                const countrySuffix =
-                    row.entry?.locationName && row.entry?.countryName
-                        ? ` (${row.entry.countryName})`
-                        : '';
-                const dateStr = new Date(
-                    row.entry?.timestamp || Date.now()
-                ).toLocaleDateString(undefined, {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                });
-                const subInfo = locName
-                    ? `${locName}${countrySuffix} · ${dateStr}`
-                    : dateStr;
-                const loadedRemovalKey = isLibrary
-                    ? 'track.imported.remove'
-                    : 'track.imported.unload';
-                html += `
-                <div class="gpx-layer-item${layerClass}${lockedClass}" data-layer-id="${row.id}" data-row-idx="${i}" style="${row.isLocked ? 'opacity:0.5;' : ''}">
+            entryMap.set(i, row.entry!);
+            const isRecorded = row.entry?.source === 'rec';
+            const exportLocked = !isProActive();
+            const locName =
+                row.entry?.locationName || row.entry?.countryName || '';
+            const countrySuffix =
+                row.entry?.locationName && row.entry?.countryName
+                    ? ` (${row.entry.countryName})`
+                    : '';
+            const dateStr = new Date(
+                row.entry?.timestamp || Date.now()
+            ).toLocaleDateString(undefined, {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+            const subInfo = locName
+                ? `${locName}${countrySuffix} · ${dateStr}`
+                : dateStr;
+            const loadedRemovalKey = isLibrary
+                ? 'track.imported.remove'
+                : 'track.imported.unload';
+            html += `
+                <div class="gpx-layer-item library-activity-card${layerClass}" data-layer-id="${row.id}" data-row-idx="${i}">
                     <canvas class="gpx-layer-minimap" data-history-idx="${row.entryIndex ?? i}" width="120" height="84"></canvas>
                     <div class="gpx-layer-info">
-                        <span class="gpx-layer-name">${row.isLocked ? ICON_LOCK + ' ' : ''}${truncName}</span>
+                        <span class="library-card-classification">
+                            <span class="library-status-badge" data-status="${isRecorded ? 'recorded' : 'follow'}">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.statusRecorded' : 'preparedRoutes.library.statusFollow'))}</span>
+                            <span class="library-origin-label">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.originRecording' : 'preparedRoutes.library.originImport'))}</span>
+                        </span>
+                        <span class="gpx-layer-name">${truncName}</span>
                         <span class="gpx-layer-location">${subInfo}</span>
                         <span class="gpx-layer-stats">${row.stats.distance.toFixed(2)} km · D+ ${Math.round(row.stats.dPlus)} m · D− ${Math.round(row.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
                     </div>
-                    <button class="gpx-layer-profile${row.isProfileActive ? ' profile-active' : ''}" data-action="profile" data-id="${row.id}"
-                            aria-label="${i18n.t('track.imported.showProfile')}" title="${i18n.t('track.imported.showProfile')}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="${row.isProfileActive ? 'var(--accent)' : 'none'}" stroke="${row.isProfileActive ? 'var(--accent)' : 'currentColor'}" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    </button>
+                    <div class="library-activity-actions">
+                        <div class="library-activity-primary-actions">
+                            <button class="library-activity-view gpx-layer-profile${row.isProfileActive ? ' profile-active' : ''}" data-action="profile" data-id="${row.id}"
+                                    aria-label="${i18n.t('track.imported.showProfile')}" title="${i18n.t('track.imported.showProfile')}">${escapeText(i18n.t('preparedRoutes.library.view'))}</button>
+                            <button class="library-activity-repeat gpx-layer-prepare" data-action="legacy-convert" data-id="${row.id}"
+                                    aria-label="${i18n.t(isRecorded ? 'preparedRoutes.library.repeat' : 'preparedRoutes.library.createItinerary')}"
+                                    title="${i18n.t(isRecorded ? 'preparedRoutes.library.repeat' : 'preparedRoutes.library.createItinerary')}">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.repeat' : 'preparedRoutes.library.createItinerary'))}</button>
+                        </div>
+                        <div class="library-activity-secondary-actions" role="group" aria-label="${i18n.t('preparedRoutes.library.moreActions')}">
                     ${
                         row.isLoaded
                             ? `
@@ -1599,23 +1737,20 @@ export class TrackSheet extends BaseComponent {
                                 : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
                         }
                     </button>
-                    <button class="gpx-layer-export" data-action="export" data-id="${row.id}"
-                            aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}" title="${i18n.t('track.imported.export') || 'Exporter GPX'}"
-                            style="${row.isLocked ? 'color:var(--gold);' : ''}">
-                        ${row.isLocked ? ICON_LOCK : ''}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    </button>
                     `
                             : ''
                     }
-                    <button class="gpx-layer-prepare" data-action="${row.isLoaded ? 'prepare-draft' : 'legacy-convert'}" data-id="${row.id}"
-                            aria-label="${row.isLoaded ? i18n.t('preparedRoutes.actions.prepareGPX') : i18n.t('preparedRoutes.actions.convertLegacy')}"
-                            title="${row.isLoaded ? i18n.t('preparedRoutes.actions.prepareGPX') : i18n.t('preparedRoutes.actions.convertLegacy')}">✎</button>
+                    <button class="gpx-layer-export${exportLocked ? ' is-pro-locked' : ''}" data-action="export" data-id="${row.id}"
+                            aria-label="${i18n.t('track.imported.export') || 'Exporter GPX'}${exportLocked ? ' · Pro' : ''}" title="${i18n.t('track.imported.export') || 'Exporter GPX'}${exportLocked ? ' · Pro' : ''}">
+                        ${exportLocked ? ICON_LOCK : ''}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </button>
                     <button class="gpx-layer-remove" data-action="${row.isLoaded ? 'remove' : 'history-remove'}" data-id="${row.id}"
                             aria-label="${row.isLoaded ? i18n.t(loadedRemovalKey) : i18n.t('track.history.remove')}"
-                            title="${row.isLoaded ? i18n.t(loadedRemovalKey) : i18n.t('track.history.remove')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                            title="${row.isLoaded ? i18n.t(loadedRemovalKey) : i18n.t('track.history.remove')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                    </div>
                 </div>`;
-            }
         }
 
         container.innerHTML = html;
@@ -1647,12 +1782,8 @@ export class TrackSheet extends BaseComponent {
             item.addEventListener('click', (e) => {
                 if ((e.target as HTMLElement).closest('[data-action]')) return;
 
-                if (row.type === 'history' && !row.isLoaded) {
+                if (!row.isLoaded) {
                     // Load from history, then select
-                    if (!isProActive() && hasImportedGpx) {
-                        showUpgradePrompt('multi_gpx');
-                        return;
-                    }
                     if (state.gpxLayers.length >= 10) {
                         showToast(
                             i18n.t('gpx.limitPro') ||
@@ -1665,6 +1796,7 @@ export class TrackSheet extends BaseComponent {
                     // Select loaded layer
                     const layer = state.gpxLayers.find((l) => l.id === row.id);
                     if (!layer) return;
+                    if (!isProActive()) showOnlyGPXLayer(row.id);
                     activateGPXLayer(row.id);
                     updateElevationProfile(row.id);
                     if (state.originTile && row.entry) {
@@ -1692,20 +1824,16 @@ export class TrackSheet extends BaseComponent {
             });
         });
 
-        // Profile buttons (toggle open/close)
+        // Primary "View" action: load a saved activity if needed, then toggle its profile.
         container.querySelectorAll('[data-action="profile"]').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
                 const row = displayedRows.find((r) => r.id === id);
                 if (!row) return;
 
-                if (!row.isLoaded && row.type === 'history') {
-                    if (!isProActive() && hasImportedGpx) {
-                        showUpgradePrompt('multi_gpx');
-                        return;
-                    }
+                if (!row.isLoaded) {
                     if (state.gpxLayers.length >= 10) {
                         showToast(
                             i18n.t('gpx.limitPro') ||
@@ -1713,13 +1841,9 @@ export class TrackSheet extends BaseComponent {
                         );
                         return;
                     }
-                    if (row.entry) this.loadHistoryEntry(row.entry);
-                    return;
-                }
-
-                if (row.isLocked) {
-                    showUpgradePrompt('multi_gpx');
-                    return;
+                    if (row.entry) await this.loadHistoryEntry(row.entry);
+                    if (!state.gpxLayers.some((layer) => layer.id === id))
+                        return;
                 }
 
                 const panelOpen = !!document
@@ -1730,6 +1854,7 @@ export class TrackSheet extends BaseComponent {
                 if (panelOpen && isSameTrack) {
                     closeElevationProfile();
                 } else {
+                    if (!isProActive()) showOnlyGPXLayer(id);
                     state.activeGPXLayerId = id;
                     updateElevationProfile(id);
                 }
@@ -1744,14 +1869,10 @@ export class TrackSheet extends BaseComponent {
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
                 const row = displayedRows.find((r) => r.id === id);
-                if (row?.isLocked) {
-                    showUpgradePrompt('multi_gpx');
-                    return;
-                }
-                if (id) {
-                    toggleGPXLayer(id);
-                    this.renderUnifiedTrackList();
-                }
+                if (!row) return;
+                if (!isProActive() && !row.visible) showOnlyGPXLayer(id);
+                else toggleGPXLayer(id);
+                this.renderUnifiedTrackList();
             });
         });
 
@@ -1762,57 +1883,34 @@ export class TrackSheet extends BaseComponent {
                 const id = (btn as HTMLElement).dataset.id;
                 if (!id) return;
                 const row = displayedRows.find((r) => r.id === id);
-                if (row?.isLocked) {
+                if (!isProActive()) {
                     showUpgradePrompt('export_gpx');
                     return;
                 }
                 const layerToExport = state.gpxLayers.find((l) => l.id === id);
-                if (!layerToExport || !layerToExport.rawData) return;
-                const gpxString =
-                    gpxService.buildGPXStringFromLayer(layerToExport);
+                const gpxString = layerToExport?.rawData
+                    ? gpxService.buildGPXStringFromLayer(layerToExport)
+                    : row?.entry
+                      ? this.buildHistoryGPXString(row.entry)
+                      : null;
+                if (!gpxString) return;
                 try {
-                    await recordingService.saveToFile(
-                        layerToExport.name,
+                    const filename = await recordingService.saveToFile(
+                        layerToExport?.name || row?.name || 'SunTrail',
                         gpxString
                     );
-                    showToast(i18n.t('track.toast.exported'));
+                    if (filename) {
+                        showToast(i18n.t('track.toast.exported'));
+                    } else {
+                        showToast(i18n.t('track.toast.exportError'));
+                    }
                 } catch {
                     showToast(i18n.t('track.toast.exportError'));
                 }
             });
         });
 
-        // Remove (loaded layers) or history-remove (history entries)
-        container
-            .querySelectorAll('[data-action="prepare-draft"]')
-            .forEach((btn) => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const id = (btn as HTMLElement).dataset.id;
-                    const layer = state.gpxLayers.find(
-                        (candidate) => candidate.id === id
-                    );
-                    if (!layer) return;
-                    const alreadyPrepared =
-                        state.routeDraftSourceLayerId === layer.id &&
-                        state.routeComputation?.routingSource === 'gpx';
-                    if (
-                        !alreadyPrepared &&
-                        !(await this.protectCurrentDraft(layer.name))
-                    ) {
-                        return;
-                    }
-                    try {
-                        activateGPXLayer(layer.id);
-                        preparedRouteService.prepareGPXLayerAsDraft(layer);
-                        sheetManager.close();
-                        setRoutePlanningMode(true, { announceHint: false });
-                        showToast(i18n.t('preparedRoutes.toast.gpxPrepared'));
-                    } catch {
-                        showToast(i18n.t('preparedRoutes.error.notReady'));
-                    }
-                });
-            });
+        // Convert an old simplified activity/import into a saved itinerary.
         container
             .querySelectorAll('[data-action="legacy-convert"]')
             .forEach((btn) => {
@@ -1826,7 +1924,11 @@ export class TrackSheet extends BaseComponent {
                         return;
                     }
                     const confirmed = await confirmDialog(
-                        i18n.t('preparedRoutes.confirm.convertLegacy')
+                        i18n.t(
+                            entry.source === 'rec'
+                                ? 'preparedRoutes.confirm.repeatActivity'
+                                : 'preparedRoutes.confirm.convertLegacy'
+                        )
                     );
                     if (!confirmed) {
                         return;
@@ -1834,8 +1936,13 @@ export class TrackSheet extends BaseComponent {
                     try {
                         await preparedRouteService.convertLegacy(entry);
                         showToast(
-                            i18n.t('preparedRoutes.toast.legacyConverted')
+                            i18n.t(
+                                entry.source === 'rec'
+                                    ? 'preparedRoutes.toast.activityPrepared'
+                                    : 'preparedRoutes.toast.legacyConverted'
+                            )
                         );
+                        this.renderPreparedRoutes();
                     } catch {
                         showToast(i18n.t('preparedRoutes.error.storage'));
                     }
@@ -1853,6 +1960,7 @@ export class TrackSheet extends BaseComponent {
                     removeGPXLayer(id);
                     if (isLibrary) state.gpxHistory = loadHistory();
                     this.renderUnifiedTrackList();
+                    this.renderPreparedRoutes();
                 }
             });
         });
@@ -1866,6 +1974,7 @@ export class TrackSheet extends BaseComponent {
                         removeFromHistory(id);
                         state.gpxHistory = loadHistory();
                         this.renderUnifiedTrackList();
+                        this.renderPreparedRoutes();
                     }
                 });
             });
@@ -1895,17 +2004,247 @@ export class TrackSheet extends BaseComponent {
         });
     }
     private updateEmptyState(): void {
-        const emptyEl = document.getElementById('track-empty-state');
-        const statsEl = this.element?.querySelector(
-            '.track-stats'
-        ) as HTMLElement | null;
-        if (!emptyEl) return;
-
-        const hasData =
-            state.gpxLayers.length > 0 || state.recordedPoints.length > 0;
-        emptyEl.style.display = hasData ? 'none' : 'flex';
-        if (statsEl) statsEl.style.display = hasData ? '' : 'none';
+        this.updateOutingDashboard();
     }
+
+    private getActiveRouteSummary(): OutingRouteSummary | null {
+        const layer = state.gpxLayers.find(
+            (candidate) => candidate.id === state.activeGPXLayerId
+        );
+        if (!layer) return null;
+        return {
+            id: layer.id,
+            name: layer.name,
+            distanceKm: layer.stats.distance,
+            ascentMeters: layer.stats.dPlus,
+            descentMeters: layer.stats.dMinus,
+        };
+    }
+
+    private getActivePreparedRouteId(): string | null {
+        const activeLayerId = state.activeGPXLayerId;
+        if (
+            state.activePreparedRouteId &&
+            activeLayerId === `prepared-${state.activePreparedRouteId}`
+        ) {
+            return state.activePreparedRouteId;
+        }
+        const route = state.preparedRoutes.find(
+            (candidate) => `prepared-${candidate.id}` === activeLayerId
+        );
+        return route?.id ?? null;
+    }
+
+    private renderActiveRoutePreview(): void {
+        const canvas = document.getElementById(
+            'outing-route-map'
+        ) as HTMLCanvasElement | null;
+        const layer = state.gpxLayers.find(
+            (candidate) => candidate.id === state.activeGPXLayerId
+        );
+        const rawPoints = layer?.rawData?.tracks?.[0]?.points ?? [];
+        if (!canvas || !layer || rawPoints.length < 2) return;
+
+        const step = Math.max(1, Math.ceil(rawPoints.length / 200));
+        const simplifiedPoints = rawPoints
+            .filter((_, index) => index % step === 0)
+            .map((point) => ({
+                lat: point.lat,
+                lon: point.lon,
+                ele: point.ele ?? point.alt ?? 0,
+            }));
+        const last = rawPoints.at(-1);
+        if (
+            last &&
+            (simplifiedPoints.at(-1)?.lat !== last.lat ||
+                simplifiedPoints.at(-1)?.lon !== last.lon)
+        ) {
+            simplifiedPoints.push({
+                lat: last.lat,
+                lon: last.lon,
+                ele: last.ele ?? last.alt ?? 0,
+            });
+        }
+        const lats = simplifiedPoints.map((point) => point.lat);
+        const lons = simplifiedPoints.map((point) => point.lon);
+        const entry: GPXHistoryEntry = {
+            id: layer.id,
+            name: layer.name,
+            color: layer.color,
+            source: 'import',
+            timestamp: Date.now(),
+            stats: { ...layer.stats },
+            simplifiedPoints,
+            centerLat: (Math.min(...lats) + Math.max(...lats)) / 2,
+            centerLon: (Math.min(...lons) + Math.max(...lons)) / 2,
+            bounds: {
+                minLat: Math.min(...lats),
+                maxLat: Math.max(...lats),
+                minLon: Math.min(...lons),
+                maxLon: Math.max(...lons),
+            },
+        };
+        this.renderMiniMap(entry, canvas);
+    }
+
+    private updateOutingDashboard(): void {
+        if (!this.element) return;
+        const dashboard = document.getElementById('outing-dashboard');
+        if (!dashboard) return;
+        const model = buildOutingDashboard({
+            now: Date.now(),
+            isRecording: state.isRecording,
+            recordingStartTime: state.recordingStartTime,
+            recordedPoints: state.recordedPoints,
+            activeRoute: this.getActiveRouteSummary(),
+            guidanceSnapshot: this.guidanceSnapshot,
+            userAltitudeMeters: state.userLocation?.alt ?? null,
+            gpsAccuracyMeters: state.userLocationAccuracy,
+            completedRecording: this.completedRecording,
+        });
+        dashboard.dataset.phase = model.phase;
+
+        const setHidden = (id: string, hidden: boolean) => {
+            const element = document.getElementById(id);
+            if (element) element.hidden = hidden;
+        };
+        setHidden('track-empty-state', model.phase !== 'rest');
+        setHidden('outing-route-card', model.phase !== 'route');
+        setHidden('outing-guidance-card', !model.guidance);
+        setHidden('outing-rec-card', !model.recording);
+        setHidden('outing-completed-card', model.phase !== 'completed');
+
+        const setText = (id: string, value: string) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        };
+
+        if (model.route) {
+            setText('outing-route-name', model.route.name);
+            setText(
+                'outing-route-stats',
+                `${model.route.distanceKm.toFixed(2)} km · D+ ${Math.round(model.route.ascentMeters)} m · D− ${Math.round(model.route.descentMeters)} m`
+            );
+            const guidanceButton = document.getElementById(
+                'outing-route-guidance'
+            );
+            if (guidanceButton) {
+                guidanceButton.hidden = !this.getActivePreparedRouteId();
+            }
+            if (model.phase === 'route') {
+                window.requestAnimationFrame(() =>
+                    this.renderActiveRoutePreview()
+                );
+            }
+        }
+
+        if (model.guidance) {
+            setText('outing-guidance-cue', formatGuidanceCue(model.guidance));
+            setText(
+                'outing-guidance-distance',
+                formatDistanceMeters(model.guidance.distanceToNextCueMeters)
+            );
+            setText(
+                'outing-guidance-cross-track',
+                formatDistanceMeters(model.guidance.crossTrackMeters)
+            );
+            setText(
+                'outing-guidance-remaining',
+                formatDistanceMeters(model.guidance.remainingMeters)
+            );
+            const etaDate = model.guidance.eta
+                ? new Date(model.guidance.eta)
+                : null;
+            setText(
+                'outing-guidance-eta',
+                etaDate && Number.isFinite(etaDate.getTime())
+                    ? etaDate.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                      })
+                    : '—'
+            );
+        }
+
+        if (model.recording) {
+            const recording = model.recording;
+            setText(
+                'track-stats-context',
+                i18n.t('track.statsContext.recording')
+            );
+            setText('track-duration', formatElapsed(recording.durationSeconds));
+            setText('track-dist', `${recording.distanceKm.toFixed(2)} km`);
+            const averageSpeedKmh =
+                recording.durationSeconds > 0
+                    ? recording.distanceKm / (recording.durationSeconds / 3_600)
+                    : null;
+            setText(
+                'track-motion-label',
+                i18n.t(
+                    this.motionMetric === 'pace'
+                        ? 'track.outing.recording.pace'
+                        : 'track.outing.recording.speed'
+                )
+            );
+            setText(
+                'track-pace',
+                this.motionMetric === 'pace'
+                    ? formatPace(recording.averagePaceSecondsPerKm)
+                    : averageSpeedKmh && Number.isFinite(averageSpeedKmh)
+                      ? `${averageSpeedKmh.toFixed(1)} km/h`
+                      : '—'
+            );
+            setText('track-dplus', `+${Math.round(recording.ascentMeters)} m`);
+            setText(
+                'track-altitude',
+                recording.altitudeMeters === null
+                    ? '—'
+                    : `${Math.round(recording.altitudeMeters)} m`
+            );
+            setText(
+                'track-dminus',
+                `−${Math.round(recording.descentMeters)} m`
+            );
+            setText(
+                'track-gps-quality',
+                recording.gpsAccuracyMeters === null
+                    ? '—'
+                    : `±${Math.round(recording.gpsAccuracyMeters)} m`
+            );
+            setText('track-points', String(recording.pointCount));
+        }
+
+        if (model.completedRecording) {
+            const completed = model.completedRecording;
+            setText(
+                'outing-completed-name',
+                completed.name || i18n.t('track.outing.completed.defaultName')
+            );
+            setText(
+                'outing-completed-summary',
+                `${formatElapsed(completed.durationSeconds)} · ${completed.distanceKm.toFixed(2)} km · D+ ${Math.round(completed.ascentMeters)} m`
+            );
+        }
+    }
+
+    private syncOutingTimer(): void {
+        if (this.outingTimer !== null) {
+            window.clearInterval(this.outingTimer);
+            this.outingTimer = null;
+        }
+        if (
+            !state.isRecording ||
+            document.body.dataset.trackDestination === 'library' ||
+            !this.element?.classList.contains('is-open')
+        ) {
+            return;
+        }
+        this.outingTimer = window.setInterval(
+            () => this.updateOutingDashboard(),
+            1_000
+        );
+    }
+
     private updateRecUI() {
         const recBtn = document.getElementById(
             'rec-btn-sheet'
@@ -1932,122 +2271,11 @@ export class TrackSheet extends BaseComponent {
             trackEl?.classList.remove('is-pro');
         }
         this.renderUnifiedTrackList();
+        this.updateOutingDashboard();
+        this.syncOutingTimer();
     }
 
     private updateStats() {
-        if (!this.element) return;
-
-        const distEl = document.getElementById('track-dist');
-        const pointsEl = document.getElementById('track-points');
-        const dplusEl = document.getElementById('track-dplus');
-        const dminusEl = document.getElementById('track-dminus');
-        const durationEl = document.getElementById('track-duration');
-        const contextEl = document.getElementById('track-stats-context');
-
-        // ARIA: stats are live regions
-        distEl?.setAttribute('aria-live', 'polite');
-        pointsEl?.setAttribute('aria-live', 'polite');
-        dplusEl?.setAttribute('aria-live', 'polite');
-        dminusEl?.setAttribute('aria-live', 'polite');
-        durationEl?.setAttribute('aria-live', 'polite');
-
-        // v5.29.41 : Priorité à l'affichage du calque actif si on n'enregistre pas
-        if (!state.isRecording && state.activeGPXLayerId) {
-            const activeLayer = state.gpxLayers.find(
-                (l) => l.id === state.activeGPXLayerId
-            );
-            if (activeLayer) {
-                if (contextEl) {
-                    contextEl.textContent = i18n.t(
-                        'track.statsContext.viewed',
-                        { name: activeLayer.name }
-                    );
-                }
-                const s = activeLayer.stats;
-                if (distEl)
-                    distEl.innerHTML = `${s.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
-                if (dplusEl)
-                    dplusEl.innerHTML = `+${Math.round(s.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
-                if (dminusEl)
-                    dminusEl.innerHTML = `−${Math.round(s.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
-                if (pointsEl) pointsEl.textContent = s.pointCount.toString();
-                if (durationEl)
-                    durationEl.textContent = s.estimatedTime
-                        ? fmtDuration(s.estimatedTime)
-                        : '—';
-                return;
-            }
-        }
-
-        // Sinon, affichage des stats de l'enregistrement en cours
-        if (contextEl) {
-            contextEl.textContent = state.isRecording
-                ? i18n.t('track.statsContext.recording')
-                : state.recordedPoints.length >= 2
-                  ? i18n.t('track.statsContext.recorded')
-                  : i18n.t('track.statsContext.none');
-        }
-        if (pointsEl)
-            pointsEl.textContent = state.recordedPoints.length.toString();
-
-        if (state.recordedPoints.length < 2) {
-            if (distEl)
-                distEl.innerHTML = `0.0 <span class="trk-stat-unit">km</span>`;
-            if (dplusEl)
-                dplusEl.innerHTML = `+0 <span class="trk-stat-unit-plain">m</span>`;
-            if (dminusEl)
-                dminusEl.innerHTML = `−0 <span class="trk-stat-unit-plain">m</span>`;
-            if (durationEl) durationEl.textContent = '—';
-            return;
-        }
-
-        const stats = calculateTrackStats(state.recordedPoints);
-
-        if (distEl)
-            distEl.innerHTML = `${stats.distance.toFixed(2)} <span class="trk-stat-unit">km</span>`;
-        if (dplusEl)
-            dplusEl.innerHTML = `+${Math.round(stats.dPlus)} <span class="trk-stat-unit-plain">m</span>`;
-        if (dminusEl)
-            dminusEl.innerHTML = `−${Math.round(stats.dMinus)} <span class="trk-stat-unit-plain">m</span>`;
-        if (durationEl)
-            durationEl.textContent = stats.estimatedTime
-                ? fmtDuration(stats.estimatedTime)
-                : '—';
-    }
-
-    private showPostRecUpsell(): void {
-        document.getElementById('rec-upsell-banner')?.remove();
-        const banner = document.createElement('div');
-        banner.id = 'rec-upsell-banner';
-        banner.className = 'rec-upsell-banner';
-        banner.style.cssText =
-            'display:flex; align-items:center; gap:var(--space-2); padding:var(--space-3); margin-top:var(--space-3); background:rgba(var(--accent-rgb,59,126,248),0.12); border:1px solid rgba(var(--accent-rgb,59,126,248),0.3); border-radius:var(--radius-md); font-size:12px; color:var(--text-2);';
-
-        const text = document.createElement('span');
-        text.style.cssText =
-            'flex:1; min-width:0; overflow-wrap:break-word; word-break:break-word;';
-        text.textContent = i18n.t('track.upsell.postRec');
-
-        const proBtn = document.createElement('button');
-        proBtn.className = 'btn-go solar-upsell-btn';
-        proBtn.style.cssText =
-            'flex-shrink:0; font-size:11px; padding:4px 10px;';
-        proBtn.textContent = i18n.t('track.upsell.proBtn');
-        proBtn.onclick = () => showUpgradePrompt('rec_stats');
-
-        banner.appendChild(text);
-        banner.appendChild(proBtn);
-
-        if (isProActive()) {
-            const closeBtn = document.createElement('button');
-            closeBtn.setAttribute('aria-label', i18n.t('common.close'));
-            closeBtn.style.cssText =
-                'flex-shrink:0; background:none; border:none; color:var(--text-3); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;';
-            closeBtn.innerHTML = ICON_CLOSE;
-            closeBtn.onclick = () => banner.remove();
-            banner.appendChild(closeBtn);
-        }
-
-        this.element?.appendChild(banner);
+        this.updateOutingDashboard();
     }
 }

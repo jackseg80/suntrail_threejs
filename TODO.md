@@ -1,6 +1,38 @@
-# SunTrail — TODO (v5.86.1 Android en cours ; v5.85.1 en validation séparée)
+# SunTrail — TODO (v5.86.2 Sortie/Bibliothèque clôturée ; publication Play séparée)
 
-> Dernière mise à jour : 2026-08-13
+> Dernière mise à jour : 2026-08-21
+
+## ✅ v5.86.2 — Tableau de bord Sortie et contrat Free/Pro honnête
+
+- [x] Vérifier le maximum global dans Play App Bundle Explorer (`905`) et attribuer localement
+      `versionName 5.86.2` / `versionCode 906`, sans upload ni action de publication.
+- [x] Introduire un view-model pur repos/route/Guidance/REC/combiné/terminé et conserver la priorité
+      des mesures REC réelles : durée, distance, allure, D+, altitude, D− et qualité GPS.
+- [x] Réunir import GPX, itinéraires à suivre et activités REC dans « Mes parcours » ; limiter
+      Sortie à la route consultée/suivie, au guidage et à l'activité actuelle.
+- [x] Autoriser le nom personnalisé et la sauvegarde interne d'un REC Free ; bloquer l'export fichier
+      avant Blob/écriture et ne jamais afficher un faux toast de téléchargement.
+- [x] Retirer l'upsell permanent en activité et les textes `éphémère` / `recWarning5min` des quatre
+      locales ; Free affiche un parcours à la fois et Pro peut en ajouter jusqu'à dix à la carte.
+- [x] Corriger le build mobile qui avait synchronisé la base GitHub Pages
+      `/suntrail_threejs/` : `cap:sync` reconstruit avec `CAPACITOR=true` et refuse désormais toute
+      URL locale absolue ou référence d'actif absente avant la copie Android.
+- [x] Unifier l'import en route préparée prête à suivre, distinguer les sources import/REC dans les
+      droits Free et remplacer l'import affiché sans verrouiller les activités enregistrées.
+- [x] Unifier tous les STOP REC avec arrêt natif immédiat, traitement visible, nom géolocalisé et
+      récupération du dernier lot Room depuis la notification.
+- [x] Activer le guidage natif validé sur Android et conserver un seul service adaptatif
+      REC/Guidance/both ; calculer distance/vitesse côté natif et retirer le nombre de points des
+      notifications.
+- [x] Ajouter le basculement persistant Allure/Vitesse et une ligne REC compacte au panneau de
+      Guidance combiné.
+- [x] Consigner les gates : check, 1 684 tests, build/budget/i18n/cap sync, tests JVM, lint
+      release, R8 et AAB 906 signé localement. Les E2E Chromium
+      restent non exécutés : `spawn EPERM`, puis préflight Playwright bloqué hors sandbox.
+- [x] Valider les parcours terrain par le propriétaire sur Galaxy S23 ; la reprise arrière-plan est
+      aussi vérifiée directement après retour dans l'application et ouverture de Météo.
+- [x] Commit, tag, push et GitHub Release autorisés explicitement le 2026-08-21.
+- [ ] Téléversement et publication Play : hors périmètre de cette clôture, à autoriser séparément.
 
 ## 🟡 v5.86.1 — Android 15/16 edge-to-edge et R8
 
