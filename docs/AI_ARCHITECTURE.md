@@ -1,7 +1,7 @@
-# AI Architecture Guide (v5.86.2 — tableau de bord Sortie déterministe)
+# AI Architecture Guide (v5.87.0 — dépôt de traces pleine fidélité)
 
-> Référence des services locaux v5.84 à v5.86. La release v5.86 est GitHub uniquement ; aucun
-> déploiement Play/public n'est induit par ce document.
+> Référence des services locaux v5.84 à v5.87. La release v5.87 est publiée sur GitHub ; aucun
+> téléversement ni déploiement Play n'est induit par ce document.
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -20,6 +20,8 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `routeManager` | Explicit planning mode, waypoint/bar UI, route recompute and legacy-compatible controls. | `setRoutePlanningMode`, `reverseRoute`, `clearRoute` |
 | `PreparedRouteService` | Only UI-facing orchestration for local prepared routes and legacy/GPX conversion. | `saveCurrentDraft`, `load`, `duplicate`, `convertLegacy` |
 | `RouteRepository` | Sole IndexedDB access for `PreparedRouteV1`; injected `IDBFactory`, atomic writes and additive upgrades. | `list`, `get`, `saveMany`, `delete`, `close` |
+| `TrackRepository` | Sole IndexedDB access for full-fidelity REC/import archives; injected `IDBFactory`, atomic chunk replacement and resumable legacy migration. | `list`, `get`, `put`, `rename`, `delete`, `close` |
+| `trackService` | UI-facing orchestration for migration, caching, durable REC/import archival and typed storage errors. | `initialize`, `archiveImport`, `archiveRecording`, `rename`, `delete` |
 | `GuidanceEngine` | Pure polyline projection, robust progress, ETA/cross-track/bearing and state hysteresis. No DOM/Three.js. | `start`, `update`, `tick`, `pause`, `resume`, `stop` |
 | `GuidanceForegroundService` | Foreground UI orchestration over the existing `state.userLocation` stream; REC remains independent. | `start`, `pause`, `resume`, `stop` |
 | `routeReadiness` | Pure layered readiness report; local route/light remain independent from optional offline, network and Android evidence. | `buildRouteReadinessReport` |
@@ -30,7 +32,7 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `RouteCorridorInstallService` | Installs/restarts corridors, keeps the old Free corridor active until complete replacement and performs ownership-aware cleanup. | `install` |
 | `routeCorridorPreflight` | Measures storage headroom and classifies the current connection without turning unknown evidence into a blocker. | `getRouteCorridorPreflight` |
 | `releaseFlags` | Release rollout decisions, separate from Free/Pro entitlements. | `isEnabled`, `refresh`, `setDeveloperOverride` |
-| `gpxHistoryService` | (v5.56.2) GPX history persistence (max 5, localStorage). | `saveToHistory`, `loadHistory` |
+| `gpxHistoryService` | Legacy five-entry `localStorage` source retained read-only for one-release compatibility and copy-first migration. | `loadHistory` |
 | `iapService` | RevenueCat integration, Pro status synchronization. | `initialize`, `purchase`, `syncProStatus` |
 | `ZoneSelector` | (v5.57.0) Logic for visual offline zone selection. | `getViewportBBox`, `getTilesForBBox` |
 | `cachedZones` | (v5.57.0) Persistence and management of offline zones. | `saveZone`, `deleteZone`, `getCachedZones` |
@@ -58,6 +60,7 @@ The `eventBus` is the central hub for module-to-module communication.
 | `recordingRecovered` | `main` | none | GPS recording resumed after app restart. |
 | `recordingCompleted` | `recordingService` | `RecordingSummary` | Publishes the temporary internally saved REC summary; file export remains a separate Pro action. |
 | `preparedRoutesUpdated` | `PreparedRouteService` | none | Refreshes the local route library after storage changes. |
+| `tracksUpdated` | `trackService` | none | Refreshes the single Library catalogue after migration, archive, rename or deletion. |
 | `trackDestinationChanged` | `NavigationBar` | `{ destination: 'outing' \| 'library' }` | Switches the shared `TrackSheet` between functional destinations. |
 | `guidanceSnapshot` | `GuidanceForegroundService` | `GuidanceSnapshot` | Publishes the current foreground matcher state. |
 | `guidanceStopped` | `GuidanceForegroundService` | none | Signals the end of the foreground guidance session. |
@@ -100,6 +103,9 @@ Use `state.subscribe(key, callback)` for reactive updates.
   `activeGPXLayerId` is the viewed reference for map/profile; `recordedPoints` is the independent
   REC source and keeps priority in `outingDashboard` while recording. Import and all catalogue
   rows are rendered only for `trackDestinationChanged: library`.
+- **Stored tracks DB**: `suntrail-tracks` version 1 keeps metadata in `tracks`, ordered 1,000-point
+  blocks in `trackChunks` and resumable migration markers in `meta`. It is independent from
+  Prepared Routes and from transient `state.gpxLayers`.
 - Selecting a GPX never mutates the Prepare draft. `PreparedRouteService.prepareGPXLayerAsDraft`
   is called only by the explicit UI action after dirty-draft protection.
 - GPX `geometry` preserves every imported point. `waypoints` remains a compact editing model:
@@ -116,8 +122,9 @@ Use `state.subscribe(key, callback)` for reactive updates.
 - `SettingsAccountSection` owns optional-account/RGPD bindings and
   `SettingsCategoryNavigation` owns category focus/scroll, reducing `SettingsSheet` coupling.
 - `releaseFlags.ts` owns rollout flags only; `featureFlags.ts` remains authoritative for Pro.
-- GPX history stays under its existing localStorage key and is never bulk-migrated. A user-triggered
-  conversion stores a distinct approximate route while leaving the original entry intact.
+- Legacy GPX history stays under its existing localStorage key while `trackService` copies it once
+  into `TrackRepository`. A user-triggered conversion stores a distinct approximate route while
+  leaving both the legacy source and the archived trace intact.
 - `showOnlyGPXLayer` and `hideAllGPXLayers` alter loaded reference-layer visibility only. They
   never delete a layer, mutate IndexedDB, or hide the independent REC mesh.
 

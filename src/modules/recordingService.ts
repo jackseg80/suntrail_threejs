@@ -25,9 +25,17 @@ import { Geolocation } from '@capacitor/geolocation';
 import { eventBus } from './eventBus';
 import { buildRecordingSummary } from './outing/outingDashboard';
 import { normalizeTrackName, toGPXFilename } from './trackName';
+import { trackService } from './tracks/trackService';
+import type { NativeGPSPoint } from './nativeGPSService';
 
 export class RecordingService {
     private _isSaving = false;
+    private _lastStopOutcome: 'saved' | 'discarded' | 'too-short' | 'failed' =
+        'too-short';
+
+    public getLastStopOutcome(): typeof this._lastStopOutcome {
+        return this._lastStopOutcome;
+    }
 
     /**
      * Toggles recording state and orchestrates necessary services.
@@ -116,6 +124,8 @@ export class RecordingService {
         this._isSaving = true;
         try {
             const completedPoints = [...state.recordedPoints];
+            const completedCourseId = state.currentCourseId || '';
+            let rawNativePoints: NativeGPSPoint[] = [];
             const completedAt = Date.now();
             const recordingStartTime = state.recordingStartTime;
             const userAltitudeMeters = state.userLocation?.alt ?? null;
@@ -124,8 +134,14 @@ export class RecordingService {
             // the notification has already done this work.
             state.isRecording = false;
             if (!options?.nativeAlreadyStopped) {
-                await nativeGPSService.stopCourse();
+                const finalized = await nativeGPSService.stopCourse();
+                rawNativePoints = finalized?.points ?? [];
                 await stopRecordingService();
+            } else if (completedCourseId) {
+                rawNativePoints = await nativeGPSService.getAllPoints(
+                    completedCourseId,
+                    0
+                );
             }
 
             let nameToUse = customName ? normalizeTrackName(customName) : '';
@@ -141,13 +157,20 @@ export class RecordingService {
                     state.recordedPoints = [];
                     updateRecordedTrackMesh();
                     showToast(i18n.t('track.toast.recDiscarded'));
+                    this._lastStopOutcome = 'discarded';
+                    await nativeGPSService.acknowledgeFinalizedCourse(
+                        completedCourseId
+                    );
                     return '';
                 }
                 nameToUse = normalizeTrackName(resolvedName, suggestedName);
             }
 
             if (completedPoints.length >= 2) {
-                const saved = await this.saveCurrentRecording(nameToUse);
+                const saved = await this.saveCurrentRecording(nameToUse, {
+                    courseId: completedCourseId,
+                    rawNativePoints,
+                });
                 if (!saved) throw new Error('Recording could not be saved');
                 eventBus.emit(
                     'recordingCompleted',
@@ -162,10 +185,18 @@ export class RecordingService {
                 showToast(i18n.t('track.toast.recSaved'));
                 state.recordedPoints = [];
                 updateRecordedTrackMesh();
+                this._lastStopOutcome = 'saved';
+                await nativeGPSService.acknowledgeFinalizedCourse(
+                    completedCourseId
+                );
             } else {
                 showToast(i18n.t('track.toast.tooShort'));
                 state.recordedPoints = [];
                 updateRecordedTrackMesh();
+                this._lastStopOutcome = 'too-short';
+                await nativeGPSService.acknowledgeFinalizedCourse(
+                    completedCourseId
+                );
             }
 
             this._isSaving = false;
@@ -174,6 +205,7 @@ export class RecordingService {
             console.error('[RecordingService] Erreur lors du STOP:', e);
             showToast("⚠️ Erreur lors de l'arrêt");
             state.isRecording = false;
+            this._lastStopOutcome = 'failed';
             this._isSaving = false;
             return '';
         }
@@ -205,11 +237,17 @@ export class RecordingService {
     /**
      * Saves the current recordedPoints to internal layers and file system.
      */
-    async saveCurrentRecording(name: string): Promise<boolean> {
+    async saveCurrentRecording(
+        name: string,
+        archive?: {
+            courseId: string;
+            rawNativePoints: NativeGPSPoint[];
+        }
+    ): Promise<boolean> {
         if (state.recordedPoints.length < 2) return false;
 
         try {
-            const savedInternal = await this.saveToInternalLayer(name);
+            const savedInternal = await this.saveToInternalLayer(name, archive);
             if (isProActive()) await this.saveToFile(name);
             return savedInternal;
         } catch (e) {
@@ -218,14 +256,46 @@ export class RecordingService {
         }
     }
 
-    private async saveToInternalLayer(name: string): Promise<boolean> {
+    private async saveToInternalLayer(
+        name: string,
+        archive?: {
+            courseId: string;
+            rawNativePoints: NativeGPSPoint[];
+        }
+    ): Promise<boolean> {
         const gpxString = this.buildGPXString(name);
         const { default: gpxParser } = await import('gpxparser');
         const parser = new gpxParser();
         parser.parse(gpxString);
         if (!parser.tracks?.length) return false;
 
-        addGPXLayer(parser, name, { source: 'rec' });
+        if (archive?.courseId && archive.rawNativePoints.length >= 2) {
+            await trackService.archiveRecording(
+                name,
+                archive.courseId,
+                archive.rawNativePoints
+            );
+        } else {
+            const transientLayer = addGPXLayer(parser, name, {
+                source: 'rec',
+                persistHistory: false,
+            });
+            if (archive?.courseId) {
+                await trackService.archiveRecoveredRecording(
+                    name,
+                    archive.courseId,
+                    state.recordedPoints
+                );
+            } else {
+                await trackService.archiveWebRecording(transientLayer);
+            }
+            void haptic('success');
+            return true;
+        }
+        addGPXLayer(parser, name, {
+            source: 'rec',
+            persistHistory: false,
+        });
         void haptic('success');
         return true;
     }

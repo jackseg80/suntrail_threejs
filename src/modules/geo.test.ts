@@ -14,6 +14,7 @@ import {
     isTileInSwitzerland,
     isTileInSwitzerlandStrict,
     countPointsInCountry,
+    hasTileCountryOverlap,
 } from './geo';
 
 describe('Module Géo (geo.ts)', () => {
@@ -174,6 +175,16 @@ describe('Module Géo (geo.ts)', () => {
         it('countPointsInCountry should return 0 for unknown country code', () => {
             const tile = lngLatToTile(8.54, 47.37, 13);
             expect(countPointsInCountry(tile.x, tile.y, 13, 'XX')).toBe(0);
+        });
+
+        it('detects the overlapping CH/DE polygons at St. Chrischona', () => {
+            const tile = lngLatToTile(7.6812, 47.5669, 17);
+            expect(hasTileCountryOverlap(tile.x, tile.y, 17, 'CH')).toBe(true);
+        });
+
+        it('does not mark central Switzerland as an overlapping border', () => {
+            const tile = lngLatToTile(8.54, 47.37, 17);
+            expect(hasTileCountryOverlap(tile.x, tile.y, 17, 'CH')).toBe(false);
         });
     });
 

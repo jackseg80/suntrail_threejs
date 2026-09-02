@@ -6,6 +6,7 @@ const {
     mockNativeGPSService,
     mockForegroundService,
     mockFilesystem,
+    mockTrackService,
 } = vi.hoisted(() => ({
     mockCapacitor: { isNativePlatform: vi.fn(() => true) },
     mockGeolocation: { checkPermissions: vi.fn(), requestPermissions: vi.fn() },
@@ -15,6 +16,8 @@ const {
         getCurrentCourse: vi.fn(),
         requestBatteryOptimizationExemption: vi.fn(),
         saveTextToDownloads: vi.fn(),
+        acknowledgeFinalizedCourse: vi.fn(),
+        getAllPoints: vi.fn(),
     },
     mockForegroundService: {
         startRecordingService: vi.fn(),
@@ -22,6 +25,11 @@ const {
         clearInterruptedRecording: vi.fn(),
     },
     mockFilesystem: { writeFile: vi.fn(), mkdir: vi.fn() },
+    mockTrackService: {
+        archiveRecording: vi.fn(),
+        archiveRecoveredRecording: vi.fn(),
+        archiveWebRecording: vi.fn(),
+    },
 }));
 
 vi.mock('@capacitor/core', () => ({ Capacitor: mockCapacitor }));
@@ -34,6 +42,7 @@ vi.mock('@capacitor/filesystem', () => ({
 vi.mock('./nativeGPSService', () => ({
     nativeGPSService: mockNativeGPSService,
 }));
+vi.mock('./tracks/trackService', () => ({ trackService: mockTrackService }));
 vi.mock('./foregroundService', () => ({
     startRecordingService: mockForegroundService.startRecordingService,
     stopRecordingService: mockForegroundService.stopRecordingService,
@@ -67,12 +76,23 @@ describe('RecordingService (v5.29.36)', () => {
         vi.clearAllMocks();
         state.isRecording = false;
         state.recordedPoints = [];
+        state.currentCourseId = '';
         state.isPro = true;
         mockCapacitor.isNativePlatform.mockReturnValue(true);
         mockNativeGPSService.getCurrentCourse.mockResolvedValue({
             courseId: '123',
         });
         mockNativeGPSService.startCourse.mockResolvedValue({});
+        mockNativeGPSService.stopCourse.mockResolvedValue({
+            courseId: '',
+            points: [],
+        });
+        mockNativeGPSService.acknowledgeFinalizedCourse.mockResolvedValue(
+            undefined
+        );
+        mockTrackService.archiveWebRecording.mockResolvedValue({});
+        mockTrackService.archiveRecording.mockResolvedValue({});
+        mockTrackService.archiveRecoveredRecording.mockResolvedValue({});
         mockForegroundService.startRecordingService.mockResolvedValue({});
     });
 
@@ -170,6 +190,74 @@ describe('RecordingService (v5.29.36)', () => {
         ).resolves.toBe('Ma Trace Free');
         expect(mockFilesystem.writeFile).not.toHaveBeenCalled();
         expect(state.isRecording).toBe(false);
+    });
+
+    it('archives le REC Room avec courseId avant de nettoyer la session native', async () => {
+        state.currentCourseId = 'course-durable';
+        state.recordedPoints = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: 1_000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: 2_000 },
+        ];
+        const rawPoints = [
+            {
+                id: 1,
+                lat: 45,
+                lon: 6,
+                alt: 1000,
+                timestamp: 1_000,
+                accuracy: 4,
+            },
+            {
+                id: 2,
+                lat: 45.1,
+                lon: 6.1,
+                alt: 1100,
+                timestamp: 2_000,
+                accuracy: 5,
+            },
+        ];
+        mockNativeGPSService.stopCourse.mockResolvedValue({
+            courseId: 'course-durable',
+            points: rawPoints,
+        });
+
+        await recordingService.stopRecording('REC durable');
+
+        expect(mockTrackService.archiveRecording).toHaveBeenCalledWith(
+            'REC durable',
+            'course-durable',
+            rawPoints
+        );
+        expect(
+            mockTrackService.archiveRecording.mock.invocationCallOrder[0]
+        ).toBeLessThan(
+            mockNativeGPSService.acknowledgeFinalizedCourse.mock
+                .invocationCallOrder[0]
+        );
+    });
+
+    it('préserve points et marqueur natif si le stockage durable échoue', async () => {
+        state.currentCourseId = 'course-quota';
+        state.recordedPoints = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: 1_000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: 2_000 },
+        ];
+        mockNativeGPSService.stopCourse.mockResolvedValue({
+            courseId: 'course-quota',
+            points: [],
+        });
+        mockTrackService.archiveRecoveredRecording.mockRejectedValue(
+            new DOMException('full', 'QuotaExceededError')
+        );
+
+        await expect(
+            recordingService.stopRecording('REC à récupérer')
+        ).resolves.toBe('');
+        expect(recordingService.getLastStopOutcome()).toBe('failed');
+        expect(state.recordedPoints).toHaveLength(2);
+        expect(
+            mockNativeGPSService.acknowledgeFinalizedCourse
+        ).not.toHaveBeenCalled();
     });
 
     it('permet de ne pas enregistrer un REC déjà arrêté', async () => {

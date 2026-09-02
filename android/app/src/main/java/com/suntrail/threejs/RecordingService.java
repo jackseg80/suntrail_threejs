@@ -120,6 +120,7 @@ public class RecordingService extends Service {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private volatile boolean recordingActive;
+    private volatile boolean recordingStopPending;
     private volatile boolean guidanceActive;
     private volatile boolean explicitShutdown;
     private volatile String issue;
@@ -413,14 +414,30 @@ public class RecordingService extends Service {
     }
 
     private void stopRecordingMode(boolean notifyBridge) {
-        if (!recordingActive && currentCourseId == null) return;
+        if (recordingStopPending || (!recordingActive && currentCourseId == null)) return;
+        recordingStopPending = true;
         String stoppedCourseId = currentCourseId;
         long stoppedStartTime = startTime;
         recordingActive = false;
-        flushPointBuffer();
+        // Une action depuis la notification peut relancer le WebView tout de
+        // suite : le dernier lot doit donc être en base avant le signal STOP.
+        flushPointBuffer(() -> completeStopRecordingMode(
+            notifyBridge,
+            stoppedCourseId,
+            stoppedStartTime
+        ));
+    }
+
+    private void completeStopRecordingMode(
+        boolean notifyBridge,
+        String stoppedCourseId,
+        long stoppedStartTime
+    ) {
         SharedPreferences.Editor recordingEditor = getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE).edit()
             .remove("currentCourseId").remove("startTime");
-        if (notifyBridge && stoppedCourseId != null && !stoppedCourseId.isEmpty()) {
+        // Both UI and notification STOP keep a recoverable identity until the
+        // WebView acknowledges the durable TrackRepository write (or discard).
+        if (stoppedCourseId != null && !stoppedCourseId.isEmpty()) {
             recordingEditor
                 .putString("pendingStoppedCourseId", stoppedCourseId)
                 .putLong("pendingStoppedStartTime", stoppedStartTime);
@@ -430,10 +447,13 @@ public class RecordingService extends Service {
         writeStateFile(false);
         persistFastState();
         persistSession();
-        if (notifyBridge) sendPackageBroadcast(ACTION_SERVICE_STOPPED);
+        if (notifyBridge) {
+            sendPackageBroadcast(ACTION_SERVICE_STOPPED);
+        }
         broadcastSessionChanged();
         reconfigureLocationUpdates();
         stopIfInactive();
+        recordingStopPending = false;
     }
 
     private void stopGuidanceMode(boolean notifyBridge) {
@@ -722,15 +742,25 @@ public class RecordingService extends Service {
     }
 
     private void flushPointBuffer() {
+        flushPointBuffer(null);
+    }
+
+    private void flushPointBuffer(Runnable afterFlush) {
         List<GPSPoint> pending;
         synchronized (pointBuffer) {
-            if (pointBuffer.isEmpty()) return;
+            if (pointBuffer.isEmpty()) {
+                if (afterFlush != null) afterFlush.run();
+                return;
+            }
             pending = new ArrayList<>(pointBuffer);
             pointBuffer.clear();
         }
         dbExecutor.execute(() -> {
             try { gpsDao.insertAll(pending); }
             catch (SQLiteException error) { handleStorageFailure(error); }
+            finally {
+                if (afterFlush != null) mainHandler.post(afterFlush);
+            }
         });
     }
 
@@ -858,7 +888,7 @@ public class RecordingService extends Service {
         }
         if (recordingActive) {
             builder.addAction(android.R.drawable.ic_delete, "Arrêter REC",
-                servicePendingIntent(ACTION_STOP_RECORDING, 12));
+                stopRecordingPendingIntent());
         }
         return builder.build();
     }
@@ -880,6 +910,14 @@ public class RecordingService extends Service {
         Intent open = new Intent(this, MainActivity.class);
         open.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(this, 0, open,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private PendingIntent stopRecordingPendingIntent() {
+        Intent stop = new Intent(this, MainActivity.class)
+            .setAction(ACTION_STOP_RECORDING)
+            .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(this, 12, stop,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 

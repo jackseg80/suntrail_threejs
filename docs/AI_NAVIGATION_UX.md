@@ -1,4 +1,4 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.86.2 — Sortie contextuelle)
+# SunTrail — Navigation & Modules Fonctionnels (v5.87.0 — Bibliothèque durable)
 
 > Référence de la pré-release foreground interne v5.84. Point d'entrée :
 > [CLAUDE.md](../CLAUDE.md).
@@ -38,6 +38,19 @@ Les identifiants historiques `track`, `gpx-upload` et `gpx-layers-list` sont con
 deux derniers ne sont rendus qu'en Bibliothèque. Aucun upsell permanent ne doit interrompre une
 activité ; le gate export Free intervient avant Blob, cache ou fichier.
 
+### Bibliothèque durable v5.87.0
+
+- `TrackRepository` est la source canonique des archives REC/import, avec géométrie complète ;
+  `RouteRepository` reste réservé aux itinéraires préparés.
+- Free conserve toutes les traces et en ouvre une à la fois. Pro ajoute la superposition et
+  l'export fichier ; aucun entitlement ne modifie ni ne simplifie une archive.
+- Ouvrir consulte la trace, le crayon la renomme et « Refaire » crée explicitement un itinéraire.
+  Aucune de ces actions ne transforme silencieusement une archive en route préparée.
+- L'origine et la qualité restent secondaires mais visibles. Une migration legacy garde sa
+  géométrie approximative et ne reçoit ni altitude, ni précision, ni horodatage inventé.
+- La seule limite de persistance est le stockage réel de l'appareil ; une erreur de quota reste
+  explicite et ne déclenche aucun nettoyage silencieux.
+
 ### Recherche contextualisée
 
 `rankSearchResults()` pondère correspondance du nom, pays de la vue et distance à la cible.
@@ -72,9 +85,9 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - Free ouvre tous les parcours mais n'en affiche qu'un à la fois. Pro ajoute explicitement des
   parcours à la carte, jusqu'à dix calques, et montre les commandes multi-affichage. Le REC actif
   reste indépendant et demeure la source des statistiques de Sortie pendant l’enregistrement.
-- Les routes PreparedRoute fermées restent uniquement dans IndexedDB. Elles ne créent aucun
-  calque Three.js avant leur ouverture ; l’historique récent reste limité à cinq entrées et les
-  calques chargés à dix.
+- Les routes PreparedRoute fermées restent uniquement dans leur IndexedDB. Elles ne créent aucun
+  calque Three.js avant leur ouverture ; les archives `TrackRepository` ne sont plus limitées à
+  cinq entrées et les calques simultanément chargés restent bornés à dix pour Pro.
 
 ## Suivi terrain foreground v5.84
 

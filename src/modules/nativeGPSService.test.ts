@@ -11,6 +11,7 @@ const { mockPreferences, mockRecordingNative } = vi.hoisted(() => ({
         getCurrentCourse: vi.fn(),
         getPendingStoppedCourse: vi.fn(),
         acknowledgePendingStoppedCourse: vi.fn(),
+        clearRecordedPoints: vi.fn(),
         getActiveSession: vi.fn(),
         startCourse: vi.fn(),
         stopCourse: vi.fn(),
@@ -117,9 +118,11 @@ describe('NativeGPSService (v5.29.38)', () => {
             undefined,
             expect.objectContaining({ nativeAlreadyStopped: true })
         );
+        // The durable recording finalizer owns acknowledgement; init must not
+        // clear the recovery marker merely because the naming flow returned.
         expect(
             mockRecordingNative.acknowledgePendingStoppedCourse
-        ).toHaveBeenCalledTimes(1);
+        ).not.toHaveBeenCalled();
     });
 
     it('should start a new course', async () => {

@@ -276,6 +276,25 @@ export function countPointsInCountry(
 }
 
 /**
+ * Détecte les zones où les polygones pays se superposent. Certaines frontières
+ * simplifiées (notamment CH/DE près de Bâle) peuvent classer les cinq mêmes
+ * points dans les deux pays : une source nationale devient alors peu fiable.
+ */
+export function hasTileCountryOverlap(
+    tx: number,
+    ty: number,
+    zoom: number,
+    primaryCountryCode: string,
+    threshold: number = 3
+): boolean {
+    return COUNTRY_CODES.some(
+        (code) =>
+            code !== primaryCountryCode &&
+            countPointsInCountry(tx, ty, zoom, code) >= threshold
+    );
+}
+
+/**
  * Retourne le code ISO du pays majoritaire dans une tuile.
  * Teste les 5 points (centre + 4 coins) et retourne le pays ayant
  * le plus de points. null si aucun pays n'a au moins threshold points.

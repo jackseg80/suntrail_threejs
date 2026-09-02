@@ -1,3 +1,68 @@
+## [5.87.0] - 2026-09-02 — Dépôt de traces pleine fidélité
+
+### Ajouté
+
+- `StoredTrackV1` et un `TrackRepository` IndexedDB séparé de `RouteRepository` conservent la
+  géométrie complète ordonnée des imports GPX et REC en blocs atomiques, avec identité stable,
+  origine, qualité, statistiques/provenance, bounds et champs optionnels non fabriqués.
+- La migration copy-first des cinq entrées `localStorage` est idempotente et reprenable. Elle
+  conserve l'ancien stockage, marque la géométrie simplifiée comme approximative et ne déduplique
+  jamais sur le seul nom.
+- Bibliothèque lit désormais ce dépôt comme catalogue unique. Free garde toutes les traces et les
+  ouvre une par une ; Pro conserve le multi-affichage et l'export fichier. Renommer, supprimer et
+  convertir explicitement en itinéraire restent disponibles sans altérer l'archive.
+- Les STOP REC natifs archivent les points Room complets avant d'acquitter et nettoyer la session.
+  Un quota ou une transaction interrompue conserve le marqueur et les points récupérables ; un
+  abandon explicite ne crée pas d'archive.
+- Architecture, matrice de stockage/migration et limites :
+  [docs/TRACK_STORAGE.md](docs/TRACK_STORAGE.md).
+
+### Validation automatisée du socle v5.87
+
+- Tests repository/service avec IndexedDB isolée : CRUD, concurrence, rollback, quota,
+  corruption/version inconnue, Unicode, 12 345 points et migration interrompue/reprise.
+- Chromium réel : import GPX → Bibliothèque → rechargement → mode hors ligne → ouverture, ainsi
+  que chargement et visibilité du calque. Le préflight final relance `npm run check`, 1 710 tests
+  Vitest dans 152 fichiers, la couverture (64,48 % statements), le build web, le budget PWA
+  2,35 MiB, l'audit i18n des quatre locales et `cap:sync` avec sept pages valides.
+
+### Corrigé
+
+- L'action Android « Arrêter REC » de la notification vide d'abord le dernier lot de points
+  Room, finalise une seule fois l'enregistrement, rouvre l'application et transmet le même état
+  de sauvegarde/nommage que les boutons STOP de l'interface. Sur Android 14+, la notification
+  ouvre désormais directement `MainActivity`, qui relaie ensuite le STOP au service, afin de ne
+  plus dépendre d'une ouverture d'activité en arrière-plan interdite par le système.
+- Le renommage d'une trace utilise une icône crayon compacte avec nom accessible et infobulle,
+  sans ajouter de libellé permanent dans les actions déjà contraintes sur petit écran.
+- La pastille rouge du REC est un vrai bouton et ouvre systématiquement le panneau `Sortie`, y
+  compris lorsqu'un autre panneau était affiché.
+- La recherche générale d'Explorer inclut les sommets distants. Elle interroge Photon avec le
+  filtre OSM `natural:peak` et le contexte de la carte, puis conserve uniquement les résultats
+  réellement classés comme sommets.
+- À fort niveau de détail, une tuile classée simultanément dans plusieurs pays par les polygones
+  frontaliers n'utilise plus une source nationale incertaine. Elle bascule sur la source mondiale
+  (OpenTopoMap au LOD 17), ce qui supprime les zones blanches observées près de St. Chrischona.
+
+### Validation
+
+- Galaxy S23 `SM-S911B`, Android 16/API 36 : recherche réelle de Matterhorn et St. Chrischona,
+  reproduction de la carte blanche à `47.56690, 7.68120` au LOD 17, puis contrôle visuel positif
+  du fallback frontalier après réinstallation de l'APK corrigée.
+- Le propriétaire a validé sur le même appareil la navigation de la pastille REC et la sauvegarde
+  après STOP notification, puis a révélé deux écarts : l'application ne revenait pas au premier
+  plan et le renommage était introuvable. L'APK corrigée a été réinstallée en conservant les trois
+  traces complètes et la route préparée ; le WebView expose maintenant l'action crayon sur les
+  trois cartes. Le nouvel enchaînement STOP notification reste un contrôle terrain recommandé.
+- Gradle 9.4.1 valide `testDebugUnitTest`, `lintDebug` et `assembleDebug` (431 tâches). Le smoke
+  Playwright final reste bloqué par le lanceur de processus Windows avant création de Chromium ;
+  les scénarios Chromium ciblés v5.87 exécutés auparavant restent verts et cette limite d'hôte
+  n'est pas présentée comme une validation supplémentaire.
+- La release est alignée sur `5.87.0` / Android `versionCode 907`. Commit, tag, push et release
+  GitHub ont été autorisés explicitement. L'APK 907 est installée en mise à jour sur le S23 : la
+  date de première installation reste inchangée et aucun crash de démarrage n'est observé. Aucun
+  téléversement ni déploiement Play n'est inclus.
+
 ## [5.86.2] - 2026-08-21 — Sortie contextuelle et frontière Bibliothèque
 
 ### Ajouté

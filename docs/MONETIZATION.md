@@ -1,4 +1,4 @@
-# SunTrail 3D — Stratégie de Monétisation (v5.86.2)
+# SunTrail 3D — Stratégie de Monétisation (v5.87.0)
 
 > Objectif : Offrir une valeur alpine gratuite indispensable (sécurité) tout en incitant à l'abonnement Pro pour l'analyse et le confort.
 
@@ -19,6 +19,7 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 | **Enregistrement GPS**| **Illimité, nom personnalisé, stats et résumé essentiels** | **Identique + export fichier GPX** | `recordingService.ts` |
 | **Parcours actifs sur la carte** | 1 parcours de Bibliothèque affiché à la fois | **« Ajouter à la carte », jusqu'à 10 calques** | `TrackSheet.ts` |
 | **Bibliothèque locale préparée** | **Illimitée selon stockage appareil** | **Illimitée** | `RouteRepository` (v5.83) |
+| **Archives REC/import locales** | **Toutes accessibles, pleine fidélité, une à la fois** | **Identique + multi-affichage/export** | `TrackRepository` (v5.87) |
 | **Export fichier GPX** | Bloqué avant Blob et écriture | **Documents / téléchargement** | `recordingService.ts` |
 | **Guidage essentiel** | Indication, distance, écart, restant, ETA et alertes sécurité | **Identique** | `GuidanceForegroundService` |
 | **Solaire** | Jour actuel (24h) | **Calendrier complet** | `TimelineComponent.ts` |
@@ -78,6 +79,11 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 - **D10 — Pas d'upsell permanent en activité** : Sortie n'affiche aucune bannière Pro permanente
   pendant REC ou Guidance. Les propositions restent contextuelles et liées à une action réellement
   verrouillée : export fichier, « Ajouter à la carte » ou analyse avancée disponible.
+- **D11 — Fidélité locale hors entitlement** : toutes les traces REC/import présentes sur
+  l'appareil restent lisibles, renommables, supprimables, refaisables et suivables en Free. Pro
+  ajoute le multi-affichage, l'export et les analyses avancées disponibles. Un downgrade ne
+  modifie aucune archive ; le quota réel de l'appareil est la seule limite de persistance et aucun
+  nettoyage silencieux n'est permis. Voir [TRACK_STORAGE.md](TRACK_STORAGE.md).
 
 ### Frontière Sortie / Bibliothèque (v5.86.2)
 
@@ -89,8 +95,8 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 - Les cinq activités historiques à géométrie simplifiée restent une limite technique commune. Leur
   action « Refaire » crée une route explicitement approximative ; elle ne constitue ni une archive
   pleine fidélité ni un avantage Pro.
-- Les routes préparées locales restent illimitées en Free et Pro. Le futur `TrackRepository` et sa
-  migration sont explicitement reportés à v5.87.
+- Les routes préparées locales restent illimitées en Free et Pro. `TrackRepository` conserve
+  depuis v5.87 les REC/imports complets dans une archive séparée, sans quota commercial.
 
 ---
 

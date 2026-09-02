@@ -451,4 +451,16 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
         expect(badge.textContent).toContain('Carte suisse');
         expect(badge.dataset.packState).toBeUndefined();
     });
+
+    it('opens the outing dashboard when the REC indicator is tapped', () => {
+        render();
+
+        (document.querySelector('.rec-indicator') as HTMLElement).click();
+
+        expect(document.body.dataset.trackDestination).toBe('outing');
+        expect(eventBus.emit).toHaveBeenCalledWith('trackDestinationChanged', {
+            destination: 'outing',
+        });
+        expect(sheetManager.open).toHaveBeenCalledWith('track');
+    });
 });

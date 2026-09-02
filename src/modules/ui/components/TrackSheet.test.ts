@@ -8,6 +8,7 @@ const {
     mockBuildCorridorPlan,
     mockCorridorInstall,
     mockGetCorridorPreflight,
+    mockTrackService,
 } = vi.hoisted(() => ({
     mockIsProActive: vi.fn(() => false),
     mockPreparedRouteService: {
@@ -40,6 +41,14 @@ const {
     })),
     mockCorridorInstall: vi.fn(),
     mockGetCorridorPreflight: vi.fn(),
+    mockTrackService: {
+        getCachedTracks: vi.fn<() => any[]>(() => []),
+        getLastError: vi.fn(() => null),
+        updatePlace: vi.fn().mockResolvedValue(undefined),
+        rename: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+        archiveImport: vi.fn().mockResolvedValue(undefined),
+    },
 }));
 
 vi.mock('../../../i18n/I18nService', () => ({
@@ -118,6 +127,9 @@ vi.mock('../../gpxHistoryService', () => ({
     removeFromHistory: vi.fn(),
     updateHistoryEntryLocation: vi.fn(),
 }));
+vi.mock('../../tracks/trackService', () => ({
+    trackService: mockTrackService,
+}));
 vi.mock('../../geo', () => ({
     lngLatToWorld: vi.fn(),
     getCountryCode: vi.fn(() => null),
@@ -153,6 +165,7 @@ vi.mock('../../readiness/routeCorridorPreflight', () => ({
 vi.mock('../icons', () => ({
     ICON_CLOSE: '✕',
     ICON_COPY: '⧉',
+    ICON_EDIT: '✎',
     ICON_LOCK: '🔒',
     ICON_MAP_LAYERS: '⌑',
     ICON_STAR: '☆',
@@ -176,9 +189,59 @@ import {
     showOnlyGPXLayer,
 } from '../../gpxLayers';
 import { showUpgradePrompt } from '../../iap';
-import { loadHistory, removeFromHistory } from '../../gpxHistoryService';
+import { loadHistory } from '../../gpxHistoryService';
 import { updateElevationProfile } from '../../profile';
 import { recordingService } from '../../recordingService';
+
+function legacyHistoryAsStoredTracks(): any[] {
+    return vi
+        .mocked(loadHistory)()
+        .map((entry: any) => ({
+            schemaVersion: 1,
+            id: entry.id,
+            origin: {
+                type: entry.source === 'rec' ? 'recording' : 'legacy-migration',
+                sourceId: entry.id,
+            },
+            name: entry.name,
+            color: entry.color,
+            place: {
+                locationName: entry.locationName,
+                countryName: entry.countryName,
+            },
+            geometry: entry.simplifiedPoints.map((point: any) => ({
+                lat: point.lat,
+                lon: point.lon,
+                ...(point.ele === undefined ? {} : { ele: point.ele }),
+            })),
+            stats: {
+                distanceKm: entry.stats.distance,
+                ascentMeters: entry.stats.dPlus,
+                descentMeters: entry.stats.dMinus,
+                durationSeconds:
+                    entry.stats.estimatedTime === undefined
+                        ? null
+                        : entry.stats.estimatedTime * 60,
+                pointCount: entry.stats.pointCount,
+                provenance: 'legacy-history',
+            },
+            bounds: entry.bounds,
+            quality: {
+                geometry: 'approximate',
+                timing: 'unknown',
+                elevation: 'unknown',
+                accuracy: 'unknown',
+            },
+            createdAt: new Date(entry.timestamp).toISOString(),
+            updatedAt: new Date(entry.timestamp).toISOString(),
+        }));
+}
+
+beforeEach(() => {
+    mockTrackService.getCachedTracks.mockImplementation(
+        legacyHistoryAsStoredTracks
+    );
+});
 
 describe('TrackSheet — showSaveTrackPrompt', () => {
     let sheet: TrackSheet;
@@ -945,6 +1008,34 @@ describe('TrackSheet — trace roles and visibility', () => {
         );
     });
 
+    it('keeps every stored track accessible after a Pro to Free downgrade', () => {
+        mockIsProActive.mockReturnValue(true);
+        (sheet as any).renderUnifiedTrackList();
+        expect(document.querySelectorAll('.gpx-layer-item')).toHaveLength(1);
+
+        mockIsProActive.mockReturnValue(false);
+        (sheet as any).renderUnifiedTrackList();
+        expect(document.querySelectorAll('.gpx-layer-item')).toHaveLength(1);
+        expect(
+            document.querySelector('[data-action="profile"]')
+        ).not.toBeNull();
+        expect(document.querySelector('[data-action="rename"]')).not.toBeNull();
+        expect(
+            document
+                .querySelector('[data-action="rename"]')
+                ?.getAttribute('aria-label')
+        ).toBe('track.rename.action');
+        expect(
+            document.querySelector('[data-action="rename"]')?.textContent
+        ).not.toContain('track.rename.short');
+        expect(document.querySelector('[data-action="remove"]')).not.toBeNull();
+        expect(
+            document
+                .querySelector('[data-action="export"]')
+                ?.classList.contains('is-pro-locked')
+        ).toBe(true);
+    });
+
     it('keeps loaded tracks and GPX history in Library only', () => {
         vi.mocked(loadHistory).mockReturnValue([
             {
@@ -1095,15 +1186,17 @@ describe('TrackSheet — trace roles and visibility', () => {
         ).toBe(true);
     });
 
-    it('deletes a Library entry from both the loaded layers and history', () => {
+    it('deletes a Library entry from both the loaded layers and history', async () => {
         (sheet as any).renderUnifiedTrackList();
         (
             document.querySelector(
                 '[data-action="remove"]'
             ) as HTMLButtonElement
         ).click();
-        expect(removeGPXLayer).toHaveBeenCalledWith('gpx-viewed');
-        expect(removeFromHistory).toHaveBeenCalledWith('gpx-viewed');
+        await vi.waitFor(() => {
+            expect(removeGPXLayer).toHaveBeenCalledWith('gpx-viewed');
+            expect(mockTrackService.delete).toHaveBeenCalledWith('gpx-viewed');
+        });
     });
 
     it('creates an itinerary from an activity without replacing a dirty draft', async () => {

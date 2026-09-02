@@ -68,7 +68,7 @@ vi.mock('../templates/search.html?raw', () => ({
 import { SearchSheet } from './SearchSheet';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
-import { searchLocations } from '../../geocodingService';
+import { searchLocations, searchPeaksByName } from '../../geocodingService';
 
 describe('SearchSheet', () => {
     let container: HTMLElement;
@@ -272,6 +272,27 @@ describe('SearchSheet', () => {
         const results = document.getElementById('geo-results')!;
         expect(results).not.toBeNull();
         vi.useRealTimers();
+    });
+
+    it('searches remote peaks from the default all-results filter', async () => {
+        const sheet = new SearchSheet();
+        sheet.hydrate();
+        const input = document.getElementById('geo-input') as HTMLInputElement;
+        input.value = 'Matterhorn';
+
+        sheet['handleInput']();
+        await vi.advanceTimersByTimeAsync(500);
+
+        expect(searchLocations).toHaveBeenCalledWith(
+            'matterhorn',
+            expect.any(AbortSignal),
+            expect.any(Object)
+        );
+        expect(searchPeaksByName).toHaveBeenCalledWith('matterhorn', {
+            lat: 46.8,
+            lon: 8.2,
+            countryCode: 'CH',
+        });
     });
 
     it('renders a localized error when remote geocoding fails', async () => {

@@ -38,6 +38,11 @@ export function classifyFeature(
 
     // Nominatim: type + class
     const t = feature.type;
+    if (
+        feature.class === 'natural' &&
+        (t === 'peak' || t === 'mountain' || t === 'volcano')
+    )
+        return CLASSIFICATIONS.peak;
     if (t === 'country' || t === 'continent') return CLASSIFICATIONS.country;
     if (t === 'state' || t === 'region' || t === 'county')
         return CLASSIFICATIONS.region;
@@ -54,36 +59,48 @@ export function classifyFeature(
  * Recherche des sommets (peaks) par nom via Overpass API.
  */
 export async function searchPeaksByName(
-    query: string
+    query: string,
+    context?: SearchContext
 ): Promise<Array<{ name: string; lat: number; lon: number; ele: number }>> {
-    const q = query.replace(/"/g, '\\"');
-    const overpassQuery = `[out:json][timeout:5];node["natural"="peak"]["name"~"${q}",i];out 10;`;
-    const urls = [
-        `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`,
-        `https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(overpassQuery)}`,
-    ];
-    for (const url of urls) {
-        try {
-            const resp = await fetch(url, {
-                signal: AbortSignal.timeout(5000),
-            });
-            if (!resp.ok) continue;
-            const data = await resp.json();
-            return (data.elements || [])
-                .filter((e: any) => e.tags?.name)
-                .map((e: any) => ({
-                    name: e.tags.name,
-                    lat: e.lat,
-                    lon: e.lon,
-                    ele: parseFloat(e.tags.ele) || 0,
-                }))
-                .sort((a: any, b: any) => b.ele - a.ele)
-                .slice(0, 10);
-        } catch {
-            continue;
-        }
+    const params = new URLSearchParams({
+        q: query,
+        limit: '10',
+        osm_tag: 'natural:peak',
+    });
+    if (context) {
+        params.set('lat', String(context.lat));
+        params.set('lon', String(context.lon));
     }
-    return [];
+
+    try {
+        const response = await fetch(
+            `https://photon.komoot.io/api/?${params.toString()}`,
+            { signal: AbortSignal.timeout(5000) }
+        );
+        if (!response.ok) return [];
+        const data = await response.json();
+        return (data.features || [])
+            .filter(
+                (feature: any) =>
+                    feature.properties?.osm_key === 'natural' &&
+                    feature.properties?.osm_value === 'peak' &&
+                    feature.properties?.name &&
+                    feature.geometry?.coordinates?.length >= 2
+            )
+            .map((feature: any) => ({
+                name: feature.properties.name,
+                lat: Number(feature.geometry.coordinates[1]),
+                lon: Number(feature.geometry.coordinates[0]),
+                ele: Number.parseFloat(feature.properties.ele) || 0,
+            }))
+            .filter(
+                (peak: { lat: number; lon: number }) =>
+                    Number.isFinite(peak.lat) && Number.isFinite(peak.lon)
+            )
+            .slice(0, 10);
+    } catch {
+        return [];
+    }
 }
 
 export interface GeocodingResult {

@@ -139,6 +139,13 @@
             "processingBody": "SunTrail is stopping REC and finding a useful name from the starting location.",
             "keepSuggested": "Keep this name",
             "discard": "Don't save"
+        },
+        "quality": {
+            "full": "Full geometry",
+            "approximate": "Approximate historical track"
+        },
+        "rename": {
+            "action": "Rename track"
         }
     },
     "preparedRoutes": {

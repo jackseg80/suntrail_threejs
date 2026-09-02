@@ -38,6 +38,7 @@ import { fetchWeather } from './weather';
 import { fetchLocalPeaks } from './peaks';
 import { releaseFlags } from './releaseFlags';
 import { preparedRouteService } from './preparedRoutes/preparedRouteService';
+import { trackService } from './tracks/trackService';
 import { initPreparedRouteUI } from './preparedRoutes/preparedRouteUI';
 import { initTheme } from './theme';
 import { haptic } from './haptics';
@@ -466,6 +467,7 @@ async function startApp() {
 
 async function initSecondaryUI(): Promise<void> {
     try {
+        await trackService.initialize();
         if (releaseFlags.isEnabled('preparedRoutes')) {
             await preparedRouteService.initialize();
         }

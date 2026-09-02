@@ -1,11 +1,12 @@
-# SunTrail — Guide IA (version source v5.86.2 — Sortie contextuelle et Bibliothèque)
+# SunTrail — Guide IA (version source v5.87.0 — dépôt de traces pleine fidélité)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-08-21 — v5.86.2 clôturée et publiée sur GitHub par autorisation explicite.
+> Mis à jour le 2026-09-02 — v5.87.0 / Android 907 est clôturée pour publication GitHub.
 > v5.85.1 est figée au commit local `b30a1c1` ; ses validations Android/E2E et terrain restent
 > séparées et ouvertes. v5.86.0 est clôturée sur GitHub et son AAB `versionCode 904` a été importé
 > dans Google Play. v5.86.1 / `versionCode 905` est également visible dans Play Console ;
-> v5.86.2 / `versionCode 906` est publiée sur GitHub, sans téléversement Play.
+> v5.86.2 / `versionCode 906` est publiée sur GitHub et a été envoyée en test Play selon le
+> propriétaire. Aucun upload Play de v5.87.0 / `versionCode 907` n'est inclus.
 > Aucun commit, tag, push, téléversement Play Console ni déploiement n'est implicite. Prepared
 > Routes, REC, Guidance, récupération native, offline/corridors et Free/Pro sont préservés.
 
@@ -46,7 +47,12 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Sortie contextuelle (v5.86.2)** : un view-model pur sépare repos, route, Guidance, REC,
   Guidance + REC et résumé de fin. Bibliothèque réunit les itinéraires « À suivre » et activités
   « Enregistré » dans « Mes parcours » ; nom et résumé REC essentiels restent Free, tandis que
-  l'export fichier et l'ajout multi-carte sont Pro. Aucun dépôt pleine fidélité ni migration n'est introduit.
+  l'export fichier et l'ajout multi-carte sont Pro.
+- **Dépôt de traces (v5.87.0)** : `StoredTrackV1` et
+  `TrackRepository` IndexedDB conservent les imports/REC en pleine fidélité, migrent l'historique
+  legacy sans le supprimer et n'acquittent le REC natif qu'après archivage durable. Free garde
+  toutes ses traces une par une ; Pro ajoute multi-affichage/export. Voir
+  [docs/TRACK_STORAGE.md](docs/TRACK_STORAGE.md).
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -90,11 +96,12 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Guidage Android** | [docs/GUIDANCE_ANDROID.md](docs/GUIDANCE_ANDROID.md) | Java/Room, bridge, notification, reprise, seuils et gates v5.85. |
 | **Readiness & corridor** | [docs/READINESS_OFFLINE.md](docs/READINESS_OFFLINE.md) | Contrat en couches, état réel et responsabilités de stockage v5.86. |
 | **Android 15/16 & R8** | [docs/ANDROID_LINT.md](docs/ANDROID_LINT.md) | Edge-to-edge, cutout fusionné et règles de réduction release v5.86.1. |
+| **Stockage des traces** | [docs/TRACK_STORAGE.md](docs/TRACK_STORAGE.md) | Modèle, chunks IndexedDB, migration legacy, finalisation REC et gates v5.87. |
 | **Batterie & mémoire S23** | [docs/plans/V5_86_BATTERY_VALIDATION.md](docs/plans/V5_86_BATTERY_VALIDATION.md) | Protocole `batterystats`, parsing UID et historique des runs REC. |
 | **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 
-### Monétisation & Gates (v5.86.2)
+### Monétisation & Gates (décision v5.87 incluse)
 - **Pack Suisse HD** : Gratuit sur le Web. PRO sur Android.
 - **Solaire** : 24h gratuit. Calendrier = PRO.
 - **Offline** : 1 zone gratuite. Illimité = PRO.
@@ -103,6 +110,8 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 - **Nom + résumé REC essentiel** : gratuits ; export fichier GPX = PRO, bloqué avant toute écriture.
 - **Parcours affichés** : tous accessibles ; 1 à la fois en Free, « Ajouter à la carte » jusqu'à
   10 calques en Pro.
+- **Archives REC/import** : pleine fidélité et toutes accessibles en Free comme en Pro ; aucune
+  suppression ou simplification au downgrade. Le stockage réel de l'appareil est la seule limite.
 
 ### Packs Pays (Country Packs — v5.70.0)
 

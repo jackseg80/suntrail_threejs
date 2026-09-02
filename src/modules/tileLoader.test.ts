@@ -151,6 +151,17 @@ describe('tileLoader.ts URLs', () => {
         expect(url).toContain('WEBMERCATOR');
     });
 
+    it('uses the global fallback on the overlapping CH/DE border at St. Chrischona', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = '';
+        // Coordonnées reproduites sur S23 : 47.56690, 7.68120, LOD 17.
+        // Les frontières simplifiées classent cette tuile à la fois CH et DE.
+        const url = getColorUrl(68332, 45797, 17);
+        expect(url).toContain('opentopomap.org');
+        expect(url).not.toContain('ch.swisstopo');
+        expect(url).not.toContain('sgx.geodatenzentrum.de');
+    });
+
     it('SHOULD use IGN Spain for Spanish tiles', () => {
         state.MAP_SOURCE = 'swisstopo';
         state.MK = '';

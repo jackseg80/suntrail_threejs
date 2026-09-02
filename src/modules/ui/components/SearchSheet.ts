@@ -249,7 +249,9 @@ export class SearchSheet extends BaseComponent {
             this.geoResults!.style.display = 'block';
 
             try {
-                const shouldSearchPeaks = this.activeFilter === 'mountains';
+                const shouldSearchPeaks =
+                    this.activeFilter === 'all' ||
+                    this.activeFilter === 'mountains';
                 const shouldSearchGeo = this.activeFilter !== 'mountains';
 
                 const [locations, overpassPeaks] = await Promise.all([
@@ -264,7 +266,14 @@ export class SearchSheet extends BaseComponent {
                           })
                         : Promise.resolve([]),
                     shouldSearchPeaks
-                        ? searchPeaksByName(q)
+                        ? searchPeaksByName(q, {
+                              lat: state.TARGET_LAT,
+                              lon: state.TARGET_LON,
+                              countryCode: getCountryCode(
+                                  state.TARGET_LAT,
+                                  state.TARGET_LON
+                              ),
+                          })
                         : Promise.resolve([]),
                 ]);
 

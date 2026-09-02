@@ -139,6 +139,13 @@
             "processingBody": "SunTrail arrête le REC et cherche un nom logique à partir du lieu de départ.",
             "keepSuggested": "Garder ce nom",
             "discard": "Ne pas enregistrer"
+        },
+        "quality": {
+            "full": "Géométrie complète",
+            "approximate": "Trace historique approximative"
+        },
+        "rename": {
+            "action": "Renommer la trace"
         }
     },
     "preparedRoutes": {

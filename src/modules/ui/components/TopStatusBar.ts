@@ -85,7 +85,11 @@ export class TopStatusBar extends BaseComponent {
         recWidget?.setAttribute('aria-label', i18n.t('topbar.aria.recording'));
         recWidget?.setAttribute('aria-live', 'polite');
         recWidget?.addEventListener('click', () => {
-            sheetManager.toggle('track');
+            // Une session REC ouvre toujours le tableau Sortie, même si la
+            // dernière destination de cette feuille était Préparer ou la Bibliothèque.
+            document.body.dataset.trackDestination = 'outing';
+            eventBus.emit('trackDestinationChanged', { destination: 'outing' });
+            sheetManager.open('track');
         });
 
         const sosBtn = this.element.querySelector('#sos-main-btn');

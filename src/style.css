@@ -1377,6 +1377,7 @@ input[type='range']:focus-visible {
 .gpx-layer-profile:focus-visible,
 .gpx-layer-toggle:focus-visible,
 .gpx-layer-export:focus-visible,
+.gpx-layer-rename:focus-visible,
 .gpx-layer-prepare:focus-visible,
 .gpx-layer-remove:focus-visible {
     outline: 2px solid var(--accent);
@@ -1467,6 +1468,7 @@ input[type='range']:focus-visible {
 .gpx-layer-profile,
 .gpx-layer-toggle,
 .gpx-layer-export,
+.gpx-layer-rename,
 .gpx-layer-prepare,
 .gpx-layer-remove {
     appearance: none;
@@ -1499,6 +1501,7 @@ input[type='range']:focus-visible {
 }
 
 .gpx-layer-export:hover,
+.gpx-layer-rename:hover,
 .gpx-layer-prepare:hover {
     background: rgba(74, 142, 248, 0.2);
     border-color: var(--accent);
@@ -4940,6 +4943,7 @@ body.guidance-profile-open
 .gpx-layer-profile,
 .gpx-layer-toggle,
 .gpx-layer-export,
+.gpx-layer-rename,
 .gpx-layer-prepare,
 .gpx-layer-remove {
     width: 32px;
@@ -5033,6 +5037,7 @@ body.guidance-profile-open
 
 .library-activity-secondary-actions .gpx-layer-toggle,
 .library-activity-secondary-actions .gpx-layer-export,
+.library-activity-secondary-actions .gpx-layer-rename,
 .library-activity-secondary-actions .gpx-layer-remove {
     width: 44px;
     height: 44px;
@@ -5270,6 +5275,7 @@ body.guidance-profile-open
     }
     .library-activity-secondary-actions .gpx-layer-toggle,
     .library-activity-secondary-actions .gpx-layer-export,
+    .library-activity-secondary-actions .gpx-layer-rename,
     .library-activity-secondary-actions .gpx-layer-remove {
         flex: 1 1 0;
     }

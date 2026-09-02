@@ -1,6 +1,6 @@
-# SunTrail — Roadmap produit révisée (version source v5.86.2 — Sortie contextuelle)
+# SunTrail — Roadmap produit révisée (version source v5.87.0)
 
-> Révision : 2026-08-21, après publication GitHub de v5.86.2 / `versionCode 906`.
+> Révision : 2026-09-02, clôture de v5.87.0 autorisée pour publication GitHub.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -13,12 +13,17 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-08-14
+## État réel au 2026-09-02
 
 - **v5.86.0** est publiée sur GitHub et son AAB Android **904** a déjà été importé dans Google
   Play ; ce `versionCode` est consommé.
 - **v5.86.1** / Android **905** est visible dans Play Console. **v5.86.2** / Android **906** est
-  publiée sur GitHub pour Sortie/Bibliothèque ; aucun téléversement Play n'est implicite.
+  publiée sur GitHub pour Sortie/Bibliothèque ; le propriétaire confirme son envoi sur Google Play
+  en test.
+- **v5.87.0** / Android **907** clôt le dépôt de traces pleine fidélité et embarque les correctifs
+  S23 préalables : STOP notification REC, raccourci REC vers Sortie, recherche de sommets et
+  fallback cartographique sur les frontières ambiguës. La publication GitHub est autorisée ;
+  aucun upload Play ni statut Play de 907 n'est revendiqué.
 - Prepared Routes, la bibliothèque IndexedDB, la compatibilité GPX/REC, la difficulté expliquée,
   les corrections mobiles et la validation Galaxy S23 sont clôturées.
 - Le moteur foreground, ses fixtures, le plan de guidage local, l'UI et l'indépendance REC sont
@@ -344,14 +349,32 @@ horodatage et statistiques des REC/imports après redémarrage. Migrer les cinq 
 inventer les points perdus : une trace simplifiée reste étiquetée comme telle et un réimport est
 demandé lorsqu'une géométrie fiable est nécessaire.
 
-La cible commerciale « historique récent borné en Free, archive pleine fidélité et analyse en
-Pro » reste à valider avant implémentation. Le design de migration et de downgrade doit être
-non destructif : aucune trace existante n'est supprimée ou rendue irrécupérable lors d'un changement
-d'offre. Ce lot ne modifie ni les routes préparées locales illimitées ni les contrats REC,
-Guidance, offline/corridors et sécurité.
+La pleine fidélité et l'accès aux traces locales sont un contrat de fiabilité, pas un verrou Pro.
+Free conserve toutes les traces présentes sur l'appareil, peut les ouvrir, renommer, supprimer,
+refaire et suivre, avec une seule trace active sur la carte et un résumé essentiel. Pro garde la
+valeur avancée : superposition de plusieurs traces, export de fichier, analyses approfondies et
+organisation évoluée lorsqu'elles existent. Le stockage est borné par le quota réel de l'appareil
+et se gère explicitement ; aucun nettoyage silencieux ni quota commercial ne dégrade une ancienne
+trace. Au downgrade, toutes les données restent lisibles et utilisables une par une.
 
-**Gate :** migration idempotente, import/REC/redémarrage/export, quota et downgrade testés avec
-des géométries volumineuses ; décision Free/Pro documentée avant toute nouvelle règle d'entitlement.
+Le design de migration doit rester non destructif : aucune trace existante n'est supprimée,
+verrouillée ou rendue irrécupérable lors d'un changement d'offre. Ce lot ne modifie ni les routes
+préparées locales illimitées ni les contrats REC, Guidance, offline/corridors et sécurité.
+
+**Clôture v5.87.0 autorisée le 2026-09-02 :** `StoredTrackV1`, `TrackRepository`
+IndexedDB injecté et découpé en blocs, migration copy-first reprenable, catalogue unique,
+archivage GPX pleine fidélité et finalisation REC avec accusé après écriture durable sont en place.
+Les tests automatisés couvrent migration, quota/rollback, gros volume, downgrade et
+import→reload→offline dans Chromium. Sur S23/API 36, un import de 219 points et deux REC de 17 et
+10 points ont été archivés en pleine fidélité, conservés après mise à jour et accessibles un à un
+en Free ; l'export reste verrouillé. Le STOP notification a conservé et nommé le REC, mais le
+retour automatique au premier plan corrigé ensuite reste un contrôle terrain recommandé. Aucune
+entrée legacy n'étant présente sur cet appareil, la migration réelle reste prouvée par tests et
+non par un cas terrain. Architecture et matrice : [docs/TRACK_STORAGE.md](docs/TRACK_STORAGE.md).
+
+**Gate :** migration idempotente, import/REC/redémarrage/export Pro, pression de stockage et
+downgrade testés avec des géométries volumineuses ; toutes les traces locales restent accessibles
+en Free et aucune règle d'entitlement n'intervient dans leur persistance.
 
 ## v6.0.0 — Compte optionnel & synchronisation PC–Android
 

@@ -1,5 +1,6 @@
 package com.suntrail.threejs;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowInsets;
@@ -14,7 +15,35 @@ public class MainActivity extends BridgeActivity {
         // Enregistrer le plugin Foreground Service avant super.onCreate()
         registerPlugin(RecordingPlugin.class);
         super.onCreate(savedInstanceState);
+        handleRecordingNotificationAction(getIntent());
         hideStatusBar();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleRecordingNotificationAction(intent);
+    }
+
+    /**
+     * A notification action must open an Activity directly on Android 14+.
+     * Starting MainActivity from the background tracking service can be
+     * blocked by BAL restrictions even though the user tapped the action.
+     */
+    private void handleRecordingNotificationAction(Intent intent) {
+        if (
+            intent == null ||
+            !RecordingService.ACTION_STOP_RECORDING.equals(intent.getAction())
+        ) return;
+        Intent stopIntent = new Intent(this, RecordingService.class)
+            .setAction(RecordingService.ACTION_STOP_RECORDING);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(stopIntent);
+        } else {
+            startService(stopIntent);
+        }
+        intent.setAction(null);
     }
 
     /**

@@ -91,6 +91,7 @@ interface RecordingPlugin {
         startTime: number;
     }>;
     acknowledgePendingStoppedCourse(): Promise<void>;
+    clearRecordedPoints(options: { courseId: string }): Promise<void>;
     updateNotificationStats(options: {
         distance: number;
         elevation: number;
@@ -207,7 +208,6 @@ class NativeGPSService {
                     await stopRecordingWithFeedback({
                         nativeAlreadyStopped: true,
                     });
-                    await this.clearStoppedCourseState();
                     return nativeSession;
                 }
                 // 2. Si pas de course native, tenter une recovery via Preferences
@@ -328,22 +328,26 @@ class NativeGPSService {
     /**
      * Arrête la course en cours.
      */
-    async stopCourse(): Promise<void> {
-        if (!RecordingNative) return;
+    async stopCourse(): Promise<{
+        courseId: string;
+        points: NativeGPSPoint[];
+    }> {
+        if (!RecordingNative) return { courseId: '', points: [] };
 
         // Bloquer d'abord toute mise à jour de notification. Une promesse de
         // statistiques encore en vol pouvait redémarrer RecordingService juste
         // après STOP et laisser une notification orpheline sur Android.
         this.stopStatsUpdates();
 
-        if (this.currentCourseId) {
+        const stoppedCourseId = this.currentCourseId ?? '';
+        if (stoppedCourseId) {
             const lastTimestamp =
                 state.recordedPoints.length > 0
                     ? state.recordedPoints[state.recordedPoints.length - 1]
                           .timestamp
                     : 0;
             const finalPoints = await this.getAllPoints(
-                this.currentCourseId,
+                stoppedCourseId,
                 lastTimestamp
             );
             if (finalPoints.length > 0) {
@@ -358,6 +362,9 @@ class NativeGPSService {
         await this.flushPointPersistence();
 
         await RecordingNative.stopCourse();
+        const points = stoppedCourseId
+            ? await this.waitForFinalizedPoints(stoppedCourseId)
+            : [];
         this.currentCourseId = null;
         state.currentCourseId = '';
         state.isPaused = false;
@@ -370,6 +377,23 @@ class NativeGPSService {
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
 
         this.flushMeshUpdate();
+        return { courseId: stoppedCourseId, points };
+    }
+
+    /** Room flushes the service buffer asynchronously after the STOP intent. */
+    private async waitForFinalizedPoints(
+        courseId: string
+    ): Promise<NativeGPSPoint[]> {
+        let latest: NativeGPSPoint[] = [];
+        let stableReads = 0;
+        for (let attempt = 0; attempt < 8; attempt++) {
+            const points = await this.getAllPoints(courseId, 0);
+            stableReads = points.length === latest.length ? stableReads + 1 : 0;
+            latest = points;
+            if (stableReads >= 1) return latest;
+            await new Promise((resolve) => window.setTimeout(resolve, 25));
+        }
+        return latest;
     }
 
     /** Démarre Guidance dans :tracking à partir d'une copie de route validée côté Java. */
@@ -775,6 +799,14 @@ class NativeGPSService {
         await this.syncPoints();
         if (state.isRecording || state.recordedPoints.length > 0) {
             await stopRecordingWithFeedback({ nativeAlreadyStopped: true });
+        } else if (this.currentCourseId) {
+            await this.acknowledgeFinalizedCourse(this.currentCourseId);
+        }
+    }
+
+    public async acknowledgeFinalizedCourse(courseId: string): Promise<void> {
+        if (courseId) {
+            await RecordingNative?.clearRecordedPoints({ courseId });
         }
         await this.clearStoppedCourseState();
     }

@@ -25,6 +25,7 @@ type EventMap = {
     packHighlight: { packId: string };
     themeChanged: { theme: 'light' | 'dark' };
     gpxHistoryUpdated: void;
+    tracksUpdated: void;
     preparedRoutesUpdated: void;
     trackDestinationChanged: { destination: 'outing' | 'library' };
     guidanceSnapshot: import('./guidance/guidanceTypes').GuidanceSnapshot;

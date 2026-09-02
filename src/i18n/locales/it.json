@@ -139,6 +139,13 @@
             "processingBody": "SunTrail sta arrestando la registrazione e cercando un nome utile dal luogo di partenza.",
             "keepSuggested": "Mantieni questo nome",
             "discard": "Non salvare"
+        },
+        "quality": {
+            "full": "Geometria completa",
+            "approximate": "Traccia storica approssimativa"
+        },
+        "rename": {
+            "action": "Rinomina traccia"
         }
     },
     "preparedRoutes": {

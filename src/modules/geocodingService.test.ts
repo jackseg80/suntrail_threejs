@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     classifyFeature,
     searchLocations,
+    searchPeaksByName,
     CLASSIFICATIONS,
     getPlaceName,
     rankSearchResults,
@@ -13,6 +14,53 @@ vi.mock('./utils', () => ({
 }));
 
 describe('geocodingService.ts', () => {
+    describe('searchPeaksByName', () => {
+        it('uses Photon peak filtering and maps valid summit results', async () => {
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    features: [
+                        {
+                            properties: {
+                                osm_key: 'natural',
+                                osm_value: 'peak',
+                                name: 'Matterhorn',
+                            },
+                            geometry: {
+                                coordinates: [7.6586024, 45.9764263],
+                            },
+                        },
+                    ],
+                }),
+            } as Response);
+
+            try {
+                const results = await searchPeaksByName('Matterhorn', {
+                    lat: 46.8,
+                    lon: 8.2,
+                    countryCode: 'CH',
+                });
+
+                expect(fetchSpy).toHaveBeenCalledWith(
+                    expect.stringContaining(
+                        'https://photon.komoot.io/api/?q=Matterhorn&limit=10&osm_tag=natural%3Apeak&lat=46.8&lon=8.2'
+                    ),
+                    expect.objectContaining({ signal: expect.any(AbortSignal) })
+                );
+                expect(results).toEqual([
+                    {
+                        name: 'Matterhorn',
+                        lat: 45.9764263,
+                        lon: 7.6586024,
+                        ele: 0,
+                    },
+                ]);
+            } finally {
+                fetchSpy.mockRestore();
+            }
+        });
+    });
+
     describe('getPlaceName', () => {
         beforeEach(() => {
             vi.clearAllMocks();
@@ -59,6 +107,11 @@ describe('geocodingService.ts', () => {
 
         it('should classify Nominatim peak features', () => {
             const feature = { type: 'peak' };
+            expect(classifyFeature(feature)).toEqual(CLASSIFICATIONS.peak);
+        });
+
+        it('should classify natural OSM peaks', () => {
+            const feature = { class: 'natural', type: 'peak' };
             expect(classifyFeature(feature)).toEqual(CLASSIFICATIONS.peak);
         });
 

@@ -139,6 +139,13 @@
             "processingBody": "SunTrail beendet die Aufzeichnung und ermittelt einen passenden Namen anhand des Startorts.",
             "keepSuggested": "Diesen Namen behalten",
             "discard": "Nicht speichern"
+        },
+        "quality": {
+            "full": "Vollständige Geometrie",
+            "approximate": "Ungefähre historische Spur"
+        },
+        "rename": {
+            "action": "Spur umbenennen"
         }
     },
     "preparedRoutes": {

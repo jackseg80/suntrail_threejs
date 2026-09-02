@@ -25,6 +25,7 @@ import { Capacitor } from '@capacitor/core';
 import {
     ICON_CLOSE,
     ICON_COPY,
+    ICON_EDIT,
     ICON_LOCK,
     ICON_MAP_LAYERS,
     ICON_STAR,
@@ -36,12 +37,7 @@ import {
 } from '../../recordingStopFlow';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
-import {
-    loadHistory,
-    removeFromHistory,
-    updateHistoryEntryLocation,
-    type GPXHistoryEntry,
-} from '../../gpxHistoryService';
+import { type GPXHistoryEntry } from '../../gpxHistoryService';
 import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
 import { getPlaceName } from '../../geocodingService';
 import { createTooltip, type TooltipHandle } from '../tooltip';
@@ -74,6 +70,9 @@ import {
 } from '../../outing/outingDashboard';
 import type { GuidanceSnapshot } from '../../guidance/guidanceTypes';
 import { STORAGE_KEYS } from '../../../constants/storage';
+import { trackService } from '../../tracks/trackService';
+import { toTrackCatalogEntry } from '../../tracks/trackCatalogAdapter';
+import type { StoredTrackV1 } from '../../tracks/storedTrack';
 
 const pendingGeocode = new Set<string>();
 
@@ -373,6 +372,9 @@ export class TrackSheet extends BaseComponent {
                                     file.name
                                 );
                                 if (layer) {
+                                    // The full imported geometry is durable
+                                    // before any PreparedRoute is derived.
+                                    await trackService.archiveImport(layer);
                                     const canOpen =
                                         await this.protectCurrentDraft(
                                             layer.name
@@ -499,6 +501,14 @@ export class TrackSheet extends BaseComponent {
         eventBus.on('gpxHistoryUpdated', onHistoryUpdated);
         this.addSubscription(() =>
             eventBus.off('gpxHistoryUpdated', onHistoryUpdated)
+        );
+        const onTracksUpdated = () => {
+            this.renderUnifiedTrackList();
+            this.renderPreparedRoutes();
+        };
+        eventBus.on('tracksUpdated', onTracksUpdated);
+        this.addSubscription(() =>
+            eventBus.off('tracksUpdated', onTracksUpdated)
         );
 
         const onPreparedRoutesUpdated = () => this.renderPreparedRoutes();
@@ -837,7 +847,8 @@ export class TrackSheet extends BaseComponent {
               storageError.message
             : '';
         const routes = state.preparedRoutes;
-        empty.hidden = routes.length > 0 || loadHistory().length > 0;
+        empty.hidden =
+            routes.length > 0 || trackService.getCachedTracks().length > 0;
         container.innerHTML = routes
             .map((route) => {
                 const originKey =
@@ -1432,12 +1443,15 @@ export class TrackSheet extends BaseComponent {
     }
 
     private buildHistoryGPXString(entry: GPXHistoryEntry): string {
-        const points = entry.simplifiedPoints
+        const stored = trackService
+            .getCachedTracks()
+            .find((track) => track.id === entry.id);
+        const points = (stored?.geometry ?? entry.simplifiedPoints)
             .map(
-                (point, index) => `
+                (point) => `
       <trkpt lat="${point.lat}" lon="${point.lon}">
-        <ele>${point.ele.toFixed(1)}</ele>
-        <time>${new Date(entry.timestamp + index * 1000).toISOString()}</time>
+        ${point.ele === undefined ? '' : `<ele>${point.ele.toFixed(1)}</ele>`}
+        ${'timestamp' in point && point.timestamp !== undefined ? `<time>${new Date(point.timestamp).toISOString()}</time>` : ''}
       </trkpt>`
             )
             .join('');
@@ -1502,14 +1516,19 @@ export class TrackSheet extends BaseComponent {
     }
 
     private async loadHistoryEntry(entry: GPXHistoryEntry): Promise<void> {
-        const pts = entry.simplifiedPoints;
+        const stored = trackService
+            .getCachedTracks()
+            .find((track) => track.id === entry.id);
+        const pts = stored?.geometry ?? entry.simplifiedPoints;
         if (pts.length < 2) return;
 
-        const points = pts.map((p, i) => ({
+        const points = pts.map((p) => ({
             lat: p.lat,
             lon: p.lon,
-            ele: p.ele,
-            time: new Date(entry.timestamp + i * 1000).toISOString(),
+            ...(p.ele === undefined ? {} : { ele: p.ele }),
+            ...('timestamp' in p && p.timestamp !== undefined
+                ? { time: new Date(p.timestamp).toISOString() }
+                : {}),
         }));
 
         const rawData = {
@@ -1529,6 +1548,7 @@ export class TrackSheet extends BaseComponent {
                 source: entry.source,
                 forceVisible: true,
                 id: entry.id,
+                persistHistory: false,
             });
         } catch (e) {
             console.error('[History] Failed to load entry:', e);
@@ -1547,7 +1567,8 @@ export class TrackSheet extends BaseComponent {
             this.updateOutingDashboard();
             return;
         }
-        const history = loadHistory();
+        const storedTracks = trackService.getCachedTracks();
+        const history = storedTracks.map(toTrackCatalogEntry);
 
         // Lazy geocoding for entries missing locationName
         for (const entry of history) {
@@ -1565,20 +1586,21 @@ export class TrackSheet extends BaseComponent {
                     ? COUNTRY_NAMES[countryCode] || countryCode
                     : '';
                 if (country) {
-                    updateHistoryEntryLocation(entry.id, country);
+                    void trackService.updatePlace(entry.id, {
+                        countryName: country,
+                    });
                 }
                 getPlaceName(entry.centerLat, entry.centerLon)
                     .then((loc) => {
                         if (loc) {
-                            updateHistoryEntryLocation(entry.id, loc);
+                            return trackService.updatePlace(entry.id, {
+                                locationName: loc,
+                            });
                         }
                     })
                     .catch(() => {})
                     .finally(() => {
                         pendingGeocode.delete(entry.id);
-                        if (document.getElementById('gpx-layers-list')) {
-                            this.renderUnifiedTrackList();
-                        }
                     });
             }
         }
@@ -1603,6 +1625,7 @@ export class TrackSheet extends BaseComponent {
             isActive: boolean;
             isProfileActive: boolean;
             entry?: GPXHistoryEntry;
+            storedTrack?: StoredTrackV1;
             entryIndex?: number;
         }
 
@@ -1628,6 +1651,7 @@ export class TrackSheet extends BaseComponent {
                         .getElementById('elevation-profile')
                         ?.classList.contains('is-open'),
                 entry,
+                storedTrack: storedTracks[i],
                 entryIndex: i,
             });
         }
@@ -1712,6 +1736,7 @@ export class TrackSheet extends BaseComponent {
                         <span class="library-card-classification">
                             <span class="library-status-badge" data-status="${isRecorded ? 'recorded' : 'follow'}">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.statusRecorded' : 'preparedRoutes.library.statusFollow'))}</span>
                             <span class="library-origin-label">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.originRecording' : 'preparedRoutes.library.originImport'))}</span>
+                            <span class="library-origin-label">${escapeText(i18n.t(row.storedTrack?.quality.geometry === 'approximate' ? 'track.quality.approximate' : 'track.quality.full'))}</span>
                         </span>
                         <span class="gpx-layer-name">${truncName}</span>
                         <span class="gpx-layer-location">${subInfo}</span>
@@ -1745,6 +1770,8 @@ export class TrackSheet extends BaseComponent {
                         ${exportLocked ? ICON_LOCK : ''}
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     </button>
+                    <button class="gpx-layer-rename" data-action="rename" data-id="${row.id}"
+                            aria-label="${i18n.t('track.rename.action')}" title="${i18n.t('track.rename.action')}">${ICON_EDIT}</button>
                     <button class="gpx-layer-remove" data-action="${row.isLoaded ? 'remove' : 'history-remove'}" data-id="${row.id}"
                             aria-label="${row.isLoaded ? i18n.t(loadedRemovalKey) : i18n.t('track.history.remove')}"
                             title="${row.isLoaded ? i18n.t(loadedRemovalKey) : i18n.t('track.history.remove')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -1844,6 +1871,11 @@ export class TrackSheet extends BaseComponent {
                     if (row.entry) await this.loadHistoryEntry(row.entry);
                     if (!state.gpxLayers.some((layer) => layer.id === id))
                         return;
+                    // addGPXLayer() already selects the loaded track and opens
+                    // its profile. Do not interpret this first View click as
+                    // a second toggle that would close the panel immediately.
+                    this.renderUnifiedTrackList();
+                    return;
                 }
 
                 const panelOpen = !!document
@@ -1934,7 +1966,26 @@ export class TrackSheet extends BaseComponent {
                         return;
                     }
                     try {
-                        await preparedRouteService.convertLegacy(entry);
+                        const stored = storedTracks.find(
+                            (candidate) => candidate.id === id
+                        );
+                        if (!stored) return;
+                        if (stored.quality.geometry === 'approximate') {
+                            await preparedRouteService.convertLegacy(entry);
+                        } else {
+                            if (
+                                !state.gpxLayers.some(
+                                    (layer) => layer.id === id
+                                )
+                            ) {
+                                await this.loadHistoryEntry(entry);
+                            }
+                            const layer = state.gpxLayers.find(
+                                (candidate) => candidate.id === id
+                            );
+                            if (!layer) return;
+                            await preparedRouteService.importGPXLayer(layer);
+                        }
                         showToast(
                             i18n.t(
                                 entry.source === 'rec'
@@ -1949,16 +2000,36 @@ export class TrackSheet extends BaseComponent {
                 });
             });
 
+        container.querySelectorAll('[data-action="rename"]').forEach((btn) => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = (btn as HTMLElement).dataset.id;
+                const row = displayedRows.find(
+                    (candidate) => candidate.id === id
+                );
+                if (!id || !row) return;
+                const renamed = await promptRecordingName(row.name);
+                if (renamed === null) return;
+                try {
+                    await trackService.rename(id, renamed);
+                    const layer = state.gpxLayers.find(
+                        (candidate) => candidate.id === id
+                    );
+                    if (layer) layer.name = renamed;
+                    this.renderUnifiedTrackList();
+                } catch {
+                    showToast(i18n.t('preparedRoutes.error.storage'));
+                }
+            });
+        });
+
         container.querySelectorAll('[data-action="remove"]').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const id = (btn as HTMLElement).dataset.id;
                 if (id) {
-                    // Sortie unloads a trace from the current outing. Only the
-                    // library is allowed to delete its persisted GPX history.
-                    if (isLibrary) removeFromHistory(id);
+                    if (isLibrary) await trackService.delete(id);
                     removeGPXLayer(id);
-                    if (isLibrary) state.gpxHistory = loadHistory();
                     this.renderUnifiedTrackList();
                     this.renderPreparedRoutes();
                 }
@@ -1967,12 +2038,11 @@ export class TrackSheet extends BaseComponent {
         container
             .querySelectorAll('[data-action="history-remove"]')
             .forEach((btn) => {
-                btn.addEventListener('click', (e) => {
+                btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     const id = (btn as HTMLElement).dataset.id;
                     if (id) {
-                        removeFromHistory(id);
-                        state.gpxHistory = loadHistory();
+                        await trackService.delete(id);
                         this.renderUnifiedTrackList();
                         this.renderPreparedRoutes();
                     }

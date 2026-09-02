@@ -1,6 +1,33 @@
-# SunTrail — TODO (v5.86.2 Sortie/Bibliothèque clôturée ; publication Play séparée)
+# SunTrail — TODO (v5.87.0 clôturée pour GitHub ; publication Play séparée)
 
-> Dernière mise à jour : 2026-08-21
+> Dernière mise à jour : 2026-09-02
+
+## ✅ v5.87.0 — Dépôt de traces pleine fidélité
+
+- [x] Ajouter `StoredTrackV1` et `TrackRepository` IndexedDB séparé de `RouteRepository`, avec
+      blocs atomiques, erreurs typées et géométrie complète des imports et REC.
+- [x] Migrer l'historique legacy en copy-first idempotent et reprenable, sans supprimer le
+      `localStorage`, inventer des champs absents ni dédupliquer sur le seul nom.
+- [x] Faire de Bibliothèque le catalogue unique : toutes les traces accessibles une par une en
+      Free ; multi-affichage et export fichier réservés à Pro ; downgrade sans perte.
+- [x] Finaliser les STOP REC après flush Room et écriture durable, avec reprise en cas d'échec et
+      abandon explicite sans archive.
+- [x] Couvrir CRUD, concurrence, rollback, quota, corruption, Unicode, 12 345 points, migration
+      interrompue/reprise, import/reload/offline et frontières Free/Pro.
+- [x] Valider sur S23/API 36 trois traces complètes et une route préservées après mise à jour,
+      ouverture Free une à la fois, export verrouillé, renommage et STOP notification sauvegardé.
+- [x] Remplacer le libellé visible de renommage par l'icône crayon compacte, avec `aria-label` et
+      infobulle conservés.
+- [x] Aligner la release sur `5.87.0` / Android `versionCode 907` et autoriser explicitement
+      commit, tag, push et release GitHub le 2026-09-02.
+- [x] Rejouer les gates de release : check, 1 710 tests/152 fichiers, couverture 64,48 %, build,
+      budget PWA 2,35 MiB, i18n, sept pages Capacitor, sync, JVM, lint et APK debug.
+- [x] Installer l'APK `5.87.0` / 907 sur le S23 avec `adb install -r`, sans désinstallation ; la
+      date de première installation reste inchangée et l'application redémarre sans crash.
+- [ ] Retest terrain recommandé : confirmer que « Arrêter REC » ramène directement l'application
+      au premier plan avec le correctif Android 14+ installé.
+- [ ] Téléversement et publication Play : hors périmètre ; revérifier le maximum global et obtenir
+      une autorisation séparée avant tout upload.
 
 ## ✅ v5.86.2 — Tableau de bord Sortie et contrat Free/Pro honnête
 
