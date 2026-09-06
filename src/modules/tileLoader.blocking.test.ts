@@ -15,6 +15,7 @@ vi.mock('./geo', () => ({
 const mockCache = {
     put: vi.fn(() => new Promise((resolve) => setTimeout(resolve, 200))), // 200ms de délai simulé (bien au-dessus de 50ms)
     match: vi.fn(),
+    keys: vi.fn().mockResolvedValue([]),
 };
 
 global.caches = {
@@ -148,5 +149,45 @@ describe('TileLoader — P0: inPackZone data-driven', () => {
         await loadTileData(4270, 2891, 7, false);
 
         expect(packManager.getTileFromPacks).not.toHaveBeenCalled();
+    });
+});
+
+describe('TileLoader — cached map during a slow pack request', () => {
+    it('dispatches cached resources without waiting for the remote pack', async () => {
+        const { resetTileLoaderState, initCacheLayer } =
+            await import('./tileLoader');
+        const { getCountryAtTile } = await import('./geo');
+        resetTileLoaderState();
+        vi.clearAllMocks();
+        state.MAP_SOURCE = 'swisstopo';
+        state.MK = 'test_key_valid_12345';
+        state.isMapTilerDisabled = false;
+        state.SHOW_TRAILS = true;
+        vi.mocked(getCountryAtTile).mockReturnValue('CH');
+        vi.mocked(packManager.hasMountedPacks).mockReturnValue(true);
+        vi.mocked(packManager.hasInstalledPackForCountry).mockReturnValue(true);
+        vi.mocked(packManager.getMinPackZoom).mockReturnValue(8);
+        // The worker populated CacheStorage after the main-thread index warmup.
+        await initCacheLayer();
+        const cached = new Blob(['cached-map'.repeat(32)]);
+        mockCache.match.mockResolvedValue({ blob: async () => cached });
+        vi.mocked(packManager.getTileFromPacks).mockRejectedValue(
+            new Error('Remote pack must not block cached map')
+        );
+        try {
+            await loadTileData(8540, 5790, 14, false);
+            expect(packManager.getTileFromPacks).not.toHaveBeenCalled();
+            expect(tileWorkerManager.loadTile).toHaveBeenCalled();
+            const args = vi.mocked(tileWorkerManager.loadTile).mock.calls[0];
+            expect(args).toContainEqual({
+                color: cached,
+                elev: cached,
+                overlay: cached,
+            });
+        } finally {
+            mockCache.match.mockReset();
+            vi.mocked(packManager.getTileFromPacks).mockReset();
+            resetTileLoaderState();
+        }
     });
 });

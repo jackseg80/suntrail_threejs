@@ -266,6 +266,67 @@ describe('tileQueue', () => {
     });
 
     describe('cache-only prefetch', () => {
+        it('clears the loading flag when a prefetch finishes after the idle timer', async () => {
+            vi.useFakeTimers();
+            let finish!: () => void;
+            const tile = makeFakeTile('delayed-prefetch', 15);
+            (tile as any).cacheOnly = true;
+            vi.mocked(tile.load).mockImplementation(
+                () =>
+                    new Promise<void>((resolve) => {
+                        finish = resolve;
+                    })
+            );
+            addToLoadQueue(tile);
+            await processLoadQueue();
+            await vi.advanceTimersByTimeAsync(500);
+            expect(mockState.isProcessingTiles).toBe(true);
+            finish();
+            await vi.advanceTimersByTimeAsync(0);
+            try {
+                expect(mockState.isProcessingTiles).toBe(false);
+            } finally {
+                vi.clearAllTimers();
+                vi.useRealTimers();
+            }
+        });
+
+        it('does not release another load slot when a timed-out promise settles late', async () => {
+            vi.useFakeTimers();
+            let finishOld!: () => void, finishNew!: () => void;
+            const oldTile = makeFakeTile('old-prefetch', 15);
+            const newTile = makeFakeTile('new-prefetch', 15);
+            (oldTile as any).cacheOnly = (newTile as any).cacheOnly = true;
+            vi.mocked(oldTile.load).mockImplementation(
+                () =>
+                    new Promise<void>((resolve) => {
+                        finishOld = resolve;
+                    })
+            );
+            vi.mocked(newTile.load).mockImplementation(
+                () =>
+                    new Promise<void>((resolve) => {
+                        finishNew = resolve;
+                    })
+            );
+            addToLoadQueue(oldTile);
+            await processLoadQueue();
+            await vi.advanceTimersByTimeAsync(30_000);
+            addToLoadQueue(newTile);
+            await processLoadQueue();
+            finishOld();
+            await vi.advanceTimersByTimeAsync(200);
+            try {
+                expect(mockState.isProcessingTiles).toBe(true);
+            } finally {
+                finishNew();
+                await vi.advanceTimersByTimeAsync(0);
+                vi.clearAllTimers();
+                vi.useRealTimers();
+            }
+            expect(mockState.isProcessingTiles).toBe(false);
+        });
+
         it('loads an inactive prefetch tile and releases its dedupe key', async () => {
             vi.useFakeTimers();
             const tile = makeFakeTile('source_0_0_15', 15);

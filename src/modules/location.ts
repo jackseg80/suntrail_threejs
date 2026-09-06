@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { Geolocation } from '@capacitor/geolocation';
 import { state } from './state';
 import { haversineDistance, lngLatToWorld } from './geo';
-import { getAltitudeAt } from './analysis';
+import { getTerrainAltitudeAt } from './analysis';
+import { getCameraTiltLimit } from './cameraTilt';
 
 let watchId: string | null = null;
 let _originTileUnsub: (() => void) | null = null;
@@ -13,6 +14,26 @@ let userFollowViewport: UserFollowViewport = 'center';
 let headingCorrectionActive = false;
 let followCameraNeedsInitialization = true;
 let followHeadingMovementActive = false;
+let lastUserTerrainHeight: number | null = null;
+let lastUserTerrainSource = state.MAP_SOURCE;
+let lastUserTerrainExaggeration = state.RELIEF_EXAGGERATION;
+
+/** Visual continuity only: never changes GPS samples, recorded points or stats. */
+function getUserTerrainHeight(x: number, z: number): number {
+    if (
+        lastUserTerrainSource !== state.MAP_SOURCE ||
+        lastUserTerrainExaggeration !== state.RELIEF_EXAGGERATION
+    ) {
+        lastUserTerrainHeight = null;
+        lastUserTerrainSource = state.MAP_SOURCE;
+        lastUserTerrainExaggeration = state.RELIEF_EXAGGERATION;
+    }
+    const height = getTerrainAltitudeAt(x, z);
+    if (height !== null) lastUserTerrainHeight = height;
+    // LOD replacement briefly removes the old tile before its successor loads.
+    // Treating that gap as sea level drives follow down and changes LOD again.
+    return lastUserTerrainHeight ?? 0;
+}
 let lastMotionSample: {
     lat: number;
     lon: number;
@@ -332,7 +353,7 @@ export function updateUserMarker() {
         return;
     }
 
-    const groundH = state.IS_2D_MODE ? 0 : getAltitudeAt(pos.x, pos.z);
+    const groundH = state.IS_2D_MODE ? 0 : getUserTerrainHeight(pos.x, pos.z);
     // Offset minimal : évite le Z-clipping sans créer de décalage de parallaxe sous angle oblique
     const finalY = groundH + 2;
 
@@ -422,6 +443,7 @@ export function clearUserMarker() {
     state.isFollowingUser = false;
     lastMotionSample = null;
     followHeadingMovementActive = false;
+    lastUserTerrainHeight = null;
 }
 
 export function centerOnUser(delta: number) {
@@ -440,7 +462,7 @@ export function centerOnUser(delta: number) {
     );
     const groundH = state.IS_2D_MODE
         ? 0
-        : getAltitudeAt(targetWorldPos.x, targetWorldPos.z);
+        : getUserTerrainHeight(targetWorldPos.x, targetWorldPos.z);
 
     // On vise l'altitude réelle pour éviter l'effet de décalage (v5.5.15)
     // En 2D, on vise le niveau 0.
@@ -484,12 +506,31 @@ export function centerOnUser(delta: number) {
             1 - Math.exp(-2.2 * delta)
         );
     }
-    if (isInitial) {
+    // Follow bypasses scene's auto-tilt solver, so it must also release the
+    // constraints inherited from the previous map mode and finish its transition.
+    const tiltLimit = state.IS_2D_MODE
+        ? 0
+        : getCameraTiltLimit(state.ZOOM, groundH);
+    if (state.isFollowingUser) {
+        state.controls.minPolarAngle = Math.min(0.05, tiltLimit);
+        state.controls.maxPolarAngle = tiltLimit;
+    }
+    if (isInitial || state.isTiltTransitioning) {
+        const desiredTilt = Math.min(0.8, tiltLimit);
         spherical.phi = THREE.MathUtils.lerp(
             spherical.phi,
-            0.8,
+            desiredTilt,
             1 - Math.exp(-1.5 * delta)
         );
+        if (
+            Math.abs(spherical.phi - desiredTilt) < 0.005 &&
+            Math.abs(spherical.radius - FOLLOW_CAMERA_DISTANCE) <= 1
+        ) {
+            spherical.phi = desiredTilt;
+            state.isTiltTransitioning = false;
+        } else {
+            state.isTiltTransitioning = true;
+        }
     }
 
     const currentSpeed = state.userSpeedMps ?? 0;

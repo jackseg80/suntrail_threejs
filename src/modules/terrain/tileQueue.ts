@@ -18,6 +18,14 @@ let lastSortTime = 0;
 const SORT_INTERVAL_MS = 200;
 let loadingCount = 0; // v5.34.5 : True connection pool counter
 
+function updateProcessingState(): void {
+    state.isProcessingTiles =
+        loadQueue.size > 0 ||
+        loadingCount > 0 ||
+        buildQueue.length > 0 ||
+        isProcessingBuildQueue;
+}
+
 const _queueMatrix = new THREE.Matrix4();
 const _queueFrustum = new THREE.Frustum();
 let _visCache: Map<Tile, boolean> | null = null;
@@ -68,7 +76,7 @@ function processBuildQueue() {
 
 export async function processLoadQueue() {
     if (isProcessingQueue || loadQueue.size === 0) {
-        if (loadingCount === 0) state.isProcessingTiles = false;
+        updateProcessingState();
         return;
     }
     isProcessingQueue = true;
@@ -157,9 +165,15 @@ export async function processLoadQueue() {
             ) {
                 loadingCount++;
                 state.isProcessingTiles = true;
+                let slotReleased = false;
+                const releaseSlot = () => {
+                    if (slotReleased) return;
+                    slotReleased = true;
+                    loadingCount--;
+                };
                 const TIMEOUT_MS = 30000;
                 const timer = setTimeout(() => {
-                    if (loadingCount > 0) loadingCount--;
+                    releaseSlot();
                     cancelTileLoad(tile.activeTaskId);
                     // v5.74.1 : Retry automatique jusqu'à 3 tentatives.
                     // Évite les trous permanents sur connexion lente.
@@ -172,14 +186,17 @@ export async function processLoadQueue() {
                     }
                     if (!isProcessingQueue && loadQueue.size > 0)
                         processLoadQueue();
+                    updateProcessingState();
                 }, TIMEOUT_MS);
                 tile.load()
                     .finally(() => {
                         clearTimeout(timer);
-                        loadingCount--;
+                        releaseSlot();
                         tile.onLoadSettled?.();
                         if (!isProcessingQueue && loadQueue.size > 0)
                             processLoadQueue();
+                        // Prefetch creates no mesh, so no build callback will clear this flag.
+                        updateProcessingState();
                     })
                     .catch(() => {
                         tile.status = 'failed';
@@ -193,7 +210,7 @@ export async function processLoadQueue() {
             setTimeout(processLoadQueue, 16);
         } else {
             setTimeout(() => {
-                if (loadingCount === 0) state.isProcessingTiles = false;
+                updateProcessingState();
             }, 100);
         }
     }

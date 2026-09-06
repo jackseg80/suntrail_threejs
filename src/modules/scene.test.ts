@@ -78,6 +78,7 @@ vi.mock('./terrain', () => ({
     updateVisibleTiles: vi.fn(),
     repositionAllTiles: vi.fn(),
     animateTiles: vi.fn().mockReturnValue(false),
+    sharedFrustum: { setFromProjectionMatrix: vi.fn() },
     resetTerrain: vi.fn(),
     autoSelectMapSource: vi.fn(),
     terrainUniforms: { uTime: { value: 0 } },
@@ -235,6 +236,88 @@ describe('scene.ts', () => {
     });
 
     describe('initScene', () => {
+        async function prepareRenderLoop() {
+            document.body.innerHTML = '<div id="canvas-container"></div>';
+            Object.assign(state, {
+                TARGET_LAT: 46.5,
+                TARGET_LON: 7.5,
+                ZOOM: 14,
+                PIXEL_RATIO_LIMIT: 1,
+                SHOW_STATS: false,
+                PERFORMANCE_PRESET: 'balanced',
+                simDate: new Date('2025-06-01T12:00:00'),
+                IS_2D_MODE: true,
+                SHOW_WEATHER: false,
+                SHOW_HYDROLOGY: false,
+                isFollowingUser: false,
+                isProcessingTiles: true,
+                isTiltTransitioning: false,
+                isSunAnimating: false,
+                isInteractingWithUI: false,
+                userLocation: null,
+            });
+            await initScene();
+            const renderer = MockWebGLRenderer.instances.at(-1)!;
+            return renderer.setAnimationLoop.mock.calls[0][0] as () => void;
+        }
+
+        it('updates the statistics canvas only while its panel is enabled', async () => {
+            let now = 31_000;
+            vi.spyOn(performance, 'now').mockImplementation(() => now);
+            const loop = await prepareRenderLoop();
+            const stats = state.stats!;
+            loop();
+            expect(stats.begin).not.toHaveBeenCalled();
+            expect(stats.end).not.toHaveBeenCalled();
+
+            state.SHOW_STATS = true;
+            now += 100;
+            loop();
+            expect(stats.begin).toHaveBeenCalledTimes(1);
+            expect(stats.end).toHaveBeenCalledTimes(1);
+
+            state.SHOW_STATS = false;
+            now += 100;
+            loop();
+            expect(stats.begin).toHaveBeenCalledTimes(1);
+            expect(stats.end).toHaveBeenCalledTimes(1);
+        });
+
+        it('keeps rendering arriving tiles after a long idle period', async () => {
+            let now = 31_000;
+            vi.spyOn(performance, 'now').mockImplementation(() => now);
+            const { animateTiles } = await import('./terrain');
+            const loop = await prepareRenderLoop();
+            vi.mocked(animateTiles).mockReturnValue(true);
+            loop();
+            vi.mocked(animateTiles).mockClear();
+            now += 20;
+            loop();
+            expect(animateTiles).toHaveBeenCalledTimes(1);
+            vi.mocked(animateTiles).mockReturnValue(false);
+        });
+
+        it('preserves tile animation time across frames skipped by the follow cap', async () => {
+            let now = 31_000;
+            vi.spyOn(performance, 'now').mockImplementation(() => now);
+            vi.spyOn(THREE.Clock.prototype, 'getDelta').mockReturnValue(
+                1 / 120
+            );
+            const { animateTiles } = await import('./terrain');
+            const loop = await prepareRenderLoop();
+            state.isFollowingUser = true;
+            loop();
+            vi.mocked(animateTiles).mockClear();
+            for (let frame = 0; frame < 24; frame++) {
+                now += 1000 / 120;
+                loop();
+            }
+            const elapsed = vi
+                .mocked(animateTiles)
+                .mock.calls.reduce((sum, [delta]) => sum + delta, 0);
+            expect(elapsed).toBeCloseTo(0.2, 3);
+        });
+
         it('initializes the renderer, accessibility and first terrain refresh', async () => {
             document.body.innerHTML = '<div id="canvas-container"></div>';
             Object.assign(state, {

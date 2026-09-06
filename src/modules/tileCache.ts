@@ -14,6 +14,39 @@ export interface CachedTileData {
     normal: THREE.Texture | null;
 }
 
+/** Restore purged CPU heights from the retained bitmap, without fetching textures again. */
+export function restoreCachedPixelData(
+    data: CachedTileData
+): Uint8ClampedArray | null {
+    if (data.pixelData) return data.pixelData;
+    const image = data.elev.image as ImageBitmap | HTMLCanvasElement | null;
+    if (!image?.width || !image?.height) return null;
+    let canvas: OffscreenCanvas | HTMLCanvasElement | undefined;
+    try {
+        canvas =
+            typeof OffscreenCanvas !== 'undefined'
+                ? new OffscreenCanvas(image.width, image.height)
+                : document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        // Match tileWorker's elevation decode, including opaque alpha.
+        const ctx = canvas.getContext('2d', {
+            alpha: false,
+            willReadFrequently: true,
+        }) as
+            OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null;
+        if (!ctx) return null;
+        ctx.drawImage(image, 0, 0);
+        data.pixelData = ctx.getImageData(0, 0, image.width, image.height).data;
+        return data.pixelData;
+    } catch {
+        // Missing/unsupported bitmap: the caller retains its normal loading fallback.
+        return null;
+    } finally {
+        if (canvas) canvas.width = canvas.height = 1;
+    }
+}
+
 /**
  * Clés de cache des tuiles actuellement en scène (à ne pas évincer).
  */
@@ -133,8 +166,14 @@ function getMaxCacheSize(): number {
 }
 
 /**
- * Génère une clé de cache cohérente pour une tuile.
+ * Reserve room for displayed and pending tiles before selecting prefetch neighbors.
  */
+export function getPrefetchBudget(reservedKeys: Iterable<string>): number {
+    const reserved = new Set([...activeCacheKeys, ...reservedKeys]);
+    return Math.max(0, getMaxCacheSize() - reserved.size);
+}
+
+/** Génère une clé de cache cohérente pour une tuile. */
 export function getTileCacheKey(key: string, zoom: number): string {
     const is2D = zoom <= 10 || state.RESOLUTION <= 2;
     return `${state.MAP_SOURCE}_z${zoom}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${key}`;

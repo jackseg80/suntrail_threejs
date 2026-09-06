@@ -20,6 +20,7 @@ import {
     markCacheKeyInactive,
     retainCachedTileData,
     releaseCachedTileData,
+    restoreCachedPixelData,
 } from '../tileCache';
 import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
@@ -196,8 +197,25 @@ export class Tile {
         const cacheKey = getTileCacheKey(this.key, this.zoom);
         const cached = getFromCache(cacheKey);
         if (cached) {
+            let pixels = cached.pixelData;
+            const needsObjectPixels = () =>
+                !this.cacheOnly &&
+                !state.IS_2D_MODE &&
+                this.zoom >= 14 &&
+                (state.SHOW_VEGETATION || state.SHOW_BUILDINGS);
+            if (!pixels && needsObjectPixels()) {
+                this.status = 'loading';
+                // Yield between load batches instead of decoding all cached heights
+                // in one microtask chain during a LOD transition.
+                await new Promise<void>((resolve) =>
+                    requestAnimationFrame(() => resolve())
+                );
+                if ((this.status as string) === 'disposed') return;
+                if (needsObjectPixels())
+                    pixels = restoreCachedPixelData(cached);
+            }
             this.elevationTex = cached.elev;
-            this.pixelData = cached.pixelData;
+            this.pixelData = pixels;
             this.colorTex = cached.color;
             this.overlayTex = cached.overlay;
             this.normalTex = cached.normal;
@@ -211,12 +229,8 @@ export class Tile {
             }
             if (!this.cacheOnly) markCacheKeyActive(cacheKey);
 
-            if (
-                !this.pixelData &&
-                this.zoom >= 14 &&
-                (state.SHOW_VEGETATION || state.SHOW_BUILDINGS)
-            ) {
-                // On continue le processus de chargement pour restaurer pixelData
+            if (needsObjectPixels() && !this.pixelData) {
+                // Only 3D objects need CPU elevation pixels; 2D can display the cached textures.
             } else {
                 this.status = 'loaded';
                 retainCachedTileData({

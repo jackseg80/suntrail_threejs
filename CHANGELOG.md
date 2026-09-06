@@ -1,3 +1,32 @@
+## [5.88.0] - 2026-09-06 — Stabilisation performance A53/S23
+
+### Corrigé
+
+- Stabiliser le suivi 3D lorsque l'altitude terrain manque pendant un remplacement de tuile :
+  la dernière hauteur valide et les mêmes contraintes caméra sont désormais conservées. Le GPS
+  et les points archivés restent inchangés.
+- Alléger réellement la 2D en coupant ombres, particules météo et animation de l'eau, puis rétablir
+  les réglages du preset au retour en 3D.
+- Corriger STOP REC après abandon et utiliser le lot natif final pour l'archive, l'export, la
+  couche et le résumé. Le contrôle A53 donne 10 points archivés et 10 exportés avec Guidance.
+- Empêcher une baisse de résolution lorsque les frames sont volontairement espacées au repos,
+  tout en gardant l'adaptation à une vraie surcharge.
+- Charger le cache avant les packs distants, rendre son index cohérent avec les écritures des
+  workers et réutiliser textures et pixels d'altitude sans requête réseau inutile.
+- Conserver les anciennes tuiles jusqu'au remplacement opaque, mesurer les fondus en temps réel,
+  borner le préchargement au budget et fiabiliser la fin de l'indicateur de chargement.
+- Suspendre les animations CSS invisibles et ne plus redessiner le panneau Stats masqué.
+
+### Validation
+
+- Suivi 3D stabilisé sur A53 et S23 ; p95 de soumission CPU du scénario de rebond A53 de
+  109,4 à 23,8 ms. Les transitions contrôlées sur S23 passent d'environ 16–17 s à 0,9 s.
+- Contrôle terrain S23 contre Garmin sur 2,76 km : écart de distance de 0,72 m, écart spatial
+  médian de 1,50 m et p95 de 5,01 m, sans portion de marche perdue ; arrêt REC propre.
+- Le contrôle long de 30 minutes en faible réseau reste un suivi post-release accepté par le
+  propriétaire. Aucun téléversement Google Play n'est inclus.
+- Version `5.88.0`, Android `versionCode 908` ; AAB signé produit par GitHub Actions.
+
 ## [5.87.0] - 2026-09-02 — Dépôt de traces pleine fidélité
 
 ### Ajouté
@@ -59,8 +88,8 @@
   les scénarios Chromium ciblés v5.87 exécutés auparavant restent verts et cette limite d'hôte
   n'est pas présentée comme une validation supplémentaire.
 - La release est alignée sur `5.87.0` / Android `versionCode 907`. Commit, tag, push et release
-  GitHub ont été autorisés explicitement. L'APK 907 est installée en mise à jour sur le S23 : la
-  date de première installation reste inchangée et aucun crash de démarrage n'est observé. Aucun
+  GitHub sont réalisés ; l'AAB signé est attaché à la release publique. L'APK 907 est installée
+  en mise à jour sur le S23 : la date de première installation reste inchangée et aucun crash de démarrage n'est observé. Aucun
   téléversement ni déploiement Play n'est inclus.
 
 ## [5.86.2] - 2026-08-21 — Sortie contextuelle et frontière Bibliothèque

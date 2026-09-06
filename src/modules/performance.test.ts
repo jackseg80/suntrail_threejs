@@ -4,6 +4,7 @@ import {
     detectBestPreset,
     applyPreset,
     applyCustomSettings,
+    checkPerformanceThrottle,
 } from './performance';
 import { refreshTerrain } from './terrain';
 
@@ -87,6 +88,38 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             mockDisposeAll.mockClear();
             applyCustomSettings({ SHADOWS: false });
             expect(mockDisposeAll).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('adaptive DPR sampling', () => {
+        beforeEach(() => {
+            state.isProcessingTiles = false;
+            state.isFlyingTo = false;
+            // Restore any adaptation left by a prior scenario, then reset counters.
+            for (let i = 0; i < 5; i++) checkPerformanceThrottle(60);
+            checkPerformanceThrottle(30);
+            state.PIXEL_RATIO_LIMIT = 1.5;
+            state.renderer = { setPixelRatio: vi.fn() } as any;
+        });
+
+        it('keeps the preset resolution during intentionally sparse renders', () => {
+            for (let i = 0; i < 15; i++) checkPerformanceThrottle(2, true);
+            expect(state.PIXEL_RATIO_LIMIT).toBe(1.5);
+            expect(state.renderer!.setPixelRatio).not.toHaveBeenCalled();
+        });
+
+        it('requires consecutive active slow samples across an idle interval', () => {
+            for (let i = 0; i < 9; i++) checkPerformanceThrottle(10);
+            checkPerformanceThrottle(2, true);
+            for (let i = 0; i < 9; i++) checkPerformanceThrottle(10);
+            expect(state.PIXEL_RATIO_LIMIT).toBe(1.5);
+        });
+
+        it('still reduces resolution for sustained slow active rendering and restores it', () => {
+            for (let i = 0; i < 10; i++) checkPerformanceThrottle(10);
+            expect(state.PIXEL_RATIO_LIMIT).toBe(1);
+            for (let i = 0; i < 5; i++) checkPerformanceThrottle(60);
+            expect(state.PIXEL_RATIO_LIMIT).toBe(1.5);
         });
     });
 

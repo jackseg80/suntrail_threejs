@@ -1,6 +1,6 @@
 # Prompt autonome — SunTrail v5.87.0 Dépôt de traces pleine fidélité
 
-> Statut : exécuté et clôturé pour publication GitHub le 2026-09-02. Les contrats, preuves et
+> Statut : exécuté, clôturé et publié sur GitHub le 2026-09-02. Les contrats, preuves et
 > limites de la release sont consignés dans `docs/TRACK_STORAGE.md`, `CHANGELOG.md` et `ROADMAP.md`.
 
 Tu travailles sur SunTrail dans `D:\Python\suntrail_threejs`. L'objectif de v5.87 est de rendre

@@ -1,34 +1,29 @@
-# SunTrail — Plan d'évolution produit révisé v5.82 → v6.1
+# SunTrail — Plan d'évolution produit révisé v5.82 → v6.2
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
-> Révision : 2026-08-13 après pré-release interne v5.85.
-> v5.83.3 / Android 901 reste la dernière release corrective publique. v5.84.0 / Android 902 est
-> clôturée comme pré-release GitHub interne après validation Galaxy S23 et gates ; aucun
-> téléversement Play Console. v5.85 est publiée en pré-release GitHub interne et l'instrumentation
-> S23/API 36 est verte (5/5), mais les gates API 24/33, terrain A53/S23 et sorties longues restent rouges ;
-> `nativeGuidance` demeure désactivé par défaut.
+> Révision : 2026-09-05 après publication GitHub de v5.87.0 / Android 907 et ouverture d'une passe
+> de stabilisation v5.88 fondée sur un constat d'utilisation A53. Les états de release
+> détaillés font foi dans `ROADMAP.md` ; les sections historiques ci-dessous restent une trace,
+> pas une autorisation de publication.
 
 ## 1. Ordre de réalisation
 
 ```text
-v5.82 validation terrain S23 + publication ✓
+v5.82 → v5.87 baseline locale terrain, offline et traces pleine fidélité ✓
    ↓
-v5.83 planifier + évaluer + sauvegarder localement ✓
+v5.88 audit global et stabilisation mesurée du mode 3D + Guidance + REC sur A53
    ↓
-v5.84 valider le moteur de suivi en interne/fermé
+v6.0 outils experts et finition professionnelle locale
    ↓
-v5.85 livrer le guidage Android natif robuste — implémentation locale, terrain requis
+v6.1 lumière utile et préparation photo sobre
    ↓
-v5.86 vérifier le départ + télécharger le corridor
-   ↓
-v6.0 compte optionnel + synchronisation
-   ↓
-v6.1 outils experts + finition professionnelle
+v6.2 compte optionnel + synchronisation — reportée, dernier lot planifié
 ```
 
-Chaque version a une valeur autonome. La synchronisation est un confort et ne bloque plus le
-suivi local. v5.84 est un jalon technique non promu publiquement ; v5.85 porte la première
-promesse complète de guidage Android et traite le risque natif avant le cloud.
+Chaque version a une valeur autonome. La synchronisation est un confort reporté : elle ne bloque ni
+le suivi local, ni l'organisation, ni la préparation lumière. La fluidité du mode terrain combiné,
+les bénéfices visibles et les contrats locaux stabilisés passent avant de nouvelles fonctions et
+avant le cloud.
 
 ## 2. Référence de qualité
 
@@ -91,7 +86,7 @@ Le passage consultation → préparation est explicite. Tout brouillon modifié 
 Sauvegarder / Remplacer / Annuler. La Bibliothèque compte uniquement les calques réellement
 affichés ; une route IndexedDB fermée n’est pas chargée ni rendue sur la carte.
 
-### Sync v6.0
+### Sync reportée — v6.2 au plus tôt
 
 ```ts
 interface RouteSyncEnvelope {
@@ -182,7 +177,7 @@ Toujours gratuit :
 - suivi essentiel, alertes hors trace et REC ;
 - avertissements de sécurité ;
 - une zone manuelle existante et un corridor actif de 1 km remplaçable ;
-- cinq routes cloud choisies en écriture après v6.0.
+- cinq routes cloud choisies en écriture seulement lorsque v6.2 est explicitement engagée.
 
 Pro :
 
@@ -296,7 +291,10 @@ cible initiale ≤ +1 point de batterie/heure sur A53.
 3. [v5.84 moteur de suivi interne](prompts/V5_84_GUIDANCE_MVP.md)
 4. [v5.85 guidage natif](prompts/V5_85_ANDROID_GUIDANCE.md)
 5. [v5.86 readiness/offline](prompts/V5_86_READINESS_OFFLINE.md)
-6. [v6.0 compte/sync](prompts/V6_0_ACCOUNT_SYNC.md)
-7. [v6.1 power user](prompts/V6_1_POWER_USER.md)
+6. [v5.87 dépôt de traces](prompts/V5_87_TRACK_REPOSITORY.md)
+7. [v5.88 stabilisation performance A53](prompts/V5_88_PERFORMANCE_STABILIZATION.md)
+8. [v6.0 power user local](prompts/V6_0_POWER_USER.md)
+9. [v6.1 lumière utile](prompts/V6_1_LIGHT_PLANNING.md)
+10. [v6.2 compte/sync reportée](prompts/V6_2_ACCOUNT_SYNC.md)
 
 Ne jamais démarrer la version suivante tant que le bilan de la précédente contient un gate rouge.

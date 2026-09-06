@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import packageJSON from '../package.json';
 import { APP_TEST_URL } from './app';
+import { ROUTE_DATABASE_VERSION } from '../src/modules/preparedRoutes/RouteRepository';
 
 const DATABASE_NAME = 'suntrail-prepared-routes';
 const ROUTE_STORE_NAME = 'routes';
@@ -92,6 +93,17 @@ async function openGuidanceApp(page: Page): Promise<void> {
 }
 
 async function seedRoutes(page: Page): Promise<void> {
+    // suntrailReady precedes the deferred UI/repository initialization. Opening
+    // IndexedDB too early creates an empty database with no routes store.
+    await expect(page.locator('#track')).toBeAttached();
+    await page.waitForFunction(
+        async ({ name, version }) =>
+            (await indexedDB.databases()).some(
+                (database) =>
+                    database.name === name && database.version === version
+            ),
+        { name: DATABASE_NAME, version: ROUTE_DATABASE_VERSION }
+    );
     const routes = [
         createRoute('guidance-not-ready', 'Route non prête', 'not-ready'),
         createRoute(
@@ -108,6 +120,15 @@ async function seedRoutes(page: Page): Promise<void> {
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => {
                     const database = request.result;
+                    if (!database.objectStoreNames.contains(storeName)) {
+                        database.close();
+                        reject(
+                            new Error(
+                                `Missing route fixture store: ${storeName}`
+                            )
+                        );
+                        return;
+                    }
                     const transaction = database.transaction(
                         storeName,
                         'readwrite'
@@ -119,6 +140,7 @@ async function seedRoutes(page: Page): Promise<void> {
                         resolve();
                     };
                     transaction.onerror = () => reject(transaction.error);
+                    transaction.onabort = () => reject(transaction.error);
                 };
             }),
         {

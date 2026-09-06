@@ -36,6 +36,15 @@ export function getAltitudeAt(
     worldZ: number,
     hintTile: any = null
 ): number {
+    return getTerrainAltitudeAt(worldX, worldZ, hintTile) ?? 0;
+}
+
+/** Null means terrain is unavailable; zero remains a valid sea-level sample. */
+export function getTerrainAltitudeAt(
+    worldX: number,
+    worldZ: number,
+    hintTile: any = null
+): number | null {
     _queryPoint.set(worldX, 0, worldZ);
     let tile = hintTile;
 
@@ -75,7 +84,7 @@ export function getAltitudeAt(
         }
     }
 
-    if (!tile || !tile.pixelData) return 0;
+    if (!tile || !tile.pixelData) return null;
 
     _analysisTerrainHits++;
 

@@ -1,11 +1,10 @@
-# SunTrail — Guide Développeur (version source v5.87.0 — dépôt de traces pleine fidélité)
+# SunTrail — Guide Développeur (version source v5.88.0 — stabilisation performance)
 
 > Chaîne YouTube : [@SunTrail3D](https://www.youtube.com/@SunTrail3D)
-> Mis à jour le 2026-09-02 — v5.87.0 / Android 907 conserve les REC et imports en pleine fidélité
-> dans `TrackRepository`, sans retirer l'accès Free ; Pro garde le multi-affichage et l'export.
-> La publication GitHub est autorisée, sans upload Play. v5.85.1 reste figée au
-> commit local `b30a1c1`, avec ses validations Android/E2E et terrain séparées. Aucun commit, tag,
-> push ou téléversement Play Console n'est implicite.
+> Mis à jour le 2026-09-06 — v5.88.0 / Android 908 stabilise le suivi 3D, le chargement et les
+> transitions de tuiles, le coût du mode 2D et la finalisation REC. Les contrôles Diagnostic A53
+> et S23 ainsi que la comparaison terrain S23/Garmin sont positifs. La release GitHub produit
+> l'AAB signé ; aucun téléversement Google Play n'est inclus.
 
 > La base de connaissance technique est maintenue dans **`CLAUDE.md`**.
 > Ce fichier sert de point d'entrée pour Gemini CLI.

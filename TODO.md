@@ -1,6 +1,54 @@
-# SunTrail — TODO (v5.87.0 clôturée pour GitHub ; publication Play séparée)
+# SunTrail — TODO (v5.88.0 clôturée pour GitHub ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-02
+> Dernière mise à jour : 2026-09-06
+
+## ✅ v5.88.0 — Stabilisation performance A53/S23
+
+- [x] Corriger les animations CSS invisibles (barre de chargement et fiches fermées),
+      avec contrôle navigateur avant/après et1751tests verts.
+- [x] Installer après accord et contrôler le lot animations surA53 : pause/reprise validées,
+      traces préservées et CPU observé plus bas (comparaison indicative).
+      [Contrôle](outputs/v5.88-a53-resources-20260906-1249/ANIMATIONS_INSTALLED.md).
+- [x] Profiler brièvement le CPU résiduel2D : coût du cadencement continu identifié par
+      deux pauses temporaires, avec reprise confirmée ; aucune correction produit acquise.
+      [Profil](outputs/v5.88-a53-resources-20260906-1249/RESIDUAL_CPU.md).
+- [ ] Suivi post-release : qualifier un éventuel arrêt complet du cycle repos/réveil seulement
+      si un nouveau profil montre un gain matériel sans régression gestes/GPS/fondus.
+      [Correctif](outputs/v5.88-a53-resources-20260906-1249/ANIMATIONS_READY.md).
+      Mesures ressources A53 sauvegardées :
+      [RESULTATS.md](outputs/v5.88-a53-resources-20260906-1249/RESULTATS.md).
+
+- [x] Installer le lot finalisation REC + cache2D avec accord et vérifier STOP/export surA53 :
+      10points archivés et exportés identiques.1744tests/7E2E verts.
+      [Contrôle du6septembre](outputs/v5.88-morning-20260906/INSTALLATION.md).
+- [x] Reprendre après recharge : A53 48%, Équilibré/DPR1,2 confirmés, cache2D sans rechargement.
+- [x] Installer avec accord et valider le correctif cache3D surA53 :22puis20restaurations
+      avec mêmes textures, archives préservées.1751tests/7E2E verts.
+      [État exact](outputs/v5.88-morning-20260906/CACHE3D_INSTALLED.md).
+- [x] Améliorer la couverture du dézoom : ancienne image retenue jusqu'au parent opaque, cache2D
+      et cache3D réutilisés ; dernière sortie A53 jugée correcte sans zones bleues observées.
+      [COVERAGE_RESULTS.md](outputs/v5.88-a53-return-20260905/COVERAGE_RESULTS.md).
+- [x] Préserver le worktree et relever la baseline USB A53 2D/3D sans effacer de données.
+- [x] Reproduire le rebond 3D et isoler le terrain absent traité comme zéro ; corriger continuité
+      de hauteur et contraintes de suivi, avec vrais MapControls dans les tests.
+- [x] Vérifier la stabilité sur la copie Android isolée : p95 renderer 109,4 → 23,8 ms sur le
+      défaut de rebond, LOD 17 stable ; confirmation visuelle du propriétaire.
+- [x] Désactiver ombres/météo/animation eau inutiles en 2D, sans changer les presets.
+- [x] Corriger le verrou STOP conservé après abandon d'un REC ; regression test avant/après.
+- [x] Corriger la baisse indue du DPR au repos, reproduite sur S23 et par tests ; conserver
+      l'adaptation lors d'une vraie surcharge.
+- [x] Valider 1 724 tests / 153 fichiers, check, build, budget, i18n et dix parcours Chromium.
+- [x] Installer la dernière copie Diagnostic surS23 et valider un REC terrain contre Garmin :
+      2,76km, écart0,72m, p95 spatial5,01m, aucune portion perdue, arrêt propre.
+      [Comparaison](outputs/v5.88-s23-walk-20260906/RESULTATS.md).
+- [x] Contrôler la 2D allégée et STOP UI sur A53 après installation Diagnostic.
+- [ ] Suivi post-release : rejouer 30 minutes route + Guidance + REC en mouvement dans une zone
+      de faible réseau avec zone téléchargée, puis comparer T0/T15/T30 et l'autonomie.
+- [ ] Maintenance séparée : actualiser l'audit réseau des dépendances avant toute mise à jour.
+
+Le lot est clôturé par décision du propriétaire en `5.88.0` / Android `908`. Les mesures USB
+locales restent hors Git car elles contiennent des informations d'appareil et de localisation.
+Aucun téléversement Play n'est inclus ; vérifier que le code 908 est libre avant l'envoi manuel.
 
 ## ✅ v5.87.0 — Dépôt de traces pleine fidélité
 
@@ -18,8 +66,8 @@
       ouverture Free une à la fois, export verrouillé, renommage et STOP notification sauvegardé.
 - [x] Remplacer le libellé visible de renommage par l'icône crayon compacte, avec `aria-label` et
       infobulle conservés.
-- [x] Aligner la release sur `5.87.0` / Android `versionCode 907` et autoriser explicitement
-      commit, tag, push et release GitHub le 2026-09-02.
+- [x] Aligner la release sur `5.87.0` / Android `versionCode 907`, puis publier commit, tag,
+      release GitHub et AAB signé le 2026-09-02.
 - [x] Rejouer les gates de release : check, 1 710 tests/152 fichiers, couverture 64,48 %, build,
       budget PWA 2,35 MiB, i18n, sept pages Capacitor, sync, JVM, lint et APK debug.
 - [x] Installer l'APK `5.87.0` / 907 sur le S23 avec `adb install -r`, sans désinstallation ; la
@@ -262,8 +310,11 @@ Prompt de clôture :
 - [x] **v5.85.0** — clôture confirmée ; base de référence de v5.85.1.
 - [ ] **v5.85.1** — optimisations implémentées localement ; web vert, Android/E2E et terrain ouverts.
 - [x] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne, clôturée sur GitHub.
-- [ ] **v6.0.0** — compte optionnel et synchronisation PC–Android.
-- [ ] **v6.1.0** — outils experts et finition professionnelle.
+- [x] **v5.88.0** — stabilisation mesurée du mode 3D, de la 2D, des tuiles et de STOP REC ;
+      contrôles A53/S23 et comparaison terrain S23/Garmin terminés.
+- [ ] **v6.0.0** — outils experts et finition professionnelle locale.
+- [ ] **v6.1.0** — lumière utile et préparation photo sobre, fondées sur les données existantes.
+- [ ] **v6.2.0 reportée** — compte optionnel et synchronisation PC–Android, après décision active.
 
 Voir [ROADMAP.md](ROADMAP.md) et
 [docs/plans/prompts/README.md](docs/plans/prompts/README.md) pour les scopes, gates et prompts.
@@ -271,18 +322,18 @@ Voir [ROADMAP.md](ROADMAP.md) et
 ## 🟠 Dette à traiter dans la version qui touche le domaine
 
 - **SettingsSheet.ts** (983 lignes) — compte/RGPD et navigation par catégories extraits en v5.82.0 ; poursuivre l'extraction des réglages de rendu lors de la prochaine modification de ce domaine.
-- **SolarProbeSheet.ts** (1052 lignes, 5 % couverture) — extraire pendant v5.86/v6.1.
+- **SolarProbeSheet.ts** (1052 lignes, 5 % couverture) — extraire pendant v6.1 si le lot touche ce domaine.
 - **tileLoader.ts** (844 lignes) — extraire le service avant le corridor offline v5.86.
 - **Zones noires AT/ES/NO LOD 14+** — corriger sans bloquer le programme produit.
 - **Couverture** — atteindre au moins 60 % sans tests artificiels.
 - **CI** — automatiser check, tests, build, bundle, i18n et smoke E2E.
 
-## 🟢 Après v6.1
+## 🟢 Après v6.2
 
 - couverture Slovénie/Italie/UK et nouvelles sources officielles ;
 - communauté, partage live et intégrations externes ;
 - guidage vocal et Wear OS ;
-- photo/astro avancé ;
+- photo/astro avancé au-delà de la préparation lumière v6.1 ;
 - WebGPU expérimental puis production après validation appareil.
 
 ## ✅ Récemment complété (v5.82.0)

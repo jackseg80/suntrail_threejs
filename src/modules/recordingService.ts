@@ -123,7 +123,6 @@ export class RecordingService {
         if (this._isSaving) return '';
         this._isSaving = true;
         try {
-            const completedPoints = [...state.recordedPoints];
             const completedCourseId = state.currentCourseId || '';
             let rawNativePoints: NativeGPSPoint[] = [];
             const completedAt = Date.now();
@@ -143,6 +142,21 @@ export class RecordingService {
                     0
                 );
             }
+
+            // Room's finalized batch can include fixes missing from the WebView,
+            // including points inside the trace and the last fix after STOP.
+            // Export, displayed layer and summary must use the same accepted points
+            // as the durable archive, before testing whether the REC is too short.
+            if (rawNativePoints.length >= 2) {
+                state.recordedPoints = rawNativePoints.map((point) => ({
+                    lat: point.lat,
+                    lon: point.lon,
+                    alt: point.alt,
+                    timestamp: point.timestamp,
+                    accuracy: point.accuracy,
+                }));
+            }
+            const completedPoints = [...state.recordedPoints];
 
             let nameToUse = customName ? normalizeTrackName(customName) : '';
             if (!nameToUse && completedPoints.length >= 2) {
@@ -199,15 +213,16 @@ export class RecordingService {
                 );
             }
 
-            this._isSaving = false;
             return nameToUse;
         } catch (e) {
             console.error('[RecordingService] Erreur lors du STOP:', e);
             showToast("⚠️ Erreur lors de l'arrêt");
             state.isRecording = false;
             this._lastStopOutcome = 'failed';
-            this._isSaving = false;
             return '';
+        } finally {
+            // Discard returns early too; it must not disable STOP for the next REC.
+            this._isSaving = false;
         }
     }
 

@@ -322,7 +322,7 @@ export function initWeatherSystem(scene: THREE.Scene): void {
  * Découplé de updateWeatherSystem (uniforms cosmétiques, throttlé à 20fps).
  */
 export function tickWeatherTime(delta: number): void {
-    if (!weatherMaterial) return;
+    if (!weatherMaterial || state.IS_2D_MODE || !weatherPoints?.visible) return;
     weatherMaterial.uniforms.uTime.value += delta;
     weatherMaterial.uniformsNeedUpdate = true;
 }
@@ -333,7 +333,7 @@ export function updateWeatherSystem(
 ): void {
     if (!weatherPoints || !weatherMaterial || !geometry) return;
     const altitude = cameraPos.y;
-    const is2D = state.RESOLUTION <= 2;
+    const is2D = state.IS_2D_MODE || state.RESOLUTION <= 2;
 
     if (
         !state.SHOW_WEATHER ||

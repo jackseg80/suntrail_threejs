@@ -40,6 +40,7 @@ vi.mock('../tileCache', () => ({
     hasInCache: vi.fn(() => false),
     retainCachedTileData: vi.fn(),
     releaseCachedTileData: vi.fn(),
+    restoreCachedPixelData: vi.fn(() => null),
 }));
 vi.mock('../tileLoader', () => ({
     loadTileData: vi.fn().mockResolvedValue({}),
@@ -59,17 +60,22 @@ vi.mock('../buildings', () => ({ loadBuildingsForTile: vi.fn() }));
 vi.mock('../hydrology', () => ({ loadHydrologyForTile: vi.fn() }));
 
 import { Tile } from './Tile';
+import { loadTileData } from '../tileLoader';
 import { queueBuildMesh, removeFromLoadQueue } from './tileQueue';
 import {
     getFromCache,
     markCacheKeyActive,
     markCacheKeyInactive,
+    restoreCachedPixelData,
 } from '../tileCache';
 
 describe('Tile', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockActiveTiles.clear();
+        mockState.IS_2D_MODE = false;
+        mockState.SHOW_VEGETATION = false;
+        mockState.SHOW_BUILDINGS = false;
     });
 
     describe('constructor', () => {
@@ -125,6 +131,96 @@ describe('Tile', () => {
     });
 
     describe('cache-only prefetch', () => {
+        it('restores cached 3D elevation pixels before rebuilding, without reloading textures', async () => {
+            mockState.SHOW_VEGETATION = true;
+            const pixels = new Uint8ClampedArray([1, 2, 3, 255]);
+            const cached = {
+                elev: {} as any,
+                color: {} as any,
+                pixelData: null,
+                overlay: null,
+                normal: null,
+            };
+            vi.mocked(getFromCache).mockReturnValueOnce(cached);
+            vi.mocked(restoreCachedPixelData).mockReturnValueOnce(pixels);
+            const tile = new Tile(0, 0, 15, 'source_0_0_15');
+            const build = vi
+                .spyOn(tile, 'buildMesh')
+                .mockImplementation(() => {});
+            await tile.load();
+            expect(loadTileData).not.toHaveBeenCalled();
+            expect(tile.pixelData).toBe(pixels);
+            expect(tile.colorTex).toBe(cached.color);
+            expect(tile.elevationTex).toBe(cached.elev);
+            expect(build).toHaveBeenCalledOnce();
+        });
+
+        it('does not restore CPU elevation for a cache-only prefetch', async () => {
+            mockState.SHOW_VEGETATION = true;
+            vi.mocked(getFromCache).mockReturnValueOnce({
+                elev: {} as any,
+                color: {} as any,
+                pixelData: null,
+                overlay: null,
+                normal: null,
+            });
+            const tile = new Tile(0, 0, 15, 'source_0_0_15', true);
+            await tile.load();
+            expect(restoreCachedPixelData).not.toHaveBeenCalled();
+            expect(loadTileData).not.toHaveBeenCalled();
+            expect(tile.status).toBe('loaded');
+        });
+
+        it('does not resurrect a tile disposed while waiting to restore cached pixels', async () => {
+            mockState.SHOW_VEGETATION = true;
+            vi.mocked(getFromCache).mockReturnValueOnce({
+                elev: {} as any,
+                color: {} as any,
+                pixelData: null,
+                overlay: null,
+                normal: null,
+            });
+            const tile = new Tile(0, 0, 15, 'source_0_0_15');
+            const pending = tile.load();
+            tile.dispose();
+            await pending;
+            expect(tile.status).toBe('disposed');
+            expect(restoreCachedPixelData).not.toHaveBeenCalled();
+            expect(loadTileData).not.toHaveBeenCalled();
+            expect(tile.elevationTex).toBeNull();
+        });
+
+        it.each([true, false])(
+            'restores missing object pixels only in 3D (2D=%s)',
+            async (mode2D) => {
+                mockState.IS_2D_MODE = mode2D;
+                mockState.SHOW_VEGETATION = true;
+                mockState.SHOW_BUILDINGS = true;
+                const cached = {
+                    elev: {} as any,
+                    color: {} as any,
+                    pixelData: null,
+                    overlay: null,
+                    normal: null,
+                };
+                vi.mocked(getFromCache).mockReturnValueOnce(cached);
+                const tile = new Tile(0, 0, 15, 'source_0_0_15');
+                const build = vi
+                    .spyOn(tile, 'buildMesh')
+                    .mockImplementation(() => {});
+                await tile.load();
+                if (mode2D) {
+                    expect(loadTileData).not.toHaveBeenCalled();
+                    expect(tile.status).toBe('loaded');
+                    expect(build).toHaveBeenCalledOnce();
+                    expect(tile.colorTex).toBe(cached.color);
+                    expect(tile.elevationTex).toBe(cached.elev);
+                } else {
+                    expect(loadTileData).toHaveBeenCalledOnce();
+                }
+            }
+        );
+
         it('reuses cached textures without pinning or building a mesh', async () => {
             const cached = {
                 elev: {} as any,

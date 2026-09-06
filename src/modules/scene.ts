@@ -46,6 +46,7 @@ import {
     isCompassAnimating,
 } from './compass';
 import { centerOnUser } from './location';
+import { getCameraTiltLimit } from './cameraTilt';
 import { initTouchControls } from './touchControls';
 import {
     initCamera,
@@ -271,7 +272,7 @@ export async function initScene(): Promise<void> {
     });
     state.renderer.setSize(window.innerWidth, window.innerHeight, false);
     state.renderer.setPixelRatio(state.PIXEL_RATIO_LIMIT);
-    state.renderer.shadowMap.enabled = state.SHADOWS;
+    state.renderer.shadowMap.enabled = state.SHADOWS && !state.IS_2D_MODE;
     state.renderer.shadowMap.type = THREE.PCFShadowMap;
     state.renderer.toneMapping = THREE.NoToneMapping;
     container.appendChild(state.renderer.domElement);
@@ -624,6 +625,7 @@ export async function initScene(): Promise<void> {
     updateSunPosition(initialMins);
 
     const clock = new THREE.Clock();
+    let tileAnimationDelta = 0;
     let lastRenderTime = 0;
     // Sur Android WebView, un resize peut invalider le framebuffer alors que la boucle de rendu
     // économe n'a aucune autre raison de peindre. Réarmer explicitement la scène évite le canvas
@@ -641,6 +643,7 @@ export async function initScene(): Promise<void> {
 
     let fpsFrameCount = 0;
     let fpsLastTime = performance.now();
+    let fpsHadDemandLimitedFrames = false;
 
     const WATER_THROTTLE_MS = 50;
     let waterTimeAccum = 0;
@@ -662,25 +665,14 @@ export async function initScene(): Promise<void> {
     function updateAutoTilt(distToTarget: number): boolean {
         if (!state.controls) return false;
 
-        let tiltCap = 1.1;
-        if (state.ZOOM <= 10) tiltCap = 0;
-        else if (state.ZOOM === 11) tiltCap = 0.45;
-        else if (state.ZOOM === 12) tiltCap = 0.7;
-        else if (state.ZOOM === 13) tiltCap = 0.9;
-        else if (state.ZOOM === 14) tiltCap = 0.95;
-        else if (state.ZOOM === 15) tiltCap = 0.85;
-        else if (state.ZOOM === 16) tiltCap = 0.65;
-        else if (state.ZOOM === 17) tiltCap = 0.5;
-        else if (state.ZOOM >= 18) tiltCap = 0.4;
-
-        if (state.ZOOM >= 14 && !state.IS_2D_MODE) {
-            const targetH = getAltitudeAt(
-                state.controls.target.x,
-                state.controls.target.z
-            );
-            const elevFactor = THREE.MathUtils.clamp(targetH / 8000, 0, 0.5);
-            tiltCap *= 1.0 - elevFactor;
-        }
+        const targetH =
+            state.ZOOM >= 14 && !state.IS_2D_MODE
+                ? getAltitudeAt(
+                      state.controls.target.x,
+                      state.controls.target.z
+                  )
+                : 0;
+        const tiltCap = getCameraTiltLimit(state.ZOOM, targetH);
 
         const interacting = state.isUserInteracting;
         const currentTilt = state.controls.getPolarAngle();
@@ -786,6 +778,7 @@ export async function initScene(): Promise<void> {
 
         const now = performance.now();
         const delta = clock.getDelta();
+        tileAnimationDelta += delta;
 
         waterTimeAccum += delta * 1000;
         const waterFrameDue = waterTimeAccum >= WATER_THROTTLE_MS;
@@ -818,6 +811,8 @@ export async function initScene(): Promise<void> {
         prevWasFlyingTo = state.isFlyingTo;
 
         const isWeatherActive =
+            !state.IS_2D_MODE &&
+            state.RESOLUTION > 2 &&
             state.SHOW_WEATHER &&
             state.currentWeather !== 'clear' &&
             state.WEATHER_DENSITY > 0;
@@ -826,6 +821,8 @@ export async function initScene(): Promise<void> {
         const idleTime = now - lastInteractionTime;
         const isIdleMode =
             !state.isUserInteracting &&
+            !state.isProcessingTiles &&
+            !tilesFading &&
             !state.isFlyingTo &&
             !state.isFollowingUser &&
             !state.isTiltTransitioning &&
@@ -833,6 +830,8 @@ export async function initScene(): Promise<void> {
             !state.isInteractingWithUI &&
             !(isWeatherActive && weatherFrameDue) &&
             idleTime >= 800;
+
+        if (isIdleMode) fpsHadDemandLimitedFrames = true;
 
         if (isIdleMode && idleTime > 30000) {
             if (now - lastRenderTime < 650) return;
@@ -845,10 +844,11 @@ export async function initScene(): Promise<void> {
         updateCompassAnimation();
 
         if (state.sunLight) {
-            state.sunLight.castShadow = state.SHADOWS;
+            const shadowsActive = state.SHADOWS && !state.IS_2D_MODE;
+            state.sunLight.castShadow = shadowsActive;
             if (state.renderer) {
-                if (state.renderer.shadowMap.enabled !== state.SHADOWS) {
-                    state.renderer.shadowMap.enabled = state.SHADOWS;
+                if (state.renderer.shadowMap.enabled !== shadowsActive) {
+                    state.renderer.shadowMap.enabled = shadowsActive;
                 }
             }
         }
@@ -884,7 +884,7 @@ export async function initScene(): Promise<void> {
             state.isFlyingTo ||
             state.isTiltTransitioning ||
             tiltAnimating ||
-            (state.SHOW_HYDROLOGY && waterFrameDue) ||
+            (!state.IS_2D_MODE && state.SHOW_HYDROLOGY && waterFrameDue) ||
             state.isSunAnimating ||
             state.isInteractingWithUI ||
             state.isProcessingTiles ||
@@ -895,6 +895,8 @@ export async function initScene(): Promise<void> {
             needsInitialRender > 0 ||
             state.isFollowingUser ||
             state.zoneSelectionActive;
+
+        if (!needsUpdate) fpsHadDemandLimitedFrames = true;
 
         if (needsUpdate) {
             if (now - lastCompassTime >= 33) {
@@ -909,10 +911,14 @@ export async function initScene(): Promise<void> {
                 );
                 sharedFrustum.setFromProjectionMatrix(_sharedMatrix);
             }
-            state.stats?.begin();
+            // A hidden Stats canvas still paints on end(), blocking mobile frames.
+            if (state.SHOW_STATS) state.stats?.begin();
             if (waterFrameDue)
                 terrainUniforms.uTime.value += WATER_THROTTLE_MS / 1000;
-            tilesFading = animateTiles(delta);
+            // Retain elapsed time from skipped frames. Otherwise a 200 ms fade
+            // can last many seconds on high-refresh screens in idle mode.
+            tilesFading = animateTiles(Math.min(tileAnimationDelta, 0.25));
+            tileAnimationDelta = 0;
             if (needsInitialRender > 0) needsInitialRender--;
             if (weatherStateChanged || (weatherFrameDue && isWeatherActive)) {
                 updateWeatherSystem(weatherAccumDelta, state.camera.position);
@@ -955,7 +961,7 @@ export async function initScene(): Promise<void> {
             }
 
             state.renderer.render(state.scene, state.camera);
-            state.stats?.end();
+            if (state.SHOW_STATS) state.stats?.end();
 
             if (!state.isProcessingTiles && now - lastPrefetchTime > 2000) {
                 lastPrefetchTime = now;
@@ -970,7 +976,11 @@ export async function initScene(): Promise<void> {
                 );
                 fpsFrameCount = 0;
                 fpsLastTime = fpsTick;
-                checkPerformanceThrottle(state.currentFPS);
+                checkPerformanceThrottle(
+                    state.currentFPS,
+                    fpsHadDemandLimitedFrames
+                );
+                fpsHadDemandLimitedFrames = false;
             }
         }
     };

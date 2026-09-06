@@ -629,8 +629,9 @@ async function warmupCacheIndex(
  */
 async function getCachedBlob(url: string): Promise<Blob | null> {
     // 1. Cache offline (zones explicitement téléchargées par l'utilisateur)
-    // v5.61.4 : Vérifie l'index mémoire avant caches.match() pour éviter O(n)
-    if (_offlineCache && _offlineCacheIndex.has(url)) {
+    // Workers also write CacheStorage. The startup index is not authoritative
+    // for misses: a resource can have arrived since it was populated.
+    if (_offlineCache) {
         try {
             const cached = await _offlineCache.match(url);
             if (cached) {
@@ -648,7 +649,6 @@ async function getCachedBlob(url: string): Promise<Blob | null> {
 
     // 2. Cache normal (navigation quotidienne)
     if (!_workerCache) return null;
-    if (!_cacheIndex.has(url)) return null;
     try {
         const cached = await _workerCache.match(url);
         if (!cached) {
@@ -761,9 +761,9 @@ export async function inspectOfflineTileResources(tile: {
  * Lance le chargement d'une tuile via les Workers.
  *
  * Chaîne de priorité des sources (par ordre décroissant) :
- *   1. embeddedPMTiles (overview LOD 5-11, embarqué dans l'APK)
- *   2. PackManager packs (Pack HD Suisse/FR/etc. montés par l'utilisateur)
- *   3. CacheStorage zones offline (téléchargements manuels via ZoneSelector)
+ *   1. CacheStorage zones offline puis cache courant, aux URL de la source choisie
+ *   2. embeddedPMTiles (overview LOD 5-11, embarqué dans l'APK)
+ *   3. PackManager packs (locaux puis distants)
  *   4. Réseau (OpenTopoMap > MapTiler > OSM)
  *
  * v5.57.2 : Vérifie CacheStorage sur le main thread pour les zones offline.
@@ -803,10 +803,22 @@ export async function loadTileData(
         color?: Blob | null;
         overlay?: Blob | null;
     } = {};
+
+    // A mounted pack may use the network. Resolve cached resources first so a
+    // slow pack cannot hold up a map already available on the device.
+    if (!_workerCache || !_offlineCache) await initCacheLayer();
+    const [colorBlob, elevBlob, overlayBlob] = await Promise.all([
+        colorUrl ? getCachedBlob(colorUrl) : null,
+        elevUrl ? getCachedBlob(elevUrl) : null,
+        overlayUrl ? getCachedBlob(overlayUrl) : null,
+    ]);
+    if (colorBlob) blobs.color = colorBlob;
+    if (elevBlob) blobs.elev = elevBlob;
+    if (overlayBlob) blobs.overlay = overlayBlob;
     const useLocalColor = state.MAP_SOURCE !== 'satellite' || state.IS_OFFLINE;
 
     if (useLocalColor) {
-        if (embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
+        if (!blobs.color && embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
             blobs.color = await getTileFromEmbedded(
                 cz,
                 Math.floor(tx / cr),
@@ -868,14 +880,14 @@ export async function loadTileData(
 
     // L'élévation et l'overlay du pack sont toujours utiles, même en satellite
     if (packManager.hasMountedPacks() && zoom >= 12) {
-        if (elevUrl && zoom <= 14)
+        if (!blobs.elev && elevUrl && zoom <= 14)
             blobs.elev = await packManager.getTileFromPacks(
                 zoom,
                 tx,
                 ty,
                 'elevation'
             );
-        if (overlayUrl)
+        if (!blobs.overlay && overlayUrl)
             blobs.overlay = await packManager.getTileFromPacks(
                 zoom,
                 tx,
@@ -883,17 +895,6 @@ export async function loadTileData(
                 'overlay'
             );
     }
-
-    // v5.57.2 : CacheStorage main-thread pour zones offline.
-    // Les tiles cachées par l'utilisateur sont injectées en blob → le worker n'appelle jamais le réseau.
-    const [colorBlob, elevBlob, overlayBlob] = await Promise.all([
-        !blobs.color && colorUrl ? getCachedBlob(colorUrl) : null,
-        !blobs.elev && elevUrl ? getCachedBlob(elevUrl) : null,
-        !blobs.overlay && overlayUrl ? getCachedBlob(overlayUrl) : null,
-    ]);
-    if (colorBlob) blobs.color = colorBlob;
-    if (elevBlob) blobs.elev = elevBlob;
-    if (overlayBlob) blobs.overlay = overlayBlob;
 
     return tileWorkerManager.loadTile(
         tx,

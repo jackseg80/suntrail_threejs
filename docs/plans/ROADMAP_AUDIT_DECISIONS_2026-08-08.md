@@ -51,8 +51,8 @@ est révisée sans jeter le travail v5.82 en cours.
 
 `PreparedRouteV1` contient uniquement le domaine : identité locale, nom/source/profil,
 waypoints, géométrie complète, statistiques, bounds, heure de départ, allure, favori,
-notes/tags et dates locales. La v6.0 ajoute un `SyncEnvelope` séparé avec état, révision
-distante, curseur et tombstone.
+notes/tags et dates locales. Le futur lot de synchronisation, reporté après v6.1, ajoute un
+`SyncEnvelope` séparé avec état, révision distante, curseur et tombstone.
 
 ### Difficulté et adéquation
 

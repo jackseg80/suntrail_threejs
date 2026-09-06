@@ -9,6 +9,7 @@ import {
     hasInCache,
     getFromCache,
     purgeOldPixelData,
+    getPrefetchBudget,
 } from './tileCache';
 import {
     insertTile,
@@ -38,6 +39,7 @@ import {
     loadQueue,
     processLoadQueue,
     clearLoadQueue,
+    addToLoadQueue,
     prioritizeNewZoom,
 } from './terrain/tileQueue';
 import { terrainUniforms } from './terrain/Tile';
@@ -48,6 +50,8 @@ export const activeLabels = new Map<string, any>();
 
 const _terrainMatrix = new THREE.Matrix4();
 export const fadingOutTiles = new Set<Tile>();
+// Only the preceding zoom-out generation is retained while its parents load.
+const zoomOutReplacements = new Map<Tile, string>();
 let lastRenderedZoom: number = -1;
 let lastMapSource: string = '';
 const prefetchKeys = new Set<string>();
@@ -60,6 +64,7 @@ export function resetTerrain(): void {
         tile.dispose();
     }
     fadingOutTiles.clear();
+    zoomOutReplacements.clear();
     prefetchKeys.clear();
     lastRenderedZoom = -1;
     for (const tile of activeTiles.values()) {
@@ -199,6 +204,18 @@ export function animateTiles(delta: number): boolean {
         const deltaMs = delta * 1000;
         const toRemove: Tile[] = [];
         for (const tile of fadingOutTiles) {
+            const replacementKey = zoomOutReplacements.get(tile);
+            if (replacementKey) {
+                const replacement = activeTiles.get(replacementKey);
+                if (!replacement) {
+                    toRemove.push(tile);
+                    continue;
+                }
+                // A slow/offline parent must not erase the image already available.
+                // Waiting alone does not request another rendered frame.
+                if (!replacement.mesh || replacement.isFadingIn) continue;
+                zoomOutReplacements.delete(tile);
+            }
             tile.updateFadeOut(deltaMs);
             if (!tile.isFadingOut) {
                 toRemove.push(tile);
@@ -209,6 +226,7 @@ export function animateTiles(delta: number): boolean {
         for (const tile of toRemove) {
             markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
             fadingOutTiles.delete(tile);
+            zoomOutReplacements.delete(tile);
             tile.dispose();
         }
     }
@@ -303,6 +321,13 @@ export async function updateVisibleTiles(
             lastRenderedZoom !== -1 && zoom !== lastRenderedZoom;
 
         if (lodChanging) {
+            // Bound retained coverage to one transition, including rapid gestures.
+            for (const tile of zoomOutReplacements.keys()) {
+                markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
+                fadingOutTiles.delete(tile);
+                tile.dispose();
+            }
+            zoomOutReplacements.clear();
             prioritizeNewZoom(zoom);
             purgeOldPixelData();
         }
@@ -383,17 +408,19 @@ export async function updateVisibleTiles(
         for (const [key, tile] of activeTiles.entries()) {
             if (!currentActiveKeys.has(key)) {
                 const isZoomingOut = lodChanging && zoom < previousRenderedZoom;
-                if (
-                    lodChanging &&
-                    tile.mesh &&
-                    tile.status !== 'disposed' &&
-                    !isZoomingOut
-                ) {
+                if (lodChanging && tile.mesh && tile.status !== 'disposed') {
                     removeTile(tile);
                     activeTiles.delete(key);
                     if (!fadingOutTiles.has(tile)) {
                         fadingOutTiles.add(tile);
-                        tile.startFadeOut(2500);
+                        tile.startFadeOut(isZoomingOut ? 200 : 2500);
+                        if (isZoomingOut) {
+                            const scale = 2 ** (tile.zoom - zoom);
+                            zoomOutReplacements.set(
+                                tile,
+                                `${state.MAP_SOURCE}_${Math.floor(tile.tx / scale)}_${Math.floor(tile.ty / scale)}_${zoom}`
+                            );
+                        }
                     }
                 } else {
                     removeTile(tile);
@@ -458,73 +485,77 @@ export function refreshTerrain(forceUpdate = false): void {
 
 export function prefetchAdjacentLODs(): void {
     if (!state.camera || !state.controls) return;
-    const wx = state.controls.target.x;
-    const wz = state.controls.target.z;
-    const center = worldToLngLat(wx, wz, state.originTile);
+    const center = worldToLngLat(
+        state.controls.target.x,
+        state.controls.target.z,
+        state.originTile
+    );
     const zoom = state.ZOOM;
-    const MAX_PREFETCH = 20;
-    let added = 0;
-
-    const _prefetchMaxZoom = isProActive()
+    const maxZoom = isProActive()
         ? state.MAX_ALLOWED_ZOOM || 18
         : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
-    const nextZoom = Math.min(zoom + 1, _prefetchMaxZoom);
-    if (nextZoom !== zoom) {
-        const ct = lngLatToTile(center.lon, center.lat, nextZoom);
-        const r = Math.max(1, Math.ceil(state.RANGE / 2));
-        const maxT = Math.pow(2, nextZoom);
-        for (let dy = -r; dy <= r && added < MAX_PREFETCH; dy++) {
-            for (let dx = -r; dx <= r && added < MAX_PREFETCH; dx++) {
-                const tx = ct.x + dx;
-                const ty = ct.y + dy;
+    const reservedKeys = [...activeTiles.values(), ...fadingOutTiles].map(
+        (tile) => getTileCacheKey(tile.key, tile.zoom)
+    );
+    const budget = getPrefetchBudget(reservedKeys);
+    if (budget === 0) return;
+    const candidates: {
+        tx: number;
+        ty: number;
+        zoom: number;
+        key: string;
+        distance: number;
+    }[] = [];
+    const levels = [
+        {
+            zoom: Math.min(zoom + 1, maxZoom),
+            radius: Math.max(1, Math.ceil(state.RANGE / 2)),
+        },
+        { zoom: Math.max(zoom - 1, 6), radius: 2 },
+    ];
+    for (const level of levels) {
+        if (level.zoom === zoom || level.zoom > maxZoom) continue;
+        const ct = lngLatToTile(center.lon, center.lat, level.zoom);
+        const maxT = Math.pow(2, level.zoom);
+        for (let dy = -level.radius; dy <= level.radius; dy++) {
+            for (let dx = -level.radius; dx <= level.radius; dx++) {
+                const tx = ct.x + dx,
+                    ty = ct.y + dy;
                 if (tx < 0 || tx >= maxT || ty < 0 || ty >= maxT) continue;
-                const pKey = `${state.MAP_SOURCE}_${tx}_${ty}_${nextZoom}`;
-                if (
-                    !activeTiles.has(pKey) &&
-                    !prefetchKeys.has(pKey) &&
-                    !hasInCache(getTileCacheKey(pKey, nextZoom))
-                ) {
-                    prefetchKeys.add(pKey);
-                    loadQueue.add(
-                        new Tile(tx, ty, nextZoom, pKey, true, () =>
-                            prefetchKeys.delete(pKey)
-                        )
-                    );
-                    added++;
-                }
+                const key = `${state.MAP_SOURCE}_${tx}_${ty}_${level.zoom}`;
+                if (!activeTiles.has(key))
+                    candidates.push({
+                        tx,
+                        ty,
+                        zoom: level.zoom,
+                        key,
+                        distance: dx * dx + dy * dy,
+                    });
             }
         }
     }
-
-    const prevZoom = Math.max(zoom - 1, 6);
-    if (prevZoom !== zoom) {
-        const ct = lngLatToTile(center.lon, center.lat, prevZoom);
-        const maxT = Math.pow(2, prevZoom);
-        for (let dy = -2; dy <= 2 && added < MAX_PREFETCH; dy++) {
-            for (let dx = -2; dx <= 2 && added < MAX_PREFETCH; dx++) {
-                const tx = ct.x + dx;
-                const ty = ct.y + dy;
-                if (tx < 0 || tx >= maxT || ty < 0 || ty >= maxT) continue;
-                const pKey = `${state.MAP_SOURCE}_${tx}_${ty}_${prevZoom}`;
-                if (
-                    !activeTiles.has(pKey) &&
-                    !prefetchKeys.has(pKey) &&
-                    !hasInCache(getTileCacheKey(pKey, prevZoom))
-                ) {
-                    prefetchKeys.add(pKey);
-                    loadQueue.add(
-                        new Tile(tx, ty, prevZoom, pKey, true, () =>
-                            prefetchKeys.delete(pKey)
-                        )
-                    );
-                    added++;
-                }
-            }
-        }
+    // Select the same nearby working set even when some entries are already cached.
+    // Otherwise every pass replaces a neighbor that the next pass immediately reloads.
+    candidates.sort((a, b) => a.distance - b.distance || a.zoom - b.zoom);
+    let added = 0;
+    for (const candidate of candidates.slice(0, budget)) {
+        if (added >= 20) break;
+        const { tx, ty, zoom: targetZoom, key } = candidate;
+        if (
+            prefetchKeys.has(key) ||
+            hasInCache(getTileCacheKey(key, targetZoom))
+        )
+            continue;
+        prefetchKeys.add(key);
+        addToLoadQueue(
+            new Tile(tx, ty, targetZoom, key, true, () =>
+                prefetchKeys.delete(key)
+            )
+        );
+        added++;
     }
     if (added > 0) processLoadQueue();
 }
-
 export function clearLabels(): void {
     for (const obj of activeLabels.values()) {
         if (state.scene) {

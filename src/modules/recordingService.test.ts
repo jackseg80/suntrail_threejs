@@ -236,6 +236,77 @@ describe('RecordingService (v5.29.36)', () => {
         );
     });
 
+    it.each([false, true])(
+        'exports the finalized native points including an intermediate and last fix (notification=%s)',
+        async (notification) => {
+            const points = [1000, 2000, 3000, 4000].map((timestamp, id) => ({
+                id: id + 1,
+                lat: 45 + id * 0.001,
+                lon: 6,
+                alt: 1000 + id,
+                timestamp,
+                accuracy: 4,
+            }));
+            state.isRecording = true;
+            state.currentCourseId = 'finalized';
+            state.recordedPoints = [points[0], points[2]];
+            mockNativeGPSService.stopCourse.mockResolvedValue({
+                courseId: 'finalized',
+                points,
+            });
+            mockNativeGPSService.getAllPoints.mockResolvedValue(points);
+            await recordingService.stopRecording('Finalized', {
+                nativeAlreadyStopped: notification,
+            });
+            expect(recordingService.getLastStopOutcome()).toBe('saved');
+            const xml =
+                mockNativeGPSService.saveTextToDownloads.mock.calls[0][1];
+            const doc = new DOMParser().parseFromString(xml, 'application/xml');
+            expect(
+                [...doc.querySelectorAll('trkpt')].map((p) => ({
+                    lat: Number(p.getAttribute('lat')),
+                    time: Date.parse(p.querySelector('time')!.textContent!),
+                }))
+            ).toEqual(points.map((p) => ({ lat: p.lat, time: p.timestamp })));
+            expect(mockTrackService.archiveRecording).toHaveBeenCalledWith(
+                'Finalized',
+                'finalized',
+                points
+            );
+        }
+    );
+
+    it('saves a native REC even if the WebView had received only one point at STOP', async () => {
+        const points = [1000, 2000, 3000].map((timestamp, id) => ({
+            id: id + 1,
+            lat: 45 + id * 0.001,
+            lon: 6,
+            alt: 1000,
+            timestamp,
+            accuracy: 4,
+        }));
+        state.isRecording = true;
+        state.currentCourseId = 'late-batch';
+        state.recordedPoints = [points[0]];
+        mockNativeGPSService.stopCourse.mockResolvedValue({
+            courseId: 'late-batch',
+            points,
+        });
+        await recordingService.stopRecording('Late batch');
+        expect(recordingService.getLastStopOutcome()).toBe('saved');
+        expect(mockTrackService.archiveRecording).toHaveBeenCalledWith(
+            'Late batch',
+            'late-batch',
+            points
+        );
+        expect(
+            mockTrackService.archiveRecording.mock.invocationCallOrder[0]
+        ).toBeLessThan(
+            mockNativeGPSService.acknowledgeFinalizedCourse.mock
+                .invocationCallOrder[0]
+        );
+    });
+
     it('préserve points et marqueur natif si le stockage durable échoue', async () => {
         state.currentCourseId = 'course-quota';
         state.recordedPoints = [
@@ -292,5 +363,26 @@ describe('RecordingService (v5.29.36)', () => {
             /^Évian-les-Bains · \d{4}-\d{2}-\d{2} \d{2}h\d{2} · SunTrail$/
         );
         expect(name).not.toContain('_');
+    });
+
+    it('can stop another recording after discarding the previous one', async () => {
+        const points = [
+            { lat: 45, lon: 6, alt: 1000, timestamp: 1000 },
+            { lat: 45.1, lon: 6.1, alt: 1100, timestamp: 2000 },
+        ];
+        // A fresh instance keeps this regression independent of prior tests.
+        const { RecordingService } = await import('./recordingService');
+        const service = new RecordingService();
+        state.isRecording = true;
+        state.recordedPoints = [...points];
+        await service.stopRecording(undefined, {
+            resolveName: async () => null,
+        });
+        state.isRecording = true;
+        state.recordedPoints = [...points];
+        await service.stopRecording('Second REC');
+        expect(mockNativeGPSService.stopCourse).toHaveBeenCalledTimes(2);
+        expect(state.isRecording).toBe(false);
+        expect(service.getLastStopOutcome()).toBe('saved');
     });
 });

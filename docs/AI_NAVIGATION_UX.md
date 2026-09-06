@@ -1,4 +1,4 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.87.0 — Bibliothèque durable)
+# SunTrail — Navigation & Modules Fonctionnels (v5.88.0 — stabilisation performance)
 
 > Référence de la pré-release foreground interne v5.84. Point d'entrée :
 > [CLAUDE.md](../CLAUDE.md).

@@ -1,7 +1,8 @@
-# SunTrail — Guide IA (version source v5.87.0 — dépôt de traces pleine fidélité)
+# SunTrail — Guide IA (version source v5.88.0 — stabilisation performance)
 
 > Point d'entrée unique pour tous les agents IA.
-> Mis à jour le 2026-09-02 — v5.87.0 / Android 907 est clôturée pour publication GitHub.
+> Mis à jour le 2026-09-06 — v5.88.0 / Android 908 est clôturée pour publication GitHub ; l'AAB
+> signé est attaché à la release. Aucun upload Play de cette version n'est inclus.
 > v5.85.1 est figée au commit local `b30a1c1` ; ses validations Android/E2E et terrain restent
 > séparées et ouvertes. v5.86.0 est clôturée sur GitHub et son AAB `versionCode 904` a été importé
 > dans Google Play. v5.86.1 / `versionCode 905` est également visible dans Play Console ;
@@ -9,13 +10,104 @@
 > propriétaire. Aucun upload Play de v5.87.0 / `versionCode 907` n'est inclus.
 > Aucun commit, tag, push, téléversement Play Console ni déploiement n'est implicite. Prepared
 > Routes, REC, Guidance, récupération native, offline/corridors et Free/Pro sont préservés.
+> État final v5.88 : suivi 3D stabilisé, 2D allégée, cache/transitions/préchargement fiabilisés,
+> STOP REC et animations cachées corrigés. Les contrôles A53/S23 et la comparaison terrain
+> S23/Garmin sont positifs. Le contrôle long faible réseau reste un suivi post-release accepté.
+> Aucun téléversement Play n'est inclus ; les rapports USB restent locaux car ils contiennent des
+> informations d'appareil et de localisation.
+> Le journal détaillé ci-dessous conserve les étapes du chantier v5.88. Le rebond 3D A53 a une cause
+> reproduite et un correctif caméra validé dans une copie isolée ; les effets 2D et STOP REC
+> sont corrigés et testés. La performance combinée longue, l'intégrité native et le contrôle
+> S23 restent ouverts. Les contrôles S23 repris ont confirmé un blocage cache et un fondu
+> trop lent, corrigés dans Diagnostic : environ0,9s au lieu de16–17s sur les transitions mesurées.
+> Les derniers correctifs sont aussi installés et mesurés sur A53 dans Diagnostic : suivi stable,
+> chargement rétabli, mais blocages récurrents en route + Guidance + REC. Le contrôle long a été
+> interrompu après ce constat ; aucun gate30min acquis. REC et Guidance arrêtés, A53 rendu en2D.
+> Reprise exacte et limites : [REPRISE.md](outputs/v5.88-a53-return-20260905/REPRISE.md).
+> Derniers profils courts A53 : panneau Stats caché encore dessiné, corrigé localement (1728tests,
+> 7E2E verts), sans nouvelle installation. Préchargements répétés112loads/20s à traiter ;
+> les saccades globales persistent. Voir [PROFILS_COURTS.md](outputs/v5.88-a53-return-20260905/PROFILS_COURTS.md).
+> Suite : préchargement borné au cache et compteur de chargement corrigés localement,
+> 1734tests/7E2E verts. APK Diagnostic prête, validation appareil et autorisation d'installation
+> encore attendues : [PREFETCH_READY.md](outputs/v5.88-a53-return-20260905/PREFETCH_READY.md).
+> Installation ensuite autorisée/réussie surA53 : barre au repos rétablie, archive préservée.
+> Modecombiné encore15longtasks/20s, couverture des zooms et S23 ouverts. État actuel :
+> [INSTALLATION_RESULTS.md](outputs/v5.88-a53-return-20260905/INSTALLATION_RESULTS.md).
 
 ## Projet
+
+Contrôle terrain S23 du6septembre : REC Diagnostic comparé au Garmin sur2,76km.
+Écart de distance0,72m ; écart spatial médian1,50m/p955,01m, aucun saut ni portion perdue.
+Les deux intervalles>30s correspondent à des arrêts.714points intacts, session/services arrêtés,
+aucun crash/ANR disponible. Dénivelé cohérent avec le même filtre. Guidance/FPS non prouvés
+par l'archive seule ; gate combiné reste ouvert.
+[RESULTATS.md](outputs/v5.88-s23-walk-20260906/RESULTATS.md).
+
+Dernier contrôle6septembre : profil CPU résiduel A53 terminé, Pro/Équilibré/2D/LOD14.
+Pause temporaire du cadencement Three.js : CPU cumulé76,5→57%, puis71,5→61%, avec retour
+à74,5% après reprise. Fenêtres courtes, indice de coût et non gain produit acquis.
+Aucun changement produit ; correction du cycle repos/réveil et gates généraux ouverts.
+[RESIDUAL_CPU.md](outputs/v5.88-a53-resources-20260906-1249/RESIDUAL_CPU.md).
+
+Dernier lot6septembre : animations cachées installé avec accord surA53, CSS vérifié
+paused→running→paused. Pro/Équilibré/2D, trois archives intactes, aucun service actif.
+CPU observé101,75→73,75% d'un cœur ; comparaison indicative après redémarrage/cache différent,
+pas gain universel acquis. CPU résiduel et gates globaux restent ouverts.
+[ANIMATIONS_INSTALLED.md](outputs/v5.88-a53-resources-20260906-1249/ANIMATIONS_INSTALLED.md).
+
+Correctif courant6septembre : animations CSS invisibles mises en pause (7lignes CSS),
+reprise conservée à l'affichage. Régression navigateur reproduite avant/passe après,
+1751tests verts. APK Diagnostic en préparation, installation soumise à accord distinct.
+[ANIMATIONS_READY.md](outputs/v5.88-a53-resources-20260906-1249/ANIMATIONS_READY.md).
+
+Derniers relevés6septembre après refroidissement : Diagnostic A53 Pro/Équilibré,LOD16,
+PSS hôte+WebView≈887MiB en2D /1086MiB en3D, Graphics incluse≈349/433MiB.
+Ce sont deux modes actuels, pas un avant/après de versions. CPU résiduel en2D malgré0rendu :
+animations CSS invisibles identifiées, pause temporaire réduit le CPU cumulé97,25→80,5%.
+Pas encore de correctif produit pour ce point. Profil complémentaire non démarré carPC enveille.
+[RESULTATS.md](outputs/v5.88-a53-resources-20260906-1249/RESULTATS.md).
+
+Retour utilisateur après lot cache3D : fonctionnement jugé bon, zones bleues non revues
+dans ses manipulations. A53 chaud : statut thermique1 léger,AP41°C,batterie32,6°C.
+Contrôle passif2D8s : zéro rendu/chargement/longtask, aucun service actif.
+Pas de nouveau benchmark lourd à chaud ; S23 et qualification combinée/offline restent ouverts.
+Voir le haut de [CACHE3D_INSTALLED.md](outputs/v5.88-morning-20260906/CACHE3D_INSTALLED.md).
+
+Dernier contrôle6septembre : lot cache3D installé avec accord surA53, Pro/Équilibré.
+22puis20tuiles restaurées sans rechargement des textures ; trois archives inchangées.
+Pauses de transition et bords sans carte persistent ; chantier non clôturé.
+[CACHE3D_INSTALLED.md](outputs/v5.88-morning-20260906/CACHE3D_INSTALLED.md).
+
+Reprise après recharge du6septembre : A53 à48%, Pro/Équilibré/DPR1,2 vérifiés.
+Cache2D confirmé sans rechargement. Pixels CPU du relief3D restaurés localement depuis
+le bitmap conservé,1751tests/7E2E verts ; nouvelle installation Diagnostic à autoriser.
+Couverture bleue et gains globaux toujours ouverts. État actuel :
+[CACHE3D_READY.md](outputs/v5.88-morning-20260906/CACHE3D_READY.md).
+Les paragraphes suivants conservent les validations antérieures.
+
+Dernière validation6septembre : APK finalisation REC + cache2D installée avec accord surA53.
+STOP+Guidance réel : archive10points/export10points identiques ; services arrêtés. Batterie
+sous20% et ECO automatique : benchmarks suspendus jusqu'à recharge et preset vérifié.
+Voir [INSTALLATION.md](outputs/v5.88-morning-20260906/INSTALLATION.md).
+
+Dernier état6septembre : balade dans la version publiée via raccourci habituel, pas Diagnostic.
+371points archivés contre368dans l'exportSTOP : correctif local testé1744tests/7E2E,
+APK Diagnostic prête non installée, incluant cache2D. Aucun changement du GPS natif.
+Voir [RESULTATS.md](outputs/v5.88-morning-20260906/RESULTATS.md).
+
+État ultérieur : APK couverture installée avec accord mais bleu toujours confirmé par captures
+natives. Cache2D corrigé localement (1741tests), non installé ; téléphone sans session active.
+Voir [COVERAGE_RESULTS.md](outputs/v5.88-a53-return-20260905/COVERAGE_RESULTS.md).
+
+Dernier lot v5.88 : trou au dézoom A53 confirmé, rétention des anciennes tuiles corrigée
+localement,1739tests/7E2E verts. APK non installée, accord distinct attendu :
+[COVERAGE_READY.md](outputs/v5.88-a53-return-20260905/COVERAGE_READY.md).
 
 App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacitor).
 - **Chaîne YouTube** : [@SunTrail3D](https://www.youtube.com/@SunTrail3D) (Démos & Tutoriels)
 - **Architecture Multi-Page (v5.53.5)** : `index.html` (Landing), `app.html` (App 3D), `login.html` (Auth).
-- **Authentification** : Supabase. Sync PRO via RevenueCat (`appUserId` = Supabase UID).
+- **Compte & synchronisation** : aucun compte requis aujourd'hui. La continuité PC–Android est
+  reportée après v6.1 ; RevenueCat reste indépendant de ce futur compte optionnel.
 - **Simulation Solaire** : Calcul d'ombres en temps réel sur relief, forêts (InstancedMesh) et bâtiments 3D.
 - **Analyse Topographique** : Profil d'élévation, stats (D+/D-, VAM) et inclinomètre numérique.
 - **Offline-first** : LOD adaptatif, PMTiles, zones mises en cache.
@@ -53,6 +145,10 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
   legacy sans le supprimer et n'acquittent le REC natif qu'après archivage durable. Free garde
   toutes ses traces une par une ; Pro ajoute multi-affichage/export. Voir
   [docs/TRACK_STORAGE.md](docs/TRACK_STORAGE.md).
+- **Audit et stabilisation performance (v5.88.0 clôturée)** : coûts 3D/2D, tuiles, cache,
+  préchargement, STOP REC et animations cachées corrigés à partir de mesures A53/S23, sans
+  nouvelle fonction ni perte de fidélité. Voir
+  [docs/plans/prompts/V5_88_PERFORMANCE_STABILIZATION.md](docs/plans/prompts/V5_88_PERFORMANCE_STABILIZATION.md).
 - **Météo & Particules (v5.56.4)** : Particules 3D (pluie/neige) via `ShaderMaterial` + Open-Meteo.
 - **Offline Zones (v5.57.0)** : Sélection visuelle interactive (rectangle vert), slider LOD 5-18, toolbar avec compteur de tuiles. Détails : [docs/AI_NAVIGATION_UX.md](docs/AI_NAVIGATION_UX.md).
 - **Foreground Service** : Architecture processus séparé `:tracking` pour GPS continu.
@@ -98,7 +194,7 @@ App cartographique 3D mobile-first spécialisée randonnée (Three.js + Capacito
 | **Android 15/16 & R8** | [docs/ANDROID_LINT.md](docs/ANDROID_LINT.md) | Edge-to-edge, cutout fusionné et règles de réduction release v5.86.1. |
 | **Stockage des traces** | [docs/TRACK_STORAGE.md](docs/TRACK_STORAGE.md) | Modèle, chunks IndexedDB, migration legacy, finalisation REC et gates v5.87. |
 | **Batterie & mémoire S23** | [docs/plans/V5_86_BATTERY_VALIDATION.md](docs/plans/V5_86_BATTERY_VALIDATION.md) | Protocole `batterystats`, parsing UID et historique des runs REC. |
-| **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.1 révisées, gates et prompts autonomes. |
+| **Programme produit** | [ROADMAP.md](ROADMAP.md) | Versions v5.82→v6.2 révisées, gates et prompts autonomes. |
 | **Débogage** | [docs/AI_DEBUGGING.md](docs/AI_DEBUGGING.md) | Simulation, Troubleshooting. |
 
 ### Monétisation & Gates (décision v5.87 incluse)

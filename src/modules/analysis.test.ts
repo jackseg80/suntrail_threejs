@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getAltitudeAt, drapeToTerrain, hasTerrainData } from './analysis';
+import {
+    getAltitudeAt,
+    getTerrainAltitudeAt,
+    drapeToTerrain,
+    hasTerrainData,
+} from './analysis';
 import { state } from './state';
 
 describe('analysis.ts', () => {
@@ -17,6 +22,19 @@ describe('analysis.ts', () => {
 
     it('hasTerrainData should return false when no tiles are loaded', () => {
         expect(hasTerrainData()).toBe(false);
+    });
+
+    it('distinguishes missing relief from a valid sea-level tile', () => {
+        expect(getTerrainAltitudeAt(0, 0)).toBeNull();
+        const tile = {
+            worldX: 0,
+            worldZ: 0,
+            tileSizeMeters: 100,
+            elevScale: 1,
+            pixelData: new Uint8ClampedArray([1, 134, 160, 255]),
+        };
+        expect(getTerrainAltitudeAt(0, 0, tile)).toBe(0);
+        expect(getAltitudeAt(0, 0, tile)).toBe(0);
     });
 
     describe('drapeToTerrain', () => {

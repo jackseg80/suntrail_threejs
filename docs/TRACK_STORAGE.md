@@ -1,7 +1,7 @@
 # Stockage des traces pleine fidélité (v5.87.0)
 
-> État au 2026-09-02 : version source `5.87.0` / Android `907`, clôture et publication GitHub
-> autorisées. Aucun upload Play n'est inclus et 907 n'est pas déclaré consommé sur Play.
+> État au 2026-09-02 : version source `5.87.0` / Android `907`, clôturée et publiée sur GitHub
+> avec son AAB signé. Aucun upload Play n'est inclus et 907 n'est pas déclaré consommé sur Play.
 
 ## Responsabilités séparées
 

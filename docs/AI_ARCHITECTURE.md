@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.87.0 — dépôt de traces pleine fidélité)
+# AI Architecture Guide (v5.88.0 — stabilisation performance)
 
 > Référence des services locaux v5.84 à v5.87. La release v5.87 est publiée sur GitHub ; aucun
 > téléversement ni déploiement Play n'est induit par ce document.

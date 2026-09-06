@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { fetchWeather, tickWeatherTime, updateWeatherSystem } from './weather';
+import {
+    fetchWeather,
+    tickWeatherTime,
+    updateWeatherSystem,
+    initWeatherSystem,
+    disposeWeatherSystem,
+} from './weather';
 import { state } from './state';
 
 vi.mock('./geocodingService', () => ({
@@ -14,6 +20,39 @@ vi.mock('./geo', async () => {
 
 import { getPlaceName } from './geocodingService';
 import { getCountryName } from './geo';
+
+describe('2D weather rendering with a 3D-capable preset', () => {
+    it('hides particles and stops their clock in 2D, then restores them in 3D', () => {
+        const scene = new THREE.Scene();
+        state.RESOLUTION = 64;
+        state.SHOW_WEATHER = true;
+        state.WEATHER_DENSITY = 1000;
+        state.currentWeather = 'rain';
+        state.IS_2D_MODE = false;
+        initWeatherSystem(scene);
+        const particles = scene.children.find(
+            (o) => o instanceof THREE.Points
+        ) as THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+        try {
+            updateWeatherSystem(0.05, new THREE.Vector3(0, 1500, 0));
+            expect(particles.visible).toBe(true);
+            state.IS_2D_MODE = true;
+            updateWeatherSystem(0.05, new THREE.Vector3(0, 1500, 0));
+            const time = particles.material.uniforms.uTime.value;
+            tickWeatherTime(1);
+            expect(particles.visible).toBe(false);
+            expect(particles.material.uniforms.uTime.value).toBe(time);
+            state.IS_2D_MODE = false;
+            updateWeatherSystem(0.05, new THREE.Vector3(0, 1500, 0));
+            expect(particles.visible).toBe(true);
+            expect(state.SHOW_WEATHER).toBe(true);
+            expect(state.WEATHER_DENSITY).toBe(1000);
+        } finally {
+            disposeWeatherSystem();
+            state.IS_2D_MODE = false;
+        }
+    });
+});
 
 function mockWeatherApi(
     temperature: number,

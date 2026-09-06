@@ -57,6 +57,7 @@ describe('location.ts', () => {
         state.userSpeedMps = null;
         state.userCourseHeading = null;
         state.lastTrackingUpdate = 0;
+        state.isTiltTransitioning = false;
         setUserFollowViewport('center');
     });
 
@@ -270,7 +271,8 @@ describe('location.ts', () => {
                         new THREE.Spherical(1500, 0.8, Math.PI)
                     )
                 );
-            centerOnUser(0.1); // consomme l'initialisation de cette session
+            // Finish the initial animation before testing a later GPS fix.
+            for (let frame = 0; frame < 360; frame++) centerOnUser(1 / 30);
 
             state.controls!.target.copy(target);
             state

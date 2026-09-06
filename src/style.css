@@ -208,9 +208,13 @@ html {
     );
     transform: translateX(-100%);
     animation: tile-loading-shimmer 1.4s ease-in-out infinite;
+    animation-play-state: paused;
 }
 #tile-loading-bar.visible {
     opacity: 1;
+}
+#tile-loading-bar.visible::after {
+    animation-play-state: running;
 }
 @keyframes tile-loading-shimmer {
     to {
@@ -3080,6 +3084,9 @@ body.preset-eco #timeline-toggle-btn {
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
     vertical-align: middle;
+}
+.bottom-sheet:not(.is-open) .spinner {
+    animation-play-state: paused;
 }
 @keyframes spin {
     to {

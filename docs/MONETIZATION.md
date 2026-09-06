@@ -1,4 +1,4 @@
-# SunTrail 3D — Stratégie de Monétisation (v5.87.0)
+# SunTrail 3D — Stratégie de Monétisation (v5.88.0)
 
 > Objectif : Offrir une valeur alpine gratuite indispensable (sécurité) tout en incitant à l'abonnement Pro pour l'analyse et le confort.
 
@@ -26,7 +26,7 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 | **Cartographie** | SwissTopo / IGN / basemap.at / BKG / IGN España / Kartverket / OSM | **Satellite HD** | `terrain.ts` |
 | **Mode Hors-ligne** | 1 zone gratuite (Sélection visuelle) | **Zones illimitées** | `ZoneSelector.ts` |
 | **Corridor de la route active** | **1 corridor remplaçable, largeur 1 km** | **Corridors multiples, 0,5/1/2 km** | prévu v5.86 |
-| **Synchronisation cloud** | 5 routes choisies en écriture | **Illimitée** | prévu v6.0 |
+| **Synchronisation cloud** | 5 routes choisies en écriture | **Illimitée** | prévue au plus tôt en v6.2, après décision active |
 | **Inclinomètre** | — | **Numérique (° / %)** | `InclinometerWidget.ts`|
 | **Alertes Sécurité** | **Toutes (Avalanche, etc.)** | **Toutes** | (FREE) |
 | **Analyse Trail** | REC : durée réelle, distance, allure, D+, altitude, D−, GPS | **Analyses avancées lorsqu'elles existent** | `outingDashboard.ts` |

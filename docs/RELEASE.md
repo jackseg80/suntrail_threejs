@@ -162,7 +162,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **904 (consommé)** | **5.86.0** | **v5.86.0** | **AAB v5.86.0 importé dans Google Play : code attribué, ne jamais le réutiliser.** | **2026-08-13** |
 | **905 (consommé)** | **5.86.1** | **v5.86.1** | **AAB visible dans Play Console ; code attribué et non réutilisable.** | **2026-08-20** |
 | **906 (publié GitHub)** | **5.86.2** | **v5.86.2** | **Tableau de bord Sortie, frontière Bibliothèque, export GPX Android dans Téléchargements et reprise sûre du shell WebView après mise à jour. AAB signé attaché par GitHub Actions ; aucun upload Play.** | **2026-08-21** |
-| **907 (GitHub ; Play non attribué)** | **5.87.0** | **v5.87.0** | **TrackRepository pleine fidélité, migration legacy additive, finalisation REC durable et correctifs terrain pré-v5.87. Aucun upload Play ; revérifier le maximum global avant tout envoi.** | **2026-09-02** |
+| **907 (publié GitHub ; Play non attribué)** | **5.87.0** | **v5.87.0** | **TrackRepository pleine fidélité, migration legacy additive, finalisation REC durable et correctifs terrain pré-v5.87. AAB signé attaché à la release GitHub ; aucun upload Play, revérifier le maximum global avant tout envoi.** | **2026-09-02** |
+| **908 (release GitHub ; Play à vérifier)** | **5.88.0** | **v5.88.0** | **Stabilisation A53/S23 : suivi 3D, 2D allégée, cache/transitions/préchargement de tuiles, STOP REC et animations cachées. AAB signé produit par GitHub Actions ; aucun upload Play. Vérifier que 908 est libre avant l'envoi manuel.** | **2026-09-06** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

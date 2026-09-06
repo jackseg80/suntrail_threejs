@@ -234,9 +234,14 @@ let originalDPR = 1.0;
 /**
  * Surveillance intelligente des FPS
  */
-export function checkPerformanceThrottle(fps: number): void {
-    if (state.isProcessingTiles || state.isFlyingTo) {
+export function checkPerformanceThrottle(
+    fps: number,
+    demandLimited = false
+): void {
+    // Sparse rendering at rest is intentional, not evidence of GPU overload.
+    if (demandLimited || state.isProcessingTiles || state.isFlyingTo) {
         lowFpsCount = 0;
+        highFpsCount = 0;
         return;
     }
 

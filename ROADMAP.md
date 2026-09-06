@@ -1,6 +1,6 @@
-# SunTrail — Roadmap produit révisée (version source v5.87.0)
+# SunTrail — Roadmap produit révisée (version source v5.88.0)
 
-> Révision : 2026-09-02, clôture de v5.87.0 autorisée pour publication GitHub.
+> Révision : 2026-09-06, v5.88.0 clôturée pour publication GitHub ; aucun upload Play inclus.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -13,7 +13,7 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-09-02
+## État réel au 2026-09-06
 
 - **v5.86.0** est publiée sur GitHub et son AAB Android **904** a déjà été importé dans Google
   Play ; ce `versionCode` est consommé.
@@ -22,8 +22,8 @@ heure de passage et conditions.
   en test.
 - **v5.87.0** / Android **907** clôt le dépôt de traces pleine fidélité et embarque les correctifs
   S23 préalables : STOP notification REC, raccourci REC vers Sortie, recherche de sommets et
-  fallback cartographique sur les frontières ambiguës. La publication GitHub est autorisée ;
-  aucun upload Play ni statut Play de 907 n'est revendiqué.
+  fallback cartographique sur les frontières ambiguës. La release GitHub `v5.87.0` et son AAB
+  signé sont publiés ; aucun upload Play ni statut Play de 907 n'est revendiqué.
 - Prepared Routes, la bibliothèque IndexedDB, la compatibilité GPX/REC, la difficulté expliquée,
   les corrections mobiles et la validation Galaxy S23 sont clôturées.
 - Le moteur foreground, ses fixtures, le plan de guidage local, l'UI et l'indépendance REC sont
@@ -35,6 +35,10 @@ heure de passage et conditions.
   démarrage et guidage natif ont été optimisés sans nouvelle fonction produit. Check, 1 607 tests,
   build, bundle 2,27 MiB, i18n et synchronisation Capacitor sont verts ; E2E/Gradle et les mesures
   A53/S23 restent à consigner avant publication.
+- **v5.88.0** / Android **908** clôt la passe mesurée de stabilisation A53/S23 : suivi 3D,
+  coût du mode 2D, cache et transitions de tuiles, préchargement, indicateur de chargement et
+  finalisation REC. Les essais sur appareils et la comparaison S23/Garmin sont positifs ; le
+  contrôle long en faible réseau reste un suivi post-release. Aucun upload Play n'est inclus.
 - Après comparaison Komoot/Garmin, v5.84 inclut la prochaine indication et sa distance au sein
   du moteur foreground, sans étendre la promesse aux fonctions natives/background de v5.85.
 
@@ -51,14 +55,18 @@ heure de passage et conditions.
 | **v5.86.1** | Rester utilisable sur Android 15/16 sans sacrifier le terrain | Edge-to-edge, cutout documenté et réduction R8 ciblée |
 | **v5.86.2** | Lire l'activité en cours sans confondre Sortie et Bibliothèque | Tableau de bord contextuel, import déplacé, promesse Free/Pro honnête |
 | **v5.87.0** | Conserver des traces pleine fidélité sans apparition/disparition implicite | `TrackRepository`, migration et règles de capacité non destructives |
-| **v6.0.0** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
-| **v6.1.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, exports et finition |
+| **v5.88.0** | Assainir la base avant v6 et garder le mode combiné fluide sur A53 | Audit global, dépendances, baseline mesurée et coûts croissants bornés sans perte |
+| **v6.0.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition |
+| **v6.1.0** | Choisir plus facilement le bon moment | Lumière utile : soleil, ombre, azimuts et lecture des conditions, sans nouveau compte |
+| **v6.2.0 — reportée** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
 
-La synchronisation ne bloque plus le guidage. v5.84 est un jalon technique interne/fermé ; elle
-n'est pas promue publiquement comme un guidage complet. Le durcissement natif devient v5.85,
-suivi d'une stabilisation corrective v5.85.1, puis de readiness. Les correctifs Android 15/16,
-la clarification de Sortie et la persistance des traces précèdent le cloud, car l'usage terrain
-et la compréhension des données locales restent prioritaires.
+Le compte et la synchronisation ne sont un prérequis d'aucun usage v6.0/v6.1 : routes, dossiers,
+notes, favoris et analyse lumière restent locaux et utilisables sans connexion. v5.84 est un jalon
+technique interne/fermé ; elle n'est pas promue publiquement comme un guidage complet. Le
+durcissement natif devient v5.85, suivi d'une stabilisation corrective v5.85.1, puis de readiness.
+Les correctifs Android 15/16, la clarification de Sortie, la persistance des traces, la fluidité du
+mode terrain combiné et les bénéfices visibles de préparation précèdent volontairement le cloud,
+qui reste le dernier lot planifié.
 
 ## v5.82.0 — Fondations UX finalisées
 
@@ -361,7 +369,7 @@ Le design de migration doit rester non destructif : aucune trace existante n'est
 verrouillée ou rendue irrécupérable lors d'un changement d'offre. Ce lot ne modifie ni les routes
 préparées locales illimitées ni les contrats REC, Guidance, offline/corridors et sécurité.
 
-**Clôture v5.87.0 autorisée le 2026-09-02 :** `StoredTrackV1`, `TrackRepository`
+**Clôture v5.87.0 publiée sur GitHub le 2026-09-02 :** `StoredTrackV1`, `TrackRepository`
 IndexedDB injecté et découpé en blocs, migration copy-first reprenable, catalogue unique,
 archivage GPX pleine fidélité et finalisation REC avec accusé après écriture durable sont en place.
 Les tests automatisés couvrent migration, quota/rollback, gros volume, downgrade et
@@ -376,9 +384,88 @@ non par un cas terrain. Architecture et matrice : [docs/TRACK_STORAGE.md](docs/T
 downgrade testés avec des géométries volumineuses ; toutes les traces locales restent accessibles
 en Free et aucune règle d'entitlement n'intervient dans leur persistance.
 
-## v6.0.0 — Compte optionnel & synchronisation PC–Android
+## v5.88.0 — Audit complet et stabilisation performance A53
 
-Préparer l'infrastructure avant d'exposer les contrôles :
+**Clôturée le 2026-09-06 en version 5.88.0 / Android 908 pour publication GitHub.** Baseline USB
+A53 conservée, copie Android de diagnostic isolée autorisée. Le rebond de suivi 3D a été reproduit :
+altitude indisponible confondue avec zéro et alternance LOD 17/18. Après correction caméra,
+le p95 de soumission CPU du rendu passe de 109,4 à 23,8 ms dans ce scénario immobile ; le
+propriétaire confirme la stabilité.
+Un lot séparé désactive les effets inutiles en 2D sans changer les presets et libère le verrou
+STOP REC après abandon. La baisse indue de résolution au repos est ensuite reproduite sur S23
+et corrigée. Le lot final comprend aussi la rétention des anciennes tuiles pendant le dézoom,
+la restauration des pixels 3D depuis le bitmap en cache, un préchargement borné, un indicateur
+de chargement fiable et la pause des animations CSS cachées. Les validations automatisées,
+les contrôles A53/S23 et un REC terrain S23 comparé au Garmin sont positifs. Le contrôle long
+de 30 minutes en faible réseau/offline reste un suivi post-release accepté par le propriétaire ;
+il ne bloque pas la publication GitHub.
+
+Ce lot correctif précède les nouvelles fonctions v6. Une utilisation v5.87.0 sur Galaxy A53 indique
+une lenteur perceptible lorsque l'itinéraire, Guidance, REC et la carte travaillent ensemble ; le
+mode 3D est particulièrement touché, sans qu'une sortie réelle soit nécessaire pour reproduire le
+problème. REC seul sur S23 ne reproduit pas ce constat. Il faut donc isoler le coût propre au mode
+combiné au lieu de conclure à partir de la consommation globale du téléphone ou d'une lecture
+statique du code.
+
+La première étape combine un audit global de la base et une baseline reproductible A53, contrôlée
+sur S23 : démarrage, bundle/dépendances, carte 2D/3D, route seule, Guidance seule, REC seul, puis
+Guidance + REC. Mesurer cadence et longs traitements WebView, CPU et mémoire par processus,
+GPU/texture/LOD, bridge, Room, notifications et coût croissant avec la longueur de route et de REC.
+Les pistes existantes — boucle de rendu pendant le suivi, mesh REC, copies/scans de points, fan-out
+natif et fallbacks Guidance — restent des hypothèses jusqu'à mesure. Three.js, Capacitor, WebView,
+l'outillage Android et les autres dépendances sont comparés aux versions stables et notes officielles,
+sans mise à jour automatique ni mélange avec une correction causale.
+
+Les corrections sont petites, réversibles et causales. Elles ne modifient ni la fidélité du dépôt de
+traces, ni la précision GPS, ni les transitions/alertes Guidance, ni l'offline, ni les règles
+Free/Pro. Aucun refactor général, changement de framework, WebGPU ou fonction v6 n'entre dans ce lot.
+
+**Gate :** lenteur et mode 3D reproduits sur table puis gain mesuré et perceptible sur A53 en mode
+combiné, absence de croissance mémoire ou de long task récurrent inexpliqué, parité
+fonctionnelle/stockage complète et aucune régression S23. Si le GPS, le service natif, la cadence de
+fond ou l'autonomie sont modifiés, ajouter le gate de surcoût médian Guidance + REC d'au plus 1 point
+de batterie/heure face à REC seul sur A53. Prompt autonome :
+[V5_88_PERFORMANCE_STABILIZATION.md](docs/plans/prompts/V5_88_PERFORMANCE_STABILIZATION.md).
+
+## v6.0.0 — Power user & finition professionnelle locale
+
+- drag précis, variantes/branches de waypoints, duplication et undo/redo ;
+- comparaison côte à côte ou superposée de deux routes, plus comparaison dates/heures ;
+- couches de pente/courbes de niveau lorsque la source, la licence et la performance le permettent,
+  avec légendes, opacité et presets restaurables ;
+- formats de coordonnées, copie accessible et mesure ;
+- dossiers, tags, notes et favoris persistés localement, sans identifiant ni promesse de sync ;
+- export GPX fidèle et rapport de préparation imprimable ;
+- revue complète erreurs, offline, skeletons, accessibilité, A53/S23 et confidentialité.
+
+Le parcours débutant ne gagne aucune étape obligatoire. Les données locales restent séparées de la
+future enveloppe de synchronisation ; aucune migration cloud n'est introduite dans ce lot.
+
+## v6.1.0 — Lumière utile & préparation photo
+
+Exposer de façon sobre la valeur déjà présente dans SunTrail, sans transformer l'application en
+outil photo spécialisé ni créer un nouveau backend :
+
+- pour une route ou un point consulté, rendre lisibles lever/coucher, azimut, heure dorée et
+  portions prévues au soleil ou à l'ombre lorsque le calcul terrain le permet ;
+- relier le départ planifié, l'ETA et la section lumière du readiness, avec source, date de calcul
+  et état « inconnu » explicite si la donnée ne permet pas de conclure ;
+- proposer une comparaison de dates/heures repliée pour Pro, conformément au contrat solaire, sans
+  retirer la lecture du jour courant en Free ;
+- conserver une carte et un résumé textuel accessibles, sans calcul 3D permanent quand le panneau
+  est fermé.
+
+**Hors périmètre :** Voie lactée, pollution lumineuse, modèle de saison, nouvelles API payantes,
+export image et promesse de visibilité météo. Une ombre calculée reste une estimation documentée,
+jamais une garantie de conditions réelles.
+
+**Gate :** mêmes résultats pour les cas solaires déterministes, dates/fuseaux/heure d'été testés,
+aucune régression de préparation ou batterie et validation mobile S23/A53 des états lisibles.
+
+## v6.2.0 — Compte optionnel & synchronisation PC–Android (dernier lot planifié)
+
+Ce lot ne commence qu'après v6.0/v6.1 et une décision active confirmant un besoin réel de continuité
+entre appareils. Préparer alors l'infrastructure avant d'exposer les contrôles :
 
 - dossier `supabase/`, migrations reproductibles, RLS owner-only et tests à deux utilisateurs ;
 - Google OAuth Authorization Code + PKCE, deep link Android, magic link fallback ;
@@ -387,27 +474,15 @@ Préparer l'infrastructure avant d'exposer les contrôles :
 - consentement au premier upload, sync incrémentale, tombstones et conflit sans écrasement ;
 - aucune sync de trace REC, position live, cartes/packs, clés API ou réglages développeur.
 
-Règles commerciales : cinq routes cloud choisies en écriture pour Free, illimité Pro. Au
-downgrade, aucune suppression : surplus en lecture/téléchargement, changements locaux conservés.
+Règles commerciales : cinq routes cloud choisies en écriture pour Free, illimité Pro. Au downgrade,
+aucune suppression : surplus en lecture/téléchargement, changements locaux conservés.
 
-RevenueCat : Android utilise `Purchases.logIn` et vérifie la fusion/restore selon le dashboard ;
-le web reçoit un flux explicite de liaison/restauration. Achat anonyme → login → autre appareil →
+RevenueCat : Android utilise `Purchases.logIn` et vérifie la fusion/restore selon le dashboard ; le
+web reçoit un flux explicite de liaison/restauration. Achat anonyme → login → autre appareil →
 logout → relogin fait partie des E2E bloquants.
 
-**Gate :** route PC visible sous dix secondes sur Android en environnement contrôlé, puis
-disponible offline, avec conflit et downgrade sans perte.
-
-## v6.1.0 — Power user & finition professionnelle
-
-- drag précis, variantes/branches de waypoints, duplication et undo/redo ;
-- comparaison côte à côte ou superposée de deux routes, plus comparaison dates/heures ;
-- couches de pente/courbes de niveau lorsque la source le permet, légendes et opacité ;
-- presets cartographiques, formats de coordonnées et mesure ;
-- dossiers/tags/notes/favoris synchronisés par v6.0 ;
-- export GPX fidèle et rapport de préparation imprimable ;
-- revue complète erreurs, offline, skeletons, accessibilité, A53/S23 et confidentialité.
-
-Le parcours débutant ne gagne aucune étape obligatoire.
+**Gate :** route PC visible sous dix secondes sur Android en environnement contrôlé, puis disponible
+offline, avec conflit et downgrade sans perte.
 
 ## Décisions transverses verrouillées
 
