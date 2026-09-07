@@ -1,8 +1,11 @@
 # SunTrail — Roadmap produit révisée (version source v5.88.0)
 
-> Révision : 2026-09-06, v5.88.0 clôturée pour publication GitHub ; aucun upload Play inclus.
+> Révision produit : 2026-09-06, documentation alignée le 2026-09-07. v5.88.0 est clôturée pour
+> publication GitHub ; aucun upload Play inclus.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
+
+> Inventaire des fonctions réellement actives : [docs/FEATURES.md](docs/FEATURES.md).
 
 ## Cap produit
 

@@ -1,11 +1,11 @@
-# SunTrail — Navigation & Modules Fonctionnels (v5.88.0 — stabilisation performance)
+# SunTrail — Navigation & modules fonctionnels (v5.88.0)
 
-> Référence de la pré-release foreground interne v5.84. Point d'entrée :
-> [CLAUDE.md](../CLAUDE.md).
+> Contrat UX actuel. Point d'entrée : [CLAUDE.md](../CLAUDE.md). Inventaire utilisateur :
+> [FEATURES.md](FEATURES.md).
 
 ---
 
-## Parcours principal v5.82.0
+## Parcours principal actuel
 
 - **Explorer** ouvre la recherche ; **Préparer** active un mode explicite ; **Sortie** expose la
   route courante, Guidance et REC ; **Bibliothèque** réunit import, itinéraires à suivre et activités
@@ -89,10 +89,10 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
   calque Three.js avant leur ouverture ; les archives `TrackRepository` ne sont plus limitées à
   cinq entrées et les calques simultanément chargés restent bornés à dix pour Pro.
 
-## Suivi terrain foreground v5.84
+## Suivi terrain actuel
 
-- L'écran actif met en avant la prochaine indication et sa distance, puis la distance/ETA
-  restantes, l'écart à la trace et la qualité GPS. Il restera utilisable à une main et ne
+- Le panneau met en avant la prochaine indication et sa distance, puis la distance/ETA
+  restantes, l'écart à la trace et la qualité GPS. Il reste utilisable à une main et ne
   masquera ni la carte ni le prochain danger de navigation.
 - Une indication issue des étapes ORS/OSRM est une manœuvre routée. Un simple changement de cap
   déduit d'une géométrie GPX est présenté comme « changement de direction approximatif », jamais
@@ -100,8 +100,11 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - Les waypoints ou POI nommés réellement associés à la trace apparaissent comme prochain
   point utile avec leur distance. Une trace GPX sans ces données reste parfaitement navigable
   en suivi de ligne, sans inventer de noms ni de points d'intérêt.
-- Les alertes v5.84 sont visuelles et haptiques, application ouverte. Voix, notification écran
-  verrouillé, recalcul réseau et survie après fermeture restent hors de ce jalon interne.
+- Sur Android, `nativeGuidance=true` utilise le service `:tracking`, Room et la notification pour
+  poursuivre écran éteint et reprendre après destruction de la WebView. Hors Android, le moteur
+  TypeScript reste limité par les garanties du navigateur.
+- Les alertes sont visuelles, haptiques et, sur Android, relayées par notification. Les instructions
+  vocales et le recalcul réseau automatique restent hors du produit actuel.
 
 ## Mouvements de Caméra
 

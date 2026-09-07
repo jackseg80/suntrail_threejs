@@ -314,7 +314,11 @@ export class GuidanceForegroundService {
             <div class="guidance-alert" id="guidance-alert" role="alert" hidden></div>
             <div class="guidance-heading">
                 <div>
-                    <span class="guidance-eyebrow">${i18n.t('guidance.foregroundBeta')}</span>
+                    <span class="guidance-eyebrow">${i18n.t(
+                        this.nativeActive
+                            ? 'guidance.modeNative'
+                            : 'guidance.modeWeb'
+                    )}</span>
                     <strong id="guidance-route-name"></strong>
                 </div>
                 <div class="guidance-heading-tools">
@@ -358,7 +362,9 @@ export class GuidanceForegroundService {
                 <button type="button" data-guidance-action="record">REC</button>
                 <button type="button" data-guidance-action="stop" class="guidance-stop">${i18n.t('guidance.actions.stop')}</button>
             </div>
-            <p class="guidance-limit">${i18n.t('guidance.foregroundLimit')}</p>
+            <p class="guidance-limit">${i18n.t(
+                this.nativeActive ? 'guidance.nativeLimit' : 'guidance.webLimit'
+            )}</p>
         `;
         element.addEventListener('click', (event) => {
             const action = (event.target as HTMLElement).closest<HTMLElement>(

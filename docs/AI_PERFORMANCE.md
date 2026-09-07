@@ -2,6 +2,10 @@
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
+> La synthèse de clôture ci-dessous décrit l'état actuel. Les sous-sections datées qui suivent
+> conservent la chronologie du diagnostic 5.88 ; leurs mentions « prêt », « non installé » ou
+> « ouvert » étaient vraies au moment de la mesure et ne remplacent pas la synthèse finale.
+
 ## v5.88 — bilan A53/S23 clôturé le 2026-09-06
 
 La release stabilise le suivi 3D, allège le mode 2D, fiabilise cache, transitions,

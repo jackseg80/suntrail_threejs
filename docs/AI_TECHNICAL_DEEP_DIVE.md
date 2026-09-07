@@ -1,6 +1,10 @@
 # AI Technical Deep Dive: Rendering & Systems
 
-This document explains the advanced and unique rendering techniques used in SunTrail to achieve high-performance 3D cartography on mobile.
+> Technical background for rendering techniques introduced before v5.88. For current constants,
+> caches and measured behavior, use [AI_PERFORMANCE.md](AI_PERFORMANCE.md); for current features,
+> use [FEATURES.md](FEATURES.md).
+
+This document explains rendering techniques used in SunTrail's mobile 3D cartography.
 
 ## 1. Hydrology: The "Texture Mask" Technique (v5.34.0)
 

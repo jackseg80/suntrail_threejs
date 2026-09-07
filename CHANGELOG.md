@@ -1,3 +1,19 @@
+## Documentation - 2026-09-07
+
+### Modifié
+
+- Remplacement du README 5.84 par une présentation de la version source 5.88, incluant les
+  itinéraires préparés, le guidage Android, Readiness/corridors, Sortie/Bibliothèque et le stockage
+  pleine fidélité.
+- Ajout d'un index documentaire et d'un inventaire canonique des fonctionnalités, avec séparation
+  explicite entre références actives, plans futurs et archives.
+- Mise à jour des protocoles testeurs/performance, de la fiche Store, de la matrice Free/Pro et des
+  guides de guidage, readiness, stockage, architecture, UX et release.
+- Correction des quatre locales : les routes manuelles sont sauvegardées et le texte de guidage
+  distingue désormais le service Android natif du fallback Web.
+
+Cette passe documentaire ne change pas la version 5.88.0 ni l'état de publication Play.
+
 ## [5.88.0] - 2026-09-06 — Stabilisation performance A53/S23
 
 ### Corrigé

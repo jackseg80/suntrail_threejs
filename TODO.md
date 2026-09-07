@@ -1,6 +1,19 @@
 # SunTrail — TODO (v5.88.0 clôturée pour GitHub ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-06
+> Dernière mise à jour : 2026-09-07
+
+## ✅ Documentation actuelle — audit du 2026-09-07
+
+- [x] Remplacer le README 5.84 par une présentation 5.88 fondée sur le code actif.
+- [x] Créer `docs/FEATURES.md` comme inventaire canonique et marquer l'ancien fichier 5.53 comme
+      archive historique.
+- [x] Ajouter `docs/README.md` pour séparer références actives, plans et archives.
+- [x] Mettre à jour les protocoles, la fiche Store, la matrice Free/Pro et les documents de
+      guidage/readiness/stockage.
+- [x] Corriger dans les quatre langues les textes obsolètes sur la sauvegarde des routes et le
+      guidage Android/Web.
+
+Cet audit ne change ni version, ni droit Free/Pro, ni état Play. Il n'autorise aucune publication.
 
 ## ✅ v5.88.0 — Stabilisation performance A53/S23
 

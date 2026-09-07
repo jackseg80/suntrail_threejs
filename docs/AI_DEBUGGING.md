@@ -1,22 +1,28 @@
-# SunTrail — Guide de Débogage (v5.56.3)
+# SunTrail — Guide de débogage (v5.88.0)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 > Consulter ce fichier quand un bug est signalé ou qu'un symptôme visuel est observé.
 
-## 🛠️ Simulation & Workflows Développeur
+## Workflows de diagnostic pris en charge
 
-Pour tester des cas complexes sans attendre les conditions réelles, utilisez la console (F12) :
+Les anciens exemples qui modifiaient `state` dans la console ne sont plus valides : `state` et
+`eventBus` ne sont pas exposés globalement. Utiliser les chemins réellement câblés :
 
-| Cas de Test | Action Console | Effet Attendu |
+| Cas de test | Méthode | Effet attendu |
 | :--- | :--- | :--- |
-| **Simuler mode PRO** | `state.isPro = true` | Débloque instantanément les instruments Solaire/Météo avancés et le Zoom 18+. |
-| **Simuler Offline** | `eventBus.emit('networkOffline')` | Affiche l'overlay de déconnexion et active les fallbacks caches. |
-| **Erreur Météo** | `state.weatherUnavailable = true` | Affiche le message "Météo indisponible" dans le panneau Météo. |
-| **Météo OK** | `state.weatherUnavailable = false` | Restaure l'affichage normal du panneau (nécessite des données valides). |
-| **Vider Cache Tuiles** | `state.tileCache.clear()` | Force le re-téléchargement de toutes les tuiles visibles. |
-| **Stress Test 3D** | `state.PERFORMANCE_PRESET = 'ultra'` | Force le Pixel Ratio 2.0 et la résolution maximale pour tester les limites GPU. |
+| **Environnement E2E** | Ouvrir `app.html?mode=test` via la suite Playwright | Locale/scène déterministes pour les tests automatisés. |
+| **Offline** | DevTools Network → Offline, ou mode avion après téléchargement | Active le chemin réseau réel et les replis locaux. |
+| **Preset** | Plus → Réglages → Paramètres avancés | Applique le preset via `applyPreset()`, y compris ses effets dérivés. |
+| **Pro** | Compte RevenueCat sandbox ou mode testeur prévu dans Réglages | Teste les vrais contrôles de droits et l'UI associée. |
+| **Cache** | Reproduire avec cache chaud puis froid dans une copie de diagnostic | Évite de supprimer les données de l'utilisateur ou de confondre cache et calcul. |
+| **Guidage/REC** | Route de test + service Android ou fallback Web | Contrôle les flux réellement utilisés, y compris reprise et STOP. |
 
 ---
+
+## Historique des incidents corrigés
+
+Le tableau suivant documente des causes déjà rencontrées. Il sert à reconnaître une régression,
+pas à affirmer que ces défauts sont présents dans la version actuelle.
 
 | Symptôme | Cause Probable | Solution |
 |----------|----------------|----------|

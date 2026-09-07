@@ -1,10 +1,8 @@
-# Readiness et corridor hors ligne v5.86
+# Readiness et corridor hors ligne (livré en v5.86, actif en v5.88)
 
-> Clôture v5.86.0 au 2026-08-13 : readiness local, planification/mesure, téléchargement et registre
-> persistant des corridors sont validés dans la Bibliothèque. Le propriétaire a validé un corridor
-> Norvège après fermeture complète et relance hors connexion, avec bibliothèque et suivi jusqu'au
-> LOD 14. Les enrichissements réseau/appareil restent optionnels et inconnus sans preuve ; v5.85.1
-> reste en validation séparée.
+> Contrat actif dans la version source 5.88.0. Readiness local, planification/mesure,
+> téléchargement et registre persistant des corridors sont disponibles dans la Bibliothèque. Les
+> enrichissements réseau/appareil restent optionnels et inconnus sans preuve fraîche.
 
 ## Contrat du rapport
 
@@ -96,5 +94,6 @@ incomplets, l'exclusion des packs CDN, un pack Suisse sans préfiltre pays, un c
 européen, l'invalidation de contexte, la progression, les résultats partiels, l'annulation
 conservatrice, l'adressage des layers d'un pack, la persistance/réouverture des manifestes, le
 remplacement atomique Free, la coexistence Pro, la protection des zones manuelles, le préflight
-réseau/quota et l'absence de requête en mode strictement local. Le redémarrage mode avion avec
-corridor et les validations appareil restent ouverts.
+réseau/quota et l'absence de requête en mode strictement local. Un corridor Norvège a aussi été
+contrôlé sur appareil après fermeture complète et relance hors connexion jusqu'au LOD 14 ; cette
+observation ne garantit pas toutes les zones, sources ou appareils.

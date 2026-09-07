@@ -1,7 +1,6 @@
-# AI UI Style Guide (v5.83.1)
+# AI UI Style Guide (v5.88.0)
 
-> Référence de la release publique corrective v5.83.1, étendue par la pré-release interne v5.84
-> pour le panneau de suivi, le rail cartographique et les panneaux mobiles exclusifs.
+> Contrat visuel actuel, incluant Prepared Routes, Sortie/Bibliothèque et guidage Android/Web.
 
 This guide defines the standardized UI patterns for SunTrail to ensure visual consistency across all panels (Expert Sheets, Settings, etc.).
 
@@ -18,7 +17,7 @@ This guide defines the standardized UI patterns for SunTrail to ensure visual co
 - Public labels describe the hiking outcome (map detail, local archive, fallback route),
   not implementation terms. LOD, PMTiles and routing-provider keys belong only in the
   Developer lab.
-- Mobile uses four primary destinations. From 900 px, reuse the same functions in side
+- Mobile uses five visible destinations: Explorer, Prepare, Outing, Library and More. From 900 px, reuse the same functions in side
   rails/panels; never create a desktop-only preparation feature.
 
 ### Prepared Routes v5.83

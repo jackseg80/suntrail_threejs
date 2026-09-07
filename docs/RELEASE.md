@@ -1,6 +1,8 @@
 # SunTrail 3D — Workflow de Publication
 
-> Guide pour les agents IA et le développeur. Suivre dans l'ordre exact.
+> Guide pour les agents IA et le développeur. Suivre dans l'ordre exact. Commit, tag, push,
+> release GitHub, upload Play et déploiement sont six effets distincts : chacun exige une
+> autorisation explicite, même si les étapes locales précédentes sont vertes.
 
 ---
 
@@ -19,6 +21,10 @@ versionCode 521        // ← TOUJOURS last_value + 1 (voir tableau historique)
 versionName "5.13.1"   // ← version sémantique visible par l'utilisateur (ex: 5.13.1)
 ```
 
+La même `versionName` doit être portée par `package.json`. Une nouvelle fonction ou promesse met
+aussi à jour `README.md`, `docs/FEATURES.md` et le document technique du domaine, en plus de
+`CHANGELOG.md`, `TODO.md`, `CLAUDE.md` et `GEMINI.md`.
+
 > ⚠️ **Règles strictes :**
 > - Play Store refuse tout AAB avec un `versionCode` déjà enregistré ; après un upload en erreur,
 >   vérifier Play Console avant de décider si le code est réutilisable
@@ -28,6 +34,10 @@ versionName "5.13.1"   // ← version sémantique visible par l'utilisateur (ex:
 > - Le tag git **peut** avoir un suffixe (ex: `v5.13.0-ct`) mais versionName reste propre
 
 ### Étape 2 — Commit + Tag
+
+> Les commandes suivantes illustrent le workflow après autorisations. Ne pas les enchaîner ni les
+> exécuter sur la seule base de ce document. Vérifier d'abord le diff et demander séparément
+> l'autorisation de stage/commit, de push, de tag et de push du tag.
 
 ```bash
 git add android/app/build.gradle
@@ -43,7 +53,7 @@ git push origin vX.Y.Z  # Ce push déclenche le CI
 
 Le tag déclenche automatiquement `.github/workflows/release.yml`.
 
-### Étape 3 — Attendre le CI (~5 min)
+### Étape 3 — Attendre le CI
 
 GitHub → Actions → "Build Android AAB" → vérifier que le run passe.
 
@@ -54,8 +64,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 1. [play.google.com/console](https://play.google.com/console) → SunTrail 3D
 2. Selon la cible :
    - **Tests internes** → pour tester soi-même (immédiat)
-   - **Tests fermés** → pour les 20 testeurs (14 jours obligatoires 1ère fois)
-   - **Production** → après validation closed testing
+   - **Tests fermés** → selon les exigences affichées par la Play Console pour ce compte
+   - **Production** → seulement lorsque la Play Console et les validations du projet l'autorisent
 3. Créer une release → Téléverser l'AAB → Notes de version → Examiner → Déployer
 
 ---
@@ -188,7 +198,7 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | Nom FR Play Console | Alias anglais | Usage |
 |---|---|---|
 | Tests internes | Internal Testing | Dev + proches ≤100, instantané |
-| Tests fermés | Closed Testing / Alpha | 20+ testeurs, 14j obligatoires 1ère fois |
+| Tests fermés | Closed Testing / Alpha | Exigences et durée à vérifier dans la Play Console |
 | Tests ouverts | Open Testing / Beta | Public avec lien |
 | Production | Production | Tout le monde |
 
@@ -218,12 +228,12 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 # 1. Build web
 npm run build
 
-# 2. Sync Capacitor
-npx cap sync android
+# 2. Build Capacitor relatif, contrôle des assets et sync Android
+npm run cap:sync
 
-# 3. Build AAB signé
-JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease --no-daemon
-# (depuis android/)
+# 3. Build AAB signé depuis android/ (PowerShell)
+$env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat bundleRelease --no-daemon
 
 # AAB généré dans :
 # android/app/build/outputs/bundle/release/app-release.aab
@@ -239,8 +249,8 @@ JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease 
 | App Android | `com.suntrail.threejs` |
 | Entitlement | `SunTrail 3D Pro` |
 | Offerings | monthly / yearly / lifetime |
-| SDK key (Android) | `goog_uNvY...` (dans `.env`) |
-| Service Account JSON | ✅ Configuré — lié dans RevenueCat → App Settings → Google Play |
+| SDK key (Android) | `goog_...` dans `.env`/secret CI ; ne jamais la documenter en clair |
+| Service Account JSON | À vérifier dans RevenueCat avant diagnostic d'achat/paiement |
 
 ---
 
@@ -248,13 +258,13 @@ JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease 
 
 | Track | Usage | Délai review |
 |---|---|---|
-| **Tests internes** | Toi + quelques proches (≤100) | Instantané |
-| **Tests fermés** | 20+ testeurs, 14 jours obligatoires (1ère fois) | Instantané |
-| **Open Testing** | Beta publique | Quelques heures |
-| **Production** | Tout le monde | Quelques heures |
+| **Tests internes** | Petit groupe de validation | Vérifier la Play Console |
+| **Tests fermés** | Groupe de test soumis aux règles du compte | Vérifier la Play Console |
+| **Open Testing** | Bêta publique si disponible | Vérifier la Play Console |
+| **Production** | Distribution publique | Vérifier la Play Console |
 
-> Le passage Tests fermés → Production est obligatoire pour les nouveaux développeurs.
-> Après la 1ère production, toutes les updates passent directement sans délai.
+> Les critères d'accès et délais Play changent. L'état live de la Play Console fait foi ; ce
+> document ne doit pas annoncer un nombre de testeurs, une durée ou un délai comme universel.
 
 ---
 
@@ -263,7 +273,12 @@ JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew bundleRelease 
 - [ ] `versionCode` incrémenté dans `build.gradle`
 - [ ] `npm run check` → 0 erreur TypeScript
 - [ ] `npm test` → suite verte
+- [ ] `npm run build` + `npm run check:bundle` → verts
+- [ ] `npm run audit:i18n` → quatre locales alignées
+- [ ] `npm run cap:sync` → assets relatifs et complets
 - [ ] AAB buildé et signé par CI
-- [ ] Testé sur appareil physique (Galaxy Tab S8 ou équivalent)
+- [ ] Testé sur Galaxy A53/S23 ou appareils représentatifs du risque
 - [ ] Notes de version rédigées (FR + EN)
-- [ ] Screenshots à jour si nouvelles features visuelles
+- [ ] `README.md`, `docs/FEATURES.md` et fiche Store à jour si la promesse change
+- [ ] Screenshots à jour si nouvelles fonctions visuelles
+- [ ] Autorisations externes demandées séparément

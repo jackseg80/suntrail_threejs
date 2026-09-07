@@ -1,68 +1,113 @@
-# SunTrail 3D — Protocole de Test Complet (v5.57.0)
-**Récompense : 1 an d'abonnement Pro offert**
-**Durée estimée : 1h30 – 2h**
+# SunTrail 3D — Protocole de test complet (v5.88.0)
 
----
+> Durée indicative : 1 h 30 à 2 h hors marche terrain. Ce protocole couvre les fonctions actuelles
+> sans supprimer les données existantes. Les achats et actions de publication ne font pas partie du
+> test fonctionnel.
 
-Merci pour ton engagement ! Ce protocole couvre l'ensemble des fonctionnalités en détail.
+## Contexte à relever
 
-## ✅ Minimum requis pour l'abonnement annuel
-Teste ces 7 parties (nouveauté incluse) :
-1. Installation & Onboarding
-2. Navigation & Gestes
-3. Sélection visuelle de zone offline (🆕)
-4. Import GPX & Historique
-5. Timeline & Analyse Solaire
-6. Mode testeur Pro
-7. Test d'achat simulé
+- Appareil et version Android/navigateur :
+- Version SunTrail et `versionCode` :
+- Mode Free ou Pro :
+- Preset et 2D/3D :
+- Zone cartographique et source affichée :
+- Réseau : Wi-Fi, cellulaire, faible réseau ou avion :
+- Batterie et température de départ :
 
----
+## 1. Installation, reprise et onboarding
 
-## Partie 1 — Installation & Onboarding (10 min)
-- [ ] Tutoriel 6 slides complet.
-- [ ] Vérification du chargement (barre shimmer).
+- [ ] Mettre à jour sans désinstaller et vérifier que routes, traces, zones et packs restent présents.
+- [ ] Sur un profil neuf seulement, parcourir les trois écrans d'onboarding et tester Passer/Échap.
+- [ ] Vérifier la récupération sûre après mise en arrière-plan, rotation et retour au premier plan.
 
-## Partie 2 — Navigation & Gestes (15 min)
-- [ ] Pan, Zoom, Rotation, Tilt.
-- [ ] Double tap sommet (altitude cohérente ?).
-- [ ] Boussole (reset North).
+## 2. Navigation 2D/3D
 
-## Partie 3 — Sélection de zone Offline (🆕 v5.57.0) (15 min)
-- [ ] **Interaction** : Réglages → Télécharger Zone → rectangle vert.
-- [ ] **LOD Slider** : Teste la toolbar, les warnings (500/1000/2000 tuiles).
-- [ ] **Download** : Lance un téléchargement, vérifie la progression.
-- [ ] **Persistence** : Ferme l'app, mets-toi en mode avion, vérifie que la zone est lisible.
-- [ ] **Fly to** : Dans les réglages, clique sur la zone téléchargée → la carte doit y voler.
+- [ ] Tester pan à un doigt, pinch, rotation, tilt, double-tap et recentrage GPS.
+- [ ] Alterner plusieurs fois 2D/3D ; vérifier ombres, eau et météo au retour en 3D.
+- [ ] Zoomer/dézoomer rapidement ; vérifier absence de trou persistant, écran bleu ou blocage du
+      compteur de chargement.
+- [ ] Répéter en portrait et paysage, avec les zones sûres Android 15/16.
 
-## Partie 4 — Import GPX & Historique (v5.56.2) (15 min)
-- [ ] Importe un fichier `.gpx`.
-- [ ] Vérifie l'affichage du profil d'élévation et de la bande solaire.
-- [ ] Ferme l'app, rouvre-la : le tracé doit être dans l'**Historique** (Onglet Parcours).
+## 3. Explorer et données cartographiques
 
-## Partie 5 — Simulation Solaire & Analyse (15 min)
-- [ ] **Timeline** : Glisse l'heure, observe les ombres sur le relief et les forêts.
-- [ ] **Solar Probe** : Appuie long sur un point → vérifie azimut/élévation et heures de lever/coucher.
-- [ ] **Mode Hiker** (Pro) : Sur un tracé GPX, active l'ombre à l'heure d'arrivée estimée.
+- [ ] Rechercher une adresse, une localité et un sommet.
+- [ ] Ouvrir un POI et vérifier la cohérence de l'altitude/du nom disponible.
+- [ ] Activer/désactiver sentiers, pentes et bâtiments selon le niveau de détail.
+- [ ] Tester une frontière de pays : un repli mondial est préférable à une tuile blanche.
 
-## Partie 6 — Météo & Particules (10 min)
-- [ ] Ouvre le bulletin météo.
-- [ ] Vérifie que les **particules 3D** (pluie/neige) s'affichent si la météo l'indique.
-- [ ] Teste le bouton de rafraîchissement (🔄).
+## 4. Solaire, météo et outils
 
-## Partie 7 — Mode Testeur & Achat (10 min)
-- [ ] Active le mode Pro (Réglages → Avancés → 7 taps sur la version ou switch testeur).
-- [ ] Teste l'achat d'un plan Annuel (gratuit/fictif via Google Play).
-- [ ] Vérifie que le badge "PRO" apparaît dans les menus.
+- [ ] Déplacer la timeline sur 24 h et contrôler les ombres sur le relief.
+- [ ] Poser une sonde, vérifier lever/coucher, azimut, altitude et limites affichées.
+- [ ] Avec un parcours, contrôler le profil et l'analyse d'exposition sans confondre estimation et
+      observation terrain.
+- [ ] Ouvrir Météo, boussole, inclinomètre si Pro et SOS ; vérifier les états sans GPS/réseau.
 
----
+## 5. Préparer une route
 
-## 📱 Performance & Batterie
-- [ ] Navigue 15 min en mode 3D.
-- [ ] Batterie début/fin : ____% → ____%
-- [ ] Chauffe de l'appareil ? (Nulle / Légère / Forte)
+- [ ] Poser A/B par taps, ajouter/réordonner/supprimer un waypoint et inverser la route.
+- [ ] Tester un calcul ORS avec clé puis le repli OSRM ou l'erreur explicite sans réseau.
+- [ ] Vérifier distance, D+/D-, durée, effort, heure d'arrivée, lumière et difficulté.
+- [ ] Modifier le brouillon puis ouvrir une autre route : tester Sauvegarder, Remplacer et Annuler.
+- [ ] Sauvegarder, dupliquer, mettre en favori, renommer et supprimer uniquement une copie de test.
 
----
+## 6. Bibliothèque et traces
 
-## 📝 Ton ID Testeur
-Réglages → Système & Données → ID en bas.
-Envoie ce code avec ton rapport complet.
+- [ ] Importer un GPX avec suffisamment de points pour contrôler la fidélité et le profil.
+- [ ] Fermer complètement puis rouvrir : le GPX et la route préparée doivent rester disponibles.
+- [ ] En Free, ouvrir plusieurs parcours successivement sans perte d'archive.
+- [ ] En Pro, ajouter plusieurs traces à la carte, masquer les autres puis tout masquer.
+- [ ] Tester Renommer et Refaire ; une trace legacy approximative doit rester identifiée comme telle.
+- [ ] Tester l'export GPX en Pro. En Free, vérifier que le verrou intervient avant toute création de
+      fichier et que le parcours reste consultable.
+
+## 7. Guidage
+
+- [ ] Démarrer une route complète puis une route approximative avec confirmation.
+- [ ] Vérifier acquisition, sur-trace, pause/reprise, prochaine indication, restant, ETA et flèche.
+- [ ] Simuler seulement si c'est sûr un petit écart à la trace, puis un retour ; relever les délais
+      d'alerte sans inventer un résultat si le GPS est imprécis.
+- [ ] Vérifier qu'Arrêter Guidance ne coupe pas REC et qu'Arrêter REC ne coupe pas Guidance.
+- [ ] Sur Android, tester écran éteint, retour depuis notification et reprise après fermeture de
+      l'interface. Sur le Web, ne pas attendre de garantie arrière-plan.
+
+## 8. REC et finalisation
+
+- [ ] Enregistrer une courte marche avec écran actif puis écran éteint sur Android.
+- [ ] Vérifier durée, distance, allure/vitesse, D+/D-, altitude, précision et nombre de points.
+- [ ] Arrêter depuis l'interface, nommer, relancer et retrouver l'archive.
+- [ ] Faire un second REC jetable et choisir Ne pas enregistrer ; aucune ancienne archive ne doit
+      disparaître.
+- [ ] Si la notification Android propose STOP, vérifier le retour dans l'app et la même finalisation.
+
+## 9. Readiness et hors ligne
+
+- [ ] Ouvrir le rapport d'une route et vérifier les cinq sections indépendantes.
+- [ ] Confirmer que conditions/appareil restent inconnus sans preuve fraîche.
+- [ ] Télécharger un corridor court sur Wi-Fi, annuler un second essai puis reprendre.
+- [ ] En Free, vérifier la confirmation avant remplacement d'un corridor différent.
+- [ ] Télécharger une petite zone manuelle distincte du corridor.
+- [ ] En mode avion après relance complète, contrôler la carte, la route, le profil et le guidage
+      dans la couverture réellement mesurée. Noter tout résultat partiel.
+
+## 10. Free/Pro et robustesse
+
+- [ ] En Free : LOD plafonné à 14, une trace affichée, une zone et un corridor 1 km.
+- [ ] En Pro : LOD 18, satellite, calendrier, météo détaillée, inclinomètre et multi-affichage.
+- [ ] Vérifier qu'un changement de droit ne supprime, ne simplifie ni ne cache une archive locale.
+- [ ] Tester perte/retour réseau, rotation, mise en arrière-plan et faible batterie sans purger les
+      caches ni forcer l'arrêt du service.
+
+## 11. Compte rendu
+
+Pour chaque scénario, classer le résultat en réussi, échec reproductible, résultat partiel ou non
+testé. Joindre les étapes, l'heure, le contexte et les preuves. Distinguer clairement :
+
+- contrôle automatisé ;
+- observation sur appareil ;
+- comparaison chiffrée ;
+- impression utilisateur ;
+- hypothèse à reproduire.
+
+Utiliser [PROTOCOL_TEST_PERF_MOBILE.md](../PROTOCOL_TEST_PERF_MOBILE.md) pour toute conclusion de
+performance ou d'autonomie.

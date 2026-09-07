@@ -18,7 +18,7 @@
     },
     "track": {
         "title": "Tour",
-        "libraryScope": "Letzte Tracks: GPX-Importe und auf diesem Gerät aufgezeichnete Touren. Manuelle Routen werden noch nicht gespeichert.",
+        "libraryScope": "Ihre Routen zum Folgen und aufgezeichneten Aktivitäten, gemeinsam auf diesem Gerät.",
         "manual": {
             "title": "Manuelle Route"
         },
@@ -1224,8 +1224,10 @@
     },
     "guidance": {
         "title": "Routenführung",
-        "foregroundBeta": "Führung bei aktivem Bildschirm — interne Beta",
-        "foregroundLimit": "Funktioniert im Vordergrund, solange die App geöffnet bleibt. Keine Führung bei ausgeschaltetem Bildschirm oder Wiederaufnahme nach dem Schließen.",
+        "modeNative": "Android-Navigation aktiv",
+        "modeWeb": "Navigation im Vordergrund",
+        "nativeLimit": "Unter Android halten der Standortdienst und die dauerhafte Benachrichtigung die Navigation bei ausgeschaltetem Bildschirm oder nach dem Schließen der Oberfläche aktiv. Keine Sprachanweisungen und keine automatische Neuberechnung.",
+        "webLimit": "Im Web hängt die Navigation vom Browser ab und ist nur garantiert, solange die Seite aktiv bleibt. Keine native Benachrichtigung und keine Wiederaufnahme nach dem Schließen.",
         "remaining": "Verbleibend",
         "eta": "Ankunft",
         "progress": "Fortschritt",

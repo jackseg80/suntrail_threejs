@@ -1,77 +1,58 @@
-# SunTrail 3D — Protocole de Test Rapide (v5.57.0)
-**Récompense : 3 mois d'abonnement Pro offerts**
-**Durée estimée : 20-30 minutes**
+# SunTrail 3D — Protocole de test rapide (v5.88.0)
 
----
+> Durée indicative : 25 à 35 minutes. Ce contrôle ne remplace pas un essai terrain long.
+> Préserver les parcours, zones et packs déjà présents ; ne vider aucun stockage pour ce test.
 
-Merci de participer aux tests de SunTrail 3D ! Ce protocole couvre les fonctionnalités essentielles. Suis les étapes dans l'ordre et note ce qui fonctionne ou non.
+## 1. Premier écran et navigation
 
----
+- [ ] Installer ou mettre à jour l'application sans effacer ses données.
+- [ ] Au premier lancement uniquement, vérifier les trois écrans d'onboarding.
+- [ ] Vérifier les cinq destinations : Explorer, Préparer, Sortie, Bibliothèque et Plus.
+- [ ] Passer de 2D à 3D, déplacer, zoomer, tourner et incliner la carte.
+- [ ] Vérifier que la carte finit de se compléter après un déplacement rapide.
 
-## 1. Installation & Premier lancement
+## 2. Explorer et lumière
 
-- [ ] Installe l'application (APK ou via le lien Store)
-- [ ] Lance l'application, accepte les conditions, et parcours le tutoriel (6 slides).
-- [ ] Vérifie que la carte se charge (LOD 5 par défaut).
+- [ ] Rechercher un lieu puis un sommet et ouvrir un résultat.
+- [ ] Ouvrir la timeline solaire et déplacer l'heure.
+- [ ] Poser une sonde solaire sur la carte et vérifier altitude, azimut et lever/coucher.
+- [ ] Ouvrir Météo ; distinguer une donnée chargée d'un état indisponible.
 
----
+## 3. Préparer et sauvegarder
 
-## 2. Navigation 3D
+- [ ] Ouvrir Préparer et poser A puis B par deux taps simples.
+- [ ] Vérifier le calcul de route ou le message de repli/erreur réseau.
+- [ ] Contrôler distance, D+/D-, durée et difficulté ; une difficulté inconnue est acceptable si
+      elle est expliquée.
+- [ ] Nommer et sauvegarder la route, fermer l'application puis la retrouver dans Bibliothèque.
 
-- [ ] **Déplacer** la carte (1 doigt)
-- [ ] **Zoomer / Dézoomer** (2 doigts)
-- [ ] **Rotation** (2 doigts rotation)
-- [ ] **Incliner la vue** (2 doigts glissant verticalement)
-- [ ] **Double tap** sur un sommet ou point d'intérêt.
+## 4. Bibliothèque et GPX
 
----
+- [ ] Importer un petit fichier GPX et vérifier le tracé ainsi que le profil d'élévation.
+- [ ] Vérifier que routes « À suivre » et activités « Enregistré » sont réunies dans Mes parcours.
+- [ ] Ouvrir successivement deux parcours en Free : le second remplace l'affichage sans supprimer
+      le premier de la Bibliothèque.
+- [ ] Renommer une trace et vérifier qu'elle reste présente après relance.
 
-## 3. Boutons de contrôle (FAB)
+## 5. Guidage et REC
 
-- [ ] **Boussole** : Réoriente au Nord.
-- [ ] **Couches** : Change de style, active **Sentiers** et **Pentes** (zoome à LOD 11+).
-- [ ] **2D / 3D** : Bascule entre vue relief et vue plate.
-- [ ] **GPS** : Centre sur ta position.
+- [ ] Démarrer le guidage d'une route : prochaine indication, distance, restant, ETA et écart sont
+      visibles.
+- [ ] Démarrer REC pendant le guidage et vérifier les deux résumés distincts dans Sortie.
+- [ ] Sur Android, éteindre brièvement l'écran : la notification doit rester présente et la session
+      doit être restaurée à la réouverture.
+- [ ] Arrêter REC, lui donner un nom et vérifier l'archive dans Bibliothèque.
+- [ ] Arrêter ensuite le guidage ; aucun service/indicateur terrain ne doit rester actif.
 
----
+## 6. Hors ligne
 
-## 4. Timeline solaire (v5.56.18)
+- [ ] Télécharger une petite zone ou un corridor de route sur Wi-Fi.
+- [ ] Vérifier la progression, l'état final et tout avertissement de couverture partielle.
+- [ ] Relancer en mode avion et contrôler uniquement la zone réellement téléchargée.
+- [ ] Vérifier que la route reste visible et suivable même si un fond manque partiellement.
 
-- [ ] Ouvre la **☀️ Timeline**.
-- [ ] Glisse le curseur pour voir l'évolution des ombres sur le terrain.
-- [ ] Vérifie l'affichage de la **Bande Solaire** (or/bleu) en bas de l'écran.
+## 7. Rapport
 
----
-
-## 5. Offline & Sélection de Zone (NOUVEAU v5.57.0) 🆕
-
-- [ ] Va dans **Réglages → Système & Données**.
-- [ ] Appuie sur **"Telecharger Zone"**.
-- [ ] La feuille se ferme et un **rectangle vert** apparaît : déplace/zoome la carte pour choisir ta zone.
-- [ ] Dans la toolbar flottante, joue avec le **Slider LOD** (5→18).
-- [ ] Vérifie que le compteur de tuiles et la taille estimée se mettent à jour.
-- [ ] Appuie sur **"Telecharger"** (choisis une petite zone < 100 tuiles).
-- [ ] Une fois fini, vérifie que la zone apparaît dans la liste des zones en cache dans les Réglages.
-
----
-
-## 6. Recherche & SOS
-
-- [ ] **Recherche** : Tape "Chamonix", vérifie que la carte y vole.
-- [ ] **Bouton SOS** : Appuie sur 🆘, vérifie l'affichage de tes coordonnées GPS.
-
----
-
-## 7. Performance & Batterie
-
-- [ ] Navigue librement 5 min.
-- [ ] Note ta batterie : ____% → ____%
-- [ ] L'app est-elle fluide ? Oui / Non
-
----
-
-## 8. Rapport & Récompense
-
-1. Note globale : /5
-2. Ton ID Testeur (Réglages → Système → en bas).
-3. Envoie tes retours pour activer tes **3 mois Pro**.
+Noter l'appareil, la version Android, le mode Free/Pro, le preset, la zone, le réseau et l'heure.
+Pour chaque échec, conserver les étapes exactes, une capture et préciser si les données locales ont
+été préservées. Ne conclure ni à la performance ni à l'autonomie à partir de ce seul passage court.

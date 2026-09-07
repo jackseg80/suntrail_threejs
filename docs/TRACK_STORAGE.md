@@ -1,7 +1,7 @@
-# Stockage des traces pleine fidélité (v5.87.0)
+# Stockage des traces pleine fidélité (livré en v5.87, actif en v5.88)
 
-> État au 2026-09-02 : version source `5.87.0` / Android `907`, clôturée et publiée sur GitHub
-> avec son AAB signé. Aucun upload Play n'est inclus et 907 n'est pas déclaré consommé sur Play.
+> Contrat toujours actif dans la version source 5.88.0. L'état de publication historique de 5.87
+> est conservé dans `CHANGELOG.md` et n'affecte pas les garanties de stockage décrites ici.
 
 ## Responsabilités séparées
 

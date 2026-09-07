@@ -1,15 +1,18 @@
-# SunTrail 3D — Stratégie de Monétisation (v5.88.0)
+# SunTrail 3D — Stratégie de monétisation (v5.88.0)
 
-> Objectif : Offrir une valeur alpine gratuite indispensable (sécurité) tout en incitant à l'abonnement Pro pour l'analyse et le confort.
+> Objectif : offrir une valeur terrain gratuite indispensable tout en réservant à Pro les
+> fonctions d'analyse, d'export et de confort. [FEATURES.md](FEATURES.md) fait foi pour la présence
+> d'une fonction ; ce document fait foi pour son droit Free/Pro.
 
 ---
 
 ## 1. Modèle Freemium (v5.57.0 — Hybride)
 
-SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offerte à tous, l'expertise est réservée aux abonnés Pro.
+SunTrail utilise un modèle **Freemium avec abonnement ou achat à vie**. La sécurité essentielle
+reste offerte à tous ; Pro ajoute l'analyse et le confort.
 
-**Passage au Trial Natif (v5.53.7)**
-*   **Transition** : Suppression des trials locaux. Utilisation exclusive des essais gratuits natifs RevenueCat/Stores (7 jours avec CB).
+Les essais éventuels sont configurés dans le Store/RevenueCat. Aucun trial local ne doit être
+inventé ni documenté comme actif sans vérification de l'offering courant.
 
 ### 📊 Comparaison Free / Pro (Gate Logic)
 
@@ -21,12 +24,11 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 | **Bibliothèque locale préparée** | **Illimitée selon stockage appareil** | **Illimitée** | `RouteRepository` (v5.83) |
 | **Archives REC/import locales** | **Toutes accessibles, pleine fidélité, une à la fois** | **Identique + multi-affichage/export** | `TrackRepository` (v5.87) |
 | **Export fichier GPX** | Bloqué avant Blob et écriture | **Documents / téléchargement** | `recordingService.ts` |
-| **Guidage essentiel** | Indication, distance, écart, restant, ETA et alertes sécurité | **Identique** | `GuidanceForegroundService` |
+| **Guidage essentiel** | Indication, distance, écart, restant, ETA et alertes sécurité | **Identique** | `GuidanceForegroundService`, service Android |
 | **Solaire** | Jour actuel (24h) | **Calendrier complet** | `TimelineComponent.ts` |
 | **Cartographie** | SwissTopo / IGN / basemap.at / BKG / IGN España / Kartverket / OSM | **Satellite HD** | `terrain.ts` |
 | **Mode Hors-ligne** | 1 zone gratuite (Sélection visuelle) | **Zones illimitées** | `ZoneSelector.ts` |
-| **Corridor de la route active** | **1 corridor remplaçable, largeur 1 km** | **Corridors multiples, 0,5/1/2 km** | prévu v5.86 |
-| **Synchronisation cloud** | 5 routes choisies en écriture | **Illimitée** | prévue au plus tôt en v6.2, après décision active |
+| **Corridor de la route active** | **1 corridor remplaçable, largeur 1 km** | **Corridors multiples, 0,5/1/2 km** | `RouteCorridorInstallService` |
 | **Inclinomètre** | — | **Numérique (° / %)** | `InclinometerWidget.ts`|
 | **Alertes Sécurité** | **Toutes (Avalanche, etc.)** | **Toutes** | (FREE) |
 | **Analyse Trail** | REC : durée réelle, distance, allure, D+, altitude, D−, GPS | **Analyses avancées lorsqu'elles existent** | `outingDashboard.ts` |
@@ -39,11 +41,15 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 
 ---
 
-## 2. Tarification & Produits (RevenueCat)
+## 2. Produits RevenueCat
 
-- **Abonnement Annuel** : **€29.99/an** (inclut Trial 7 jours gratuits)
-- **Abonnement Mensuel** : **€3.99/mois**
-- **Achat Unique (Lifetime)** : **€99.99** (One-time purchase)
+- abonnement mensuel ;
+- abonnement annuel ;
+- achat unique à vie.
+
+Les prix, devises, périodes d'essai et disponibilités sont lus depuis l'offering RevenueCat/Store.
+Ils peuvent varier par pays et dans le temps ; ne pas recopier une ancienne valeur de ce document
+dans l'interface ou la fiche Play sans vérification live.
 
 ### Implémentation (`iapService.ts`)
 - **Entitlement** : `SunTrail 3D Pro`
@@ -68,11 +74,11 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 - **D7 — Corridor sécurité séparé** : un utilisateur Free dispose d'un corridor actif de
   1 km, remplaçable après confirmation, en plus de sa zone manuelle. Pro conserve plusieurs
   corridors et choisit la largeur. Aucun téléchargement automatique sur réseau mobile.
-- **D8 — Downgrade cloud sans suppression** : après passage Pro→Free, aucune route n'est
+- **D8 — Futur compte cloud (v6.2, non actif)** : après passage Pro→Free, aucune route ne devra être
   supprimée. L'utilisateur choisit jusqu'à cinq routes synchronisées en écriture ; les autres
   restent lisibles/téléchargeables et les modifications locales restent locales jusqu'à libération
   d'un slot ou retour Pro.
-- **D9 — Identité RevenueCat** : Android doit appeler `Purchases.logIn` depuis l'identité
+- **D9 — Future identité RevenueCat (v6.2, non active)** : Android devra appeler `Purchases.logIn` depuis l'identité
   anonyme et vérifier le `CustomerInfo` après fusion. Le projet RevenueCat doit utiliser le
   comportement de transfert adapté aux comptes optionnels. Le web doit disposer d'un flux de
   liaison/restauration testé ; recréer le SDK avec un nouvel ID n'est pas considéré comme une fusion.
@@ -100,13 +106,13 @@ SunTrail utilise un modèle **Freemium avec abonnement**. La sécurité est offe
 
 ---
 
-## 4. Analyse Concurrentielle (Benchmark 2026)
+## 4. Éléments futurs hors contrat actuel
 
-| App | Prix Annuel | Point Fort | Point Faible (vs SunTrail) |
-|-----|-------------|------------|----------------------------|
-| **Iphigénie** | €29.99 | Cartes IGN 25k | Pas de 3D, pas de solaire |
-| **Outdooractive Pro**| €29.99 | Rendu 3D photo | Pas de simulation solaire |
-| **AllTrails Plus** | $35.99 | Communauté | 3D limitée, pas de solaire |
-| **Komoot Premium** | €59.99 | Guidage vocal | Prix élevé, pas de 3D |
+Le compte optionnel et la synchronisation PC–Android sont planifiés au plus tôt en v6.2. Les
+propositions de cinq routes cloud Free, sync Pro illimitée et règles de downgrade restent des
+décisions de conception futures ; elles ne doivent apparaître ni dans la matrice actuelle, ni dans
+la fiche Store, ni dans l'interface 5.88.
 
-**Positionnement** : SunTrail est la seule app combinant **3D Haute Performance + Données Officielles + Simulation Solaire** au prix standard de marché de €29.99.
+Les comparaisons concurrentielles et tarifaires vieillissent rapidement. Elles doivent être
+recherchées et datées au moment d'une décision marketing, à partir des pages officielles, plutôt
+que maintenues comme vérité produit dans ce dépôt.

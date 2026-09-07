@@ -18,7 +18,7 @@
     },
     "track": {
         "title": "Track",
-        "libraryScope": "Recent tracks: GPX imports and outings recorded on this device. Manual routes are not saved yet.",
+        "libraryScope": "Your routes to follow and recorded activities, together on this device.",
         "manual": {
             "title": "Manual route"
         },
@@ -1225,8 +1225,10 @@
     },
     "guidance": {
         "title": "Route guidance",
-        "foregroundBeta": "Screen-on guidance — internal beta",
-        "foregroundLimit": "Works in the foreground while the app stays open. No screen-off guidance or recovery after closing.",
+        "modeNative": "Android guidance active",
+        "modeWeb": "Foreground guidance",
+        "nativeLimit": "On Android, the location service and persistent notification keep guidance running with the screen off or after the interface closes. No voice instructions or automatic rerouting.",
+        "webLimit": "On the Web, guidance depends on the browser and is guaranteed only while the page stays active. No native notification or recovery after closing.",
         "remaining": "Remaining",
         "eta": "Arrival",
         "progress": "Progress",

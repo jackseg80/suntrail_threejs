@@ -1,7 +1,7 @@
-# AI Architecture Guide (v5.88.0 — stabilisation performance)
+# AI Architecture Guide (v5.88.0)
 
-> Référence des services locaux v5.84 à v5.87. La release v5.87 est publiée sur GitHub ; aucun
-> téléversement ni déploiement Play n'est induit par ce document.
+> Référence de l'architecture active, incluant les lots 5.83 à 5.88. Inventaire fonctionnel :
+> [FEATURES.md](FEATURES.md).
 
 This document maps the core reactive logic and rendering systems to help AI agents understand how modules interact.
 
@@ -23,7 +23,7 @@ To improve testability and keep UI components lean, business logic is extracted 
 | `TrackRepository` | Sole IndexedDB access for full-fidelity REC/import archives; injected `IDBFactory`, atomic chunk replacement and resumable legacy migration. | `list`, `get`, `put`, `rename`, `delete`, `close` |
 | `trackService` | UI-facing orchestration for migration, caching, durable REC/import archival and typed storage errors. | `initialize`, `archiveImport`, `archiveRecording`, `rename`, `delete` |
 | `GuidanceEngine` | Pure polyline projection, robust progress, ETA/cross-track/bearing and state hysteresis. No DOM/Three.js. | `start`, `update`, `tick`, `pause`, `resume`, `stop` |
-| `GuidanceForegroundService` | Foreground UI orchestration over the existing `state.userLocation` stream; REC remains independent. | `start`, `pause`, `resume`, `stop` |
+| `GuidanceForegroundService` | Shared guidance UI; selects native Android guidance or the TypeScript foreground fallback. REC remains independent. | `start`, `recoverNativeSession`, `pause`, `resume`, `stop` |
 | `routeReadiness` | Pure layered readiness report; local route/light remain independent from optional offline, network and Android evidence. | `buildRouteReadinessReport` |
 | `routeCorridor` | Pure geometry-to-tile planning plus bounded local coverage measurement; no network or download side effect. | `buildRouteCorridorPlan`, `measureCorridorCoverage` |
 | `RouteCorridorReadinessService` | Serializes per-route measurements and invalidates short-lived evidence when route/map/local-pack context changes. | `getInput`, `shouldMeasure`, `measure` |

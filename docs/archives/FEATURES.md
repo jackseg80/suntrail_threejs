@@ -1,5 +1,8 @@
 # 📋 Fonctionnalités de SunTrail 3D (v5.53.2)
 
+> **Archive historique.** Ce document est figé et ne décrit plus le produit actuel. Utiliser
+> [../FEATURES.md](../FEATURES.md) pour la version 5.88.0.
+
 Ce document dresse la liste exhaustive des capacités techniques et fonctionnelles du moteur SunTrail.
 
 ---

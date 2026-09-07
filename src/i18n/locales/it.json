@@ -18,7 +18,7 @@
     },
     "track": {
         "title": "Percorso",
-        "libraryScope": "Tracce recenti: importazioni GPX e uscite registrate su questo dispositivo. Gli itinerari manuali non vengono ancora salvati.",
+        "libraryScope": "I tuoi itinerari da seguire e le attività registrate, riuniti su questo dispositivo.",
         "manual": {
             "title": "Itinerario manuale"
         },
@@ -1223,8 +1223,10 @@
     },
     "guidance": {
         "title": "Guida del percorso",
-        "foregroundBeta": "Guida con schermo acceso — beta interna",
-        "foregroundLimit": "Funziona in primo piano finché l’app resta aperta. Nessuna guida a schermo spento o ripresa dopo la chiusura.",
+        "modeNative": "Guida Android attiva",
+        "modeWeb": "Guida in primo piano",
+        "nativeLimit": "Su Android, il servizio di localizzazione e la notifica persistente mantengono la guida con lo schermo spento o dopo la chiusura dell’interfaccia. Nessuna istruzione vocale o ricalcolo automatico.",
+        "webLimit": "Sul Web, la guida dipende dal browser ed è garantita solo mentre la pagina resta attiva. Nessuna notifica nativa o ripresa dopo la chiusura.",
         "remaining": "Rimanente",
         "eta": "Arrivo",
         "progress": "Avanzamento",

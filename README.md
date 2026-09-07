@@ -1,97 +1,132 @@
-# ⛰️ SunTrail 3D
+# SunTrail 3D
 
-**v5.84.0 — jalon interne clôturé** · **MIT + Commons Clause**
+**Version source 5.88.0 · Android 908 · MIT avec Commons Clause**
 
-L'application de randonnée 3D mobile-first avec simulation solaire avancée. Terrain
-ultra-réaliste, ombres portées dynamiques sur le relief, les forêts et les bâtiments,
-GPS haute précision, analyse topographique et suivi de trace hors ligne au premier plan. Disponible sur
-**Android** (Capacitor) et **Web** (Three.js).
+SunTrail est une application de randonnée mobile-first qui combine cartographie 2D/3D,
+relief, lumière solaire, préparation d'itinéraires et suivi GPS. Android est la plateforme
+terrain principale ; la version Web permet aussi d'explorer, préparer et analyser un parcours.
 
-## Pourquoi SunTrail 3D ?
+La version 5.88.0 consolide les fonctions livrées depuis 5.83 : itinéraires préparés,
+guidage Android, vérification avant départ, corridors hors ligne, tableau de bord Sortie et
+bibliothèque de traces pleine fidélité. Elle stabilise également le suivi 3D, le mode 2D, les
+transitions de tuiles, le cache et l'arrêt d'un REC.
 
-SunTrail n'est pas une simple carte 2D inclinée. C'est un véritable moteur de terrain 3D
-WebGL conçu pour la montagne, pensé pour être simple pour le débutant et complet pour le
-randonneur avancé.
+## Ce que fait l'application aujourd'hui
 
-### 🌑 Simulation Solaire & Ombre (Unique)
+- **Explorer le terrain** : carte 2D ou relief 3D, gestes tactiles, recherche de lieux et de
+  sommets, points d'intérêt, sentiers, pentes, bâtiments, végétation et hydrologie selon les
+  données disponibles.
+- **Comprendre la lumière** : ombres solaires sur le relief, timeline sur 24 h, sonde solaire,
+  profil d'élévation et analyse de l'exposition d'un parcours.
+- **Préparer une sortie** : ajout explicite de points A/B, calcul ORS avec repli OSRM,
+  distance, dénivelé, durée, effort, difficulté documentée et sauvegarde locale de
+  l'itinéraire.
+- **Retrouver ses parcours** : Bibliothèque unique pour les itinéraires « À suivre » et les
+  activités « Enregistré ». Imports GPX et REC sont archivés localement avec leur géométrie
+  complète.
+- **Suivre une route** : progression, prochaine indication, distance restante, ETA, écart à la
+  trace, alertes hors trace/arrivée, pause et reprise. Sur Android, un service natif maintient
+  le guidage avec notification lorsque l'écran est éteint ou que l'interface est fermée.
+- **Enregistrer un REC** : GPS Android dans un processus séparé, modes REC seul, guidage seul
+  ou combiné, récupération après interruption et finalisation durable avant nettoyage des
+  points natifs.
+- **Préparer le hors-ligne** : zones manuelles, packs PMTiles et corridor associé à une route.
+  L'application mesure la couverture locale réellement lisible et signale les résultats
+  partiels ; elle ne promet pas une couverture hors ligne en dehors des données téléchargées.
+- **Consulter les conditions et outils terrain** : météo Open-Meteo, particules pluie/neige,
+  boussole, inclinomètre Pro, profil topographique et fiche SOS.
 
-Le cœur de SunTrail est son **module d'analyse solaire**. Contrairement aux autres
-applications, SunTrail calcule en temps réel les **ombres portées** sur le relief réel.
+La liste détaillée, les limites et les preuves dans le code sont dans
+[docs/FEATURES.md](docs/FEATURES.md).
 
-- **Forêts & Bâtiments** : Les ombres sont projetées non seulement sur le sol, mais aussi
-  sur les massifs forestiers et les structures 3D pour un réalisme saisissant.
-- **Analyse Prédictive** : Voyez exactement quand une face rocheuse, un sentier ou un
-  bivouac passera à l'ombre.
-- **Calendrier Solaire** : Simulez l'éclairage pour n'importe quelle date de l'année
-  (passée ou future) pour planifier vos sorties en fonction de l'ensoleillement.
+## Android et Web
 
-### 🏔️ Analyse Topographique Avancée
+| Capacité | Android | Web |
+| :--- | :---: | :---: |
+| Exploration 2D/3D, solaire, météo, préparation et bibliothèque locale | Oui | Oui |
+| Import GPX et stockage local des parcours | Oui | Oui |
+| REC et guidage avec l'application visible | Oui | Selon les garanties du navigateur |
+| REC/guidage écran éteint, notification et reprise native | Oui | Non |
+| Export GPX | Téléchargements Android | Téléchargement navigateur |
 
-- **Profil Interactif** : Graphique d'élévation dynamique avec marqueur 3D synchronisé.
-- **Stats de Précision** : D+/D-, pente en temps réel, VAM (Vitesse Ascensionnelle
-  Moyenne) et cotations de difficulté.
-- **Inclinomètre Pro** : Un véritable instrument numérique pour mesurer les pentes sur le
-  terrain et anticiper les zones de danger.
+Aucun compte n'est requis. Le compte optionnel et la synchronisation PC–Android sont planifiés
+pour une version ultérieure et sont désactivés dans la version actuelle.
 
-## Fonctionnalités
+## Free et Pro
 
-- **Moteur 3D natif** : LOD adaptatif (zoom 6→18) avec une fluidité exceptionnelle.
-- **Préparation de randonnées** : mode Planifier explicite, waypoints, sauvegarde locale
-  des itinéraires préparés, difficulté/effort et heure d'arrivée estimée.
-- **Multi-tracés GPX** : Importez et analysez plusieurs parcours simultanément.
-- **Mode Offline Complet** : Téléchargement de zones et support des fichiers PMTiles pour
-  une utilisation sans réseau.
-- **Météo Montagne** : Station météo intégrée avec particules de pluie et neige gérées par
-  shader GPU.
-- **Enregistrement GPS** : Service de suivi robuste en arrière-plan avec protection contre
-  les crashs système.
-- **Suivi écran actif (bêta interne)** : progression, distance/ETA restantes, écart et prochaine
-  indication tant que l'application reste ouverte. Aucune promesse écran éteint ou après fermeture.
+| Gratuit | Pro |
+| :--- | :--- |
+| Carte jusqu'au niveau de détail 14 | Niveau de détail jusqu'à 18 et satellite |
+| Solaire pour le jour courant | Calendrier solaire complet |
+| Toutes les routes et traces locales, une affichée à la fois | Superposition jusqu'à 10 calques |
+| REC, nom, résumé et guidage essentiel | Export GPX et analyses avancées disponibles |
+| Une zone hors ligne et un corridor remplaçable de 1 km | Zones/corridors multiples et largeurs 0,5/1/2 km |
+| Outils de sécurité essentiels | Météo détaillée et inclinomètre |
 
-> **Note sur la disponibilité** : Le projet est en constante évolution. Certaines
-> fonctionnalités avancées (comme la précision extrême des bâtiments ou la signalétique
-> spécifique) peuvent varier d'un pays à l'autre selon la disponibilité des données
-> sources (SwissTopo, IGN, MapTiler). Nous travaillons chaque jour pour étendre la
-> couverture HD.
+La matrice contractuelle complète est maintenue dans
+[docs/MONETIZATION.md](docs/MONETIZATION.md). Les droits Pro et les flags de déploiement sont
+deux mécanismes distincts.
 
-## Marchés Prioritaires
+## Cartographie et couverture
 
-🇨🇭 **Suisse** · 🇫🇷 **France** · 🇦🇹 **Autriche** · 🇩🇪 **Allemagne** · 🇪🇸 **Espagne** · 🇮🇹 **Italie** · 🌍 **Monde**
+SunTrail sélectionne ses sources selon la position : swisstopo (CH), IGN (FR), basemap.at
+(AT), BKG (DE), IGN España (ES), Kartverket (NO), avec OpenTopoMap/MapTiler/OSM en repli.
+La précision, le niveau de détail et la disponibilité des bâtiments, sentiers ou données
+satellite varient donc selon le pays, la source, la connexion et les données téléchargées.
 
-## Modèle Freemium
+Le catalogue embarqué contient actuellement les packs Suisse HD, Alpes françaises HD et
+Autriche HD. Un catalogue distant peut compléter ou remplacer cette liste.
 
-| Tier Gratuit | Tier Pro |
-|---|---|
-| Carte topo (Auto) (CH+FR+IT) | LOD 18 + Satellite HD + Bâtiments 3D |
-| Simulation solaire (jour actuel) | Calendrier illimité (dates passées/futures) |
-| Ombre portée sur le relief | **Ombres sur forêts et bâtiments 3D** |
-| 1 tracé GPX actif + REC illimité | Multi-tracés + export GPX + stats avancées |
-| Bibliothèque de routes préparées illimitée | Inclinomètre numérique Pro |
-| Alertes sécurité | Analyse solaire complète (Azimut, Élévation) |
-| Offline 1 zone + 1 corridor 1 km | Offline illimité + corridors multiples + PMTiles |
+## Architecture
 
-## Stack technique
+- Three.js 0.184 et WebGL pour le rendu cartographique
+- TypeScript 6 en mode strict, Vite 8 et PWA Workbox
+- Capacitor 8 et service Android Java/Room pour REC et guidage natifs
+- IndexedDB pour les itinéraires, traces et manifestes de corridors
+- CacheStorage et OPFS/PMTiles pour les données cartographiques locales
+- RevenueCat pour les droits Pro
+- Vitest et Playwright pour les tests
 
-Three.js r184 · TypeScript 6 (strict) · Vite 8 · Capacitor 8 · RevenueCat · Supabase ·
-Vitest · Playwright (E2E)
+Le dépôt est multi-page : `index.html` est la vitrine, `app.html` l'application, et les pages
+de connexion/achat restent présentes comme infrastructure désactivée tant que le compte et la
+liaison Web ne sont pas remis en service.
 
-## Ressources & Médias
+## Installation locale
 
-- 📺 **Chaîne YouTube Officielle** : [@SunTrail3D](https://www.youtube.com/@SunTrail3D) —
-  Démonstrations vidéo des fonctionnalités (Solaire, Inclinomètre, 3D).
-
-## Installation & Dev
+Prérequis : Node.js compatible avec les dépendances verrouillées dans `package-lock.json`.
 
 ```bash
-npm install
-npm run dev        # Serveur dev Vite (HMR)
-npm test           # 1551 tests unitaires
-npm run check      # TypeScript strict + lint + format
-npm run test:e2e:smoke  # Smoke E2E Playwright
-npm run deploy     # check + build + cap sync
+npm ci
+Copy-Item .env.example .env
+npm run dev
 ```
+
+`VITE_MAPTILER_KEY` améliore la couverture cartographique. Les clés RevenueCat sont nécessaires
+pour tester les achats ; les variables Supabase ne concernent que l'infrastructure de compte
+actuellement désactivée.
+
+Commandes principales :
+
+```bash
+npm run check            # TypeScript, format et lint
+npm test                 # tests unitaires et d'intégration
+npm run test:e2e:smoke   # parcours Chromium essentiels
+npm run build            # build Web
+npm run cap:sync         # build Capacitor, contrôle des assets et sync Android
+```
+
+`npm run deploy` prépare et synchronise les assets Android ; cette commande ne publie rien sur
+Google Play. Le workflow de version et de publication est décrit dans
+[docs/RELEASE.md](docs/RELEASE.md).
+
+## Documentation
+
+L'index des documents actifs, des spécifications de version et des archives se trouve dans
+[docs/README.md](docs/README.md). Pour contribuer, commencer par [CLAUDE.md](CLAUDE.md), qui
+contient les règles de travail et l'état de release.
 
 ## Licence
 
-MIT + Commons Clause — code source disponible pour étude et usage personnel.
-Commercialisation interdite. Voir [LICENSE](./LICENSE).
+Le code est distribué sous licence MIT avec Commons Clause : lecture, étude, modification et
+distribution non commerciale sont permises ; la vente du logiciel ou d'un service dont la valeur
+provient substantiellement de SunTrail ne l'est pas. Voir [LICENSE](LICENSE).

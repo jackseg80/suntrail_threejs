@@ -1,7 +1,7 @@
 # SunTrail v5.85 — Guidage Android natif
 
-> État au 2026-08-13 : v5.85.0 clôturée selon confirmation du propriétaire ; optimisations
-> v5.85.1 implémentées dans le worktree. Le flag `nativeGuidance` reste désactivé par défaut.
+> Socle livré en v5.85 et utilisé dans la version source 5.88.0. Le flag `nativeGuidance` est
+> activé par défaut sur Android ; le moteur TypeScript reste le fallback Web ou de désactivation.
 
 ## Architecture et invariants
 
