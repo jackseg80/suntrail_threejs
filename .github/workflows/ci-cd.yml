@@ -57,7 +57,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - name: Disable unrelated Google Chrome apt source
+        shell: bash
+        run: |
+          # The hosted image does not need this repository for Playwright's Chromium.
+          # Removing it prevents stale Chrome metadata from breaking apt update.
+          sudo rm -f \
+            /etc/apt/sources.list.d/google-chrome.list \
+            /etc/apt/sources.list.d/google-chrome.list.save \
+            /etc/apt/sources.list.d/google-chrome.sources
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
       - run: npm run test:e2e:smoke
         env:
           # Valeurs inertes : les scénarios E2E mockent l'authentification si nécessaire.
