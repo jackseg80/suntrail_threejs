@@ -1,15 +1,15 @@
 # SunTrail — Roadmap produit révisée (version source v5.89.0)
 
-> Révision produit : 2026-09-09. v5.89.0 est validée comme candidate locale ; commit, tag, push,
-> release GitHub et éventuelle publication Play restent séparés.
+> Révision produit : 2026-09-09. v5.89.0 / Android 909 est publiée sur GitHub avec son AAB signé
+> et visible dans Play Console. Le statut de diffusion Play reste géré séparément.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
 > Inventaire des fonctions réellement actives : [docs/FEATURES.md](docs/FEATURES.md).
 
-> Décision du 2026-09-08 : insérer [v5.89 — évaluation de l'architecture cartographique](docs/plans/V5_89_MAP_ARCHITECTURE_EVALUATION.md)
-> avant les nouvelles fonctions. Mesurer le chargement froid/local/chaud, les presets et la mémoire
-> avant de décider de conserver ou remplacer le moteur. Les lots experts/lumière ci-dessous sont
+> Décision clôturée le 2026-09-09 : [v5.89 — évaluation de l'architecture cartographique](docs/plans/V5_89_MAP_ARCHITECTURE_EVALUATION.md)
+> a mesuré le chargement froid/local/chaud, les presets et la mémoire. Three.js/WebGL est conservé ;
+> le pipeline couleur d'abord et les caches bornés corrigent le goulot mesuré. Les lots experts/lumière sont
 > des périmètres à redistribuer en 5.90+ après bilan ; leurs anciens numéros 6.0/6.1 ne sont plus
 > des engagements de livraison. Une future 6.0 doit correspondre à un saut d'expérience démontré,
 > avec ou sans WebGPU. Le compte/sync reste différé, sans nouvelle date ni version engagée.
@@ -23,7 +23,7 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-09-06
+## État réel au 2026-09-09
 
 - **v5.86.0** est publiée sur GitHub et son AAB Android **904** a déjà été importé dans Google
   Play ; ce `versionCode` est consommé.
@@ -49,6 +49,12 @@ heure de passage et conditions.
   coût du mode 2D, cache et transitions de tuiles, préchargement, indicateur de chargement et
   finalisation REC. Les essais sur appareils et la comparaison S23/Garmin sont positifs ; le
   contrôle long en faible réseau reste un suivi post-release. Aucun upload Play n'est inclus.
+- **v5.89.0** / Android **909** clôt l'optimisation du pipeline cartographique : couleur affichée
+  sans attendre le relief en 2D, réutilisation des textures au retour 3D, préchargement et caches
+  bornés selon le preset et la mémoire. Les tests A53/S23 en balade sont positifs ; Tab S8 et S7
+  ont passé les contrôles courts prévus. La release GitHub et l'AAB signé sont publiés, et 909 est
+  visible dans Play Console. L'audit R8 complémentaire est reporté à 5.90+ : les scores 38–39 %
+  dépassent le seuil annoncé et ne justifient pas seuls une 5.89.1.
 - Après comparaison Komoot/Garmin, v5.84 inclut la prochaine indication et sa distance au sein
   du moteur foreground, sans étendre la promesse aux fonctions natives/background de v5.85.
 
@@ -66,7 +72,7 @@ heure de passage et conditions.
 | **v5.86.2** | Lire l'activité en cours sans confondre Sortie et Bibliothèque | Tableau de bord contextuel, import déplacé, promesse Free/Pro honnête |
 | **v5.87.0** | Conserver des traces pleine fidélité sans apparition/disparition implicite | `TrackRepository`, migration et règles de capacité non destructives |
 | **v5.88.0** | Assainir la base avant v6 et garder le mode combiné fluide sur A53 | Audit global, dépendances, baseline mesurée et coûts croissants bornés sans perte |
-| **v5.89.0 — candidate locale** | Décider de l'architecture sur preuve | Pipeline couleur d'abord, promotion 2D→3D et caches bornés ; Three.js/WebGL conservé |
+| **v5.89.0 — clôturée** | Décider de l'architecture sur preuve | Pipeline couleur d'abord, promotion 2D→3D et caches bornés ; Three.js/WebGL conservé |
 | **5.90+ — lot expert, ex-v6.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition |
 | **5.90+ — lot lumière, ex-v6.1** | Choisir plus facilement le bon moment | Lumière utile : soleil, ombre, azimuts et lecture des conditions, sans nouveau compte |
 | **Compte/sync — reporté, ex-v6.2** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |

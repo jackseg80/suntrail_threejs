@@ -1,8 +1,8 @@
-# SunTrail — Plan d'évolution produit révisé v5.82 → v6.2
+# SunTrail — Plan d'évolution produit révisé v5.82 → 5.90+
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
-> Révision : 2026-09-05 après publication GitHub de v5.87.0 / Android 907 et ouverture d'une passe
-> de stabilisation v5.88 fondée sur un constat d'utilisation A53. Les états de release
+> Révision : 2026-09-09 après publication GitHub de v5.89.0 / Android 909 et clôture de la phase
+> d'optimisation cartographique. Les états de release
 > détaillés font foi dans `ROADMAP.md` ; les sections historiques ci-dessous restent une trace,
 > pas une autorisation de publication.
 
@@ -11,13 +11,15 @@
 ```text
 v5.82 → v5.87 baseline locale terrain, offline et traces pleine fidélité ✓
    ↓
-v5.88 audit global et stabilisation mesurée du mode 3D + Guidance + REC sur A53
+v5.88 audit global et stabilisation mesurée du mode 3D + Guidance + REC sur A53 ✓
    ↓
-v6.0 outils experts et finition professionnelle locale
+v5.89 pipeline cartographique, mémoire et décision Three.js/WebGL ✓
    ↓
-v6.1 lumière utile et préparation photo sobre
+5.90+ outils experts et finition professionnelle locale
    ↓
-v6.2 compte optionnel + synchronisation — reportée, dernier lot planifié
+5.90+ lumière utile et préparation photo sobre
+   ↓
+compte optionnel + synchronisation — reportée, dernier lot planifié
 ```
 
 Chaque version a une valeur autonome. La synchronisation est un confort reporté : elle ne bloque ni
@@ -293,8 +295,11 @@ cible initiale ≤ +1 point de batterie/heure sur A53.
 5. [v5.86 readiness/offline](prompts/V5_86_READINESS_OFFLINE.md)
 6. [v5.87 dépôt de traces](prompts/V5_87_TRACK_REPOSITORY.md)
 7. [v5.88 stabilisation performance A53](prompts/V5_88_PERFORMANCE_STABILIZATION.md)
-8. [v6.0 power user local](prompts/V6_0_POWER_USER.md)
-9. [v6.1 lumière utile](prompts/V6_1_LIGHT_PLANNING.md)
-10. [v6.2 compte/sync reportée](prompts/V6_2_ACCOUNT_SYNC.md)
+8. [v5.89 architecture et pipeline cartographique](V5_89_MAP_ARCHITECTURE_EVALUATION.md)
+9. [5.90+ power user local](prompts/V6_0_POWER_USER.md)
+10. [5.90+ lumière utile](prompts/V6_1_LIGHT_PLANNING.md)
+11. [Compte/sync reportée](prompts/V6_2_ACCOUNT_SYNC.md)
 
 Ne jamais démarrer la version suivante tant que le bilan de la précédente contient un gate rouge.
+L'audit R8 complémentaire rejoint la maintenance 5.90+ ; il ne justifie pas seul une 5.89.1 sans
+gain mesuré et validation des achats, plugins Capacitor, services natifs et appareils cibles.
