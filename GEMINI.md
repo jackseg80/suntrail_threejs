@@ -1,9 +1,9 @@
-# SunTrail — Guide Développeur (version source 5.88.0)
+# SunTrail — Guide Développeur (version source 5.89.0)
 
 > Chaîne YouTube : [@SunTrail3D](https://www.youtube.com/@SunTrail3D)
-> Mis à jour le 2026-09-07 — la documentation active et les textes fonctionnels sont alignés sur
-> v5.88.0 / Android 908. La release GitHub produit l'AAB signé ; aucun téléversement Google Play
-> de 908 n'est établi par le dépôt.
+> Mis à jour le 2026-09-09 — la documentation active et les textes fonctionnels sont alignés sur
+> v5.89.0 / Android 909. La publication GitHub et tout téléversement Google Play restent à vérifier
+> séparément ; le code 909 est provisoire tant que le maximum global Play n'est pas contrôlé.
 
 > La base de connaissance technique est maintenue dans **`CLAUDE.md`**.
 > Ce fichier sert de point d'entrée pour Gemini CLI.

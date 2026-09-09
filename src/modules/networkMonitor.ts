@@ -40,11 +40,12 @@ function applyStatus(connected: boolean, type: string, emitToast: boolean) {
 
     if (connected && !wasAvailable) {
         _consecutiveFailures = 0;
-        eventBus.emit('networkOnline');
         // Auto-restore IS_OFFLINE only if the user hasn't manually forced it
         if (!_userManualOverride) {
             state.IS_OFFLINE = false;
         }
+        // Listeners that retry data loads must observe the restored mode.
+        eventBus.emit('networkOnline');
         if (emitToast) showToast(i18n.t('network.toast.online'));
     } else if (!connected && wasAvailable) {
         eventBus.emit('networkOffline');
@@ -163,8 +164,12 @@ function getWebConnectionType(): string {
  * Tracks manual override so auto-restore doesn't fight the user.
  */
 export function setManualOffline(val: boolean) {
+    const wasOffline = state.IS_OFFLINE;
     _userManualOverride = val;
     state.IS_OFFLINE = val;
+    if (wasOffline && !val && state.isNetworkAvailable) {
+        eventBus.emit('networkOnline');
+    }
 }
 
 /**

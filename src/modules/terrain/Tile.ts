@@ -27,11 +27,20 @@ import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { materialPool } from '../materialPool';
 import { activeTiles } from '../terrain';
 import { removeFromLoadQueue, queueBuildMesh } from './tileQueue';
+import {
+    beginTileTrace,
+    markTileTrace,
+    recordTileResource,
+} from '../tileDiagnostics';
 
 export const sharedFrustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
 const GHOST_FADE_MS = window.innerWidth <= 768 ? 800 : 2000;
+
+export function shouldLoadTileAs2D(zoom: number): boolean {
+    return zoom <= 10 || state.RESOLUTION <= 2 || state.IS_2D_MODE;
+}
 
 export const terrainUniforms = {
     uExaggeration: { value: state.RELIEF_EXAGGERATION },
@@ -77,6 +86,12 @@ export class Tile {
     elevScale = 1.0;
     colorOffset = new THREE.Vector2();
     colorScale = 1.0;
+    diagnosticTraceId: number | null = null;
+    /** True when the visible map is a temporary solid-color placeholder. */
+    usesFallbackColor: boolean = false;
+    /** Data contract captured at creation so a later 2D/3D toggle cannot change cache ownership. */
+    readonly dataMode2D: boolean;
+    readonly cacheKey: string;
     constructor(
         tx: number,
         ty: number,
@@ -89,7 +104,18 @@ export class Tile {
         this.ty = ty;
         this.zoom = zoom;
         this.key = key;
+        this.dataMode2D = shouldLoadTileAs2D(zoom);
+        this.cacheKey = getTileCacheKey(key, zoom, this.dataMode2D);
         this.tileSizeMeters = EARTH_CIRCUMFERENCE / getPow2(zoom);
+        this.diagnosticTraceId = beginTileTrace({
+            key,
+            tx,
+            ty,
+            zoom,
+            cacheOnly,
+            is2D: this.dataMode2D,
+            preset: state.PERFORMANCE_PRESET,
+        });
 
         this.updateWorldPosition();
         this.updateHybridSettings();
@@ -194,9 +220,11 @@ export class Tile {
 
     async load(): Promise<void> {
         if (this.status !== 'idle' && this.status !== 'failed') return;
-        const cacheKey = getTileCacheKey(this.key, this.zoom);
+        markTileTrace(this.diagnosticTraceId, 'load-started');
+        const cacheKey = this.cacheKey;
         const cached = getFromCache(cacheKey);
         if (cached) {
+            markTileTrace(this.diagnosticTraceId, 'memory-cache-hit');
             let pixels = cached.pixelData;
             const needsObjectPixels = () =>
                 !this.cacheOnly &&
@@ -219,6 +247,18 @@ export class Tile {
             this.colorTex = cached.color;
             this.overlayTex = cached.overlay;
             this.normalTex = cached.normal;
+            for (const resource of [
+                this.colorTex ? 'color' : null,
+                this.elevationTex ? 'elevation' : null,
+                this.overlayTex ? 'overlay' : null,
+            ] as const) {
+                if (resource)
+                    recordTileResource(this.diagnosticTraceId, {
+                        resource,
+                        source: 'memory-texture',
+                        durationMs: 0,
+                    });
+            }
             if (this.colorTex) {
                 this.colorTex.generateMipmaps = false;
                 this.colorTex.minFilter = THREE.LinearFilter;
@@ -244,13 +284,41 @@ export class Tile {
             }
         }
         this.status = 'loading';
-        const fetchAs2D = this.zoom <= 10;
+        const fetchAs2D = this.dataMode2D;
+        let reusedColorTexture = false;
+        if (!fetchAs2D) {
+            const colorOnlyCacheKey = getTileCacheKey(
+                this.key,
+                this.zoom,
+                true
+            );
+            const colorOnlyData = getFromCache(colorOnlyCacheKey);
+            if (colorOnlyData?.color) {
+                this.colorTex = colorOnlyData.color;
+                reusedColorTexture = true;
+                // Hold the shared texture while elevation is loading. This
+                // reference becomes the live tile reference on success.
+                retainCachedTileData({
+                    elev: null,
+                    color: this.colorTex,
+                    overlay: null,
+                    normal: null,
+                });
+                recordTileResource(this.diagnosticTraceId, {
+                    resource: 'color',
+                    source: 'memory-texture',
+                    durationMs: 0,
+                });
+            }
+        }
         try {
             const { promise, taskId } = await loadTileData(
                 this.tx,
                 this.ty,
                 this.zoom,
-                fetchAs2D
+                fetchAs2D,
+                this.diagnosticTraceId,
+                reusedColorTexture
             );
             this.activeTaskId = taskId;
             const data = await promise;
@@ -258,7 +326,19 @@ export class Tile {
 
             if ((this.status as string) === 'disposed') return;
             if (!data) {
+                if (reusedColorTexture) {
+                    releaseCachedTileData({
+                        elev: null,
+                        color: this.colorTex,
+                        overlay: null,
+                        normal: null,
+                    });
+                    this.colorTex = null;
+                }
                 this.status = 'failed';
+                markTileTrace(this.diagnosticTraceId, 'failed', {
+                    reason: 'worker-empty-response',
+                });
                 return;
             }
 
@@ -289,7 +369,8 @@ export class Tile {
                     this.colorTex.anisotropy =
                         state.renderer.capabilities.getMaxAnisotropy();
                 }
-            } else {
+            } else if (!this.colorTex) {
+                this.usesFallbackColor = true;
                 const fb = document.createElement('canvas');
                 fb.width = 256;
                 fb.height = 256;
@@ -324,18 +405,23 @@ export class Tile {
                 this.normalTex.needsUpdate = true;
             }
 
-            addToCache(
-                cacheKey,
-                this.elevationTex!,
-                this.pixelData,
-                this.colorTex!,
-                this.overlayTex,
-                this.normalTex
-            );
+            // A placeholder must remain retryable. Caching it as a successful
+            // color tile made blue areas survive a network recovery until the
+            // user changed zoom or moved far enough to create different keys.
+            if (!this.usesFallbackColor) {
+                addToCache(
+                    cacheKey,
+                    this.elevationTex!,
+                    this.pixelData,
+                    this.colorTex!,
+                    this.overlayTex,
+                    this.normalTex
+                );
+            }
             if ((this.status as string) !== 'disposed') {
                 retainCachedTileData({
                     elev: this.elevationTex,
-                    color: this.colorTex,
+                    color: reusedColorTexture ? null : this.colorTex,
                     overlay: this.overlayTex,
                     normal: this.normalTex,
                 });
@@ -345,7 +431,19 @@ export class Tile {
             if (!this.cacheOnly && (this.status as string) !== 'disposed')
                 queueBuildMesh(this);
         } catch (e) {
+            if (reusedColorTexture && this.colorTex) {
+                releaseCachedTileData({
+                    elev: null,
+                    color: this.colorTex,
+                    overlay: null,
+                    normal: null,
+                });
+                this.colorTex = null;
+            }
             this.status = 'failed';
+            markTileTrace(this.diagnosticTraceId, 'failed', {
+                reason: e instanceof Error ? e.message : String(e),
+            });
         }
     }
 
@@ -357,6 +455,8 @@ export class Tile {
         )
             return;
         if (!activeTiles.has(this.key) && !this.isFadingOut) return;
+        const buildStartedAt = performance.now();
+        markTileTrace(this.diagnosticTraceId, 'build-started');
 
         const is2D = this.zoom <= 10 || state.IS_2D_MODE;
         const isLight = state.PERFORMANCE_PRESET === 'eco';
@@ -586,6 +686,18 @@ export class Tile {
         this.mesh.receiveShadow = !is2D;
         if (state.scene && (this.status as string) !== 'disposed')
             state.scene.add(this.mesh);
+        markTileTrace(this.diagnosticTraceId, 'mesh-added', {
+            durationMs: performance.now() - buildStartedAt,
+            resolution,
+        });
+        if (this.diagnosticTraceId !== null) {
+            let firstRenderSubmitted = false;
+            this.mesh.onAfterRender = () => {
+                if (firstRenderSubmitted) return;
+                firstRenderSubmitted = true;
+                markTileTrace(this.diagnosticTraceId, 'first-render-submitted');
+            };
+        }
         this.currentResolution = resolution;
 
         if (is2D) {
@@ -675,7 +787,7 @@ export class Tile {
             this.mesh.material.transparent = true;
             this.mesh.material.opacity = 1.0;
         }
-        markCacheKeyActive(getTileCacheKey(this.key, this.zoom));
+        markCacheKeyActive(this.cacheKey);
     }
 
     updateFadeOut(deltaMs: number): void {
@@ -690,12 +802,13 @@ export class Tile {
 
     dispose(): void {
         this.status = 'disposed';
+        markTileTrace(this.diagnosticTraceId, 'disposed');
         removeFromLoadQueue(this);
         if (this.activeTaskId >= 0) {
             cancelTileLoad(this.activeTaskId);
             this.activeTaskId = -1;
         }
-        markCacheKeyInactive(getTileCacheKey(this.key, this.zoom));
+        markCacheKeyInactive(this.cacheKey);
         if (this.mesh) {
             if (state.scene) state.scene.remove(this.mesh);
             if (this.mesh.material instanceof THREE.Material)

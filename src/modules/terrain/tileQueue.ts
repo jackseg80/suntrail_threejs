@@ -3,6 +3,7 @@ import { state } from '../state';
 import type { Tile } from './Tile';
 import { activeTiles } from '../terrain';
 import { cancelTileLoad } from '../tileLoader';
+import { markTileTrace } from '../tileDiagnostics';
 
 export const loadQueue: Set<Tile> = new Set<Tile>();
 let isProcessingQueue = false;
@@ -35,6 +36,9 @@ export function queueBuildMesh(tile: Tile) {
     if (buildQueueKeys.has(tile.key)) return;
     buildQueueKeys.add(tile.key);
     buildQueue.push(tile);
+    markTileTrace(tile.diagnosticTraceId, 'build-queued', {
+        queueLength: buildQueue.length,
+    });
     if (!isProcessingBuildQueue) {
         isProcessingBuildQueue = true;
         state.isProcessingTiles = true;
@@ -180,7 +184,9 @@ export async function processLoadQueue() {
                     if ((tile as any).retryCount < 3) {
                         (tile as any).retryCount++;
                         tile.status = 'idle';
-                        loadQueue.add(tile);
+                        addToLoadQueue(tile, {
+                            retryCount: (tile as any).retryCount,
+                        });
                     } else {
                         tile.status = 'failed';
                     }
@@ -249,9 +255,16 @@ export function clearLoadQueue() {
     firstTileReadyEmitted = false;
 }
 
-export function addToLoadQueue(tile: Tile) {
+export function addToLoadQueue(
+    tile: Tile,
+    details?: Record<string, string | number | boolean | null>
+) {
     loadQueue.add(tile);
     sortedCache = null;
+    markTileTrace(tile.diagnosticTraceId, 'queued', {
+        queueLength: loadQueue.size,
+        ...details,
+    });
 }
 
 export function removeFromLoadQueue(tile: Tile) {

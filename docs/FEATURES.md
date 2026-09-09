@@ -1,6 +1,6 @@
 # Fonctionnalités actuelles de SunTrail 3D
 
-> Référence canonique de la version source 5.88.0, mise à jour le 2026-09-07.
+> Référence canonique de la version source 5.89.0, mise à jour le 2026-09-09.
 > Ce document décrit le code activé par défaut. Les plans futurs et anciens documents archivés ne
 > constituent pas des fonctionnalités livrées.
 
@@ -22,7 +22,7 @@ distinctes.
 
 | Domaine | Fonction actuelle | Disponibilité | Référence principale |
 | :--- | :--- | :--- | :--- |
-| Carte | Relief Three.js, bascule 2D/3D et LOD 5 à 18 | Free jusqu'à 14, Pro jusqu'à 18 | `scene.ts`, `terrain.ts` |
+| Carte | Relief Three.js, bascule 2D/3D, couleur 2D prioritaire et LOD 5 à 18 | Free jusqu'à 14, Pro jusqu'à 18 | `scene.ts`, `terrain.ts` |
 | Sources | Sélection par pays et replis OpenTopoMap/MapTiler/OSM | Selon couverture et clés | `tileSources.ts` |
 | Terrain | Pentes, eau, végétation, bâtiments, POI et sentiers | Données variables ; certains outils Pro | `terrain.ts`, `landcover.ts`, `buildings.ts`, `poi.ts` |
 | Solaire | Ombres, timeline 24 h, sonde et exposition du parcours | Jour courant Free, calendrier Pro | `sun.ts`, `solarRoute.ts`, `SolarProbeSheet.ts` |

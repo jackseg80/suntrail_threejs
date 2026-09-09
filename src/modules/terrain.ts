@@ -7,7 +7,6 @@ import {
     getTileCacheKey,
     markCacheKeyInactive,
     hasInCache,
-    getFromCache,
     purgeOldPixelData,
     getPrefetchBudget,
 } from './tileCache';
@@ -33,10 +32,9 @@ export {
     prioritizeNewZoom,
 } from './terrain/tileQueue';
 
-import { Tile } from './terrain/Tile';
+import { Tile, shouldLoadTileAs2D } from './terrain/Tile';
 import { sharedFrustum } from './terrain/Tile';
 import {
-    loadQueue,
     processLoadQueue,
     clearLoadQueue,
     addToLoadQueue,
@@ -44,11 +42,13 @@ import {
 } from './terrain/tileQueue';
 import { terrainUniforms } from './terrain/Tile';
 import { resizeGeometryCache } from './geometryCache';
+import { eventBus } from './eventBus';
 
 export const activeTiles = new Map<string, Tile>();
 export const activeLabels = new Map<string, any>();
 
 const _terrainMatrix = new THREE.Matrix4();
+const _candidateBounds = new THREE.Box3();
 export const fadingOutTiles = new Set<Tile>();
 // Only the preceding zoom-out generation is retained while its parents load.
 const zoomOutReplacements = new Map<Tile, string>();
@@ -56,11 +56,73 @@ let lastRenderedZoom: number = -1;
 let lastMapSource: string = '';
 const prefetchKeys = new Set<string>();
 
+/** Retry only visible placeholders when connectivity returns. */
+export function retryFallbackColorTiles(): void {
+    let removed = 0;
+    for (const [key, tile] of activeTiles) {
+        if (!tile.usesFallbackColor) continue;
+        removeTile(tile);
+        tile.dispose();
+        activeTiles.delete(key);
+        removed++;
+    }
+    if (removed > 0)
+        void updateVisibleTiles(
+            undefined,
+            undefined,
+            undefined,
+            null,
+            null,
+            true
+        );
+}
+
+eventBus.on('networkOnline', retryFallbackColorTiles);
+
+function isSameLodPrefetchExperimentEnabled(): boolean {
+    if (typeof window === 'undefined') return false;
+    return (
+        new URLSearchParams(window.location.search).get(
+            'tileSameLodPrefetch'
+        ) === '1'
+    );
+}
+
+function isTileCandidateVisible(
+    tx: number,
+    ty: number,
+    zoom: number,
+    frustum: THREE.Frustum
+): boolean {
+    const zoomScale = Math.pow(2, zoom);
+    const tileSizeMeters = EARTH_CIRCUMFERENCE / zoomScale;
+    const originScale = Math.pow(2, state.originTile.z);
+    const worldX =
+        ((tx + 0.5) / zoomScale - (state.originTile.x + 0.5) / originScale) *
+        EARTH_CIRCUMFERENCE;
+    const worldZ =
+        ((ty + 0.5) / zoomScale - (state.originTile.y + 0.5) / originScale) *
+        EARTH_CIRCUMFERENCE;
+    const halfExtent = tileSizeMeters * 0.7;
+
+    _candidateBounds.min.set(
+        worldX - halfExtent,
+        -1000 - tileSizeMeters * 0.2,
+        worldZ - halfExtent
+    );
+    _candidateBounds.max.set(
+        worldX + halfExtent,
+        9000 + tileSizeMeters * 0.2,
+        worldZ + halfExtent
+    );
+    return frustum.intersectsBox(_candidateBounds);
+}
+
 export function resetTerrain(): void {
     clearLabels();
     clearLoadQueue(); // v5.29.28 : Annuler les chargements en cours de l'ancienne source/LOD
     for (const tile of fadingOutTiles) {
-        markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
+        markCacheKeyInactive(tile.cacheKey);
         tile.dispose();
     }
     fadingOutTiles.clear();
@@ -107,7 +169,7 @@ export function rebuildActiveTiles(): void {
             }
         }
 
-        if (!is2D && !tile.pixelData && tile.zoom > 10) {
+        if (!is2D && tile.dataMode2D && tile.zoom > 10) {
             toReload.push(tile.key);
         } else {
             tile.buildMesh(state.RESOLUTION);
@@ -116,8 +178,6 @@ export function rebuildActiveTiles(): void {
     for (const key of toReload) {
         const tile = activeTiles.get(key);
         if (!tile) continue;
-        const cacheKey = getTileCacheKey(key, tile.zoom);
-        getFromCache(cacheKey);
         removeTile(tile);
         tile.dispose();
         activeTiles.delete(key);
@@ -224,7 +284,7 @@ export function animateTiles(delta: number): boolean {
             }
         }
         for (const tile of toRemove) {
-            markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
+            markCacheKeyInactive(tile.cacheKey);
             fadingOutTiles.delete(tile);
             zoomOutReplacements.delete(tile);
             tile.dispose();
@@ -323,7 +383,7 @@ export async function updateVisibleTiles(
         if (lodChanging) {
             // Bound retained coverage to one transition, including rapid gestures.
             for (const tile of zoomOutReplacements.keys()) {
-                markCacheKeyInactive(getTileCacheKey(tile.key, tile.zoom));
+                markCacheKeyInactive(tile.cacheKey);
                 fadingOutTiles.delete(tile);
                 tile.dispose();
             }
@@ -350,7 +410,7 @@ export async function updateVisibleTiles(
                 const t = new Tile(camTile.x, camTile.y, zoom, camKey);
                 activeTiles.set(camKey, t);
                 insertTile(t);
-                loadQueue.add(t);
+                addToLoadQueue(t);
             }
         }
 
@@ -387,15 +447,15 @@ export async function updateVisibleTiles(
                     const forcedRadius = 1;
 
                     if (!activeTiles.has(key)) {
-                        const tile = new Tile(tx, ty, zoom, key);
                         if (
-                            tile.isVisible(sharedFrustum) ||
                             (Math.abs(dx) <= forcedRadius &&
-                                Math.abs(dy) <= forcedRadius)
+                                Math.abs(dy) <= forcedRadius) ||
+                            isTileCandidateVisible(tx, ty, zoom, sharedFrustum)
                         ) {
+                            const tile = new Tile(tx, ty, zoom, key);
                             activeTiles.set(key, tile);
                             insertTile(tile);
-                            loadQueue.add(tile);
+                            addToLoadQueue(tile);
                         }
                     }
                 }
@@ -495,7 +555,7 @@ export function prefetchAdjacentLODs(): void {
         ? state.MAX_ALLOWED_ZOOM || 18
         : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
     const reservedKeys = [...activeTiles.values(), ...fadingOutTiles].map(
-        (tile) => getTileCacheKey(tile.key, tile.zoom)
+        (tile) => tile.cacheKey
     );
     const budget = getPrefetchBudget(reservedKeys);
     if (budget === 0) return;
@@ -505,20 +565,46 @@ export function prefetchAdjacentLODs(): void {
         zoom: number;
         key: string;
         distance: number;
+        priority: number;
     }[] = [];
-    const levels = [
+    const levels: {
+        zoom: number;
+        radius: number;
+        innerRadius?: number;
+        priority: number;
+    }[] = [
+        ...(isSameLodPrefetchExperimentEnabled()
+            ? [
+                  {
+                      zoom,
+                      radius: state.RANGE + 1,
+                      innerRadius: state.RANGE,
+                      priority: 0,
+                  },
+              ]
+            : []),
         {
             zoom: Math.min(zoom + 1, maxZoom),
             radius: Math.max(1, Math.ceil(state.RANGE / 2)),
+            priority: 1,
         },
-        { zoom: Math.max(zoom - 1, 6), radius: 2 },
+        { zoom: Math.max(zoom - 1, 6), radius: 2, priority: 2 },
     ];
     for (const level of levels) {
-        if (level.zoom === zoom || level.zoom > maxZoom) continue;
+        if (
+            (level.zoom === zoom && level.priority !== 0) ||
+            level.zoom > maxZoom
+        )
+            continue;
         const ct = lngLatToTile(center.lon, center.lat, level.zoom);
         const maxT = Math.pow(2, level.zoom);
         for (let dy = -level.radius; dy <= level.radius; dy++) {
             for (let dx = -level.radius; dx <= level.radius; dx++) {
+                if (
+                    level.innerRadius !== undefined &&
+                    Math.max(Math.abs(dx), Math.abs(dy)) <= level.innerRadius
+                )
+                    continue;
                 const tx = ct.x + dx,
                     ty = ct.y + dy;
                 if (tx < 0 || tx >= maxT || ty < 0 || ty >= maxT) continue;
@@ -530,20 +616,67 @@ export function prefetchAdjacentLODs(): void {
                         zoom: level.zoom,
                         key,
                         distance: dx * dx + dy * dy,
+                        priority: level.priority,
                     });
             }
         }
     }
     // Select the same nearby working set even when some entries are already cached.
     // Otherwise every pass replaces a neighbor that the next pass immediately reloads.
-    candidates.sort((a, b) => a.distance - b.distance || a.zoom - b.zoom);
+    candidates.sort(
+        (a, b) =>
+            a.priority - b.priority ||
+            a.distance - b.distance ||
+            a.zoom - b.zoom
+    );
+    let selectedCandidates: typeof candidates;
+    const sameLodCandidates = candidates.filter(
+        (candidate) => candidate.priority === 0
+    );
+    if (sameLodCandidates.length >= budget) {
+        // When the explicit pan experiment is active, devote the small mobile
+        // background budget to the current LOD instead of diluting it across
+        // zoom levels that cannot cover an immediate pan.
+        selectedCandidates = sameLodCandidates.slice(0, budget);
+    } else {
+        const zoomInCandidates = candidates.filter(
+            (candidate) => candidate.priority === 1
+        );
+        const zoomOutCandidates = candidates.filter(
+            (candidate) => candidate.priority === 2
+        );
+        const zoomOutTarget = Math.min(
+            zoomOutCandidates.length,
+            Math.max(1, Math.floor(budget / 3))
+        );
+        const zoomInTarget = Math.min(
+            zoomInCandidates.length,
+            budget - zoomOutTarget
+        );
+        selectedCandidates = [
+            ...sameLodCandidates,
+            ...zoomInCandidates.slice(0, zoomInTarget),
+            ...zoomOutCandidates.slice(0, zoomOutTarget),
+        ].slice(0, budget);
+        if (selectedCandidates.length < budget) {
+            const selectedKeys = new Set(
+                selectedCandidates.map((candidate) => candidate.key)
+            );
+            selectedCandidates.push(
+                ...candidates
+                    .filter((candidate) => !selectedKeys.has(candidate.key))
+                    .slice(0, budget - selectedCandidates.length)
+            );
+        }
+    }
     let added = 0;
-    for (const candidate of candidates.slice(0, budget)) {
-        if (added >= 20) break;
+    for (const candidate of selectedCandidates) {
         const { tx, ty, zoom: targetZoom, key } = candidate;
         if (
             prefetchKeys.has(key) ||
-            hasInCache(getTileCacheKey(key, targetZoom))
+            hasInCache(
+                getTileCacheKey(key, targetZoom, shouldLoadTileAs2D(targetZoom))
+            )
         )
             continue;
         prefetchKeys.add(key);

@@ -18,6 +18,36 @@ export interface TileWorkerRequest {
     colorBlob?: Blob | null;
     overlayBlob?: Blob | null;
     useCompactNormalmap?: boolean;
+    diagnostics?: boolean;
+    blobSources?: Partial<
+        Record<
+            'color' | 'elevation' | 'overlay',
+            | 'offline-cache'
+            | 'navigation-cache'
+            | 'embedded-pmtiles'
+            | 'country-pack-opfs'
+            | 'country-pack-cdn'
+        >
+    >;
+}
+
+export interface TileWorkerResourceTiming {
+    source:
+        | 'offline-cache'
+        | 'navigation-cache'
+        | 'embedded-pmtiles'
+        | 'country-pack-opfs'
+        | 'country-pack-cdn'
+        | 'worker-cache'
+        | 'network'
+        | 'none'
+        | 'error';
+    durationMs: number;
+    sizeBytes?: number;
+    cacheLookupMs?: number;
+    readMs?: number;
+    networkMs?: number;
+    decodeMs?: number;
 }
 
 export interface TileWorkerResponse {
@@ -33,4 +63,8 @@ export interface TileWorkerResponse {
     networkError?: boolean;
     forbidden?: boolean;
     error?: string;
+    workerDurationMs?: number;
+    resourceTimings?: Partial<
+        Record<'color' | 'elevation' | 'overlay', TileWorkerResourceTiming>
+    >;
 }

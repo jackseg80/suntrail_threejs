@@ -70,6 +70,7 @@ export { flyTo };
 let visibilityChangeHandler: (() => void) | null = null;
 let sceneResumeHandler: (() => void) | null = null;
 let sceneResizeHandler: (() => void) | null = null;
+let tileDiagnosticPanHandler: ((event: Event) => void) | null = null;
 let renderWatchdogId: number | null = null;
 let contextRecoveryTimeout: number | null = null;
 
@@ -180,6 +181,13 @@ export async function disposeScene(): Promise<void> {
     if (sceneResizeHandler) {
         window.removeEventListener('resize', sceneResizeHandler);
         sceneResizeHandler = null;
+    }
+    if (tileDiagnosticPanHandler) {
+        window.removeEventListener(
+            'suntrail:tileDiagnosticPan',
+            tileDiagnosticPanHandler
+        );
+        tileDiagnosticPanHandler = null;
     }
 
     currentThrottledUpdate = null;
@@ -324,6 +332,36 @@ export async function initScene(): Promise<void> {
 
     initCamera();
     initControls(state.camera!, state.renderer.domElement);
+
+    tileDiagnosticPanHandler = (event: Event) => {
+        if (
+            document.documentElement.dataset.tileDiagnostics !== 'enabled' ||
+            !state.camera ||
+            !state.controls
+        )
+            return;
+        const detail = (
+            event as CustomEvent<{
+                axis?: 'x' | 'z';
+                direction?: number;
+            }>
+        ).detail;
+        if (
+            (detail?.axis !== 'x' && detail?.axis !== 'z') ||
+            (detail.direction !== 1 && detail.direction !== -1)
+        )
+            return;
+        const step = (EARTH_CIRCUMFERENCE / getPow2(state.ZOOM)) * 3;
+        state.camera.position[detail.axis] += step * detail.direction;
+        state.controls.target[detail.axis] += step * detail.direction;
+        state.controls.update();
+        forceImmediateLODUpdate();
+        requestSceneRender();
+    };
+    window.addEventListener(
+        'suntrail:tileDiagnosticPan',
+        tileDiagnosticPanHandler
+    );
 
     let wheelHideTimer: ReturnType<typeof setTimeout> | null = null;
     let hideOnMoveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -963,11 +1001,6 @@ export async function initScene(): Promise<void> {
             state.renderer.render(state.scene, state.camera);
             if (state.SHOW_STATS) state.stats?.end();
 
-            if (!state.isProcessingTiles && now - lastPrefetchTime > 2000) {
-                lastPrefetchTime = now;
-                prefetchAdjacentLODs();
-            }
-
             fpsFrameCount++;
             const fpsTick = performance.now();
             if (fpsTick - fpsLastTime >= 1000) {
@@ -982,6 +1015,17 @@ export async function initScene(): Promise<void> {
                 );
                 fpsHadDemandLimitedFrames = false;
             }
+        }
+
+        // Prefetch is idle work. Keeping it inside `needsUpdate` starved it as
+        // soon as the map became stable and stopped requesting rendered frames.
+        if (
+            !state.isProcessingTiles &&
+            now - lastInteractionTime > 2000 &&
+            now - lastPrefetchTime > 2000
+        ) {
+            lastPrefetchTime = now;
+            prefetchAdjacentLODs();
         }
     };
     state.renderer.setAnimationLoop(renderLoopFn);

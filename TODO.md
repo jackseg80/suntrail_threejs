@@ -1,6 +1,63 @@
-# SunTrail — TODO (v5.88.0 clôturée pour GitHub ; publication Play séparée)
+# SunTrail — TODO (v5.89.0 candidate locale ; publication séparée)
 
-> Dernière mise à jour : 2026-09-07
+> Dernière mise à jour : 2026-09-09
+
+## v5.89 — réactivité cartographique et architecture, clôture en cours
+
+Plan : [évaluation bornée](docs/plans/V5_89_MAP_ARCHITECTURE_EVALUATION.md).
+
+- [x] Observation navigateur initiale : effet de couverture progressive visible en 2D Équilibré,
+      Suisse LOD14, RTX, sans pack installé ; confirmation visuelle du propriétaire. Pas encore
+      de timing ni de scénario pack local qualifié. [Compte rendu](docs/plans/V5_89_BROWSER_INITIAL_OBSERVATION.md).
+- [x] Instrumenter création, file, provenance, worker, mesh et première soumission ; distinguer
+      `country-pack-opfs` du repli CDN et ajouter un panoramique reproductible. Le filtre avant
+      construction supprime 253 objets inutiles en 2D et 913 pendant une bascule 3D sur le run
+      navigateur. [Progression du 9 septembre](docs/plans/V5_89_SESSION_PROGRESS_2026-09-09.md).
+- [x] Corriger le préchargement au repos qui était affamé par `needsUpdate`. Une couronne au LOD
+      courant améliore le contrôle chaud (médiane 121 ms contre 249 ms), mais reste derrière
+      `?tileSameLodPrefetch=1` jusqu'aux gates mémoire et appareils.
+- [x] Reproduire sur A53/Équilibré au LOD14 : trou blanc au panoramique en ligne, puis secours bleu
+      persistant plus de 3 s en hors ligne malgré le pack déclaré installé. Le zoom/déplacement
+      relance de nouvelles clés et fait revenir la carte sans réparer l'ancienne tuile.
+- [x] Corriger l'état fantôme `installed` quand le fichier OPFS manque, ne plus mettre le secours
+      couleur en cache et redemander uniquement les secours visibles au retour du réseau.
+- [x] Auditer le pack Suisse v3 : couleurs LOD14 présentes sur l'échantillon Grindelwald, mais
+      grands identifiants relief/overlay corrompus par le writer 32 bits et bloqués par l'en-tête
+      maxZoom 14. Corriger writer, en-tête et échec silencieux du builder.
+- [ ] Reconstruire un pack Suisse v4 local, vérifier couleur/relief/overlay et son manifeste, puis
+      demander séparément l'autorisation de l'envoyer. Le pack v3 publié reste invalide pour les
+      couches décalées.
+- [x] Préparer et installer après autorisation un APK diagnostic avec identifiant séparé ; passer
+      Pro, confirmer sur A53 la reprise automatique de neuf secours sans geste et le retour
+      immédiat à textures chaudes.
+- [x] Installer le pack Suisse v3 dans l'application diagnostic et confirmer sur A53 la provenance
+      `country-pack-opfs` des couleurs. Le chemin complet passe à 1 074 ms et la couleur seule à
+      254 ms de médiane ; relief et overlay attendent toujours le pack v4 corrigé.
+- [x] Exposer les entrées actives/inactives et l'estimation des octets décodés du cache ; limiter
+      le préchargement mobile à 8/20/24/32 entrées selon le preset et attendre deux secondes de
+      stabilité. Un nouvel APK diagnostic nommé explicitement a été installé après autorisation.
+- [x] Séparer les caches 2D/3D, charger la couleur seule au LOD 14 et promouvoir sa texture au
+      retour 3D. Sur A53 Équilibré, la médiane avec pack passe de 1 074 à 254 ms et le retour 3D
+      reste visuellement fonctionnel.
+- [x] Valider sur A53 la promotion 2D → 3D qui partage la texture couleur et évite sa seconde
+      lecture : image correcte, aucune tuile noire, trois processus neufs par scénario. Médiane
+      après repos 814 Mo pour le chemin actuel contre 690 Mo pour la transition corrigée.
+- [x] Activer la couleur d'abord par défaut dans le code local après acceptation visuelle A53 ;
+      167 tests ciblés carte/altitude et 1 783 tests complets passent. APK diagnostic final prêt.
+- [x] Installer après autorisation l'APK final et faire un essai réel sans paramètre spécial.
+      Le propriétaire rapporte des essais positifs sur A53 et S23. Le paquet diagnostic démarre
+      aussi sur Tab S8 ; sur Galaxy S7/Android 8, la carte et la 3D fonctionnent lors d'un contrôle
+      court alors que l'ancienne version plantait. Aucun essai en balade n'est revendiqué sur S7.
+- [ ] Ajouter les octets de ressources en vol et comparer sur A53 l'ancien relevé de 103
+      préchargements invisibles au nouveau budget Équilibré de 20.
+- [ ] Relever preset effectif, GPU/backend, DPR, qualité, files de chargement et pic mémoire.
+      Brave/Intel HD et navigateur intégré/RTX sont des environnements distincts.
+- [x] Attribuer les délais et limiter le changement retenu au chargement couleur d'abord avec
+      promotion de texture, sans changement de moteur.
+- [x] Décider : conserver Three.js/WebGL. Les attentes couleur/relief, le pack et la rétention des
+      textures dominaient avant le GPU ; WebGPU ne répond pas au défaut reproduit.
+- [x] Après bilan, répartir les lots experts/lumière en 5.90+ ; réserver une future 6.0 à un
+      saut d'expérience démontré. Compte/sync reste différé.
 
 ## ✅ Documentation actuelle — audit du 2026-09-07
 
@@ -325,9 +382,10 @@ Prompt de clôture :
 - [x] **v5.86.0** — rapport Prêt à partir et corridor cartographique hors ligne, clôturée sur GitHub.
 - [x] **v5.88.0** — stabilisation mesurée du mode 3D, de la 2D, des tuiles et de STOP REC ;
       contrôles A53/S23 et comparaison terrain S23/Garmin terminés.
-- [ ] **v6.0.0** — outils experts et finition professionnelle locale.
-- [ ] **v6.1.0** — lumière utile et préparation photo sobre, fondées sur les données existantes.
-- [ ] **v6.2.0 reportée** — compte optionnel et synchronisation PC–Android, après décision active.
+- [ ] **v5.89** — évaluation cartographique, presets et mémoire avant décision d'architecture.
+- [ ] **5.90+ (ex-v6.0)** — outils experts et finition professionnelle locale, après bilan v5.89.
+- [ ] **5.90+ (ex-v6.1)** — lumière utile et préparation photo sobre, après bilan v5.89.
+- [ ] **Compte/sync différé (ex-v6.2)** — synchronisation PC–Android, après décision active.
 
 Voir [ROADMAP.md](ROADMAP.md) et
 [docs/plans/prompts/README.md](docs/plans/prompts/README.md) pour les scopes, gates et prompts.
@@ -341,13 +399,14 @@ Voir [ROADMAP.md](ROADMAP.md) et
 - **Couverture** — atteindre au moins 60 % sans tests artificiels.
 - **CI** — automatiser check, tests, build, bundle, i18n et smoke E2E.
 
-## 🟢 Après v6.2
+## 🟢 Horizons ultérieurs — numérotation à décider
 
 - couverture Slovénie/Italie/UK et nouvelles sources officielles ;
 - communauté, partage live et intégrations externes ;
 - guidage vocal et Wear OS ;
 - photo/astro avancé au-delà de la préparation lumière v6.1 ;
-- WebGPU expérimental puis production après validation appareil.
+- WebGPU : prototype possible dès que l'évaluation v5.89 le justifie ; production uniquement
+  après comparaison et validation appareil, sans dépendance obligatoire au compte/sync.
 
 ## ✅ Récemment complété (v5.82.0)
 

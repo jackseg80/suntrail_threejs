@@ -6,7 +6,7 @@ encore applicables, les plans futurs et les archives historiques.
 ## Commencer ici
 
 1. [README du projet](../README.md) : présentation, plateformes, installation et limites.
-2. [Fonctionnalités actuelles](FEATURES.md) : inventaire canonique de la version 5.88.0.
+2. [Fonctionnalités actuelles](FEATURES.md) : inventaire canonique de la version 5.89.0.
 3. [Guide IA et état de release](../CLAUDE.md) : règles de travail, version et garde-fous.
 4. [Architecture](AI_ARCHITECTURE.md) : services, événements, état et stockages.
 5. [Navigation et UX](AI_NAVIGATION_UX.md) : Explorer, Préparer, Sortie, Bibliothèque et Plus.
@@ -17,7 +17,7 @@ encore applicables, les plans futurs et les archives historiques.
 | :--- | :--- | :--- |
 | Fonctionnalités | [FEATURES.md](FEATURES.md) | Ce qui existe, où, pour qui et avec quelles limites. |
 | Architecture | [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) | Modules, flux, événements et persistance. |
-| Rendu/performance | [AI_PERFORMANCE.md](AI_PERFORMANCE.md) | Constantes, budgets, cache, rendu et mesures 5.88. |
+| Rendu/performance | [AI_PERFORMANCE.md](AI_PERFORMANCE.md) | Constantes, budgets, cache, rendu et mesures 5.88–5.89. |
 | Navigation/UX | [AI_NAVIGATION_UX.md](AI_NAVIGATION_UX.md) | Contrats d'interaction et responsabilités des écrans. |
 | UI | [AI_UI_STYLE_GUIDE.md](AI_UI_STYLE_GUIDE.md) | Composants, accessibilité et responsive. |
 | Débogage | [AI_DEBUGGING.md](AI_DEBUGGING.md) | Diagnostic des symptômes et outils de développement. |

@@ -10,6 +10,7 @@ const { mockState, mockActiveTiles } = vi.hoisted(() => {
         HYBRID_MODE: false,
         HYBRID_SHOW_MID_ZOOM_NAMES: false,
         IS_2D_MODE: false,
+        RESOLUTION: 64,
         camera: null,
     };
     const activeTiles = new Set<string>();
@@ -34,7 +35,10 @@ vi.mock('../geo', () => ({
 vi.mock('../tileCache', () => ({
     getFromCache: vi.fn(() => null),
     addToCache: vi.fn(),
-    getTileCacheKey: vi.fn((key: string, zoom: number) => `${zoom}/${key}`),
+    getTileCacheKey: vi.fn(
+        (key: string, zoom: number, dataMode2D = false) =>
+            `${zoom}/${dataMode2D ? '2d' : '3d'}/${key}`
+    ),
     markCacheKeyActive: vi.fn(),
     markCacheKeyInactive: vi.fn(),
     hasInCache: vi.fn(() => false),
@@ -63,6 +67,7 @@ import { Tile } from './Tile';
 import { loadTileData } from '../tileLoader';
 import { queueBuildMesh, removeFromLoadQueue } from './tileQueue';
 import {
+    addToCache,
     getFromCache,
     markCacheKeyActive,
     markCacheKeyInactive,
@@ -74,8 +79,10 @@ describe('Tile', () => {
         vi.clearAllMocks();
         mockActiveTiles.clear();
         mockState.IS_2D_MODE = false;
+        mockState.RESOLUTION = 64;
         mockState.SHOW_VEGETATION = false;
         mockState.SHOW_BUILDINGS = false;
+        window.history.replaceState({}, '', '/');
     });
 
     describe('constructor', () => {
@@ -121,6 +128,28 @@ describe('Tile', () => {
             expect(tile.worldX).toBeDefined();
             expect(tile.worldZ).toBeDefined();
         });
+
+        it('captures a separate color-only cache key in 2D', () => {
+            mockState.IS_2D_MODE = true;
+
+            const tile = new Tile(123, 456, 14, '14/123/456');
+
+            expect(tile.dataMode2D).toBe(true);
+            expect(tile.cacheKey).toBe('14/2d/14/123/456');
+
+            mockState.IS_2D_MODE = false;
+            tile.dispose();
+            expect(markCacheKeyInactive).toHaveBeenCalledWith(tile.cacheKey);
+        });
+
+        it('keeps high-zoom 3D on the full terrain data path', () => {
+            mockState.IS_2D_MODE = false;
+
+            const tile = new Tile(123, 456, 14, '14/123/456');
+
+            expect(tile.dataMode2D).toBe(false);
+            expect(tile.cacheKey).toBe('14/3d/14/123/456');
+        });
     });
 
     describe('isVisible()', () => {
@@ -131,6 +160,77 @@ describe('Tile', () => {
     });
 
     describe('cache-only prefetch', () => {
+        it('requests only color data at high zoom in 2D', async () => {
+            mockState.IS_2D_MODE = true;
+            vi.mocked(loadTileData).mockResolvedValueOnce({
+                taskId: 7,
+                promise: Promise.resolve({
+                    elevBitmap: null,
+                    colorBitmap: null,
+                    overlayBitmap: null,
+                    normalBitmap: null,
+                    pixelData: null,
+                }),
+            } as any);
+            const tile = new Tile(0, 0, 14, 'source_0_0_14');
+
+            await tile.load();
+
+            expect(loadTileData).toHaveBeenCalledWith(
+                0,
+                0,
+                14,
+                true,
+                tile.diagnosticTraceId,
+                false
+            );
+        });
+
+        it('reuses the color-only texture when promoting a tile to 3D', async () => {
+            const sharedColor = {} as any;
+            vi.mocked(getFromCache)
+                .mockReturnValueOnce(null)
+                .mockReturnValueOnce({
+                    elev: {} as any,
+                    color: sharedColor,
+                    pixelData: null,
+                    overlay: null,
+                    normal: null,
+                });
+            vi.mocked(loadTileData).mockResolvedValueOnce({
+                taskId: 8,
+                promise: Promise.resolve({
+                    elevBitmap: null,
+                    colorBitmap: null,
+                    overlayBitmap: null,
+                    normalBitmap: null,
+                    pixelData: null,
+                }),
+            } as any);
+            const tile = new Tile(0, 0, 14, 'source_0_0_14');
+
+            await tile.load();
+
+            expect(loadTileData).toHaveBeenCalledWith(
+                0,
+                0,
+                14,
+                false,
+                tile.diagnosticTraceId,
+                true
+            );
+            expect(tile.colorTex).toBe(sharedColor);
+            expect(tile.usesFallbackColor).toBe(false);
+            expect(addToCache).toHaveBeenCalledWith(
+                tile.cacheKey,
+                tile.elevationTex,
+                null,
+                sharedColor,
+                null,
+                null
+            );
+        });
+
         it('restores cached 3D elevation pixels before rebuilding, without reloading textures', async () => {
             mockState.SHOW_VEGETATION = true;
             const pixels = new Uint8ClampedArray([1, 2, 3, 255]);
@@ -238,6 +338,28 @@ describe('Tile', () => {
             expect(markCacheKeyActive).not.toHaveBeenCalled();
             expect(queueBuildMesh).not.toHaveBeenCalled();
             expect(tile.mesh).toBeNull();
+        });
+    });
+
+    describe('missing color fallback', () => {
+        it('renders a temporary placeholder without caching it as a valid tile', async () => {
+            vi.mocked(loadTileData).mockResolvedValueOnce({
+                taskId: 7,
+                promise: Promise.resolve({
+                    elevBitmap: null,
+                    colorBitmap: null,
+                    overlayBitmap: null,
+                    normalBitmap: null,
+                    pixelData: null,
+                }),
+            } as any);
+            const tile = new Tile(0, 0, 14, '14/0/0');
+
+            await tile.load();
+
+            expect(tile.status).toBe('loaded');
+            expect(tile.usesFallbackColor).toBe(true);
+            expect(addToCache).not.toHaveBeenCalled();
         });
     });
 

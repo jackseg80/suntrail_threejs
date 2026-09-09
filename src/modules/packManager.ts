@@ -35,7 +35,10 @@ const PACKS_DIR = 'packs';
 
 class PackManager {
     private packStates: Map<string, PackState> = new Map();
-    private mountedArchives: Map<string, pmtiles.PMTiles> = new Map();
+    private mountedArchives: Map<
+        string,
+        { archive: pmtiles.PMTiles; source: 'opfs' | 'cdn' }
+    > = new Map();
     private downloadControllers: Map<string, AbortController> = new Map();
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
@@ -83,36 +86,53 @@ class PackManager {
     private async syncDiskStates(): Promise<void> {
         try {
             const root = await navigator.storage.getDirectory();
-            let packsDir: FileSystemDirectoryHandle;
+            let packsDir: FileSystemDirectoryHandle | null = null;
             try {
                 packsDir = await root.getDirectoryHandle(PACKS_DIR);
             } catch {
-                return;
-            } // Répertoire inexistant
+                // Répertoire inexistant : aucun état local ne doit rester
+                // affiché comme installé.
+            }
 
             for (const meta of getAvailablePacks()) {
                 const ps = this.getOrCreateState(meta.id);
+                let fileExists = false;
+
+                if (packsDir) {
+                    try {
+                        await packsDir.getFileHandle(`${meta.id}.pmtiles`);
+                        fileExists = true;
+                    } catch {
+                        // absent
+                    }
+                }
 
                 // Si l'état dit pas installé, mais que le fichier est là : on resync
                 // On accepte 'purchased' ou 'not_purchased' (si on a un fichier on le prend)
                 if (
-                    ps.status === 'purchased' ||
-                    ps.status === 'not_purchased'
+                    fileExists &&
+                    (ps.status === 'purchased' || ps.status === 'not_purchased')
                 ) {
-                    try {
-                        await packsDir.getFileHandle(`${meta.id}.pmtiles`);
-                        if (state.DEBUG_MODE)
-                            console.log(
-                                `[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`
-                            );
-                        ps.status = 'installed';
-                        ps.installedVersion =
-                            ps.installedVersion || meta.version;
-                        ps.sizeMB = meta.sizeMB;
-                        ps.filePath = `opfs://${PACKS_DIR}/${meta.id}.pmtiles`;
-                    } catch {
-                        /* absent */
-                    }
+                    if (state.DEBUG_MODE)
+                        console.log(
+                            `[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`
+                        );
+                    ps.status = 'installed';
+                    ps.installedVersion = ps.installedVersion || meta.version;
+                    ps.sizeMB = meta.sizeMB;
+                    ps.filePath = `opfs://${PACKS_DIR}/${meta.id}.pmtiles`;
+                } else if (
+                    !fileExists &&
+                    (ps.status === 'installed' ||
+                        ps.status === 'update_available')
+                ) {
+                    console.warn(
+                        `[Packs] ${meta.id}: état local installé sans fichier OPFS, retour à l'état acheté.`
+                    );
+                    ps.status = 'purchased';
+                    ps.installedVersion = 0;
+                    ps.sizeMB = 0;
+                    ps.filePath = null;
                 }
             }
             this.persistStates();
@@ -332,6 +352,7 @@ class PackManager {
 
         try {
             let archive: pmtiles.PMTiles;
+            let archiveSource: 'opfs' | 'cdn';
 
             // v5.28.2 : On utilise le fichier local si status === 'installed'
             // OU si status === 'update_available' et que le fichier est présent.
@@ -350,6 +371,7 @@ class PackManager {
                     );
                     const file = await fileHandle.getFile();
                     archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
+                    archiveSource = 'opfs';
                 } catch {
                     // Fichier OPFS absent (ancienne installation sur Filesystem.External ou cache vidé)
                     // → fallback CDN si possible, sinon reset
@@ -359,6 +381,7 @@ class PackManager {
                             `[Packs] ${packId}: fichier OPFS absent, fallback CDN streaming.`
                         );
                         archive = new pmtiles.PMTiles(meta.cdnUrl);
+                        archiveSource = 'cdn';
                     } else {
                         throw new Error('Pack metadata missing');
                     }
@@ -368,6 +391,7 @@ class PackManager {
                 const meta = getPackMeta(packId);
                 if (!meta) return;
                 archive = new pmtiles.PMTiles(meta.cdnUrl);
+                archiveSource = 'cdn';
             }
 
             // Warmup: read header pour vérifier l'archive
@@ -377,7 +401,10 @@ class PackManager {
                     `[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`
                 );
 
-            this.mountedArchives.set(packId, archive);
+            this.mountedArchives.set(packId, {
+                archive,
+                source: archiveSource,
+            });
             eventBus.emit('packMounted', { packId });
         } catch (e) {
             console.error(`[Packs] Erreur montage ${packId}:`, e);
@@ -443,7 +470,10 @@ class PackManager {
         y: number,
         type: 'color' | 'elevation' | 'overlay' = 'color'
     ): Promise<Blob | null> {
-        return this.getTileFromPacksInternal(z, x, y, type, false);
+        return (
+            (await this.getTileFromPacksDetailed(z, x, y, type, false))?.blob ??
+            null
+        );
     }
 
     /**
@@ -456,28 +486,32 @@ class PackManager {
         y: number,
         type: 'color' | 'elevation' | 'overlay' = 'color'
     ): Promise<Blob | null> {
-        return this.getTileFromPacksInternal(z, x, y, type, true);
+        return (
+            (await this.getTileFromPacksDetailed(z, x, y, type, true))?.blob ??
+            null
+        );
     }
 
-    private async getTileFromPacksInternal(
+    async getTileFromPacksDetailed(
         z: number,
         x: number,
         y: number,
         type: 'color' | 'elevation' | 'overlay',
         localOnly: boolean
-    ): Promise<Blob | null> {
+    ): Promise<{
+        blob: Blob;
+        packId: string;
+        source: 'opfs' | 'cdn';
+    } | null> {
         // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
         for (const pass of [true, false]) {
-            for (const [packId, archive] of this.mountedArchives) {
+            for (const [packId, mounted] of this.mountedArchives) {
                 const meta = getPackMeta(packId);
                 if (!meta) continue;
                 if (z < meta.lodRange.min || z > meta.lodRange.max) continue;
                 if (!this.isTileInPackRegion(x, y, z, meta)) continue;
 
-                const ps = this.packStates.get(packId);
-                const isOpfs =
-                    ps?.status === 'installed' ||
-                    ps?.status === 'update_available';
+                const isOpfs = mounted.source === 'opfs';
 
                 if (localOnly && !isOpfs) continue;
                 if (pass !== isOpfs) continue;
@@ -488,7 +522,7 @@ class PackManager {
 
                     // v5.28.1 : Support Multi-Layer (Couleur + Élévation + Overlay dans 1 seul PMTiles)
                     if (type === 'color') {
-                        tileData = await archive.getZxy(z, x, y);
+                        tileData = await mounted.archive.getZxy(z, x, y);
                     } else {
                         // On utilise les offsets Hilbert définis dans build-country-pack.ts
                         const OFFSET_ELEV = 100_000_000_000;
@@ -500,13 +534,17 @@ class PackManager {
                         const [fz, fx, fy] = pmtiles.tileIdToZxy(
                             baseId + offset
                         );
-                        tileData = await archive.getZxy(fz, fx, fy);
+                        tileData = await mounted.archive.getZxy(fz, fx, fy);
                     }
 
                     if (tileData?.data) {
                         const mime =
                             type === 'overlay' ? 'image/png' : 'image/webp';
-                        return new Blob([tileData.data], { type: mime });
+                        return {
+                            blob: new Blob([tileData.data], { type: mime }),
+                            packId,
+                            source: mounted.source,
+                        };
                     }
                 } catch {
                     // Tuile manquante dans ce pack — continue

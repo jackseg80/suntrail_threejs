@@ -237,7 +237,9 @@ class TileWorkerManager {
             color?: Blob | null;
             overlay?: Blob | null;
         },
-        is2D: boolean = false
+        is2D: boolean = false,
+        blobSources?: TileWorkerRequest['blobSources'],
+        diagnostics: boolean = false
     ): { promise: Promise<TileWorkerResponse | null>; taskId: number } {
         if (this.workers.length === 0 || !state.USE_WORKERS)
             return { promise: Promise.resolve(null), taskId: -1 };
@@ -266,6 +268,8 @@ class TileWorkerManager {
             colorBlob: blobs?.color,
             overlayBlob: blobs?.overlay,
             useCompactNormalmap: state.DEBUG_NORMALMAP_RG_COMPACT,
+            blobSources,
+            diagnostics,
         };
 
         const promise = new Promise<TileWorkerResponse | null>(

@@ -13,7 +13,13 @@ import { disposeAllCachedTiles } from './tileCache';
 import * as pmtiles from 'pmtiles';
 import { packManager } from './packManager';
 import { STORAGE_KEYS } from '../constants/storage';
-import type { TileWorkerResponse } from '../types/worker';
+import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
+import {
+    isTileDiagnosticsEnabled,
+    markTileTrace,
+    recordTileResource,
+} from './tileDiagnostics';
+import type { TileResourceSource } from './tileDiagnostics';
 
 export const CACHE_NAME = 'suntrail-tiles-v30';
 export const OFFLINE_CACHE_NAME = 'suntrail-offline-zones';
@@ -289,6 +295,10 @@ export function updateStorageUI() {
  * @param storeInOfflineCache Si true, le blob téléchargé est stocké dans le cache offline (zones hors-ligne).
  */
 export type TileResourceType = 'color' | 'elevation' | 'overlay';
+type WorkerBlobSource = Exclude<
+    NonNullable<TileWorkerRequest['blobSources']>['color'],
+    undefined
+>;
 
 export interface FetchWithCacheOptions {
     resourceType?: TileResourceType;
@@ -627,7 +637,10 @@ async function warmupCacheIndex(
  * Retourne null si l'entrée est absente/corrompue.
  * v5.61.4 : Cherche d'abord dans le cache offline (zones téléchargées), puis dans le cache normal.
  */
-async function getCachedBlob(url: string): Promise<Blob | null> {
+async function getCachedBlobDetailed(url: string): Promise<{
+    blob: Blob;
+    source: 'offline-cache' | 'navigation-cache';
+} | null> {
     // 1. Cache offline (zones explicitement téléchargées par l'utilisateur)
     // Workers also write CacheStorage. The startup index is not authoritative
     // for misses: a resource can have arrived since it was populated.
@@ -636,7 +649,7 @@ async function getCachedBlob(url: string): Promise<Blob | null> {
             const cached = await _offlineCache.match(url);
             if (cached) {
                 const blob = await cached.blob();
-                if (blob.size >= 100) return blob;
+                if (blob.size >= 100) return { blob, source: 'offline-cache' };
                 _offlineCache.delete(url);
                 _offlineCacheIndex.delete(url);
             } else {
@@ -661,11 +674,15 @@ async function getCachedBlob(url: string): Promise<Blob | null> {
             _cacheIndex.delete(url);
             return null;
         }
-        return blob;
+        return { blob, source: 'navigation-cache' };
     } catch {
         _cacheIndex.delete(url);
         return null;
     }
+}
+
+async function getCachedBlob(url: string): Promise<Blob | null> {
+    return (await getCachedBlobDetailed(url))?.blob ?? null;
 }
 
 export interface OfflineTileResourceInspection {
@@ -773,8 +790,11 @@ export async function loadTileData(
     tx: number,
     ty: number,
     zoom: number,
-    is2D: boolean
+    is2D: boolean,
+    diagnosticTraceId?: number | null,
+    reuseColorTexture: boolean = false
 ): Promise<{ promise: Promise<TileWorkerResponse | null>; taskId: number }> {
+    const diagnostics = isTileDiagnosticsEnabled();
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
 
     const nativeMax = 18;
@@ -790,7 +810,9 @@ export async function loadTileData(
     );
     const inIT = countryCode === 'IT';
 
-    const colorUrl = getColorUrl(Math.floor(tx / cr), Math.floor(ty / cr), cz);
+    const colorUrl = reuseColorTexture
+        ? null
+        : getColorUrl(Math.floor(tx / cr), Math.floor(ty / cr), cz);
     const overlayUrl = getOverlayUrl(tx, ty, zoom);
 
     // v5.29.35 : Extraction directe des Blobs depuis les sources locales
@@ -803,27 +825,87 @@ export async function loadTileData(
         color?: Blob | null;
         overlay?: Blob | null;
     } = {};
+    const blobSources: NonNullable<TileWorkerRequest['blobSources']> = {};
+
+    async function timedResourceRead<
+        T extends { blob: Blob; source: TileResourceSource } | null,
+    >(resource: TileResourceType, read: () => Promise<T>): Promise<T> {
+        const startedAt = diagnostics ? performance.now() : 0;
+        try {
+            const result = await read();
+            if (diagnostics) {
+                markTileTrace(diagnosticTraceId, 'resource-read', {
+                    resource,
+                    source: result?.source ?? 'none',
+                    durationMs: performance.now() - startedAt,
+                    sizeBytes: result?.blob.size ?? 0,
+                });
+            }
+            return result;
+        } catch (error) {
+            if (diagnostics) {
+                markTileTrace(diagnosticTraceId, 'resource-read', {
+                    resource,
+                    source: 'error',
+                    durationMs: performance.now() - startedAt,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                });
+            }
+            throw error;
+        }
+    }
 
     // A mounted pack may use the network. Resolve cached resources first so a
     // slow pack cannot hold up a map already available on the device.
     if (!_workerCache || !_offlineCache) await initCacheLayer();
-    const [colorBlob, elevBlob, overlayBlob] = await Promise.all([
-        colorUrl ? getCachedBlob(colorUrl) : null,
-        elevUrl ? getCachedBlob(elevUrl) : null,
-        overlayUrl ? getCachedBlob(overlayUrl) : null,
+    const [colorCached, elevCached, overlayCached] = await Promise.all([
+        colorUrl
+            ? timedResourceRead('color', () => getCachedBlobDetailed(colorUrl))
+            : null,
+        elevUrl
+            ? timedResourceRead('elevation', () =>
+                  getCachedBlobDetailed(elevUrl)
+              )
+            : null,
+        overlayUrl
+            ? timedResourceRead('overlay', () =>
+                  getCachedBlobDetailed(overlayUrl)
+              )
+            : null,
     ]);
-    if (colorBlob) blobs.color = colorBlob;
-    if (elevBlob) blobs.elev = elevBlob;
-    if (overlayBlob) blobs.overlay = overlayBlob;
-    const useLocalColor = state.MAP_SOURCE !== 'satellite' || state.IS_OFFLINE;
+    if (colorCached) {
+        blobs.color = colorCached.blob;
+        blobSources.color = colorCached.source;
+    }
+    if (elevCached) {
+        blobs.elev = elevCached.blob;
+        blobSources.elevation = elevCached.source;
+    }
+    if (overlayCached) {
+        blobs.overlay = overlayCached.blob;
+        blobSources.overlay = overlayCached.source;
+    }
+    const useLocalColor =
+        !reuseColorTexture &&
+        (state.MAP_SOURCE !== 'satellite' || state.IS_OFFLINE);
 
     if (useLocalColor) {
         if (!blobs.color && embeddedPMTiles && zoom <= EMBEDDED_MAX_ZOOM) {
-            blobs.color = await getTileFromEmbedded(
-                cz,
-                Math.floor(tx / cr),
-                Math.floor(ty / cr)
-            );
+            const embedded = await timedResourceRead('color', async () => {
+                const blob = await getTileFromEmbedded(
+                    cz,
+                    Math.floor(tx / cr),
+                    Math.floor(ty / cr)
+                );
+                return blob
+                    ? ({ blob, source: 'embedded-pmtiles' } as const)
+                    : null;
+            });
+            if (embedded) {
+                blobs.color = embedded.blob;
+                blobSources.color = embedded.source;
+            }
         }
 
         if (
@@ -853,12 +935,40 @@ export async function loadTileData(
                 !antiOverflowIT &&
                 state.MAP_SOURCE !== 'opentopomap';
             if (!blobs.color && inPackZone) {
-                blobs.color = await packManager.getTileFromPacks(
-                    cz,
-                    cx,
-                    cy,
-                    'color'
+                const packResult = await timedResourceRead(
+                    'color',
+                    async () => {
+                        if (diagnostics) {
+                            const result =
+                                await packManager.getTileFromPacksDetailed(
+                                    cz,
+                                    cx,
+                                    cy,
+                                    'color',
+                                    false
+                                );
+                            return result
+                                ? {
+                                      blob: result.blob,
+                                      source: `country-pack-${result.source}` as WorkerBlobSource,
+                                  }
+                                : null;
+                        }
+                        const blob = await packManager.getTileFromPacks(
+                            cz,
+                            cx,
+                            cy,
+                            'color'
+                        );
+                        return blob
+                            ? ({ blob, source: 'country-pack-cdn' } as const)
+                            : null;
+                    }
                 );
+                if (packResult) {
+                    blobs.color = packResult.blob;
+                    blobSources.color = packResult.source;
+                }
                 if (state.DEBUG_MODE) {
                     if (blobs.color) {
                         console.log(
@@ -880,33 +990,112 @@ export async function loadTileData(
 
     // L'élévation et l'overlay du pack sont toujours utiles, même en satellite
     if (packManager.hasMountedPacks() && zoom >= 12) {
-        if (!blobs.elev && elevUrl && zoom <= 14)
-            blobs.elev = await packManager.getTileFromPacks(
+        const readPackResource = async (
+            resource: 'elevation' | 'overlay'
+        ): Promise<{ blob: Blob; source: WorkerBlobSource } | null> => {
+            if (diagnostics) {
+                const result = await packManager.getTileFromPacksDetailed(
+                    zoom,
+                    tx,
+                    ty,
+                    resource,
+                    false
+                );
+                return result
+                    ? {
+                          blob: result.blob,
+                          source: `country-pack-${result.source}` as WorkerBlobSource,
+                      }
+                    : null;
+            }
+            const blob = await packManager.getTileFromPacks(
                 zoom,
                 tx,
                 ty,
-                'elevation'
+                resource
             );
-        if (!blobs.overlay && overlayUrl)
-            blobs.overlay = await packManager.getTileFromPacks(
-                zoom,
-                tx,
-                ty,
-                'overlay'
+            return blob
+                ? ({ blob, source: 'country-pack-cdn' } as const)
+                : null;
+        };
+
+        if (!blobs.elev && elevUrl && zoom <= 14) {
+            const result = await timedResourceRead('elevation', () =>
+                readPackResource('elevation')
             );
+            if (result) {
+                blobs.elev = result.blob;
+                blobSources.elevation = result.source;
+            }
+        }
+        if (!blobs.overlay && overlayUrl) {
+            const result = await timedResourceRead('overlay', () =>
+                readPackResource('overlay')
+            );
+            if (result) {
+                blobs.overlay = result.blob;
+                blobSources.overlay = result.source;
+            }
+        }
     }
 
-    return tileWorkerManager.loadTile(
-        tx,
-        ty,
-        elevUrl,
-        colorUrl,
-        overlayUrl,
-        zoom,
-        sourceZoom,
-        blobs,
-        is2D
-    );
+    const task = diagnostics
+        ? tileWorkerManager.loadTile(
+              tx,
+              ty,
+              elevUrl,
+              colorUrl,
+              overlayUrl,
+              zoom,
+              sourceZoom,
+              blobs,
+              is2D,
+              blobSources,
+              true
+          )
+        : tileWorkerManager.loadTile(
+              tx,
+              ty,
+              elevUrl,
+              colorUrl,
+              overlayUrl,
+              zoom,
+              sourceZoom,
+              blobs,
+              is2D
+          );
+    if (!diagnostics) return task;
+
+    markTileTrace(diagnosticTraceId, 'worker-dispatched', {
+        taskId: task.taskId,
+    });
+    return {
+        taskId: task.taskId,
+        promise: task.promise.then((data) => {
+            if (data?.resourceTimings) {
+                for (const resource of [
+                    'color',
+                    'elevation',
+                    'overlay',
+                ] as const) {
+                    const timing = data.resourceTimings[resource];
+                    if (timing) {
+                        recordTileResource(diagnosticTraceId, {
+                            resource,
+                            ...timing,
+                        });
+                    }
+                }
+            }
+            markTileTrace(diagnosticTraceId, 'worker-completed', {
+                taskId: task.taskId,
+                durationMs: data?.workerDurationMs ?? 0,
+                cacheHits: data?.cacheHits ?? 0,
+                networkRequests: data?.networkRequests ?? 0,
+            });
+            return data;
+        }),
+    };
 }
 
 /**

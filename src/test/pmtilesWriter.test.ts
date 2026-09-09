@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+    writeVarint,
     zxyToTileId,
     serializeDirectory,
     buildTwoLevelDirectory,
@@ -32,6 +33,35 @@ function makeEntry(
 function makeTile(tileId: number, content: string): TileWithData {
     return { tileId, data: Buffer.from(content) };
 }
+
+function readVarint(bytes: number[]): number {
+    let value = 0;
+    let multiplier = 1;
+    for (const byte of bytes) {
+        value += (byte & 0x7f) * multiplier;
+        if ((byte & 0x80) === 0) return value;
+        multiplier *= 0x80;
+    }
+    throw new Error('unterminated varint');
+}
+
+describe('writeVarint', () => {
+    it.each([
+        0, 127, 128, 0xffffffff, 100_000_000_000, 200_000_000_000,
+        200_357_913_940,
+    ])('préserve l’entier sûr %s', (value) => {
+        const bytes: number[] = [];
+        writeVarint(bytes, value);
+        expect(readVarint(bytes)).toBe(value);
+    });
+
+    it.each([-1, 1.5, Number.MAX_SAFE_INTEGER + 1])(
+        'refuse la valeur non prise en charge %s',
+        (value) => {
+            expect(() => writeVarint([], value)).toThrow(RangeError);
+        }
+    );
+});
 
 // --- zxyToTileId ---
 

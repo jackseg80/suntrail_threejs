@@ -22,9 +22,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { tileIdToZxy } from 'pmtiles';
 import {
-    lonToTileX, latToTileY, zxyToTileId,
-    serializeDirectory, buildTwoLevelDirectory, buildHeader, HEADER_SIZE,
+    lonToTileX,
+    latToTileY,
+    zxyToTileId,
+    serializeDirectory,
+    buildTwoLevelDirectory,
+    buildHeader,
+    HEADER_SIZE,
     deduplicateTiles,
 } from './pmtiles-writer';
 import { COUNTRIES } from '../src/data/countries';
@@ -54,7 +60,7 @@ const PACKS: Record<string, PackDef> = {
         bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
         zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'swisstopo',
-        version: 3,
+        version: 4,
         countryCode: 'CH',
     },
     france_alps: {
@@ -83,29 +89,54 @@ const RATE_LIMIT_MS = 50;
 
 // ── Polygone Natural Earth 1:10m (conservateur, ~50% de filtrage) ──────────
 
-function isPointInPolygon(px: number, py: number, polygon: number[][]): boolean {
+function isPointInPolygon(
+    px: number,
+    py: number,
+    polygon: number[][]
+): boolean {
     let inside = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const xi = polygon[i][0], yi = polygon[i][1];
-        const xj = polygon[j][0], yj = polygon[j][1];
-        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+        const xi = polygon[i][0],
+            yi = polygon[i][1];
+        const xj = polygon[j][0],
+            yj = polygon[j][1];
+        if (
+            yi > py !== yj > py &&
+            px < ((xj - xi) * (py - yi)) / (yj - yi) + xi
+        ) {
             inside = !inside;
         }
     }
     return inside;
 }
 
-function isTileInCountryPolygon(tx: number, ty: number, zoom: number, code: string): boolean {
+function isTileInCountryPolygon(
+    tx: number,
+    ty: number,
+    zoom: number,
+    code: string
+): boolean {
     const def = COUNTRIES[code];
     if (!def) return false;
     const n = Math.pow(2, zoom);
-    const points = [[tx + 0.5, ty + 0.5], [tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]];
+    const points = [
+        [tx + 0.5, ty + 0.5],
+        [tx, ty],
+        [tx + 1, ty],
+        [tx, ty + 1],
+        [tx + 1, ty + 1],
+    ];
     let inside = 0;
     for (const [px, py] of points) {
-        const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI;
+        const lat =
+            (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / n))) * 180) /
+            Math.PI;
         const lon = (px / n) * 360 - 180;
         for (const ring of def.polygons) {
-            if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) { inside++; break; }
+            if (ring.length >= 3 && isPointInPolygon(lon, lat, ring)) {
+                inside++;
+                break;
+            }
         }
     }
     return inside >= 2;
@@ -113,19 +144,30 @@ function isTileInCountryPolygon(tx: number, ty: number, zoom: number, code: stri
 
 // ── URLs ────────────────────────────────────────────────────────────────────
 
-function getTileUrl(z: number, x: number, y: number, type: TileType, source: PackDef['source'], maptilerKey?: string): string {
+function getTileUrl(
+    z: number,
+    x: number,
+    y: number,
+    type: TileType,
+    source: PackDef['source'],
+    maptilerKey?: string
+): string {
     if (type === 'color') {
         if (source === 'opentopomap') {
             const sub = ['a', 'b', 'c'][(x + y) % 3];
             return `https://${sub}.tile.opentopomap.org/${z}/${x}/${y}.png`;
         }
-        if (source === 'swisstopo') return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
-        if (source === 'basemap_at') return `https://mapsneu.wien.gv.at/basemap/geolandbasemap/normal/google3857/${z}/${y}/${x}.png`;
+        if (source === 'swisstopo')
+            return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/${z}/${x}/${y}.jpeg`;
+        if (source === 'basemap_at')
+            return `https://mapsneu.wien.gv.at/basemap/geolandbasemap/normal/google3857/${z}/${y}/${x}.png`;
         return `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
     }
-    if (type === 'elevation') return `https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${maptilerKey}`;
+    if (type === 'elevation')
+        return `https://api.maptiler.com/tiles/terrain-rgb-v2/${z}/${x}/${y}.png?key=${maptilerKey}`;
     if (type === 'overlay') {
-        if (source === 'swisstopo') return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`;
+        if (source === 'swisstopo')
+            return `https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swisstlm3d-wanderwege/default/current/3857/${z}/${x}/${y}.png`;
         return `https://tile.waymarkedtrails.org/hiking/${z}/${x}/${y}.png`;
     }
     throw new Error('Type inconnu');
@@ -135,11 +177,15 @@ function getTileUrl(z: number, x: number, y: number, type: TileType, source: Pac
 
 async function main() {
     const packId = process.argv.find((_, i, arr) => arr[i - 1] === '--pack');
-    const maptilerKey = process.argv.find((_, i, arr) => arr[i - 1] === '--maptiler-key');
+    const maptilerKey = process.argv.find(
+        (_, i, arr) => arr[i - 1] === '--maptiler-key'
+    );
     const cleanMode = process.argv.includes('--clean');
 
     if (!packId || !PACKS[packId]) {
-        console.error(`Usage: npx tsx scripts/build-country-pack.ts --pack <id> --maptiler-key <key>`);
+        console.error(
+            `Usage: npx tsx scripts/build-country-pack.ts --pack <id> --maptiler-key <key>`
+        );
         console.error(`Packs disponibles : ${Object.keys(PACKS).join(', ')}`);
         process.exit(1);
     }
@@ -147,9 +193,13 @@ async function main() {
     const pack = PACKS[packId];
     const cacheDir = path.resolve(__dirname, `../.cache/pack-${packId}-v4`);
     const outputDir = path.resolve(__dirname, '../output');
-    const outputPath = path.join(outputDir, `suntrail-pack-${pack.id}-v${pack.version}.pmtiles`);
+    const outputPath = path.join(
+        outputDir,
+        `suntrail-pack-${pack.id}-v${pack.version}.pmtiles`
+    );
 
-    if (cleanMode && fs.existsSync(cacheDir)) fs.rmSync(cacheDir, { recursive: true });
+    if (cleanMode && fs.existsSync(cacheDir))
+        fs.rmSync(cacheDir, { recursive: true });
     fs.mkdirSync(cacheDir, { recursive: true });
 
     const mode = pack.countryCode
@@ -160,7 +210,7 @@ async function main() {
     console.log(`Mode : ${mode}`);
 
     const types: TileType[] = ['color', 'elevation', 'overlay'];
-    const refs: { z: number, x: number, y: number, type: TileType }[] = [];
+    const refs: { z: number; x: number; y: number; type: TileType }[] = [];
 
     for (const z of pack.zooms) {
         const xMin = lonToTileX(pack.bounds.minLon, z);
@@ -184,8 +234,12 @@ async function main() {
     // Cache source : téléchargements bruts (peuvent être ré-encodés sans re-download)
     // Extension .raw quel que soit le format — sharp détecte automatiquement
     let dlDone = 0;
+    const downloadFailures: { tile: string; reason: string }[] = [];
     for (const ref of refs) {
-        const srcPath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.raw`);
+        const srcPath = path.join(
+            cacheDir,
+            `${ref.type}_${ref.z}_${ref.x}_${ref.y}.raw`
+        );
 
         if (!fs.existsSync(srcPath)) {
             try {
@@ -193,18 +247,49 @@ async function main() {
                     pack.overview && ref.z < pack.overview.maxZoom
                         ? pack.overview.source
                         : pack.source;
-                const url = getTileUrl(ref.z, ref.x, ref.y, ref.type, effectiveSource, maptilerKey);
+                const url = getTileUrl(
+                    ref.z,
+                    ref.x,
+                    ref.y,
+                    ref.type,
+                    effectiveSource,
+                    maptilerKey
+                );
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const buf = Buffer.from(await resp.arrayBuffer());
                 fs.writeFileSync(srcPath, buf);
-            } catch (e) {}
-            await new Promise(r => setTimeout(r, RATE_LIMIT_MS));
+            } catch (e) {
+                downloadFailures.push({
+                    tile: `${ref.type}/${ref.z}/${ref.x}/${ref.y}`,
+                    reason: e instanceof Error ? e.message : String(e),
+                });
+            }
+            await new Promise((r) => setTimeout(r, RATE_LIMIT_MS));
         }
         dlDone++;
         if (dlDone % 500 === 0 || dlDone === refs.length) {
-            process.stdout.write(`  Telechargement: ${dlDone}/${refs.length}\r`);
+            process.stdout.write(
+                `  Telechargement: ${dlDone}/${refs.length}\r`
+            );
         }
+    }
+
+    if (downloadFailures.length > 0) {
+        console.error(
+            `\nEchec de ${downloadFailures.length} telechargement(s).`
+        );
+        for (const failure of downloadFailures.slice(0, 20)) {
+            console.error(`  ${failure.tile}: ${failure.reason}`);
+        }
+        if (downloadFailures.length > 20) {
+            console.error(
+                `  ... ${downloadFailures.length - 20} autres erreurs`
+            );
+        }
+        throw new Error(
+            'Pack incomplet: relancer le build pour reprendre les telechargements manquants.'
+        );
     }
 
     // Fusion : re-encoder depuis les sources avec la compression courante
@@ -212,7 +297,10 @@ async function main() {
     const tileBuffers: { tileId: number; data: Buffer }[] = [];
     let encDone = 0;
     for (const ref of refs) {
-        const srcPath = path.join(cacheDir, `${ref.type}_${ref.z}_${ref.x}_${ref.y}.raw`);
+        const srcPath = path.join(
+            cacheDir,
+            `${ref.type}_${ref.z}_${ref.x}_${ref.y}.raw`
+        );
         if (fs.existsSync(srcPath)) {
             const buf = fs.readFileSync(srcPath);
             let final = buf;
@@ -221,7 +309,9 @@ async function main() {
             } else if (ref.type === 'elevation') {
                 final = await sharp(buf).webp({ quality: 40 }).toBuffer();
             } else {
-                final = await sharp(buf).png({ palette: true, colors: 64 }).toBuffer();
+                final = await sharp(buf)
+                    .png({ palette: true, colors: 64 })
+                    .toBuffer();
             }
 
             let id = zxyToTileId(ref.z, ref.x, ref.y);
@@ -237,13 +327,23 @@ async function main() {
 
     tileBuffers.sort((a, b) => a.tileId - b.tileId);
     const { entries, dataChunks } = deduplicateTiles(tileBuffers);
+    if (entries.length === 0) throw new Error('Aucune tuile a ecrire.');
     const { rootDir, leafDirs } = buildTwoLevelDirectory(entries, 512);
-    const leafDirData = Buffer.concat(leafDirs.map(d => Buffer.from(d)));
+    const leafDirData = Buffer.concat(leafDirs.map((d) => Buffer.from(d)));
 
-    const metadata = Buffer.from(JSON.stringify({
-        name: pack.name,
-        offsets: { elevation: OFFSET_ELEV, overlay: OFFSET_OVERLAY }
-    }));
+    const metadata = Buffer.from(
+        JSON.stringify({
+            name: pack.name,
+            offsets: { elevation: OFFSET_ELEV, overlay: OFFSET_OVERLAY },
+            logicalMinZoom: pack.zooms[0],
+            logicalMaxZoom: pack.zooms[pack.zooms.length - 1],
+        })
+    );
+
+    // Elevation and overlay resources use high Hilbert IDs in the same PMTiles
+    // archive. The header must cover their derived pseudo zoom, otherwise the
+    // standard PMTiles reader rejects them before consulting the directory.
+    const archiveMaxZoom = tileIdToZxy(entries[entries.length - 1].tileId)[0];
 
     const header = buildHeader({
         rootDirOffset: HEADER_SIZE,
@@ -252,15 +352,21 @@ async function main() {
         metadataLength: metadata.length,
         leafDirOffset: HEADER_SIZE + rootDir.length + metadata.length,
         leafDirLength: leafDirData.length,
-        tileDataOffset: HEADER_SIZE + rootDir.length + metadata.length + leafDirData.length,
+        tileDataOffset:
+            HEADER_SIZE + rootDir.length + metadata.length + leafDirData.length,
         tileDataLength: dataChunks.reduce((sum, c) => sum + c.length, 0),
         numTiles: entries.length,
         minZoom: pack.zooms[0],
-        maxZoom: pack.zooms[pack.zooms.length - 1],
-        bounds: { minLon: pack.bounds.minLon, minLat: pack.bounds.minLat, maxLon: pack.bounds.maxLon, maxLat: pack.bounds.maxLat },
+        maxZoom: archiveMaxZoom,
+        bounds: {
+            minLon: pack.bounds.minLon,
+            minLat: pack.bounds.minLat,
+            maxLon: pack.bounds.maxLon,
+            maxLat: pack.bounds.maxLat,
+        },
         centerLon: (pack.bounds.minLon + pack.bounds.maxLon) / 2,
         centerLat: (pack.bounds.minLat + pack.bounds.maxLat) / 2,
-        centerZoom: pack.zooms[0]
+        centerZoom: pack.zooms[0],
     });
 
     const headerView = new DataView(header);
@@ -275,7 +381,9 @@ async function main() {
     fs.closeSync(fd);
 
     console.log(`\n✓ TERMINE : ${outputPath}`);
-    console.log(`Taille finale : ${(fs.statSync(outputPath).size / 1024 / 1024).toFixed(1)} Mo`);
+    console.log(
+        `Taille finale : ${(fs.statSync(outputPath).size / 1024 / 1024).toFixed(1)} Mo`
+    );
 }
 
 main().catch(console.error);

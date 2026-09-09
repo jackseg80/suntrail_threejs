@@ -6,6 +6,8 @@ import {
     terrainUniforms,
     activeTiles,
     fadingOutTiles,
+    retryFallbackColorTiles,
+    rebuildActiveTiles,
 } from './terrain';
 import {
     worldToLngLat,
@@ -19,6 +21,9 @@ describe('terrain.ts', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         state.scene = new THREE.Scene();
+        state.IS_2D_MODE = false;
+        state.RESOLUTION = 64;
+        window.history.replaceState({}, '', '/');
     });
 
     afterEach(() => {
@@ -101,6 +106,34 @@ describe('terrain.ts', () => {
             tile.colorTex = new THREE.Texture();
             tile.buildMesh(128);
             expect(tile.mesh).toBeNull();
+        });
+
+        it('removes visible color placeholders so they can be requested again', () => {
+            state.camera = null;
+            const tile = new Tile(10, 10, 5, '5/10/10');
+            tile.usesFallbackColor = true;
+            const dispose = vi.spyOn(tile, 'dispose');
+            activeTiles.set(tile.key, tile);
+
+            retryFallbackColorTiles();
+
+            expect(dispose).toHaveBeenCalledOnce();
+            expect(activeTiles.has(tile.key)).toBe(false);
+        });
+
+        it('replaces color-only high-zoom tiles before returning to 3D', () => {
+            state.IS_2D_MODE = true;
+            const tile = new Tile(10, 10, 14, '14/10/10');
+            tile.elevationTex = new THREE.Texture();
+            tile.colorTex = new THREE.Texture();
+            activeTiles.set(tile.key, tile);
+            const dispose = vi.spyOn(tile, 'dispose');
+
+            state.IS_2D_MODE = false;
+            rebuildActiveTiles();
+
+            expect(dispose).toHaveBeenCalledOnce();
+            expect(activeTiles.has(tile.key)).toBe(false);
         });
     });
 

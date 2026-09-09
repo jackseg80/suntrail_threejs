@@ -1,11 +1,18 @@
-# SunTrail — Roadmap produit révisée (version source v5.88.0)
+# SunTrail — Roadmap produit révisée (version source v5.89.0)
 
-> Révision produit : 2026-09-06, documentation alignée le 2026-09-07. v5.88.0 est clôturée pour
-> publication GitHub ; aucun upload Play inclus.
+> Révision produit : 2026-09-09. v5.89.0 est validée comme candidate locale ; commit, tag, push,
+> release GitHub et éventuelle publication Play restent séparés.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
 > Inventaire des fonctions réellement actives : [docs/FEATURES.md](docs/FEATURES.md).
+
+> Décision du 2026-09-08 : insérer [v5.89 — évaluation de l'architecture cartographique](docs/plans/V5_89_MAP_ARCHITECTURE_EVALUATION.md)
+> avant les nouvelles fonctions. Mesurer le chargement froid/local/chaud, les presets et la mémoire
+> avant de décider de conserver ou remplacer le moteur. Les lots experts/lumière ci-dessous sont
+> des périmètres à redistribuer en 5.90+ après bilan ; leurs anciens numéros 6.0/6.1 ne sont plus
+> des engagements de livraison. Une future 6.0 doit correspondre à un saut d'expérience démontré,
+> avec ou sans WebGPU. Le compte/sync reste différé, sans nouvelle date ni version engagée.
 
 ## Cap produit
 
@@ -59,11 +66,12 @@ heure de passage et conditions.
 | **v5.86.2** | Lire l'activité en cours sans confondre Sortie et Bibliothèque | Tableau de bord contextuel, import déplacé, promesse Free/Pro honnête |
 | **v5.87.0** | Conserver des traces pleine fidélité sans apparition/disparition implicite | `TrackRepository`, migration et règles de capacité non destructives |
 | **v5.88.0** | Assainir la base avant v6 et garder le mode combiné fluide sur A53 | Audit global, dépendances, baseline mesurée et coûts croissants bornés sans perte |
-| **v6.0.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition |
-| **v6.1.0** | Choisir plus facilement le bon moment | Lumière utile : soleil, ombre, azimuts et lecture des conditions, sans nouveau compte |
-| **v6.2.0 — reportée** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
+| **v5.89.0 — candidate locale** | Décider de l'architecture sur preuve | Pipeline couleur d'abord, promotion 2D→3D et caches bornés ; Three.js/WebGL conservé |
+| **5.90+ — lot expert, ex-v6.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition |
+| **5.90+ — lot lumière, ex-v6.1** | Choisir plus facilement le bon moment | Lumière utile : soleil, ombre, azimuts et lecture des conditions, sans nouveau compte |
+| **Compte/sync — reporté, ex-v6.2** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
 
-Le compte et la synchronisation ne sont un prérequis d'aucun usage v6.0/v6.1 : routes, dossiers,
+Le compte et la synchronisation ne sont un prérequis d'aucun usage des lots experts/lumière : routes, dossiers,
 notes, favoris et analyse lumière restent locaux et utilisables sans connexion. v5.84 est un jalon
 technique interne/fermé ; elle n'est pas promue publiquement comme un guidage complet. Le
 durcissement natif devient v5.85, suivi d'une stabilisation corrective v5.85.1, puis de readiness.
@@ -430,7 +438,7 @@ fond ou l'autonomie sont modifiés, ajouter le gate de surcoût médian Guidance
 de batterie/heure face à REC seul sur A53. Prompt autonome :
 [V5_88_PERFORMANCE_STABILIZATION.md](docs/plans/prompts/V5_88_PERFORMANCE_STABILIZATION.md).
 
-## v6.0.0 — Power user & finition professionnelle locale
+## Lot expert local — ex-v6.0, à répartir en 5.90+ après v5.89
 
 - drag précis, variantes/branches de waypoints, duplication et undo/redo ;
 - comparaison côte à côte ou superposée de deux routes, plus comparaison dates/heures ;
@@ -444,7 +452,7 @@ de batterie/heure face à REC seul sur A53. Prompt autonome :
 Le parcours débutant ne gagne aucune étape obligatoire. Les données locales restent séparées de la
 future enveloppe de synchronisation ; aucune migration cloud n'est introduite dans ce lot.
 
-## v6.1.0 — Lumière utile & préparation photo
+## Lot lumière — ex-v6.1, à répartir en 5.90+ après v5.89
 
 Exposer de façon sobre la valeur déjà présente dans SunTrail, sans transformer l'application en
 outil photo spécialisé ni créer un nouveau backend :
@@ -465,9 +473,9 @@ jamais une garantie de conditions réelles.
 **Gate :** mêmes résultats pour les cas solaires déterministes, dates/fuseaux/heure d'été testés,
 aucune régression de préparation ou batterie et validation mobile S23/A53 des états lisibles.
 
-## v6.2.0 — Compte optionnel & synchronisation PC–Android (dernier lot planifié)
+## Compte optionnel & synchronisation PC–Android — ex-v6.2, différé
 
-Ce lot ne commence qu'après v6.0/v6.1 et une décision active confirmant un besoin réel de continuité
+Ce lot ne commence qu'après les lots experts/lumière et une décision active confirmant un besoin réel de continuité
 entre appareils. Préparer alors l'infrastructure avant d'exposer les contrôles :
 
 - dossier `supabase/`, migrations reproductibles, RLS owner-only et tests à deux utilisateurs ;

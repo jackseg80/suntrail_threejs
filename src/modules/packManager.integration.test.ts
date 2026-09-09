@@ -122,6 +122,37 @@ describe('PackManager Integration', () => {
         expect(packManager.findPackContaining(48.13, 11.58)).toBeNull(); // Munich
     });
 
+    it('does not keep an installed state when the OPFS pack file is missing', async () => {
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify({
+                switzerland: {
+                    id: 'switzerland',
+                    status: 'installed',
+                    installedVersion: 3,
+                    filePath: 'opfs://packs/switzerland.pmtiles',
+                    sizeMB: 664,
+                },
+            })
+        );
+
+        await packManager.initialize();
+
+        const reconciled = packManager.getPackState('switzerland');
+        expect(reconciled).toMatchObject({
+            installedVersion: 0,
+            filePath: null,
+            sizeMB: 0,
+        });
+        expect(reconciled?.status).not.toBe('installed');
+        expect(state.installedPacks).not.toContain('switzerland');
+        expect(
+            (packManager as any).mountedArchives.get('switzerland')
+        ).toMatchObject({
+            source: 'cdn',
+        });
+    });
+
     it('should serve a tile from a mounted pack', async () => {
         // Simuler fichier présent
         const mockRoot = await (navigator as any).storage.getDirectory();
@@ -231,6 +262,34 @@ describe('PackManager Integration', () => {
         ).resolves.toBeNull();
         state.IS_OFFLINE = true;
         await expect(packManager.getTileFromPacks(z, x, y)).resolves.toBeNull();
+    });
+
+    it('does not report a CDN fallback as an offline OPFS read', async () => {
+        const archive = {
+            getZxy: vi.fn().mockResolvedValue({
+                data: new Uint8Array([1, 2, 3]).buffer,
+            }),
+        };
+        const mountedArchives = (packManager as any).mountedArchives as Map<
+            string,
+            unknown
+        >;
+        mountedArchives.clear();
+        mountedArchives.set('switzerland', {
+            archive,
+            source: 'cdn',
+        });
+
+        const z = 12;
+        const x = 2133;
+        const y = 1450;
+
+        await expect(
+            packManager.getOfflineTileFromPacks(z, x, y)
+        ).resolves.toBeNull();
+        await expect(
+            packManager.getTileFromPacksDetailed(z, x, y, 'color', false)
+        ).resolves.toMatchObject({ source: 'cdn', packId: 'switzerland' });
     });
 });
 

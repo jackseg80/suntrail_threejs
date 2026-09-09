@@ -1,10 +1,30 @@
-# AI Performance & Constants Guide (v5.88.0)
+# AI Performance & Constants Guide (v5.89.0)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
 > La synthèse de clôture ci-dessous décrit l'état actuel. Les sous-sections datées qui suivent
 > conservent la chronologie du diagnostic 5.88 ; leurs mentions « prêt », « non installé » ou
 > « ouvert » étaient vraies au moment de la mesure et ne remplacent pas la synthèse finale.
+
+## v5.89 — chargement cartographique et mémoire
+
+Au LOD 14 en 2D, la couleur est désormais soumise sans attendre le relief. Le passage en 3D
+réutilise cette texture et ne charge que les ressources terrain manquantes. Les caches 2D et 3D
+gardent des clés distinctes, tandis qu'un comptage de propriétaires protège les textures partagées.
+Le préchargement au repos est borné par preset et différé jusqu'à deux secondes de stabilité.
+
+Sur A53 Équilibré avec la couleur réellement lue dans le pack Suisse OPFS, la médiane de première
+soumission passe de 1 074,4 à 253,6 ms lorsque le relief quitte le chemin critique 2D. Sur trois
+processus neufs, la 2D légère présente une médiane de 314 577 Ko de PSS. Après passage en 3D et
+repos, la transition corrigée présente une médiane de 689 840 Ko contre 814 008 Ko pour le chemin
+complet mesuré. Un passage a atteint 857 901 Ko avant de redescendre à 645 854 Ko ; cette
+variabilité impose une surveillance, sans croissance continue observée.
+
+Ces résultats attribuent le défaut au pipeline de ressources et à leur rétention avant rendu. Ils
+ne justifient pas un portage WebGPU. Les essais réels A53/S23 rapportés par le propriétaire sont
+positifs ; un contrôle court sur Galaxy S7/Android 8 rend aussi la 3D sans le plantage antérieur.
+La méthode et les limites sont consignées dans
+[l'évaluation 5.89](plans/V5_89_MAP_ARCHITECTURE_EVALUATION.md).
 
 ## v5.88 — bilan A53/S23 clôturé le 2026-09-06
 

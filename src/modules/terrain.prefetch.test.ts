@@ -28,6 +28,7 @@ function cache(key: string) {
 
 describe('adjacent LOD prefetch with the real bounded texture cache', () => {
     beforeEach(() => {
+        window.history.replaceState({}, '', '/');
         disposeAllCachedTiles();
         activeTiles.clear();
         fadingOutTiles.clear();
@@ -49,8 +50,8 @@ describe('adjacent LOD prefetch with the real bounded texture cache', () => {
     function pinVisible(count: number) {
         for (let i = 0; i < count; i++) {
             const key = `visible-${i}`;
-            activeTiles.set(key, { key, zoom: 17 } as Tile);
             const cacheKey = getTileCacheKey(key, 17);
+            activeTiles.set(key, { key, zoom: 17, cacheKey } as Tile);
             markCacheKeyActive(cacheKey);
             cache(cacheKey);
         }
@@ -62,7 +63,7 @@ describe('adjacent LOD prefetch with the real bounded texture cache', () => {
             prefetchAdjacentLODs();
             for (const tile of loadQueue) {
                 loaded.push(tile);
-                cache(getTileCacheKey(tile.key, tile.zoom));
+                cache(tile.cacheKey);
                 tile.onLoadSettled?.();
             }
             loadQueue.clear();
@@ -74,7 +75,7 @@ describe('adjacent LOD prefetch with the real bounded texture cache', () => {
         pinVisible(62);
         const loaded = runWaves(10);
         expect(loaded.length).toBeGreaterThan(0);
-        expect(loaded.length).toBeLessThanOrEqual(58);
+        expect(loaded.length).toBeLessThanOrEqual(20);
         expect(new Set(loaded.map((tile) => tile.key)).size).toBe(
             loaded.length
         );
@@ -83,12 +84,22 @@ describe('adjacent LOD prefetch with the real bounded texture cache', () => {
         );
         expect(getCacheSize()).toBeLessThanOrEqual(120);
         for (const tile of activeTiles.values()) {
-            expect(hasInCache(getTileCacheKey(tile.key, tile.zoom))).toBe(true);
+            expect(hasInCache(tile.cacheKey)).toBe(true);
         }
         expect(runWaves(3)).toHaveLength(0);
 
         state.controls!.target.x += 10_000;
         expect(runWaves(4).length).toBeGreaterThan(0);
+        expect(runWaves(3)).toHaveLength(0);
+    });
+
+    it('limits balanced mobile background work to one bounded working set', () => {
+        pinVisible(12);
+
+        const loaded = runWaves(10);
+
+        expect(loaded).toHaveLength(20);
+        expect(new Set(loaded.map((tile) => tile.key)).size).toBe(20);
         expect(runWaves(3)).toHaveLength(0);
     });
 
@@ -98,10 +109,24 @@ describe('adjacent LOD prefetch with the real bounded texture cache', () => {
         expect(getCacheSize()).toBe(120);
     });
 
+    it('can reserve same-LOD neighbors in the bounded diagnostic experiment', () => {
+        window.history.replaceState({}, '', '/?tileSameLodPrefetch=1');
+
+        const loaded = runWaves(1);
+
+        expect(loaded.length).toBeGreaterThan(0);
+        expect(loaded.every((tile) => tile.zoom === state.ZOOM)).toBe(true);
+        expect(loaded.length).toBeLessThanOrEqual(20);
+    });
+
     it('reserves space for visible tiles that have not completed their load', () => {
         for (let i = 0; i < 120; i++) {
             const key = `pending-${i}`;
-            activeTiles.set(key, { key, zoom: 17 } as Tile);
+            activeTiles.set(key, {
+                key,
+                zoom: 17,
+                cacheKey: getTileCacheKey(key, 17),
+            } as Tile);
         }
         expect(runWaves(3)).toHaveLength(0);
     });

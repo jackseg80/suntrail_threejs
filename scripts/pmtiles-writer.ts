@@ -14,8 +14,9 @@ export function lonToTileX(lon: number, zoom: number): number {
 export function latToTileY(lat: number, zoom: number): number {
     const latRad = (lat * Math.PI) / 180;
     return Math.floor(
-        ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
-        Math.pow(2, zoom)
+        ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) /
+            2) *
+            Math.pow(2, zoom)
     );
 }
 
@@ -25,8 +26,12 @@ export function latToTileY(lat: number, zoom: number): number {
 export function zxyToTileId(z: number, x: number, y: number): number {
     if (z === 0) return 0;
     const n = 1 << z;
-    let rx: number, ry: number, s: number, d = 0;
-    let tx = x, ty = y;
+    let rx: number,
+        ry: number,
+        s: number,
+        d = 0;
+    let tx = x,
+        ty = y;
     for (s = n >> 1; s > 0; s >>= 1) {
         rx = (tx & s) > 0 ? 1 : 0;
         ry = (ty & s) > 0 ? 1 : 0;
@@ -44,12 +49,20 @@ export function zxyToTileId(z: number, x: number, y: number): number {
 }
 
 export function writeVarint(buf: number[], val: number): void {
+    if (!Number.isSafeInteger(val) || val < 0) {
+        throw new RangeError(
+            `Varint value must be a non-negative safe integer: ${val}`
+        );
+    }
     let v = val;
     while (v >= 0x80) {
-        buf.push((v & 0x7f) | 0x80);
-        v >>>= 7;
+        // Bitwise shifts coerce numbers to uint32 and corrupt the 100B/200B
+        // resource offsets used by country packs. Arithmetic keeps all 53 safe
+        // integer bits available in JavaScript.
+        buf.push((v % 0x80) | 0x80);
+        v = Math.floor(v / 0x80);
     }
-    buf.push(v & 0x7f);
+    buf.push(v);
 }
 
 export function setUint64(view: DataView, offset: number, val: number): void {
@@ -80,7 +93,10 @@ export function serializeDirectory(entries: TileEntry[]): Uint8Array {
 
     for (let i = 0; i < entries.length; i++) {
         const e = entries[i];
-        if (i > 0 && e.offset === entries[i - 1].offset + entries[i - 1].length) {
+        if (
+            i > 0 &&
+            e.offset === entries[i - 1].offset + entries[i - 1].length
+        ) {
             writeVarint(buf, 0);
         } else {
             writeVarint(buf, e.offset + 1);
@@ -155,10 +171,10 @@ export function buildHeader(opts: BuildHeaderOpts): ArrayBuffer {
     setUint64(view, 80, opts.numTiles);
     setUint64(view, 88, opts.numTiles);
 
-    view.setUint8(96, 1);  // clustered
-    view.setUint8(97, 0);  // internal compression = none
-    view.setUint8(98, 0);  // tile compression = none (WebP est déjà compressé)
-    view.setUint8(99, 4);  // tile type = webp
+    view.setUint8(96, 1); // clustered
+    view.setUint8(97, 0); // internal compression = none
+    view.setUint8(98, 0); // tile compression = none (WebP est déjà compressé)
+    view.setUint8(99, 4); // tile type = webp
     view.setUint8(100, opts.minZoom);
     view.setUint8(101, opts.maxZoom);
 
@@ -217,7 +233,7 @@ export function deduplicateTiles(sorted: TileWithData[]): DeduplicateResult {
     let savedBytes = 0;
 
     // Pré-calcul des hashes FNV-1a 32-bit (pur JS, suffisant pour détection de doublons)
-    const hashes = sorted.map(t => fnv1a32(t.data));
+    const hashes = sorted.map((t) => fnv1a32(t.data));
 
     let i = 0;
     while (i < sorted.length) {

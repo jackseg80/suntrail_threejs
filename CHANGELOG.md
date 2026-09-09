@@ -1,3 +1,47 @@
+## [5.89.0] - 2026-09-09 — Réactivité cartographique et mémoire
+
+### Amélioré
+
+- Afficher en 2D haute résolution la couleur dès qu'elle est disponible, sans attendre le relief
+  et les autres données nécessaires uniquement à la 3D.
+- Réutiliser la texture couleur déjà décodée lors du passage de la 2D à la 3D, avec des clés de
+  cache distinctes et un comptage de propriétaires qui évite les libérations prématurées.
+- Borner le préchargement au repos selon le preset et la mémoire disponible, puis écarter avant
+  construction les tuiles devenues inutiles.
+- Distinguer dans le diagnostic les lectures mémoire, CacheStorage, réseau, PMTiles embarqué,
+  pack pays local OPFS et repli CDN.
+
+### Corrigé
+
+- Ne plus conserver comme succès une image de secours créée après un échec réseau et relancer les
+  seules tuiles visibles concernées au retour de la connexion.
+- Retirer l'état local `installed` lorsqu'un fichier de pack OPFS annoncé n'existe plus.
+- Corriger l'écriture PMTiles des grands identifiants sur plus de 32 bits, le calcul du zoom maximal
+  et l'échec silencieux du constructeur de packs. Le pack Suisse v3 déjà publié reste limité à sa
+  couche couleur ; sa reconstruction v4 et son éventuelle publication sont séparées de la release.
+
+### Validation
+
+- Sur Galaxy A53 Équilibré au LOD 14 avec le pack Suisse, la médiane de première soumission passe
+  de 1 074,4 ms pour couleur + relief à 253,6 ms pour la couleur seule. La 2D légère se stabilise à
+  une médiane de 314 577 Ko de PSS sur les trois processus neufs mesurés.
+- Le passage 2D vers 3D reste correct sur A53 sans tuile noire. La médiane après repos est de
+  689 840 Ko de PSS pour la transition corrigée contre 814 008 Ko pour le chemin complet mesuré.
+- Le propriétaire rapporte des essais réels positifs sur A53 et S23. Le Galaxy S7 sous Android 8
+  démarre, rend la carte et accepte la 3D lors d'un contrôle court, alors que l'ancienne version
+  plantait sur cet appareil. La Tab S8 a reçu et démarré le paquet diagnostic.
+- 157 fichiers et 1 783 tests passent, ainsi que les contrôles TypeScript, formatage/lint, builds
+  Web et Capacitor, budget PWA, audit des quatre langues et la chaîne Gradle complète. Les
+  métadonnées finales sont `5.89.0` / Android `909` ; l'APK diagnostic et l'AAB release signé sont
+  construits localement. Le smoke Playwright courant reste bloqué dans le lanceur avant la première
+  assertion et n'est pas compté comme une validation.
+
+### Décision d'architecture
+
+- Conserver Three.js/WebGL : le coût dominant observé venait du chargement et de la rétention des
+  ressources avant le GPU. WebGPU reste une option future seulement si un coût de rendu dominant
+  est démontré avec les mêmes données déjà en mémoire.
+
 ## Documentation - 2026-09-07
 
 ### Modifié

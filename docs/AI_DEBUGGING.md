@@ -17,6 +17,31 @@ Les anciens exemples qui modifiaient `state` dans la console ne sont plus valide
 | **Cache** | Reproduire avec cache chaud puis froid dans une copie de diagnostic | Évite de supprimer les données de l'utilisateur ou de confondre cache et calcul. |
 | **Guidage/REC** | Route de test + service Android ou fallback Web | Contrôle les flux réellement utilisés, y compris reprise et STOP. |
 
+## Diagnostic chronométré des tuiles
+
+Ajouter `?tileDiagnostics=1` à `app.html` pour activer le relevé sans modifier le comportement
+par défaut. L'API `window.suntrailTileDiagnostics` expose :
+
+- `clear()` pour repartir d'une trace vide avant un geste ;
+- `snapshot()` pour obtenir les événements en mémoire ;
+- `download()` pour enregistrer le JSON ;
+- `disable()` et `enable()` pour contrôler le coût de l'instrumentation.
+
+Chaque trace contient le preset, le mode 2D/3D, l'attente dans la file, les lectures couleur,
+relief et overlay, leur provenance, le worker, la construction et la première soumission au
+rendu. Les provenances `country-pack-opfs` et `country-pack-cdn` doivent être interprétées
+strictement : seule la première prouve une lecture du pack installé. `navigation-cache` et
+`worker-cache` ne prouvent pas un pack local.
+
+`first-render-submitted` n'est pas la présentation réelle par le GPU. Pour une décision produit,
+compléter par la couverture utile du viewport, les intervalles de frames et la mémoire. Faire
+au moins trois répétitions par scénario et conserver séparément : réseau froid, cache persistant
+après rechargement, pack OPFS et retour à textures mémoire.
+
+Les outils de navigateur qui ne voient pas les objets JavaScript de la page peuvent cliquer le
+bouton technique `Publier le diagnostic des tuiles`, présent uniquement avec le paramètre, puis
+lire le JSON de `#suntrail-tile-diagnostics-data`.
+
 ---
 
 ## Historique des incidents corrigés

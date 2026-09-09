@@ -147,6 +147,17 @@ describe('setManualOffline', () => {
         expect(state.IS_OFFLINE).toBe(false);
     });
 
+    it('signale le retour online après la désactivation manuelle', () => {
+        const handler = vi.fn();
+        eventBus.on('networkOnline', handler);
+
+        setManualOffline(true);
+        setManualOffline(false);
+
+        expect(handler).toHaveBeenCalledOnce();
+        eventBus.off('networkOnline', handler);
+    });
+
     it('override manuel empêche auto-restore quand réseau revient', () => {
         // L'utilisateur force offline manuellement
         setManualOffline(true);

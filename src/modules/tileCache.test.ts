@@ -14,6 +14,9 @@ import {
     purgeOldPixelData,
     retainCachedTileData,
     releaseCachedTileData,
+    getPrefetchBudget,
+    getTileCacheStats,
+    getTileCacheKey,
 } from './tileCache';
 
 // Mock de utils pour isMobileDevice
@@ -49,6 +52,58 @@ describe('tileCache.ts', () => {
         expect(cached).not.toBeNull();
         expect(cached?.elev).toBe(elev);
         expect(cached?.color).toBe(color);
+    });
+
+    it('reports cache ownership and a decoded-byte estimate', () => {
+        const elev = new THREE.Texture({ width: 2, height: 3 } as any);
+        const color = new THREE.Texture({ width: 4, height: 5 } as any);
+        addToCache(
+            'measured',
+            elev,
+            new Uint8ClampedArray(8),
+            color,
+            null,
+            null
+        );
+        markCacheKeyActive('measured');
+
+        expect(getTileCacheStats()).toMatchObject({
+            entries: 1,
+            maxEntries: 400,
+            activeKeys: 1,
+            cachedActiveEntries: 1,
+            cachedInactiveEntries: 0,
+            cachedTextures: 2,
+            estimatedTextureBytes: (2 * 3 + 4 * 5) * 4,
+            pixelDataBytes: 8,
+            maxBackgroundPrefetchEntries: 400,
+        });
+        markCacheKeyInactive('measured');
+    });
+
+    it('caps background prefetch independently from the mobile cache size', () => {
+        vi.mocked(isMobileDevice).mockReturnValue(true);
+
+        state.PERFORMANCE_PRESET = 'eco';
+        expect(getPrefetchBudget([])).toBe(8);
+        state.PERFORMANCE_PRESET = 'balanced';
+        expect(getPrefetchBudget([])).toBe(20);
+        state.PERFORMANCE_PRESET = 'performance';
+        expect(getPrefetchBudget([])).toBe(24);
+        state.PERFORMANCE_PRESET = 'ultra';
+        expect(getPrefetchBudget([])).toBe(32);
+
+        expect(
+            getPrefetchBudget(Array.from({ length: 155 }, (_, i) => `r${i}`))
+        ).toBe(5);
+    });
+
+    it('separates explicit color-only and terrain cache entries', () => {
+        state.MAP_SOURCE = 'swisstopo';
+        state.SHOW_TRAILS = false;
+
+        expect(getTileCacheKey('tile', 14, true)).toContain('_2D_tile');
+        expect(getTileCacheKey('tile', 14, false)).toContain('_3D_tile');
     });
 
     it('should respect maximum cache size (FIFO)', () => {
@@ -122,6 +177,32 @@ describe('tileCache.ts', () => {
         releaseCachedTileData({ elev, color, overlay: null, normal: null });
 
         expect(disposeElev).toHaveBeenCalledOnce();
+        expect(disposeColor).toHaveBeenCalledOnce();
+    });
+
+    it('keeps a texture owned by two cache entries until both are evicted', () => {
+        const sharedColor = new THREE.Texture();
+        const disposeColor = vi.spyOn(sharedColor, 'dispose');
+
+        addToCache(
+            'color-only',
+            new THREE.Texture(),
+            null,
+            sharedColor,
+            null,
+            null
+        );
+        addToCache(
+            'terrain',
+            new THREE.Texture(),
+            null,
+            sharedColor,
+            null,
+            null
+        );
+
+        expect(getTileCacheStats().cachedTextures).toBe(3);
+        disposeAllCachedTiles();
         expect(disposeColor).toHaveBeenCalledOnce();
     });
 

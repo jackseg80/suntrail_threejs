@@ -63,7 +63,7 @@ const textureRefs = new WeakMap<THREE.Texture, number>();
  * Une texture toujours dans le cache est libérée par l'éviction, pas par la
  * tuile qui la partage.
  */
-const cachedTextures = new Set<THREE.Texture>();
+const cachedTextureOwners = new Map<THREE.Texture, number>();
 
 /**
  * Libère la texture GPU. On ferme volontairement JAMAIS l'ImageBitmap :
@@ -116,7 +116,7 @@ export function releaseCachedTileData(data: TileTextureRefs): void {
         const n = (textureRefs.get(t) || 1) - 1;
         if (n <= 0) {
             textureRefs.delete(t);
-            if (!cachedTextures.has(t)) disposeCachedTexture(t);
+            if (!cachedTextureOwners.has(t)) disposeCachedTexture(t);
         } else {
             textureRefs.set(t, n);
         }
@@ -132,7 +132,12 @@ const dataCache = new BoundedCache<string, CachedTileData>({
     onEvict: (_key, data) => {
         for (const t of allTextures(data)) {
             if (!t) continue;
-            cachedTextures.delete(t);
+            const owners = (cachedTextureOwners.get(t) || 1) - 1;
+            if (owners > 0) {
+                cachedTextureOwners.set(t, owners);
+                continue;
+            }
+            cachedTextureOwners.delete(t);
             // Ne libérer que les textures sans aucune tuile vivante : les autres
             // restent affichées par leur mesh et seront libérées à son dispose.
             if ((textureRefs.get(t) || 0) === 0) {
@@ -166,16 +171,94 @@ function getMaxCacheSize(): number {
 }
 
 /**
+ * Background work must stay well below the full cache capacity on mobile.
+ * The remaining entries are kept for visible tiles, transitions and warm
+ * returns. A small fixed working set also prevents successive idle waves from
+ * decoding every adjacent-LOD candidate before LRU eviction catches up.
+ */
+function getMaxBackgroundPrefetchEntries(): number {
+    if (!isMobileDevice()) return getMaxCacheSize();
+    if (state.PERFORMANCE_PRESET === 'ultra') return 32;
+    if (state.PERFORMANCE_PRESET === 'performance') return 24;
+    if (state.PERFORMANCE_PRESET === 'balanced') return 20;
+    return 8;
+}
+
+/**
  * Reserve room for displayed and pending tiles before selecting prefetch neighbors.
  */
 export function getPrefetchBudget(reservedKeys: Iterable<string>): number {
     const reserved = new Set([...activeCacheKeys, ...reservedKeys]);
-    return Math.max(0, getMaxCacheSize() - reserved.size);
+    return Math.max(
+        0,
+        Math.min(
+            getMaxBackgroundPrefetchEntries(),
+            getMaxCacheSize() - reserved.size
+        )
+    );
+}
+
+export interface TileCacheStats {
+    entries: number;
+    maxEntries: number;
+    activeKeys: number;
+    cachedActiveEntries: number;
+    cachedInactiveEntries: number;
+    cachedTextures: number;
+    estimatedTextureBytes: number;
+    pixelDataBytes: number;
+    maxBackgroundPrefetchEntries: number;
+}
+
+function estimateTextureBytes(texture: THREE.Texture): number {
+    const image = texture.image as
+        | {
+              width?: number;
+              height?: number;
+              data?: ArrayBufferView;
+          }
+        | undefined;
+    if (!image) return 0;
+    if (image.data && ArrayBuffer.isView(image.data)) {
+        return image.data.byteLength;
+    }
+    const width = Number(image.width) || 0;
+    const height = Number(image.height) || 0;
+    return width > 0 && height > 0 ? width * height * 4 : 0;
+}
+
+/** Diagnostic estimate for the decoded cache owned by this module. */
+export function getTileCacheStats(): TileCacheStats {
+    let cachedActiveEntries = 0;
+    let pixelDataBytes = 0;
+    for (const [key, data] of dataCache.entries()) {
+        if (activeCacheKeys.has(key)) cachedActiveEntries++;
+        pixelDataBytes += data.pixelData?.byteLength ?? 0;
+    }
+    let estimatedTextureBytes = 0;
+    for (const texture of cachedTextureOwners.keys()) {
+        estimatedTextureBytes += estimateTextureBytes(texture);
+    }
+    return {
+        entries: dataCache.size,
+        maxEntries: getMaxCacheSize(),
+        activeKeys: activeCacheKeys.size,
+        cachedActiveEntries,
+        cachedInactiveEntries: dataCache.size - cachedActiveEntries,
+        cachedTextures: cachedTextureOwners.size,
+        estimatedTextureBytes,
+        pixelDataBytes,
+        maxBackgroundPrefetchEntries: getMaxBackgroundPrefetchEntries(),
+    };
 }
 
 /** Génère une clé de cache cohérente pour une tuile. */
-export function getTileCacheKey(key: string, zoom: number): string {
-    const is2D = zoom <= 10 || state.RESOLUTION <= 2;
+export function getTileCacheKey(
+    key: string,
+    zoom: number,
+    dataMode2D: boolean = zoom <= 10 || state.RESOLUTION <= 2
+): string {
+    const is2D = zoom <= 10 || dataMode2D;
     return `${state.MAP_SOURCE}_z${zoom}_${state.SHOW_TRAILS}_${is2D ? '2D' : '3D'}_${key}`;
 }
 
@@ -255,7 +338,8 @@ export function addToCache(
         normal: normalTex,
     };
     for (const t of allTextures(data)) {
-        if (t) cachedTextures.add(t);
+        if (t)
+            cachedTextureOwners.set(t, (cachedTextureOwners.get(t) || 0) + 1);
     }
     dataCache.set(key, data);
 }

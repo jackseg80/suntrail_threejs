@@ -5,7 +5,11 @@
  */
 
 import { isMapTilerUrl, MapTilerBackoff } from './tileWorkerCore';
-import type { TileWorkerRequest, TileWorkerResponse } from '../types/worker';
+import type {
+    TileWorkerRequest,
+    TileWorkerResourceTiming,
+    TileWorkerResponse,
+} from '../types/worker';
 
 // v30 : synchronized avec tileLoader.ts pour support seeding
 const CACHE_NAME = 'suntrail-tiles-v30';
@@ -45,6 +49,8 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
         colorBlob,
         overlayBlob,
         useCompactNormalmap,
+        blobSources,
+        diagnostics,
     } = e.data;
 
     // --- ANNULATION ---
@@ -61,6 +67,7 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
     const { signal } = controller;
 
     try {
+        const workerStartedAt = diagnostics ? performance.now() : 0;
         const results: TileWorkerResponse = {
             id,
             cacheHits: 0,
@@ -71,20 +78,46 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
         // --- EXÉCUTION PARALLÈLE ---
         const [elevRes, colorRes, overlayRes] = await Promise.all([
             elevUrl
-                ? fetchTile(elevUrl, isOffline, signal, elevBlob || undefined)
+                ? fetchTile(
+                      elevUrl,
+                      isOffline,
+                      signal,
+                      elevBlob || undefined,
+                      blobSources?.elevation,
+                      diagnostics
+                  )
                 : Promise.resolve(null),
             colorUrl
-                ? fetchTile(colorUrl, isOffline, signal, colorBlob || undefined)
+                ? fetchTile(
+                      colorUrl,
+                      isOffline,
+                      signal,
+                      colorBlob || undefined,
+                      blobSources?.color,
+                      diagnostics
+                  )
                 : Promise.resolve(null),
             overlayUrl
                 ? fetchTile(
                       overlayUrl,
                       isOffline,
                       signal,
-                      overlayBlob || undefined
+                      overlayBlob || undefined,
+                      blobSources?.overlay,
+                      diagnostics
                   )
                 : Promise.resolve(null),
         ]);
+
+        if (diagnostics) {
+            results.resourceTimings = {};
+            if (elevRes?.timing)
+                results.resourceTimings.elevation = elevRes.timing;
+            if (colorRes?.timing)
+                results.resourceTimings.color = colorRes.timing;
+            if (overlayRes?.timing)
+                results.resourceTimings.overlay = overlayRes.timing;
+        }
 
         // Si la task a été annulée pendant les fetches, ne pas répondre
         if (!activeControllers.has(id)) return;
@@ -231,6 +264,8 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
             }
         }
 
+        if (diagnostics)
+            results.workerDurationMs = performance.now() - workerStartedAt;
         (self as any).postMessage(results, transferables);
     } catch (err: any) {
         // AbortError = annulation normale, ne pas signaler comme erreur
@@ -245,68 +280,137 @@ async function fetchTile(
     url: string,
     isOffline: boolean,
     signal?: AbortSignal,
-    providedBlob?: Blob
+    providedBlob?: Blob,
+    providedSource?: TileWorkerResourceTiming['source'],
+    diagnostics: boolean = false
 ): Promise<{
-    bitmap: ImageBitmap;
+    bitmap: ImageBitmap | null;
     fromCache: boolean;
     forbidden?: boolean;
     rateLimited?: boolean;
     networkError?: boolean;
+    timing?: TileWorkerResourceTiming;
 } | null> {
+    const startedAt = diagnostics ? performance.now() : 0;
     try {
+        const cacheStartedAt = diagnostics ? performance.now() : 0;
         const cache = await getCache();
+        const cacheOpenMs = diagnostics
+            ? performance.now() - cacheStartedAt
+            : 0;
 
         // 1. Priorité au Blob fourni (seeding direct via postMessage)
         if (providedBlob) {
             // v5.29.35 : On l'injecte dans le cache worker pour les futurs accès standards (fetch)
             cache.put(url, new Response(providedBlob.slice()));
+            const decodeStartedAt = diagnostics ? performance.now() : 0;
             const bitmap = await createImageBitmap(providedBlob, {
                 colorSpaceConversion: 'none',
             });
-            return { bitmap, fromCache: true };
+            return {
+                bitmap,
+                fromCache: true,
+                timing: diagnostics
+                    ? {
+                          source: providedSource ?? 'navigation-cache',
+                          durationMs: performance.now() - startedAt,
+                          sizeBytes: providedBlob.size,
+                          cacheLookupMs: cacheOpenMs,
+                          decodeMs: performance.now() - decodeStartedAt,
+                      }
+                    : undefined,
+            };
         }
 
+        const lookupStartedAt = diagnostics ? performance.now() : 0;
         const cached = await cache.match(url);
+        const cacheLookupMs = diagnostics
+            ? cacheOpenMs + performance.now() - lookupStartedAt
+            : 0;
         if (cached) {
+            const readStartedAt = diagnostics ? performance.now() : 0;
             const blob = await cached.blob();
+            const readMs = diagnostics ? performance.now() - readStartedAt : 0;
             // Rejeter les entrées cache corrompues (réponses 429 vides, < 100 bytes)
             if (blob.size < 100) {
                 cache.delete(url);
                 // Fall through au fetch réseau
             } else {
+                const decodeStartedAt = diagnostics ? performance.now() : 0;
                 const bitmap = await createImageBitmap(blob, {
                     colorSpaceConversion: 'none',
                 });
-                return { bitmap, fromCache: true };
+                return {
+                    bitmap,
+                    fromCache: true,
+                    timing: diagnostics
+                        ? {
+                              source: 'worker-cache',
+                              durationMs: performance.now() - startedAt,
+                              sizeBytes: blob.size,
+                              cacheLookupMs,
+                              readMs,
+                              decodeMs: performance.now() - decodeStartedAt,
+                          }
+                        : undefined,
+                };
             }
         }
         if (isOffline) return null;
         // Backoff MapTiler : skip les requêtes pendant la période de cooldown
         if (isMapTilerUrl(url) && mapTilerBackoff.isActive()) {
-            return { bitmap: null as any, fromCache: false, rateLimited: true };
+            return { bitmap: null, fromCache: false, rateLimited: true };
         }
+        const networkStartedAt = diagnostics ? performance.now() : 0;
         const response = await fetch(url, {
             mode: 'cors',
             referrerPolicy: 'same-origin',
             signal,
         });
         if (response.status === 403)
-            return { bitmap: null as any, fromCache: false, forbidden: true };
+            return { bitmap: null, fromCache: false, forbidden: true };
         if (response.status === 429) {
             mapTilerBackoff.trigger();
-            return { bitmap: null as any, fromCache: false, rateLimited: true };
+            return { bitmap: null, fromCache: false, rateLimited: true };
         }
         if (!response.ok) return null;
         // Requête MapTiler réussie → reset le backoff
         if (isMapTilerUrl(url)) mapTilerBackoff.reset();
+        const responseReceivedAt = diagnostics ? performance.now() : 0;
         const blob = await response.blob();
+        const blobReadAt = diagnostics ? performance.now() : 0;
         cache.put(url, new Response(blob.slice()));
+        const decodeStartedAt = diagnostics ? performance.now() : 0;
         const bitmap = await createImageBitmap(blob, {
             colorSpaceConversion: 'none',
         });
-        return { bitmap, fromCache: false };
+        return {
+            bitmap,
+            fromCache: false,
+            timing: diagnostics
+                ? {
+                      source: 'network',
+                      durationMs: performance.now() - startedAt,
+                      sizeBytes: blob.size,
+                      cacheLookupMs,
+                      networkMs: responseReceivedAt - networkStartedAt,
+                      readMs: blobReadAt - responseReceivedAt,
+                      decodeMs: performance.now() - decodeStartedAt,
+                  }
+                : undefined,
+        };
     } catch (e: any) {
         if (e.name === 'AbortError') throw e; // Propager pour que le handler principal sorte proprement
-        return { bitmap: null as any, fromCache: false, networkError: true };
+        return {
+            bitmap: null,
+            fromCache: false,
+            networkError: true,
+            timing: diagnostics
+                ? {
+                      source: 'error',
+                      durationMs: performance.now() - startedAt,
+                  }
+                : undefined,
+        };
     }
 }

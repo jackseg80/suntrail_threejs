@@ -265,6 +265,27 @@ describe('tileLoader.ts URLs', () => {
                 false
             );
         });
+
+        it('skips color loading when a promoted 3D tile reuses its 2D texture', async () => {
+            const { loadTileData } = await import('./tileLoader');
+            const { tileWorkerManager } = await import('./workerManager');
+            state.PERFORMANCE_PRESET = 'balanced';
+            state.IS_2D_MODE = false;
+
+            await loadTileData(0, 0, 14, false, null, true);
+
+            expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
+                0,
+                0,
+                expect.any(String),
+                null,
+                expect.any(String),
+                14,
+                14,
+                expect.any(Object),
+                false
+            );
+        });
     });
 
     describe('loadTileData — CacheStorage blobs (v5.57.3)', () => {

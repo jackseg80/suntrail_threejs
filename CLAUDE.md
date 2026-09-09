@@ -1,15 +1,18 @@
-# SunTrail — Guide IA (version source 5.88.0)
+# SunTrail — Guide IA (version source 5.89.0)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-07 après audit de la
-> documentation et des fonctionnalités actives.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-09 après clôture locale de
+> l'évaluation cartographique 5.89.
 
 ## État vérifié
 
-- Version npm : `5.88.0`.
-- Android : `versionName 5.88.0`, `versionCode 908`, minSdk 24, compile/target SDK 36.
+- Version npm : `5.89.0`.
+- Android : `versionName 5.89.0`, `versionCode 909`, minSdk 24, compile/target SDK 36. Le code 909
+  reste provisoire avant contrôle du maximum global dans la Play Console.
 - Branche de travail habituelle : `main`. Toujours vérifier le worktree et le commit courant.
 - La release GitHub 5.88.0 et son AAB signé sont clôturés. Aucun upload Google Play de 908 n'est
   établi par le dépôt ; vérifier le maximum global de la Play Console avant tout envoi.
+- La 5.89.0 est une candidate locale validée, sans commit, tag, push, release GitHub ni upload Play
+  établi tant que les autorisations séparées et les contrôles externes correspondants manquent.
 - 5.86.0/904 est importée dans Play, 5.86.1/905 y est visible et le propriétaire a indiqué un
   envoi de 5.86.2/906 en test. 5.87.0/907 est publiée sur GitHub sans upload Play revendiqué.
 - Le contrôle long de 30 minutes en faible réseau reste un suivi post-release, pas une fonction
@@ -89,12 +92,18 @@ choisir 0,5/1/2 km. Une zone manuelle Free et un corridor Free sont deux objets 
 téléchargement automatique n'est lancé sur réseau mobile. « Installé » ou une bbox ne prouvent pas
 la couverture : la lecture locale réelle fait foi.
 
-### Performance 5.88
+### Performance 5.88–5.89
 
 La version 5.88 stabilise le suivi caméra 3D lorsque l'altitude manque pendant un remplacement,
 allège réellement la 2D, fiabilise cache/transitions/préchargement et corrige STOP REC ainsi que les
 animations cachées. Les contrôles A53/S23 et la comparaison S23/Garmin sont consignés dans
 `CHANGELOG.md` et les dossiers locaux `outputs/v5.88-*`.
+
+La 5.89 retire le relief du chemin critique 2D au LOD 14, réutilise la texture couleur lors du
+passage en 3D et borne cache/préchargement selon le preset. Sur A53 Équilibré avec couleur OPFS, la
+médiane de première soumission passe de 1 074,4 à 253,6 ms. Les essais réels A53/S23 rapportés par
+le propriétaire sont positifs ; un contrôle court S7/Android 8 rend aussi la 3D sans le plantage
+antérieur. Cela attribue le défaut au pipeline de ressources, pas à une limite WebGL démontrée.
 
 Les mesures sont bornées : le p95 du scénario de rebond A53 passe de 109,4 à 23,8 ms et les
 transitions S23 contrôlées d'environ 16–17 s à 0,9 s. Cela ne prouve ni un gain GPU universel ni une
@@ -126,8 +135,9 @@ Contrat Free/Pro actuel :
 - satellite, météo détaillée et inclinomètre Pro ;
 - aucune suppression/simplification d'archive au downgrade.
 
-Voir [docs/MONETIZATION.md](docs/MONETIZATION.md). Le compte/sync est planifié au plus tôt en
-v6.2 et reste hors du produit courant, même si des pages ou dépendances de préparation existent.
+Voir [docs/MONETIZATION.md](docs/MONETIZATION.md). Le compte/sync reste différé et hors du produit
+courant, même si des pages ou dépendances de préparation existent. La replanification du
+2026-09-08 n'engage plus de numéro pour ce lot.
 
 ## Sources et packs
 
@@ -152,6 +162,11 @@ Pour construire un pack :
 5. mettre à jour le catalogue et les quatre locales.
 
 ## Architecture et documentation
+
+Jalon clôturé localement : [v5.89 — évaluation cartographique](docs/plans/V5_89_MAP_ARCHITECTURE_EVALUATION.md).
+La décision est de conserver Three.js/WebGL et de poursuivre les fonctions en 5.90+. La
+reconstruction du pack Suisse v4 reste séparée. Une future 6.0 correspondra à un saut d'expérience
+démontré, avec ou sans WebGPU.
 
 Ordre de lecture conseillé :
 
