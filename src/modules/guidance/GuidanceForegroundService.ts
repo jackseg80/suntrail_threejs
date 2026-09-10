@@ -68,7 +68,7 @@ export class GuidanceForegroundService {
     private tickTimer: number | null = null;
     private alertTimer: number | null = null;
     private element: HTMLElement | null = null;
-    private expanded = false;
+    private panelMode: 'peek' | 'compact' | 'details' = 'compact';
     private recordingActionPending = false;
     private nativeActive = false;
     private unsubscribeNativeGuidance: (() => void) | null = null;
@@ -104,7 +104,7 @@ export class GuidanceForegroundService {
             this.nativeActive = false;
         }
         this.stop(false);
-        this.expanded = false;
+        this.panelMode = 'compact';
         setUserFollowViewport('guidanceCompact');
         closeElevationProfile();
         const plan = await preparedRouteService.getGuidancePlan(route);
@@ -214,10 +214,15 @@ export class GuidanceForegroundService {
         this.nativeActive = false;
         this.route = null;
         this.snapshot = null;
-        this.expanded = false;
+        this.panelMode = 'compact';
         setUserFollowViewport('center');
         document.body.classList.remove('guidance-active');
         if (this.element) this.element.hidden = true;
+        const profileClose = document.getElementById('close-profile');
+        if (profileClose) {
+            profileClose.textContent = '×';
+            profileClose.setAttribute('aria-label', i18n.t('common.close'));
+        }
         eventBus.emit('guidanceStopped');
         if (announce) void haptic('light');
     }
@@ -251,7 +256,7 @@ export class GuidanceForegroundService {
         preparedRouteService.restoreSavedRoute(route);
         this.route = route;
         this.nativeActive = true;
-        this.expanded = false;
+        this.panelMode = 'compact';
         setUserFollowViewport('guidanceCompact');
         closeElevationProfile();
         this.ensureUI();
@@ -309,9 +314,14 @@ export class GuidanceForegroundService {
         element.className = 'guidance-foreground';
         element.hidden = true;
         element.dataset.expanded = 'false';
+        element.dataset.panelMode = 'compact';
         element.setAttribute('aria-label', i18n.t('guidance.title'));
         element.innerHTML = `
             <div class="guidance-alert" id="guidance-alert" role="alert" hidden></div>
+            <div class="guidance-panel-handle" role="separator" aria-label="${i18n.t('guidance.actions.resize')}" tabindex="0">
+                <span aria-hidden="true"></span>
+                <small>${i18n.t('guidance.actions.drag')}</small>
+            </div>
             <div class="guidance-heading">
                 <div>
                     <span class="guidance-eyebrow">${i18n.t(
@@ -323,10 +333,7 @@ export class GuidanceForegroundService {
                 </div>
                 <div class="guidance-heading-tools">
                     <span id="guidance-status" class="guidance-status" role="status"></span>
-                    <button type="button" class="guidance-expand" data-guidance-action="expand" aria-expanded="false">
-                        <span class="guidance-expand-label">${i18n.t('guidance.actions.details')}</span>
-                        <span aria-hidden="true">⌃</span>
-                    </button>
+                    <span class="guidance-peek-open" aria-hidden="true">⌄</span>
                 </div>
             </div>
             <div class="guidance-cue" aria-live="polite">
@@ -362,6 +369,10 @@ export class GuidanceForegroundService {
                 <button type="button" data-guidance-action="record">REC</button>
                 <button type="button" data-guidance-action="stop" class="guidance-stop">${i18n.t('guidance.actions.stop')}</button>
             </div>
+            <div class="guidance-secondary-actions">
+                <button type="button" data-guidance-action="stop-rec-only">${i18n.t('guidance.actions.stopRecOnly')}</button>
+                <button type="button" data-guidance-action="stop">${i18n.t('guidance.actions.stopGuidanceOnly')}</button>
+            </div>
             <p class="guidance-limit">${i18n.t(
                 this.nativeActive ? 'guidance.nativeLimit' : 'guidance.webLimit'
             )}</p>
@@ -370,29 +381,88 @@ export class GuidanceForegroundService {
             const action = (event.target as HTMLElement).closest<HTMLElement>(
                 '[data-guidance-action]'
             )?.dataset.guidanceAction;
+            if (
+                !action &&
+                this.panelMode === 'peek' &&
+                (event.target as HTMLElement).closest('.guidance-heading')
+            ) {
+                this.setPanelMode('compact');
+                return;
+            }
             if (action === 'pause') {
                 if (this.snapshot?.status === 'paused') this.resume();
                 else this.pause();
-            } else if (action === 'expand') {
-                this.setExpanded(!this.expanded);
             } else if (action === 'profile') {
                 this.toggleProfile();
             } else if (action === 'record') {
                 void this.toggleRecording();
+            } else if (action === 'stop-rec-only') {
+                void this.stopRecordingOnly();
             } else if (action === 'stop') {
                 this.stop();
             }
+        });
+        element.addEventListener('keydown', (event) => {
+            if (
+                this.panelMode === 'peek' &&
+                (event.key === 'Enter' || event.key === ' ') &&
+                event.target ===
+                    element.querySelector<HTMLElement>('.guidance-heading')
+            ) {
+                event.preventDefault();
+                this.setPanelMode('compact');
+            }
+        });
+        const handle = element.querySelector<HTMLElement>(
+            '.guidance-panel-handle'
+        );
+        let dragStartY: number | null = null;
+        handle?.addEventListener('pointerdown', (event) => {
+            dragStartY = event.clientY;
+            handle.setPointerCapture?.(event.pointerId);
+        });
+        handle?.addEventListener('pointerup', (event) => {
+            if (dragStartY === null) return;
+            const delta = event.clientY - dragStartY;
+            dragStartY = null;
+            if (Math.abs(delta) < 28) return;
+            this.stepPanelMode(delta < 0 ? 1 : -1);
+        });
+        handle?.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowUp') this.stepPanelMode(1);
+            else if (event.key === 'ArrowDown') this.stepPanelMode(-1);
+            else return;
+            event.preventDefault();
         });
         document.body.appendChild(element);
         this.element = element;
     }
 
-    private setExpanded(expanded: boolean): void {
-        this.expanded = expanded;
-        setUserFollowViewport(
-            expanded ? 'guidanceExpanded' : 'guidanceCompact'
+    private stepPanelMode(direction: 1 | -1): void {
+        const modes: Array<'peek' | 'compact' | 'details'> = [
+            'peek',
+            'compact',
+            'details',
+        ];
+        const index = modes.indexOf(this.panelMode);
+        this.setPanelMode(
+            modes[Math.max(0, Math.min(modes.length - 1, index + direction))]
         );
-        if (this.element) this.element.dataset.expanded = String(expanded);
+    }
+
+    private setPanelMode(mode: 'peek' | 'compact' | 'details'): void {
+        this.panelMode = mode;
+        setUserFollowViewport(
+            mode === 'details'
+                ? 'guidanceExpanded'
+                : mode === 'compact'
+                  ? 'guidanceCompact'
+                  : 'center'
+        );
+        if (this.element) {
+            this.element.dataset.panelMode = mode;
+            this.element.dataset.expanded = String(mode === 'details');
+        }
         this.render();
         // Le changement de hauteur est une intention explicite. On repositionne
         // une fois la carte après la mise à jour du panneau, sans imposer le
@@ -409,8 +479,29 @@ export class GuidanceForegroundService {
         this.recordingActionPending = true;
         this.render();
         try {
-            if (state.isRecording) await stopRecordingWithFeedback();
+            if (state.isRecording) await this.finishOuting();
             else await recordingService.toggleRecording();
+        } finally {
+            this.recordingActionPending = false;
+            this.render();
+        }
+    }
+
+    public async finishOuting(options?: {
+        nativeAlreadyStopped?: boolean;
+    }): Promise<void> {
+        if (this.isActive()) this.stop(false);
+        if (state.isRecording || state.recordedPoints.length > 0) {
+            await stopRecordingWithFeedback(options);
+        }
+    }
+
+    private async stopRecordingOnly(): Promise<void> {
+        if (this.recordingActionPending || !state.isRecording) return;
+        this.recordingActionPending = true;
+        this.render();
+        try {
+            await stopRecordingWithFeedback();
         } finally {
             this.recordingActionPending = false;
             this.render();
@@ -478,7 +569,8 @@ export class GuidanceForegroundService {
         const snapshot = this.snapshot;
         this.element.hidden = snapshot.status === 'idle';
         this.element.dataset.status = snapshot.status;
-        this.element.dataset.expanded = String(this.expanded);
+        this.element.dataset.panelMode = this.panelMode;
+        this.element.dataset.expanded = String(this.panelMode === 'details');
         const total = snapshot.progressMeters + snapshot.remainingMeters;
         const progressPercent =
             total > 0
@@ -550,20 +642,20 @@ export class GuidanceForegroundService {
                     : 'guidance.actions.pause'
             );
         }
-        const expand = this.element.querySelector<HTMLButtonElement>(
-            '[data-guidance-action="expand"]'
-        );
-        if (expand) {
-            expand.setAttribute('aria-expanded', String(this.expanded));
-            const label = expand.querySelector<HTMLElement>(
-                '.guidance-expand-label'
-            );
-            if (label) {
-                label.textContent = i18n.t(
-                    this.expanded
-                        ? 'guidance.actions.compact'
-                        : 'guidance.actions.details'
+        const heading =
+            this.element.querySelector<HTMLElement>('.guidance-heading');
+        if (heading) {
+            if (this.panelMode === 'peek') {
+                heading.setAttribute('role', 'button');
+                heading.setAttribute('tabindex', '0');
+                heading.setAttribute(
+                    'aria-label',
+                    i18n.t('guidance.actions.open')
                 );
+            } else {
+                heading.removeAttribute('role');
+                heading.removeAttribute('tabindex');
+                heading.removeAttribute('aria-label');
             }
         }
         const record = this.element.querySelector<HTMLButtonElement>(
@@ -571,7 +663,7 @@ export class GuidanceForegroundService {
         );
         if (record) {
             record.textContent = state.isRecording
-                ? i18n.t('guidance.actions.stopRec')
+                ? i18n.t('guidance.actions.finishOuting')
                 : 'REC';
             record.dataset.recording = String(state.isRecording);
             record.disabled = this.recordingActionPending;
@@ -632,6 +724,25 @@ export class GuidanceForegroundService {
                 String(
                     document.body.classList.contains('guidance-profile-open')
                 )
+            );
+        }
+        const stopRecOnly = this.element.querySelector<HTMLButtonElement>(
+            '[data-guidance-action="stop-rec-only"]'
+        );
+        if (stopRecOnly) stopRecOnly.hidden = !state.isRecording;
+        const profileClose = document.getElementById('close-profile');
+        if (profileClose) {
+            const profileOpen = document.body.classList.contains(
+                'guidance-profile-open'
+            );
+            profileClose.textContent = profileOpen
+                ? `← ${i18n.t('guidance.actions.back')}`
+                : '×';
+            profileClose.setAttribute(
+                'aria-label',
+                profileOpen
+                    ? i18n.t('guidance.actions.back')
+                    : i18n.t('common.close')
             );
         }
     }

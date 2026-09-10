@@ -1,6 +1,6 @@
 # SunTrail v5.85 — Guidage Android natif
 
-> Socle livré en v5.85 et utilisé dans la version source 5.88.0. Le flag `nativeGuidance` est
+> Socle livré en v5.85 et utilisé dans la version source 5.89.1. Le flag `nativeGuidance` est
 > activé par défaut sur Android ; le moteur TypeScript reste le fallback Web ou de désactivation.
 
 ## Architecture et invariants
@@ -11,9 +11,11 @@ seul `WakeLock`. Un point `gps_points` n'est écrit que lorsque REC est actif ; 
 la même position en mémoire et ne crée aucune seconde écriture GPS.
 
 Les anciennes méthodes du plugin Capacitor restent recording-only. Les actions nouvelles
-`START/STOP/PAUSE/RESUME_GUIDANCE`, `STOP_RECORDING` et `STOP_ALL` sont indépendantes : arrêter
-Guidance ne ferme pas REC, arrêter REC ne ferme pas Guidance. La WebView ne calcule pas le
-guidage natif ; elle affiche les `GuidanceSnapshot` diffusés par le service.
+`START/STOP/PAUSE/RESUME_GUIDANCE`, `STOP_RECORDING` et `STOP_ALL` gardent leurs contrats bas
+niveau. Arrêter Guidance seul ne ferme pas REC et arrêter REC seul ne ferme pas Guidance. En
+v5.89.1, l'action utilisateur principale en mode `both` utilise `FINISH_OUTING` pour arrêter les
+deux, sans retirer les commandes indépendantes. La WebView ne calcule pas le guidage natif ; elle
+affiche les `GuidanceSnapshot` diffusés par le service.
 
 Le chemin v5.84 TypeScript reste intact et est utilisé hors Android ou lorsque
 `nativeGuidance=false`. Ce flag de release est distinct des droits Free/Pro.
@@ -110,7 +112,8 @@ l'activité visible ; seul un redémarrage système d'une session déjà autoris
 récupération.
 
 La notification persistante indique mode, restant/état, REC et incident. Ses actions sont sûres :
-pause/reprise Guidance, arrêt Guidance, arrêt REC. Une alerte séparée, vibrante et non vocale,
+pause/reprise Guidance, arrêt Guidance et, si REC est aussi actif, « Terminer la sortie ». En mode
+REC seul, l'action reste « Arrêter REC ». Une alerte séparée, vibrante et non vocale,
 signale hors-route/arrivée. Aucune voix turn-by-turn ni recalcul réseau n'est introduit.
 
 En v5.85.1, le tick de sécurité reste à 1 Hz pour détecter permission retirée et position stale,

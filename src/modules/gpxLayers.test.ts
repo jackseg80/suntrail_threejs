@@ -12,6 +12,7 @@ import {
 } from './gpxLayers';
 import { state } from './state';
 import { closeElevationProfile, updateElevationProfile } from './profile';
+import { eventBus } from './eventBus';
 
 vi.mock('./profile', () => ({
     updateElevationProfile: vi.fn(),
@@ -94,11 +95,14 @@ describe('Multi-GPX Layers (v5.10)', () => {
     });
 
     it('addGPXLayer: should create a layer with correct structure', () => {
+        const renderSpy = vi.spyOn(eventBus, 'emit');
         const layer = addGPXLayer(rawData, 'test-track');
         expect(layer.name).toBe('test-track');
         expect(layer.stats.pointCount).toBe(4);
         expect(layer.stats.dPlus).toBeGreaterThan(5);
         expect(state.scene!.add).toHaveBeenCalled();
+        expect(renderSpy).toHaveBeenCalledWith('sceneRenderRequested');
+        renderSpy.mockRestore();
     });
 
     it('showOnlyGPXLayer keeps exactly the selected loaded trace visible', () => {
@@ -346,6 +350,20 @@ describe('Multi-GPX Layers (v5.10)', () => {
 
         spyRDP.mockRestore();
         warn.mockRestore();
+        vi.useRealTimers();
+    });
+
+    it('réveille le rendu après le rebuild différé des traces', () => {
+        addGPXLayer(rawData, 'route-to-refresh');
+        const renderSpy = vi.spyOn(eventBus, 'emit');
+        renderSpy.mockClear();
+        vi.useFakeTimers();
+
+        updateAllGPXMeshes();
+        vi.advanceTimersByTime(100);
+
+        expect(renderSpy).toHaveBeenCalledWith('sceneRenderRequested');
+        renderSpy.mockRestore();
         vi.useRealTimers();
     });
 });

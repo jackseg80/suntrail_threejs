@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { findStrongExposureSegments, type RouteSolarPoint } from './solarRoute';
+import { state } from './state';
+import { eventBus } from './eventBus';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -69,6 +71,7 @@ let setAvgSpeedKmh: typeof import('./solarRoute').setAvgSpeedKmh;
 let getAvgSpeedKmh: typeof import('./solarRoute').getAvgSpeedKmh;
 let clearSolarRouteAnalysis: typeof import('./solarRoute').clearSolarRouteAnalysis;
 let getOptimalDepartureData: typeof import('./solarRoute').getOptimalDepartureData;
+let buildSolarOverlay: typeof import('./solarRoute').buildSolarOverlay;
 
 beforeEach(async () => {
     vi.useFakeTimers();
@@ -85,6 +88,7 @@ beforeEach(async () => {
     getAvgSpeedKmh = mod.getAvgSpeedKmh;
     clearSolarRouteAnalysis = mod.clearSolarRouteAnalysis;
     getOptimalDepartureData = mod.getOptimalDepartureData;
+    buildSolarOverlay = mod.buildSolarOverlay;
     // Reset state
     invalidateRouteCache();
     clearSolarRouteAnalysis();
@@ -137,6 +141,55 @@ describe('sampleRoutePoints', () => {
         for (const d of deltas) {
             expect(Math.abs(d - avgDelta)).toBeLessThan(avgDelta * 0.5);
         }
+    });
+});
+
+describe('solar overlay rendering', () => {
+    it('réveille la scène dès que les couleurs de la trace sont prêtes', () => {
+        state.scene = new THREE.Scene();
+        const sourceMesh = new THREE.Mesh(
+            new THREE.TubeGeometry(
+                new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(10, 0, 0),
+                ]),
+                4,
+                1,
+                4,
+                false
+            ),
+            new THREE.MeshBasicMaterial()
+        );
+        const analysis = buildAnalysis(
+            [
+                {
+                    worldPos: new THREE.Vector3(0, 0, 0),
+                    distKm: 0,
+                    evalDate: new Date('2024-06-21T12:00:00Z'),
+                    inShadow: false,
+                    isNight: false,
+                    inForest: false,
+                },
+                {
+                    worldPos: new THREE.Vector3(10, 0, 0),
+                    distKm: 1,
+                    evalDate: new Date('2024-06-21T12:15:00Z'),
+                    inShadow: false,
+                    isNight: false,
+                    inForest: false,
+                },
+            ],
+            'snapshot',
+            true
+        );
+        const renderSpy = vi.spyOn(eventBus, 'emit');
+
+        buildSolarOverlay(sourceMesh, analysis);
+
+        expect(renderSpy).toHaveBeenCalledWith('sceneRenderRequested');
+        renderSpy.mockRestore();
+        sourceMesh.geometry.dispose();
+        (sourceMesh.material as THREE.Material).dispose();
     });
 });
 

@@ -1,18 +1,18 @@
-# SunTrail — Guide IA (version source 5.89.0)
+# SunTrail — Guide IA (version source 5.89.1)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-09 après clôture locale de
-> l'évaluation cartographique 5.89.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-10 après la clôture GitHub
+> de la simplification terrain 5.89.1.
 
 ## État vérifié
 
-- Version npm : `5.89.0`.
-- Android : `versionName 5.89.0`, `versionCode 909`, minSdk 24, compile/target SDK 36. Le code 909
-  reste provisoire avant contrôle du maximum global dans la Play Console.
+- Version npm : `5.89.1`.
+- Android : `versionName 5.89.1`, `versionCode 910`, minSdk 24, compile/target SDK 36. Le code 910
+  reste une attribution locale à revalider dans la Play Console avant tout upload.
 - Branche de travail habituelle : `main`. Toujours vérifier le worktree et le commit courant.
-- La release GitHub 5.88.0 et son AAB signé sont clôturés. Aucun upload Google Play de 908 n'est
-  établi par le dépôt ; vérifier le maximum global de la Play Console avant tout envoi.
-- La 5.89.0 est une candidate locale validée, sans commit, tag, push, release GitHub ni upload Play
-  établi tant que les autorisations séparées et les contrôles externes correspondants manquent.
+- La release GitHub `v5.89.1` est clôturée avec son AAB signé produit par la CI. L'APK diagnostic
+  a été validé le 2026-09-10 sur Galaxy S23 SM-S911B / Android 16 et Galaxy A53 SM-A536B avec une
+  police à 110 %. Aucun upload Google Play de 910 n'est établi par le dépôt ; vérifier le maximum
+  global de la Play Console avant tout envoi.
 - 5.86.0/904 est importée dans Play, 5.86.1/905 y est visible et le propriétaire a indiqué un
   envoi de 5.86.2/906 en test. 5.87.0/907 est publiée sur GitHub sans upload Play revendiqué.
 - Le contrôle long de 30 minutes en faible réseau reste un suivi post-release, pas une fonction
@@ -54,9 +54,10 @@ La barre contient cinq destinations : Explorer, Préparer, Sortie, Bibliothèque
 `data-tab="track"` reste l'adaptateur historique de Sortie ; Bibliothèque ouvre le même
 `TrackSheet` avec une vue catalogue. Aucun catalogue n'est rendu dans Sortie.
 
-Préparer possède un brouillon nommé. En mode `state.isRoutePlanningMode`, un tap ajoute un point ;
-hors mode, le tap conserve la sélection de carte. Un appui long de 500 ms reste un raccourci
-expert. Remplacer un brouillon modifié demande Sauvegarder, Remplacer ou Annuler.
+Préparer possède un brouillon nommé. En mode `state.isRoutePlanningMode`, un appui long de 500 ms
+ajoute un point et le toucher court reste consacré à la carte. Le bandeau donne accès à Suivre,
+Enregistrer, Points, Profil altimétrique et Configuration ; les points se gèrent dans un panneau
+dédié. Remplacer un brouillon modifié demande Sauvegarder, Remplacer ou Annuler.
 
 ### Guidage et REC
 

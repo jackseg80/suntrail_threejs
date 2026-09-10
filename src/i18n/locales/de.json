@@ -135,6 +135,14 @@
         "save": {
             "title": "Tour speichern",
             "body": "Geben Sie Ihrer Wanderung einen Namen:",
+            "reviewBody": "Prüfen Sie Ihre Tour, bevor Sie sie speichern oder verwerfen.",
+            "tracePreview": "Vorschau der aufgezeichneten Strecke",
+            "distance": "Distanz",
+            "duration": "Dauer",
+            "ascent": "Aufstieg",
+            "descent": "Abstieg",
+            "pace": "Tempo",
+            "points": "GPS-Punkte",
             "processing": "Verarbeitung läuft…",
             "processingBody": "SunTrail beendet die Aufzeichnung und ermittelt einen passenden Namen anhand des Startorts.",
             "keepSuggested": "Diesen Namen behalten",
@@ -405,6 +413,30 @@
     "planning": {
         "tapToAddStart": "Lange auf die Karte drücken, um Start A zu setzen",
         "loop": "Rundtour",
+        "profileElevation": {
+            "open": "Höhenprofil anzeigen",
+            "close": "Höhenprofil schließen"
+        },
+        "waypoints": {
+            "title": "Routenpunkte",
+            "hint": "Tippen Sie auf einen Punkt, um ihn auf der Karte anzuzeigen.",
+            "open": "Routenpunkte verwalten",
+            "openCount": "Routenpunkte verwalten ({{count}})",
+            "close": "Routenpunkte schließen",
+            "empty": "Keine Punkte gesetzt",
+            "start": "Start A",
+            "finish": "Ziel B",
+            "intermediate": "Punkt {{number}}",
+            "focus": "{{point}} auf der Karte anzeigen",
+            "drag": "{{point}} ziehen, um die Reihenfolge zu ändern",
+            "move": "{{point}} auf der Karte verschieben",
+            "moveUp": "{{point}} nach oben verschieben",
+            "moveDown": "{{point}} nach unten verschieben",
+            "delete": "{{point}} löschen",
+            "tapToMove": "Tippen Sie auf die neue Position auf der Karte.",
+            "moved": "Punkt verschoben",
+            "clearAll": "Gesamte Route löschen"
+        },
         "hint": {
             "longPress": "Lange auf die Karte drücken, um einen Punkt hinzuzufügen."
         },
@@ -412,6 +444,7 @@
             "region": "Routenplanungsmodus",
             "settings": "Routeneinstellungen",
             "settingsDialog": "Routeneinstellungen",
+            "loop": "Rundtour erstellen",
             "reverse": "Start und Ziel umkehren",
             "clear": "Route löschen"
         },
@@ -667,10 +700,14 @@
             "world": "Welt",
             "sat": "Satellit"
         },
-        "tooltipLOD": "<b>Aktuelle Karte</b>: zeigt Kartenquelle und sichtbare Details. Tippen, um verfügbare Karten zu verwalten."
+        "tooltipLOD": "<b>Aktuelle Karte</b>: zeigt Kartenquelle und sichtbare Details. Tippen, um verfügbare Karten zu verwalten.",
+        "lodLimitBadge": "🔒 HD-Details mit Pro",
+        "lodLimitBadgeCompact": "🔒 Pro HD",
+        "lodLimitAria": "Kartendetails sind auf Stufe 14 begrenzt. Tippen für weitere Informationen.",
+        "lodLimitExplanation": "<b>Begrenzte Details</b>: Sie können weiter hineinzoomen, aber die kostenlose Version vergrößert die Kartendaten der Stufe 14. Pro lädt detailliertere Daten."
     },
     "upsell": {
-        "lod": "Maximale Kartendetails erreicht — mit Pro weiter hineinzoomen",
+        "lod": "Sie können weiter hineinzoomen, HD-Kartendetails sind jedoch mit Pro verfügbar",
         "timeline": "📅 Beliebiges Datum mit Pro zugänglich"
     },
     "connectivity": {
@@ -748,7 +785,10 @@
     },
     "gps": {
         "aria": {
-            "locate": "Lokalisieren"
+            "locate": "Lokalisieren",
+            "off": "Meine Position finden",
+            "position": "Position zentriert",
+            "follow": "Meiner Position folgen"
         },
         "toast": {
             "centered": "📍 Position zentriert",
@@ -1250,8 +1290,16 @@
             "profile": "Profil",
             "stop": "Stoppen",
             "stopRec": "REC stoppen",
+            "finishOuting": "Tour beenden",
+            "stopRecOnly": "Nur REC stoppen",
+            "stopGuidanceOnly": "Nur Führung stoppen",
             "details": "Details",
-            "compact": "Einklappen"
+            "compact": "Einklappen",
+            "minimize": "Auf Leiste minimieren",
+            "open": "Öffnen",
+            "drag": "Ziehen",
+            "resize": "Ziehen, um das Führungspanel zu vergrößern",
+            "back": "Zurück zur Führung"
         },
         "confirm": {
             "approximate": "Diese Route verwendet eine ungefähre Geometrie. Prüfen Sie den Track vor dem Start. Fortfahren?"

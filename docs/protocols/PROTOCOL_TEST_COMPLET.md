@@ -1,4 +1,4 @@
-# SunTrail 3D — Protocole de test complet (v5.88.0)
+# SunTrail 3D — Protocole de test complet (v5.89.1)
 
 > Durée indicative : 1 h 30 à 2 h hors marche terrain. Ce protocole couvre les fonctions actuelles
 > sans supprimer les données existantes. Les achats et actions de publication ne font pas partie du
@@ -26,6 +26,8 @@
 - [ ] Alterner plusieurs fois 2D/3D ; vérifier ombres, eau et météo au retour en 3D.
 - [ ] Zoomer/dézoomer rapidement ; vérifier absence de trou persistant, écran bleu ou blocage du
       compteur de chargement.
+- [ ] En Free, dépasser le détail 14 sans blocage : l'indicateur orange « HD Pro » reste visible,
+      explique au toucher l'agrandissement du niveau 14, puis disparaît en dézoomant.
 - [ ] Répéter en portrait et paysage, avec les zones sûres Android 15/16.
 
 ## 3. Explorer et données cartographiques
@@ -45,7 +47,12 @@
 
 ## 5. Préparer une route
 
-- [ ] Poser A/B par taps, ajouter/réordonner/supprimer un waypoint et inverser la route.
+- [ ] Poser A/B par taps, ouvrir Points, centrer/déplacer/réordonner/supprimer un waypoint et
+      inverser la route depuis Configuration.
+- [ ] Après chaque modification, vérifier que géométrie puis couleurs solaires se rafraîchissent
+      sans devoir déplacer la carte.
+- [ ] Fermer et rouvrir le profil depuis son bouton direct ; vérifier l'ordre du bandeau et les
+      icônes Boucle/Inverser unifiées.
 - [ ] Tester un calcul ORS avec clé puis le repli OSRM ou l'erreur explicite sans réseau.
 - [ ] Vérifier distance, D+/D-, durée, effort, heure d'arrivée, lumière et difficulté.
 - [ ] Modifier le brouillon puis ouvrir une autre route : tester Sauvegarder, Remplacer et Annuler.
@@ -65,9 +72,12 @@
 
 - [ ] Démarrer une route complète puis une route approximative avec confirmation.
 - [ ] Vérifier acquisition, sur-trace, pause/reprise, prochaine indication, restant, ETA et flèche.
+- [ ] Parcourir les trois états du panneau par sa seule languette : détails, compact et bandeau
+      supérieur ; toucher le bandeau pour rouvrir. Répéter avec une grande police.
 - [ ] Simuler seulement si c'est sûr un petit écart à la trace, puis un retour ; relever les délais
       d'alerte sans inventer un résultat si le GPS est imprécis.
-- [ ] Vérifier qu'Arrêter Guidance ne coupe pas REC et qu'Arrêter REC ne coupe pas Guidance.
+- [ ] En mode combiné, vérifier que Terminer la sortie coupe Guidance et REC ensemble. Dans les
+      détails, vérifier aussi que les deux commandes indépendantes restent disponibles.
 - [ ] Sur Android, tester écran éteint, retour depuis notification et reprise après fermeture de
       l'interface. Sur le Web, ne pas attendre de garantie arrière-plan.
 
@@ -75,7 +85,8 @@
 
 - [ ] Enregistrer une courte marche avec écran actif puis écran éteint sur Android.
 - [ ] Vérifier durée, distance, allure/vitesse, D+/D-, altitude, précision et nombre de points.
-- [ ] Arrêter depuis l'interface, nommer, relancer et retrouver l'archive.
+- [ ] Arrêter depuis l'interface et vérifier avant choix l'aperçu de trace, distance, durée,
+      dénivelés, allure et nombre de points ; nommer, enregistrer, relancer et retrouver l'archive.
 - [ ] Faire un second REC jetable et choisir Ne pas enregistrer ; aucune ancienne archive ne doit
       disparaître.
 - [ ] Si la notification Android propose STOP, vérifier le retour dans l'app et la même finalisation.
@@ -92,7 +103,8 @@
 
 ## 10. Free/Pro et robustesse
 
-- [ ] En Free : LOD plafonné à 14, une trace affichée, une zone et un corridor 1 km.
+- [ ] En Free : données plafonnées au LOD 14 avec zoom plus proche signalé « HD Pro », une trace
+      affichée, une zone et un corridor 1 km.
 - [ ] En Pro : LOD 18, satellite, calendrier, météo détaillée, inclinomètre et multi-affichage.
 - [ ] Vérifier qu'un changement de droit ne supprime, ne simplifie ni ne cache une archive locale.
 - [ ] Tester perte/retour réseau, rotation, mise en arrière-plan et faible batterie sans purger les

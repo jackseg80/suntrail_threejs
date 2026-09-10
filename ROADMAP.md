@@ -1,7 +1,8 @@
-# SunTrail — Roadmap produit révisée (version source v5.89.0)
+# SunTrail — Roadmap produit révisée (version source v5.89.1)
 
-> Révision produit : 2026-09-09. v5.89.0 / Android 909 est publiée sur GitHub avec son AAB signé
-> et visible dans Play Console. Le statut de diffusion Play reste géré séparément.
+> Révision produit : 2026-09-10. v5.89.1 / Android 910 est publiée sur GitHub avec son AAB signé
+> après validation A53/S23. Aucun téléversement Play de 910 n'est revendiqué ; le statut et le
+> maximum de versionCode de la Play Console restent à vérifier séparément.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -55,6 +56,10 @@ heure de passage et conditions.
   ont passé les contrôles courts prévus. La release GitHub et l'AAB signé sont publiés, et 909 est
   visible dans Play Console. L'audit R8 complémentaire est reporté à 5.90+ : les scores 38–39 %
   dépassent le seuil annoncé et ne justifient pas seuls une 5.89.1.
+- **v5.89.1** / Android **910** simplifie le bandeau Préparer, les états GPS, le panneau Guidance
+  et la fin de REC. Les gestes et tailles ont été validés sur A53/S23, y compris avec une police à
+  110 %, puis la release GitHub et son AAB signé ont été publiés. La refonte globale et
+  l'unification de tous les panneaux restent un lot 5.90+.
 - Après comparaison Komoot/Garmin, v5.84 inclut la prochaine indication et sa distance au sein
   du moteur foreground, sans étendre la promesse aux fonctions natives/background de v5.85.
 
@@ -73,6 +78,7 @@ heure de passage et conditions.
 | **v5.87.0** | Conserver des traces pleine fidélité sans apparition/disparition implicite | `TrackRepository`, migration et règles de capacité non destructives |
 | **v5.88.0** | Assainir la base avant v6 et garder le mode combiné fluide sur A53 | Audit global, dépendances, baseline mesurée et coûts croissants bornés sans perte |
 | **v5.89.0 — clôturée** | Décider de l'architecture sur preuve | Pipeline couleur d'abord, promotion 2D→3D et caches bornés ; Three.js/WebGL conservé |
+| **v5.89.1 — clôturée** | Réduire les erreurs et hésitations pendant une sortie | Préparer simplifié, GPS explicite, Guidance à trois hauteurs, fin Guidance+REC et récapitulatif |
 | **5.90+ — lot expert, ex-v6.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition |
 | **5.90+ — lot lumière, ex-v6.1** | Choisir plus facilement le bon moment | Lumière utile : soleil, ombre, azimuts et lecture des conditions, sans nouveau compte |
 | **Compte/sync — reporté, ex-v6.2** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |

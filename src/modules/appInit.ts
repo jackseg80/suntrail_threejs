@@ -8,7 +8,7 @@ import { requestOnboarding } from './onboardingTutorial';
 import { i18n } from '../i18n/I18nService';
 import { initScene, flyTo, forceImmediateLODUpdate } from './scene';
 import { refreshTerrain } from './terrain';
-import { updateElevationProfile } from './profile';
+import { closeElevationProfile, updateElevationProfile } from './profile';
 import {
     beginUserFollow,
     startLocationTracking,
@@ -28,7 +28,7 @@ import { runBenchmark } from './benchmark';
 import { findTerrainIntersection, getAltitudeAt } from './analysis';
 import {
     initRouteManager,
-    removeWaypointAt,
+    moveWaypointAt,
     scheduleAutoCompute,
     clearRoute,
     reverseRoute,
@@ -44,6 +44,7 @@ import { initTheme } from './theme';
 import { haptic } from './haptics';
 import { resolveMapTilerKey, resolveORSKey } from './config';
 import { STORAGE_KEYS } from '../constants/storage';
+import { eventBus } from './eventBus';
 
 import { NavigationBar } from './ui/components/NavigationBar';
 import { TopStatusBar } from './ui/components/TopStatusBar';
@@ -58,6 +59,8 @@ import {
     markAppShellHealthy,
     recoverStaleAppShell,
 } from './appShellRecovery';
+
+let pendingWaypointMoveIndex: number | null = null;
 
 export async function appInit(): Promise<void> {
     // Mode test (E2E) : environnement déterministe. La suite est écrite en
@@ -587,6 +590,11 @@ async function handleMapClick(e: MouseEvent) {
     }
     if (!state.renderer || !state.camera || !state.scene) return;
 
+    if (pendingWaypointMoveIndex !== null) {
+        completePendingWaypointMove(e.clientX, e.clientY);
+        return;
+    }
+
     if (sheetManager.getActiveSheetId()) {
         sheetManager.close();
     }
@@ -596,13 +604,20 @@ async function handleMapClick(e: MouseEvent) {
 
     const intersects = raycaster.intersectObjects(state.scene.children, true);
 
-    // Tap sur un marker de waypoint → supprimer
+    // Un point visible sur la carte ouvre sa fiche ; la suppression reste une
+    // action explicite dans le panneau afin d'éviter les effacements accidentels.
     const waypointHit = intersects.find(
         (h) => h.object.userData?.type === 'waypoint-marker'
     );
     if (waypointHit) {
-        void haptic('medium');
-        removeWaypointAt(waypointHit.object.userData.waypointIndex as number);
+        const index = waypointHit.object.userData.waypointIndex as number;
+        void haptic('selection');
+        setRoutePanelOpen('route-waypoints-panel', 'rb-waypoints-btn', true);
+        requestAnimationFrame(() => {
+            document
+                .querySelector<HTMLElement>(`.rs-wp-item[data-idx="${index}"]`)
+                ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
         return;
     }
 
@@ -740,6 +755,30 @@ function setupGpsButton() {
     let gpsLongPressTimer: ReturnType<typeof setTimeout> | null = null;
     let longPressTriggered = false;
 
+    const syncGpsButtonState = (
+        gpsState: 'off' | 'position' | 'follow'
+    ): void => {
+        if (!gpsMainBtn) return;
+        gpsMainBtn.dataset.gpsState = gpsState;
+        gpsMainBtn.classList.toggle('active', gpsState !== 'off');
+        gpsMainBtn.classList.toggle('following', gpsState === 'follow');
+        gpsMainBtn.setAttribute(
+            'aria-label',
+            i18n.t(`gps.aria.${gpsState}`) ||
+                (gpsState === 'follow'
+                    ? 'Suivre ma position'
+                    : gpsState === 'position'
+                      ? 'Position centrée'
+                      : 'Localiser ma position')
+        );
+        gpsMainBtn.setAttribute(
+            'aria-pressed',
+            gpsState === 'follow' ? 'true' : 'false'
+        );
+    };
+
+    syncGpsButtonState('off');
+
     gpsMainBtn?.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         longPressTriggered = false;
@@ -747,7 +786,8 @@ function setupGpsButton() {
         gpsLongPressTimer = setTimeout(() => {
             clearUserMarker();
             stopLocationTracking();
-            gpsMainBtn.classList.remove('active', 'following');
+            state.isFollowingUser = false;
+            syncGpsButtonState('off');
             showToast(i18n.t('gps.toast.disabled') || 'Position désactivée');
             gpsLongPressTimer = null;
             longPressTriggered = true;
@@ -811,11 +851,12 @@ function setupGpsButton() {
                 forceImmediateLODUpdate();
 
                 fetchWeather(lat, lon);
-                gpsMainBtn.classList.add('active');
+                syncGpsButtonState('position');
                 showToast(i18n.t('gps.toast.centered'));
             } else {
                 gpsMainBtn.classList.toggle('following');
                 const isFollowing = gpsMainBtn.classList.contains('following');
+                syncGpsButtonState(isFollowing ? 'follow' : 'position');
                 showToast(
                     isFollowing
                         ? i18n.t('gps.toast.followOn')
@@ -844,7 +885,7 @@ function setupGpsButton() {
             const btn = document.getElementById('gps-main-btn');
             if (btn?.classList.contains('following')) {
                 state.isFollowingUser = false;
-                btn.classList.remove('active', 'following');
+                syncGpsButtonState('position');
                 showToast(i18n.t('gps.toast.interrupted'));
             }
         }
@@ -1017,7 +1058,11 @@ function setupLongPress() {
             }
             _longPressJustFired = true;
             void haptic('medium');
-            placeWaypointAt(e.clientX, e.clientY);
+            if (pendingWaypointMoveIndex !== null) {
+                completePendingWaypointMove(e.clientX, e.clientY);
+            } else {
+                placeWaypointAt(e.clientX, e.clientY);
+            }
         }, WAYPOINT_LONG_PRESS_DELAY_MS);
     });
 
@@ -1060,10 +1105,11 @@ function setupLongPress() {
 function placeWaypointAt(
     clientX: number,
     clientY: number,
-    allowTrackHit = false
-): void {
+    allowTrackHit = false,
+    replaceIndex: number | null = null
+): boolean {
     if (!state.renderer || !state.camera || !state.scene || !state.originTile)
-        return;
+        return false;
 
     const raycaster = screenToRaycaster(clientX, clientY);
 
@@ -1073,7 +1119,7 @@ function placeWaypointAt(
         if (h.object.userData?.type === 'waypoint-marker') return true;
         return !allowTrackHit && h.object.userData?.type === 'gpx-track';
     });
-    if (blockedHit) return;
+    if (blockedHit) return false;
 
     let hit: { x: number; z: number } | null;
 
@@ -1092,11 +1138,23 @@ function placeWaypointAt(
     if (hit && state.originTile) {
         const gps = worldToLngLat(hit.x, hit.z, state.originTile);
         const alt = state.IS_2D_MODE ? 0 : getAltitudeAt(hit.x, hit.z);
-        if (state.routeWaypoints.length >= 10) return;
-        state.routeWaypoints = [
-            ...state.routeWaypoints,
-            { lat: gps.lat, lon: gps.lon, alt },
-        ];
+        if (replaceIndex !== null) {
+            const current = state.routeWaypoints[replaceIndex];
+            if (!current) return false;
+            moveWaypointAt(replaceIndex, {
+                ...current,
+                lat: gps.lat,
+                lon: gps.lon,
+                alt,
+                name: undefined,
+            });
+        } else {
+            if (state.routeWaypoints.length >= 10) return false;
+            state.routeWaypoints = [
+                ...state.routeWaypoints,
+                { lat: gps.lat, lon: gps.lon, alt },
+            ];
+        }
 
         const bar = document.getElementById('route-bar');
         if (bar) {
@@ -1109,13 +1167,106 @@ function placeWaypointAt(
                 { once: true }
             );
         }
+        return true;
     }
+    return false;
+}
+
+const ROUTE_PANELS = [
+    { panelId: 'route-settings', triggerId: 'rb-settings-btn' },
+    { panelId: 'route-waypoints-panel', triggerId: 'rb-waypoints-btn' },
+] as const;
+
+function setRoutePanelOpen(
+    panelId: string,
+    triggerId: string,
+    open: boolean
+): void {
+    for (const entry of ROUTE_PANELS) {
+        const isTarget = entry.panelId === panelId;
+        const shouldOpen = isTarget && open;
+        document
+            .getElementById(entry.panelId)
+            ?.classList.toggle('hidden', !shouldOpen);
+        document
+            .getElementById(entry.triggerId)
+            ?.setAttribute('aria-expanded', String(shouldOpen));
+    }
+    if (open) closeElevationProfile();
+    document.getElementById(triggerId)?.focus();
+}
+
+function getRouteProfileLayerId(): string | undefined {
+    const preferredIds = [
+        state.routeDraftSourceLayerId,
+        state.activePreparedRouteId
+            ? `prepared-${state.activePreparedRouteId}`
+            : null,
+        state.activeGPXLayerId,
+    ].filter((id): id is string => !!id);
+    for (const id of preferredIds) {
+        const layer = state.gpxLayers.find(
+            (candidate) => candidate.id === id && candidate.points.length >= 2
+        );
+        if (layer) return layer.id;
+    }
+    return [...state.gpxLayers]
+        .reverse()
+        .find((layer) => layer.isManualRoute && layer.points.length >= 2)?.id;
+}
+
+function syncRouteProfileButton(): void {
+    const button = document.getElementById(
+        'rb-profile-btn'
+    ) as HTMLButtonElement | null;
+    if (!button) return;
+    const open = !!document
+        .getElementById('elevation-profile')
+        ?.classList.contains('is-open');
+    button.setAttribute('aria-pressed', String(open));
+    button.setAttribute(
+        'aria-label',
+        i18n.t(
+            open
+                ? 'planning.profileElevation.close'
+                : 'planning.profileElevation.open'
+        )
+    );
+}
+
+function startWaypointMove(index: number): void {
+    if (index < 0 || index >= state.routeWaypoints.length) return;
+    pendingWaypointMoveIndex = index;
+    setRoutePanelOpen('route-waypoints-panel', 'rb-waypoints-btn', false);
+    closeElevationProfile();
+    document.body.classList.add('route-waypoint-moving');
+    const hint = document.getElementById('route-waypoint-move-hint');
+    if (hint) hint.hidden = false;
+    showToast(i18n.t('planning.waypoints.tapToMove'), 8000);
+    void haptic('selection');
+}
+
+function finishWaypointMove(): void {
+    pendingWaypointMoveIndex = null;
+    document.body.classList.remove('route-waypoint-moving');
+    const hint = document.getElementById('route-waypoint-move-hint');
+    if (hint) hint.hidden = true;
+}
+
+function completePendingWaypointMove(clientX: number, clientY: number): void {
+    if (pendingWaypointMoveIndex === null) return;
+    const movedIndex = pendingWaypointMoveIndex;
+    if (!placeWaypointAt(clientX, clientY, true, movedIndex)) return;
+    finishWaypointMove();
+    showToast(i18n.t('planning.waypoints.moved'));
+    setRoutePanelOpen('route-waypoints-panel', 'rb-waypoints-btn', true);
 }
 
 function setupRouteBar(): void {
-    document
-        .getElementById('rb-clear-btn')
-        ?.addEventListener('click', () => clearRoute());
+    document.getElementById('rb-clear-btn')?.addEventListener('click', () => {
+        finishWaypointMove();
+        clearRoute();
+    });
 
     document
         .getElementById('rb-reverse-btn')
@@ -1124,19 +1275,86 @@ function setupRouteBar(): void {
     document
         .getElementById('rb-settings-btn')
         ?.addEventListener('click', () => {
-            document
-                .getElementById('route-settings')
-                ?.classList.toggle('hidden');
+            const panel = document.getElementById('route-settings');
+            setRoutePanelOpen(
+                'route-settings',
+                'rb-settings-btn',
+                !!panel?.classList.contains('hidden')
+            );
         });
 
+    document
+        .getElementById('rb-waypoints-btn')
+        ?.addEventListener('click', () => {
+            const panel = document.getElementById('route-waypoints-panel');
+            setRoutePanelOpen(
+                'route-waypoints-panel',
+                'rb-waypoints-btn',
+                !!panel?.classList.contains('hidden')
+            );
+        });
+
+    document
+        .getElementById('route-waypoints-close')
+        ?.addEventListener('click', () =>
+            setRoutePanelOpen(
+                'route-waypoints-panel',
+                'rb-waypoints-btn',
+                false
+            )
+        );
+
+    document
+        .getElementById('route-waypoint-move-cancel')
+        ?.addEventListener('click', () => {
+            finishWaypointMove();
+            setRoutePanelOpen(
+                'route-waypoints-panel',
+                'rb-waypoints-btn',
+                true
+            );
+        });
+
+    document.getElementById('rb-profile-btn')?.addEventListener('click', () => {
+        const profile = document.getElementById('elevation-profile');
+        if (profile?.classList.contains('is-open')) {
+            closeElevationProfile();
+        } else {
+            for (const entry of ROUTE_PANELS) {
+                setRoutePanelOpen(entry.panelId, entry.triggerId, false);
+            }
+            updateElevationProfile(getRouteProfileLayerId());
+        }
+        syncRouteProfileButton();
+    });
+
+    const profile = document.getElementById('elevation-profile');
+    if (profile) {
+        new MutationObserver(syncRouteProfileButton).observe(profile, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    }
+    syncRouteProfileButton();
+
+    eventBus.on('routeWaypointMoveRequested', ({ index }) =>
+        startWaypointMove(index)
+    );
+    eventBus.on('localeChanged', syncRouteProfileButton);
+    state.subscribe('isRoutePlanningMode', (active: boolean) => {
+        if (!active) finishWaypointMove();
+    });
+
     document.addEventListener('click', (e) => {
-        const panel = document.getElementById('route-settings');
-        if (!panel || panel.classList.contains('hidden')) return;
-        if (
-            !panel.contains(e.target as Node) &&
-            !(e.target as Element)?.closest('#rb-settings-btn')
-        ) {
-            panel.classList.add('hidden');
+        for (const entry of ROUTE_PANELS) {
+            const panel = document.getElementById(entry.panelId);
+            if (!panel || panel.classList.contains('hidden')) continue;
+            if (
+                !panel.contains(e.target as Node) &&
+                !(e.target as Element)?.closest(`#${entry.triggerId}`)
+            ) {
+                setRoutePanelOpen(entry.panelId, entry.triggerId, false);
+            }
         }
     });
 
@@ -1155,11 +1373,21 @@ function setupRouteBar(): void {
 
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
-        const panel = document.getElementById('route-settings');
-        if (panel && !panel.classList.contains('hidden')) {
+        if (pendingWaypointMoveIndex !== null) {
             event.preventDefault();
-            panel.classList.add('hidden');
-            document.getElementById('rb-settings-btn')?.focus();
+            finishWaypointMove();
+            setRoutePanelOpen(
+                'route-waypoints-panel',
+                'rb-waypoints-btn',
+                true
+            );
+            return;
+        }
+        for (const entry of [...ROUTE_PANELS].reverse()) {
+            const panel = document.getElementById(entry.panelId);
+            if (!panel || panel.classList.contains('hidden')) continue;
+            event.preventDefault();
+            setRoutePanelOpen(entry.panelId, entry.triggerId, false);
             return;
         }
         if (state.isRoutePlanningMode) {

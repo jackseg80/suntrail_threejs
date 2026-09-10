@@ -1,4 +1,4 @@
-# SunTrail 3D — Protocole de test rapide (v5.88.0)
+# SunTrail 3D — Protocole de test rapide (v5.89.1)
 
 > Durée indicative : 25 à 35 minutes. Ce contrôle ne remplace pas un essai terrain long.
 > Préserver les parcours, zones et packs déjà présents ; ne vider aucun stockage pour ce test.
@@ -10,6 +10,8 @@
 - [ ] Vérifier les cinq destinations : Explorer, Préparer, Sortie, Bibliothèque et Plus.
 - [ ] Passer de 2D à 3D, déplacer, zoomer, tourner et incliner la carte.
 - [ ] Vérifier que la carte finit de se compléter après un déplacement rapide.
+- [ ] En Free, zoomer au-delà du détail 14 : la carte reste manipulable, l'indicateur orange
+      « HD Pro » persiste et son toucher explique que le niveau 14 est agrandi.
 
 ## 2. Explorer et lumière
 
@@ -22,6 +24,10 @@
 
 - [ ] Ouvrir Préparer et poser A puis B par deux taps simples.
 - [ ] Vérifier le calcul de route ou le message de repli/erreur réseau.
+- [ ] Ouvrir Points, centrer un point, le réordonner ou le déplacer puis vérifier que la trace et ses
+      couleurs solaires se rafraîchissent sans déplacer la carte.
+- [ ] Fermer puis rouvrir le profil depuis son bouton direct ; vérifier Configuration en dernière
+      position et les icônes Boucle/Inverser de même taille.
 - [ ] Contrôler distance, D+/D-, durée et difficulté ; une difficulté inconnue est acceptable si
       elle est expliquée.
 - [ ] Nommer et sauvegarder la route, fermer l'application puis la retrouver dans Bibliothèque.
@@ -38,11 +44,15 @@
 
 - [ ] Démarrer le guidage d'une route : prochaine indication, distance, restant, ETA et écart sont
       visibles.
+- [ ] Parcourir détails, compact et bandeau supérieur avec la seule languette, puis rouvrir le
+      panneau depuis le bandeau. Avec une grande police, la languette reste accessible.
 - [ ] Démarrer REC pendant le guidage et vérifier les deux résumés distincts dans Sortie.
 - [ ] Sur Android, éteindre brièvement l'écran : la notification doit rester présente et la session
       doit être restaurée à la réouverture.
-- [ ] Arrêter REC, lui donner un nom et vérifier l'archive dans Bibliothèque.
-- [ ] Arrêter ensuite le guidage ; aucun service/indicateur terrain ne doit rester actif.
+- [ ] Utiliser Terminer la sortie : Guidance et REC s'arrêtent ensemble, puis le récapitulatif
+      affiche la trace et ses métriques avant Enregistrer ou Ne pas enregistrer.
+- [ ] Donner un nom, enregistrer et vérifier l'archive dans Bibliothèque ; aucun service/indicateur
+      terrain ne doit rester actif.
 
 ## 6. Hors ligne
 

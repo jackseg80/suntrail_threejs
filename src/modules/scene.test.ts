@@ -146,6 +146,7 @@ describe('scene.ts', () => {
         );
         state.isFlyingTo = false;
         state.isUserInteracting = false;
+        state.isMapDetailLimited = false;
     });
 
     afterEach(async () => {
@@ -223,6 +224,7 @@ describe('scene.ts', () => {
             forceImmediateLODUpdate();
 
             expect(state.ZOOM).toBeLessThanOrEqual(14);
+            expect(state.isMapDetailLimited).toBe(true);
             expect(autoSelectMapSource).toHaveBeenCalled();
             expect(updateVisibleTiles).toHaveBeenCalledWith(
                 expect.any(Number),

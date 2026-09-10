@@ -199,6 +199,7 @@ export function addGPXLayer(
         source?: 'import' | 'rec' | 'prepared' | 'manual';
         persistHistory?: boolean;
         id?: string;
+        openProfile?: boolean;
     }
 ): GPXLayer {
     const id =
@@ -360,7 +361,11 @@ export function addGPXLayer(
         });
     }
     requestAnimationFrame(() => updateAllGPXMeshes());
-    updateElevationProfile();
+    updateElevationProfile(undefined, { noOpen: opts?.openProfile === false });
+    // La boucle Three.js limite volontairement les rendus lorsque la carte est
+    // immobile. Une nouvelle trace doit néanmoins remplacer l'ancienne dès que
+    // le calcul est terminé, sans attendre un geste sur la carte.
+    eventBus.emit('sceneRenderRequested');
     return layer;
 }
 
@@ -379,6 +384,7 @@ export function removeGPXLayer(id: string): void {
     if (state.gpxLayers.length === 0) {
         closeElevationProfile();
     } else updateElevationProfile();
+    eventBus.emit('sceneRenderRequested');
 }
 
 /**
@@ -587,6 +593,10 @@ function _doUpdateAllGPXMeshes(): void {
     state.gpxLayers = updatedLayers;
     if (state.gpxLayers.length > 0)
         updateElevationProfile(undefined, { noOpen: true });
+    // Le rebuild est différé de 100 ms et peut donc survenir après le dernier
+    // frame demandé par addGPXLayer(). Réveiller une seconde fois le rendu évite
+    // une trace visuellement figée jusqu'au prochain panoramique.
+    eventBus.emit('sceneRenderRequested');
 }
 
 export function updateRecordedTrackMesh(): void {

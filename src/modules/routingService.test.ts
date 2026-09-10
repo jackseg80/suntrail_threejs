@@ -580,7 +580,12 @@ describe('routingService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalledWith(
                 expect.any(Object),
                 '46.000, 7.000 → 46.040, 7.040',
-                { silent: true, forceVisible: true, isManualRoute: true }
+                {
+                    silent: true,
+                    forceVisible: true,
+                    isManualRoute: true,
+                    openProfile: expect.any(Boolean),
+                }
             );
         });
 
@@ -598,7 +603,43 @@ describe('routingService', () => {
             expect(mockAddGPXLayer).toHaveBeenCalledWith(
                 expect.any(Object),
                 'Start → End',
-                { silent: true, forceVisible: true, isManualRoute: true }
+                {
+                    silent: true,
+                    forceVisible: true,
+                    isManualRoute: true,
+                    openProfile: expect.any(Boolean),
+                }
+            );
+        });
+
+        it('opens the profile for the first route and respects a later manual close', async () => {
+            clearRouteWaypoints();
+            document.body.innerHTML = '<div id="elevation-profile"></div>';
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(VALID_OSRM_RESPONSE),
+            });
+            const waypoints = [
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.04, lon: 7.04 },
+            ];
+
+            await computeRoute(waypoints);
+            expect(mockAddGPXLayer.mock.calls.at(-1)?.[2]).toEqual(
+                expect.objectContaining({ openProfile: true })
+            );
+
+            await computeRoute(waypoints);
+            expect(mockAddGPXLayer.mock.calls.at(-1)?.[2]).toEqual(
+                expect.objectContaining({ openProfile: false })
+            );
+
+            document
+                .getElementById('elevation-profile')
+                ?.classList.add('is-open');
+            await computeRoute(waypoints);
+            expect(mockAddGPXLayer.mock.calls.at(-1)?.[2]).toEqual(
+                expect.objectContaining({ openProfile: true })
             );
         });
 

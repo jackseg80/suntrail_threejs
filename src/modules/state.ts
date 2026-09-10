@@ -241,6 +241,7 @@ export interface State {
     initialLat: number;
     initialLon: number;
     ZOOM: number;
+    isMapDetailLimited: boolean;
     RELIEF_EXAGGERATION: number;
     FOG_NEAR: number;
     FOG_FAR: number;
@@ -425,6 +426,7 @@ const initialState: State = {
     initialLat: 46.8182,
     initialLon: 8.2275,
     ZOOM: 6,
+    isMapDetailLimited: false,
     RELIEF_EXAGGERATION: 2.0,
     FOG_NEAR: 5000,
     FOG_FAR: 40000,

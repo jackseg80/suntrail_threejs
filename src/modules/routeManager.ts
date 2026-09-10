@@ -11,6 +11,7 @@ import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
 import { scheduleRouteSolarAnalysis, invalidateRouteCache } from './solarRoute';
 import { showToast } from './toast';
+import { eventBus } from './eventBus';
 import { STORAGE_KEYS } from '../constants/storage';
 import {
     getRouteDraftHistoryState,
@@ -298,6 +299,10 @@ export function clearRoute(): void {
     state.routeDraftTags = [];
     state.routeDraftDirty = false;
     updateBar();
+    document.getElementById('route-waypoints-panel')?.classList.add('hidden');
+    document
+        .getElementById('rb-waypoints-btn')
+        ?.setAttribute('aria-expanded', 'false');
     if (!state.isRoutePlanningMode) {
         document.body.classList.remove('route-planner-active');
     }
@@ -366,6 +371,12 @@ function syncPlanningModeUI(): void {
         document.body.classList.remove('route-planner-chrome-hidden');
         planTab?.setAttribute('aria-expanded', 'false');
         document.getElementById('route-settings')?.classList.add('hidden');
+        document
+            .getElementById('route-waypoints-panel')
+            ?.classList.add('hidden');
+        document
+            .getElementById('rb-waypoints-btn')
+            ?.setAttribute('aria-expanded', 'false');
     } else {
         planTab?.setAttribute(
             'aria-expanded',
@@ -419,16 +430,25 @@ function renderBar(): void {
     }
     document.body.classList.add('route-planner-active');
 
-    const dotsEl = document.getElementById('rb-dots');
     const infoEl = document.getElementById('rb-info');
+    const waypointsButton = document.getElementById(
+        'rb-waypoints-btn'
+    ) as HTMLButtonElement | null;
+    const waypointsCount = document.getElementById('rb-waypoints-count');
+    const profileButton = document.getElementById(
+        'rb-profile-btn'
+    ) as HTMLButtonElement | null;
     const barStats = count >= 2 ? _barStats : null;
 
-    if (dotsEl) {
-        dotsEl.innerHTML = Array.from(
-            { length: Math.min(count, 5) },
-            () => '<div class="rb-dot active" aria-hidden="true"></div>'
-        ).join('');
+    if (waypointsButton) {
+        waypointsButton.disabled = count === 0;
+        waypointsButton.setAttribute(
+            'aria-label',
+            i18n.t('planning.waypoints.openCount', { count: String(count) })
+        );
     }
+    if (waypointsCount) waypointsCount.textContent = String(count);
+    if (profileButton) profileButton.disabled = !state.routeComputation;
 
     let info: string;
     let mobileContext: string;
@@ -494,7 +514,7 @@ function renderSettingsWaypoints(): void {
         .getElementById('rs-redo-btn')
         ?.toggleAttribute('disabled', !historyState.canRedo);
     if (waypoints.length === 0) {
-        container.innerHTML = '';
+        container.innerHTML = `<p class="rs-waypoints-empty">${escapeHTML(i18n.t('planning.waypoints.empty'))}</p>`;
         return;
     }
 
@@ -503,20 +523,34 @@ function renderSettingsWaypoints(): void {
         .map((wp, i) => {
             const label =
                 wp.name || `${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)}`;
-            return `<div class="rs-wp-item">
-            <span class="rs-wp-num">${i + 1}</span>
-            <span class="rs-wp-label">${escapeHTML(label)}</span>
-            <button class="rs-wp-edit" data-idx="${i}" aria-label="${i18n.t('preparedRoutes.editor.moveWaypoint') || 'Déplacer le point'}">✎</button>
-            <button class="rs-wp-up" data-idx="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Monter le point ${i + 1}">↑</button>
-            <button class="rs-wp-dn" data-idx="${i}" ${i === last ? 'disabled' : ''} aria-label="Descendre le point ${i + 1}">↓</button>
-            <button class="rs-wp-del" data-idx="${i}" aria-label="Supprimer le point ${i + 1}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            const marker = i === 0 ? 'A' : i === last ? 'B' : String(i);
+            const role =
+                i === 0
+                    ? i18n.t('planning.waypoints.start')
+                    : i === last
+                      ? i18n.t('planning.waypoints.finish')
+                      : i18n.t('planning.waypoints.intermediate', {
+                            number: String(i),
+                        });
+            return `<div class="rs-wp-item" data-idx="${i}">
+            <button class="rs-wp-focus" data-idx="${i}" aria-label="${escapeHTML(i18n.t('planning.waypoints.focus', { point: role }))}">
+                <span class="rs-wp-num">${marker}</span>
+                <span class="rs-wp-copy"><strong>${escapeHTML(role)}</strong><span class="rs-wp-label">${escapeHTML(label)}</span></span>
+            </button>
+            <div class="rs-wp-actions">
+                <button class="rs-wp-drag" data-idx="${i}" ${last === 0 ? 'disabled' : ''} aria-label="${escapeHTML(i18n.t('planning.waypoints.drag', { point: role }))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 7h8M8 12h8M8 17h8"/></svg></button>
+                <button class="rs-wp-edit" data-idx="${i}" aria-label="${escapeHTML(i18n.t('planning.waypoints.move', { point: role }))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg></button>
+                <button class="rs-wp-up" data-idx="${i}" ${i === 0 ? 'disabled' : ''} aria-label="${escapeHTML(i18n.t('planning.waypoints.moveUp', { point: role }))}">↑</button>
+                <button class="rs-wp-dn" data-idx="${i}" ${i === last ? 'disabled' : ''} aria-label="${escapeHTML(i18n.t('planning.waypoints.moveDown', { point: role }))}">↓</button>
+                <button class="rs-wp-del" data-idx="${i}" aria-label="${escapeHTML(i18n.t('planning.waypoints.delete', { point: role }))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 10v7M14 10v7"/></svg></button>
+            </div>
         </div>`;
         })
         .join('');
 
     container
         .querySelectorAll<HTMLButtonElement>(
-            '.rs-wp-edit, .rs-wp-up, .rs-wp-dn, .rs-wp-del'
+            '.rs-wp-focus, .rs-wp-edit, .rs-wp-up, .rs-wp-dn, .rs-wp-del'
         )
         .forEach((btn) => {
             btn.addEventListener('click', (e) => {
@@ -524,33 +558,25 @@ function renderSettingsWaypoints(): void {
                 const idx = parseInt(btn.dataset.idx ?? '', 10);
                 if (isNaN(idx)) return;
                 const wps = [...state.routeWaypoints];
-                if (btn.classList.contains('rs-wp-edit')) {
+                if (btn.classList.contains('rs-wp-focus')) {
                     const current = wps[idx];
-                    const raw = window.prompt(
-                        i18n.t('preparedRoutes.editor.coordinatesPrompt') ||
-                            'Latitude, longitude',
-                        `${current.lat.toFixed(6)}, ${current.lon.toFixed(6)}`
+                    if (!state.originTile) return;
+                    const world = lngLatToWorld(
+                        current.lon,
+                        current.lat,
+                        state.originTile
                     );
-                    if (!raw) return;
-                    const [lat, lon] = raw
-                        .split(',')
-                        .map((value) => Number.parseFloat(value.trim()));
-                    if (
-                        !Number.isFinite(lat) ||
-                        !Number.isFinite(lon) ||
-                        lat < -90 ||
-                        lat > 90 ||
-                        lon < -180 ||
-                        lon > 180
-                    ) {
-                        showToast(
-                            i18n.t(
-                                'preparedRoutes.editor.invalidCoordinates'
-                            ) || 'Coordonnées invalides'
-                        );
-                        return;
-                    }
-                    wps[idx] = { ...current, lat, lon };
+                    eventBus.emit('flyTo', {
+                        worldX: world.x,
+                        worldZ: world.z,
+                        targetElevation:
+                            current.alt ?? getAltitudeAt(world.x, world.z),
+                        targetDistance: 1200,
+                    });
+                    return;
+                } else if (btn.classList.contains('rs-wp-edit')) {
+                    eventBus.emit('routeWaypointMoveRequested', { index: idx });
+                    return;
                 } else if (btn.classList.contains('rs-wp-del')) {
                     wps.splice(idx, 1);
                 } else if (btn.classList.contains('rs-wp-up') && idx > 0) {
@@ -564,6 +590,58 @@ function renderSettingsWaypoints(): void {
                 mutateRouteWaypoints(wps);
             });
         });
+
+    container
+        .querySelectorAll<HTMLButtonElement>('.rs-wp-drag')
+        .forEach((handle) => setupWaypointDrag(handle, container));
+}
+
+function setupWaypointDrag(
+    handle: HTMLButtonElement,
+    container: HTMLElement
+): void {
+    handle.addEventListener('pointerdown', (event) => {
+        if (handle.disabled) return;
+        event.preventDefault();
+        const from = Number.parseInt(handle.dataset.idx ?? '', 10);
+        if (!Number.isFinite(from)) return;
+        let to = from;
+        const sourceRow = handle.closest<HTMLElement>('.rs-wp-item');
+        sourceRow?.classList.add('is-dragging');
+        handle.setPointerCapture?.(event.pointerId);
+
+        const onMove = (moveEvent: PointerEvent) => {
+            const target = document
+                .elementFromPoint(moveEvent.clientX, moveEvent.clientY)
+                ?.closest<HTMLElement>('.rs-wp-item');
+            const next = Number.parseInt(target?.dataset.idx ?? '', 10);
+            if (!Number.isFinite(next)) return;
+            to = next;
+            container
+                .querySelectorAll('.rs-wp-item.is-drag-target')
+                .forEach((row) => row.classList.remove('is-drag-target'));
+            target?.classList.add('is-drag-target');
+        };
+
+        const finish = () => {
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', finish);
+            handle.removeEventListener('pointercancel', finish);
+            sourceRow?.classList.remove('is-dragging');
+            container
+                .querySelectorAll('.rs-wp-item.is-drag-target')
+                .forEach((row) => row.classList.remove('is-drag-target'));
+            if (to === from) return;
+            const reordered = [...state.routeWaypoints];
+            const [moved] = reordered.splice(from, 1);
+            reordered.splice(to, 0, moved);
+            mutateRouteWaypoints(reordered);
+        };
+
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', finish);
+        handle.addEventListener('pointercancel', finish);
+    });
 }
 
 function fmt(min: number): string {

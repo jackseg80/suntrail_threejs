@@ -64,6 +64,7 @@ import {
 import { showToast } from './toast';
 import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
+import { eventBus } from './eventBus';
 import {
     initRouteManager,
     removeWaypointAt,
@@ -109,9 +110,14 @@ describe('routeManager', () => {
                 </div>
             </div>
             <div id="route-bar">
-                <div id="rb-dots"></div>
                 <div id="rb-info"></div>
-            </div>`;
+                <button id="rb-waypoints-btn"><span id="rb-waypoints-count">0</span></button>
+                <button id="rb-profile-btn"></button>
+            </div>
+            <div id="route-waypoints-panel" class="hidden"></div>
+            <div id="rs-waypoints-list"></div>
+            <button id="rs-undo-btn"></button>
+            <button id="rs-redo-btn"></button>`;
     });
 
     describe('initRouteManager()', () => {
@@ -410,6 +416,39 @@ describe('routeManager', () => {
             expect(document.getElementById('rph-stats')?.hidden).toBe(true);
         });
 
+        it('rend une liste de points actionnable dans le panneau dédié', () => {
+            const emitSpy = vi.spyOn(eventBus, 'emit');
+            state.routeWaypoints = [
+                { lat: 46.0, lon: 7.0, name: 'Départ' },
+                { lat: 46.1, lon: 7.1, name: 'Col' },
+                { lat: 46.2, lon: 7.2, name: 'Arrivée' },
+            ];
+
+            initRouteManager();
+
+            expect(document.querySelectorAll('.rs-wp-item')).toHaveLength(3);
+            expect(document.querySelector('.rs-wp-num')?.textContent).toBe('A');
+            expect(
+                document.querySelectorAll('.rs-wp-num')[2]?.textContent
+            ).toBe('B');
+
+            document.querySelector<HTMLButtonElement>('.rs-wp-focus')?.click();
+            expect(emitSpy).toHaveBeenCalledWith(
+                'flyTo',
+                expect.objectContaining({ targetDistance: 1200 })
+            );
+
+            document.querySelector<HTMLButtonElement>('.rs-wp-edit')?.click();
+            expect(emitSpy).toHaveBeenCalledWith('routeWaypointMoveRequested', {
+                index: 0,
+            });
+
+            document
+                .querySelectorAll<HTMLButtonElement>('.rs-wp-del')[1]
+                ?.click();
+            expect(state.routeWaypoints).toHaveLength(2);
+        });
+
         it('distingue un GPX en préparation de la trace seulement consultée', () => {
             state.routeWaypoints = [
                 { lat: 46.0, lon: 7.0 },
@@ -496,9 +535,16 @@ describe('routeManager', () => {
             expect(document.getElementById('rb-info')?.textContent).toBe(
                 'routeBar.error'
             );
-            expect(document.querySelectorAll('#rb-dots .rb-dot')).toHaveLength(
-                2
-            );
+            expect(
+                document.getElementById('rb-waypoints-count')?.textContent
+            ).toBe('2');
+            expect(
+                (
+                    document.getElementById(
+                        'rb-waypoints-btn'
+                    ) as HTMLButtonElement
+                ).disabled
+            ).toBe(false);
         });
     });
 

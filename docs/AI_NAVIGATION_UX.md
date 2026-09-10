@@ -1,4 +1,4 @@
-# SunTrail — Navigation & modules fonctionnels (v5.88.0)
+# SunTrail — Navigation & modules fonctionnels (v5.89.1)
 
 > Contrat UX actuel. Point d'entrée : [CLAUDE.md](../CLAUDE.md). Inventaire utilisateur :
 > [FEATURES.md](FEATURES.md).
@@ -12,11 +12,13 @@
   enregistrées dans « Mes parcours », au sein du même `TrackSheet`.
 - `data-tab="search|prepare|track|library|settings"` constitue le contrat courant.
   `track` et les IDs historiques du sheet sont conservés pour les modules et tests existants.
-- En mode `state.isRoutePlanningMode`, un tap terrain ajoute un waypoint. Hors de ce mode,
-  le même tap conserve la sélection carte/POI/GPX ; l'appui long de 500 ms reste disponible
-  comme raccourci expert avec une astuce affichée une seule fois.
-- La barre de route reste visible à vide en mode Préparer, expose chargement, erreur ou
-  statistiques, et conserve inversion, réordonnancement, suppression et effacement.
+- En mode `state.isRoutePlanningMode`, un appui long de 500 ms ajoute un waypoint ; un toucher
+  court reste disponible pour manipuler la carte. Hors de ce mode, le toucher conserve la
+  sélection carte/POI/GPX.
+- La barre de route reste visible à vide en mode Préparer et expose chargement, erreur ou
+  statistiques. Ses actions directes sont, dans cet ordre, Suivre, Enregistrer, Points, Profil
+  altimétrique et Configuration. Points remplace les anciennes pastilles décoratives par un accès
+  avec compteur ; boucle et inversion restent dans Configuration.
 - À partir de 900 px, les sheets deviennent un rail droit et le panneau de route un atelier
   latéral. Les fonctions restent identiques à Android/mobile.
 - L'onboarding comporte trois écrans et mène vers Explorer, Planifier ou Importer. Il est
@@ -59,9 +61,12 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 
 ## Prepared Routes v5.83.0
 
-- **Préparer** accepte taps carte ou recherche A/B, puis nom, heure prévue, allure, favori,
-  notes et tags. La liste de waypoints permet déplacement par coordonnées, ordre, suppression,
-  inversion et undo/redo.
+- **Préparer** accepte les points carte ou la recherche A/B, puis nom, heure prévue, allure,
+  favori, notes et tags. Le panneau Points permet de centrer un point, de choisir Déplacer puis sa
+  nouvelle position sur la carte, de réordonner par glissement ou boutons accessibles, de supprimer
+  individuellement, d'annuler/rétablir et d'effacer tout l'itinéraire.
+- Le bouton Profil altimétrique rouvre directement le graphique et indique son état. Le premier
+  calcul peut l'ouvrir automatiquement ; après fermeture volontaire, un recalcul ne le rouvre pas.
 - **Bibliothèque** reste le même `TrackSheet` que **Sortie**, mais ne montre plus des catégories
   techniques séparées. Les routes IndexedDB sont « À suivre » ; les REC historiques sont
   « Enregistré ». L'origine GPX, SunTrail ou GPS reste un badge secondaire.
@@ -94,6 +99,12 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - Le panneau met en avant la prochaine indication et sa distance, puis la distance/ETA
   restantes, l'écart à la trace et la qualité GPS. Il reste utilisable à une main et ne
   masquera ni la carte ni le prochain danger de navigation.
+- Le panneau possède trois états : détails, compact par défaut et bandeau supérieur. Une seule
+  languette assure les transitions par glissement ; les flèches clavier sont l'alternative
+  accessible. Le bandeau supérieur entier rouvre le panneau. Profil est une vue secondaire où ce
+  bandeau reste fixe, avec une action « Retour au guidage » explicite.
+- En mode combiné, « Terminer la sortie » arrête Guidance et REC ensemble. Les arrêts séparés
+  restent des actions secondaires dans les détails.
 - Une indication issue des étapes ORS/OSRM est une manœuvre routée. Un simple changement de cap
   déduit d'une géométrie GPX est présenté comme « changement de direction approximatif », jamais
   comme une instruction certaine à une intersection.
@@ -134,6 +145,8 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 
 - **Origin Shift** : Recentrage dynamique (seuil 35km) — translation atomique de tous les objets (caméra, soleil, marqueur, GPX, forêts, étiquettes).
 - **Lissage Boussole** : Filtre passe-bas 10% sur `DeviceOrientation`.
+- **Bouton GPS** : trois formes et libellés distincts pour localiser, position centrée et suivi
+  continu. Une interaction manuelle interrompt le suivi mais conserve l'état position centrée.
 
 ---
 

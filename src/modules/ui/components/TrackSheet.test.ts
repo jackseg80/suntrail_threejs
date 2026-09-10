@@ -180,6 +180,7 @@ vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: vi.fn(() => false) },
 }));
 import { TrackSheet } from './TrackSheet';
+import { promptRecordingName } from '../../recordingStopFlow';
 import { state } from '../../state';
 import { sheetManager } from '../core/SheetManager';
 import {
@@ -273,9 +274,11 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
         await expect(promise).resolves.toBeNull();
     });
 
-    it('resolve avec null sur Escape', async () => {
+    it('ne supprime pas le REC sur Escape sans choix explicite', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        expect(document.getElementById('rec-save-name')).not.toBeNull();
+        document.getElementById('rec-save-discard')?.click();
         await expect(promise).resolves.toBeNull();
     });
 
@@ -299,11 +302,13 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
         await expect(promise).resolves.toBe('Suggere');
     });
 
-    it('resolve avec null sur clic fond overlay', async () => {
+    it('ne supprime pas le REC sur clic du fond sans choix explicite', async () => {
         const promise = (sheet as any).showSaveTrackPrompt('Defaut');
         const overlay = document.body.lastElementChild as HTMLElement;
         expect(overlay).not.toBeNull();
         overlay.click();
+        expect(document.getElementById('rec-save-name')).not.toBeNull();
+        document.getElementById('rec-save-discard')?.click();
         await expect(promise).resolves.toBeNull();
     });
 
@@ -312,6 +317,39 @@ describe('TrackSheet — showSaveTrackPrompt', () => {
         document.getElementById('rec-save-discard')?.click();
         await promise;
         expect(document.getElementById('rec-save-discard')).toBeNull();
+    });
+
+    it('affiche la trace et les métriques avant le choix explicite', async () => {
+        const promise = promptRecordingName(
+            'Sortie test',
+            [
+                { lat: 46.5, lon: 7.5, alt: 1_100, timestamp: 1_000 },
+                { lat: 46.51, lon: 7.52, alt: 1_240, timestamp: 2_000 },
+            ],
+            {
+                name: 'Sortie test',
+                durationSeconds: 3_661,
+                distanceKm: 4.25,
+                averagePaceSecondsPerKm: 520,
+                ascentMeters: 310,
+                descentMeters: 295,
+                altitudeMeters: 1_240,
+                gpsAccuracyMeters: 8,
+                pointCount: 2,
+            }
+        );
+
+        expect(
+            document.querySelector('.recording-finalization-map')
+        ).not.toBeNull();
+        expect(
+            document.querySelector('.recording-finalization-stats')?.textContent
+        ).toContain('4.25 km');
+        expect(
+            document.querySelector('.recording-finalization-stats')?.textContent
+        ).toContain('1:01:01');
+        document.getElementById('rec-save-discard')?.click();
+        await expect(promise).resolves.toBeNull();
     });
 });
 

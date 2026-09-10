@@ -135,6 +135,14 @@
         "save": {
             "title": "Save Track",
             "body": "Give your hike a name:",
+            "reviewBody": "Review your outing before choosing to save or discard it.",
+            "tracePreview": "Preview of the recorded track",
+            "distance": "Distance",
+            "duration": "Duration",
+            "ascent": "Elevation +",
+            "descent": "Elevation −",
+            "pace": "Pace",
+            "points": "GPS points",
             "processing": "Processing…",
             "processingBody": "SunTrail is stopping REC and finding a useful name from the starting location.",
             "keepSuggested": "Keep this name",
@@ -405,6 +413,30 @@
     "planning": {
         "tapToAddStart": "Long-press the map to place start A",
         "loop": "Loop",
+        "profileElevation": {
+            "open": "Show elevation profile",
+            "close": "Close elevation profile"
+        },
+        "waypoints": {
+            "title": "Route points",
+            "hint": "Tap a point to find it on the map.",
+            "open": "Manage route points",
+            "openCount": "Manage route points ({{count}})",
+            "close": "Close route points",
+            "empty": "No points placed",
+            "start": "Start A",
+            "finish": "Finish B",
+            "intermediate": "Point {{number}}",
+            "focus": "Show {{point}} on the map",
+            "drag": "Drag {{point}} to change its order",
+            "move": "Move {{point}} on the map",
+            "moveUp": "Move {{point}} up",
+            "moveDown": "Move {{point}} down",
+            "delete": "Delete {{point}}",
+            "tapToMove": "Tap the new position on the map.",
+            "moved": "Point moved",
+            "clearAll": "Clear the entire route"
+        },
         "hint": {
             "longPress": "Long-press the map to add a point."
         },
@@ -412,6 +444,7 @@
             "region": "Route planning mode",
             "settings": "Route settings",
             "settingsDialog": "Route settings",
+            "loop": "Create a loop",
             "reverse": "Reverse start and finish",
             "clear": "Clear route"
         },
@@ -667,10 +700,14 @@
             "world": "World",
             "sat": "Satellite"
         },
-        "tooltipLOD": "<b>Current map</b>: shows the map source and visible detail. Tap to manage available maps."
+        "tooltipLOD": "<b>Current map</b>: shows the map source and visible detail. Tap to manage available maps.",
+        "lodLimitBadge": "🔒 HD detail with Pro",
+        "lodLimitBadgeCompact": "🔒 Pro HD",
+        "lodLimitAria": "Map detail is limited to level 14. Tap to learn more.",
+        "lodLimitExplanation": "<b>Limited detail</b>: you can keep zooming, but the free version enlarges level 14 map data. Pro loads more detailed data."
     },
     "upsell": {
-        "lod": "Maximum map detail reached — upgrade to Pro to go further",
+        "lod": "You can keep zooming, but HD map detail is available with Pro",
         "timeline": "📅 Access any date with Pro"
     },
     "connectivity": {
@@ -748,7 +785,10 @@
     },
     "gps": {
         "aria": {
-            "locate": "Locate"
+            "locate": "Locate",
+            "off": "Locate my position",
+            "position": "Position centered",
+            "follow": "Follow my position"
         },
         "toast": {
             "centered": "📍 Position centered",
@@ -1251,8 +1291,16 @@
             "profile": "Profile",
             "stop": "Stop",
             "stopRec": "Stop REC",
+            "finishOuting": "Finish outing",
+            "stopRecOnly": "Stop REC only",
+            "stopGuidanceOnly": "Stop guidance only",
             "details": "Details",
-            "compact": "Collapse"
+            "compact": "Collapse",
+            "minimize": "Minimize to bar",
+            "open": "Open",
+            "drag": "Drag",
+            "resize": "Drag to resize the guidance panel",
+            "back": "Back to guidance"
         },
         "confirm": {
             "approximate": "This route uses approximate geometry. Check the track before starting guidance. Continue?"

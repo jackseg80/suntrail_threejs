@@ -34,10 +34,12 @@ public class MainActivity extends BridgeActivity {
     private void handleRecordingNotificationAction(Intent intent) {
         if (
             intent == null ||
-            !RecordingService.ACTION_STOP_RECORDING.equals(intent.getAction())
+            (!RecordingService.ACTION_STOP_RECORDING.equals(intent.getAction()) &&
+                !RecordingService.ACTION_FINISH_OUTING.equals(intent.getAction()))
         ) return;
+        String action = intent.getAction();
         Intent stopIntent = new Intent(this, RecordingService.class)
-            .setAction(RecordingService.ACTION_STOP_RECORDING);
+            .setAction(action);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(stopIntent);
         } else {

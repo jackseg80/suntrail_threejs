@@ -1,3 +1,48 @@
+## [5.89.1] - 2026-09-10 — Simplification de l'interface terrain
+
+### Amélioré
+
+- Ordonner le bandeau Préparer en Suivre, Enregistrer, Points, Profil altimétrique et
+  Configuration. Points ouvre désormais une liste dédiée avec centrage, déplacement sur la carte,
+  glissement, ordre accessible, suppression et effacement complet ; ces commandes ne sont plus
+  enfouies dans Configuration.
+- Donner un accès permanent au profil altimétrique depuis Préparer, avec état actif, et respecter
+  sa fermeture lors des recalculs suivants. Regrouper boucle et inversion sous forme d'icônes
+  unifiées dans Configuration.
+- Distinguer les états GPS inactif, position centrée et suivi continu par trois formes d'icône,
+  trois rendus et trois libellés accessibles.
+- Donner au panneau Guidance trois états cohérents commandés par une seule languette : détails,
+  compact et bandeau supérieur. Le bandeau se touche pour rouvrir ; les boutons redondants
+  Détails/Réduire/moins sont retirés. En mode Profil, il reste fixe et le retour est explicite.
+- Quand Guidance et REC sont actifs ensemble, proposer « Terminer la sortie » comme action
+  principale dans l'interface et la notification Android, tout en gardant les arrêts indépendants
+  dans les détails.
+- Présenter avant sauvegarde un récapitulatif REC avec aperçu de la trace, distance, durée,
+  dénivelés, allure et points GPS. Seuls Enregistrer et Ne pas enregistrer ferment ce choix ;
+  Échap et un toucher sur le fond ne suppriment plus la sortie.
+
+### Corrigé
+
+- Rafraîchir immédiatement la trace calculée après le déplacement, la suppression ou le
+  réordonnancement d'un point, puis ses couleurs d'ensoleillement dès que l'analyse est prête,
+  même lorsque la carte est immobile.
+- Empêcher le panneau Guidance détaillé de passer sous la barre supérieure sur les écrans courts
+  ou avec une grande police Android ; son contenu défile et sa languette reste accessible.
+- Conserver le zoom au-delà du détail Free 14 tout en affichant dans la barre haute un indicateur
+  orange persistant « HD Pro ». Un toucher explique que la carte reste utilisable mais agrandit les
+  données du niveau 14 ; le message temporaire n'apparaît plus qu'à l'entrée dans cette zone.
+
+### Validation
+
+- Contrôles TypeScript, formatage et lint, audit des quatre langues, 1 791 tests Web/TypeScript,
+  tests JVM, lint/R8 release et six tests instrumentés Android sur Galaxy A53.
+- Métadonnées `5.89.1` / Android `910`. L'APK `5.89.1-diagnostic` a été construit, installé et
+  démarré sur Galaxy S23 SM-S911B / Android 16, puis sa révision corrigée sur Galaxy A53
+  SM-A536B en 1080 × 2400 avec une police à 110 %. Le propriétaire a validé les parcours Points,
+  Profil, Guidance, GPS, recalcul/solaire et fin de REC sur les appareils cibles.
+- Publication GitHub `v5.89.1` avec AAB signé produit par la CI. Aucun téléversement Google Play
+  n'est inclus ; le code 910 doit être revérifié dans la Play Console avant tout envoi.
+
 ## [5.89.0] - 2026-09-09 — Réactivité cartographique et mémoire
 
 ### Amélioré

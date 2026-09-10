@@ -1,6 +1,6 @@
 # Fonctionnalités actuelles de SunTrail 3D
 
-> Référence canonique de la version source 5.89.0, mise à jour le 2026-09-09.
+> Référence canonique de la version source 5.89.1, mise à jour le 2026-09-10.
 > Ce document décrit le code activé par défaut. Les plans futurs et anciens documents archivés ne
 > constituent pas des fonctionnalités livrées.
 
@@ -28,16 +28,16 @@ distinctes.
 | Solaire | Ombres, timeline 24 h, sonde et exposition du parcours | Jour courant Free, calendrier Pro | `sun.ts`, `solarRoute.ts`, `SolarProbeSheet.ts` |
 | Météo | Conditions Open-Meteo et particules pluie/neige | Base Free, détails Pro | `weather.ts`, `WeatherSheet.ts` |
 | Recherche | Lieux, adresses, sommets locaux et distants | Free | `geocodingService.ts`, `peaks.ts` |
-| Préparation | Waypoints, profils marche/rando/vélo/VTT, ORS puis OSRM, inversion et recalcul | Free jusqu'à 25 km, Pro jusqu'à 500 km | `routeManager.ts`, `routingService.ts` |
+| Préparation | Bandeau Suivre/Enregistrer/Points/Profil/Configuration, panneau de points avec centrage, déplacement carte, réorganisation et suppression, activité, boucle, inversion et recalcul ORS puis OSRM | Free jusqu'à 25 km, Pro jusqu'à 500 km | `routeManager.ts`, `routingService.ts` |
 | Itinéraires | `PreparedRouteV1`, brouillon, sauvegarde, duplication, favoris et suppression | Local et illimité selon le stockage | `preparedRoutes/`, `RouteRepository.ts` |
 | Évaluation | Distance, D+/D-, durée, effort, difficulté et qualité de guidage | Les données absentes restent inconnues | `preparedRoute.ts`, `routeDifficulty.ts` |
 | Bibliothèque | Catalogue unique « Mes parcours » | Toutes les entrées restent accessibles | `TrackSheet.ts`, `trackCatalogAdapter.ts` |
 | Traces | Import GPX et archive REC/import `StoredTrackV1` pleine fidélité | Toutes conservées localement | `tracks/`, `TRACK_STORAGE.md` |
 | Affichage | Une trace de Bibliothèque à la fois en Free ; ajout multi-carte en Pro | Maximum technique de 10 calques | `gpxService.ts`, `TrackSheet.ts` |
 | Export | GPX dans Téléchargements Android ou via le navigateur | Pro ; refus avant création de fichier en Free | `recordingService.ts` |
-| Guidage | Indication, distance, progression, ETA, écart, flèche, pause/reprise et alertes | Essentiel Free | `guidance/`, `GUIDANCE_ANDROID.md` |
-| REC | Enregistrement, nom, stats, résumé, récupération et abandon explicite | REC essentiel Free | `recordingService.ts`, `RecordingService.java` |
-| Sortie combinée | Guidage et REC avec une seule source GPS native | Android | `GuidanceForegroundService.ts`, `RecordingService.java` |
+| Guidage | Panneau bandeau/compact/détails, indication, distance, progression, ETA, écart, profil avec retour explicite, pause/reprise et alertes | Essentiel Free | `guidance/`, `GUIDANCE_ANDROID.md` |
+| REC | Enregistrement, récapitulatif avec aperçu de trace et métriques, nom, récupération et abandon explicite | REC essentiel Free | `recordingService.ts`, `RecordingService.java` |
+| Sortie combinée | Guidage et REC avec une seule source GPS native et action principale pour terminer les deux | Android | `GuidanceForegroundService.ts`, `RecordingService.java` |
 | Readiness | Rapport route/lumière/offline/conditions/appareil sans score artificiel | Free | `readiness/routeReadiness.ts` |
 | Corridor | Planification, mesure, téléchargement, reprise, annulation et remplacement sûr | 1 km remplaçable Free ; 0,5/1/2 km et plusieurs en Pro | `readiness/`, `READINESS_OFFLINE.md` |
 | Zones | Sélection visuelle et cache hors ligne | Une zone Free, illimité Pro | `ZoneSelector.ts`, `cachedZones.ts` |

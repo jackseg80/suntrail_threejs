@@ -135,6 +135,14 @@
         "save": {
             "title": "Salva percorso",
             "body": "Dai un nome alla tua escursione:",
+            "reviewBody": "Controlla l'uscita prima di scegliere se salvarla o eliminarla.",
+            "tracePreview": "Anteprima della traccia registrata",
+            "distance": "Distanza",
+            "duration": "Durata",
+            "ascent": "Dislivello +",
+            "descent": "Dislivello −",
+            "pace": "Passo",
+            "points": "Punti GPS",
             "processing": "Elaborazione in corso…",
             "processingBody": "SunTrail sta arrestando la registrazione e cercando un nome utile dal luogo di partenza.",
             "keepSuggested": "Mantieni questo nome",
@@ -405,6 +413,30 @@
     "planning": {
         "tapToAddStart": "Pressione lunga sulla mappa per inserire la partenza A",
         "loop": "Anello",
+        "profileElevation": {
+            "open": "Mostra il profilo altimetrico",
+            "close": "Chiudi il profilo altimetrico"
+        },
+        "waypoints": {
+            "title": "Punti dell’itinerario",
+            "hint": "Tocca un punto per trovarlo sulla mappa.",
+            "open": "Gestisci i punti dell’itinerario",
+            "openCount": "Gestisci i punti dell’itinerario ({{count}})",
+            "close": "Chiudi i punti dell’itinerario",
+            "empty": "Nessun punto inserito",
+            "start": "Partenza A",
+            "finish": "Arrivo B",
+            "intermediate": "Punto {{number}}",
+            "focus": "Mostra {{point}} sulla mappa",
+            "drag": "Trascina {{point}} per cambiare l’ordine",
+            "move": "Sposta {{point}} sulla mappa",
+            "moveUp": "Sposta {{point}} verso l’alto",
+            "moveDown": "Sposta {{point}} verso il basso",
+            "delete": "Elimina {{point}}",
+            "tapToMove": "Tocca la nuova posizione sulla mappa.",
+            "moved": "Punto spostato",
+            "clearAll": "Cancella tutto l’itinerario"
+        },
         "hint": {
             "longPress": "Una pressione lunga sulla mappa aggiunge un punto."
         },
@@ -412,6 +444,7 @@
             "region": "Modalità di pianificazione itinerario",
             "settings": "Impostazioni itinerario",
             "settingsDialog": "Impostazioni itinerario",
+            "loop": "Crea un percorso ad anello",
             "reverse": "Inverti partenza e arrivo",
             "clear": "Cancella itinerario"
         },
@@ -666,10 +699,14 @@
             "world": "Mondo",
             "sat": "Satellite"
         },
-        "tooltipLOD": "<b>Mappa attuale</b>: mostra la fonte cartografica e il dettaglio visibile. Tocca per gestire le mappe disponibili."
+        "tooltipLOD": "<b>Mappa attuale</b>: mostra la fonte cartografica e il dettaglio visibile. Tocca per gestire le mappe disponibili.",
+        "lodLimitBadge": "🔒 Dettagli HD con Pro",
+        "lodLimitBadgeCompact": "🔒 Pro HD",
+        "lodLimitAria": "Il dettaglio della mappa è limitato al livello 14. Tocca per saperne di più.",
+        "lodLimitExplanation": "<b>Dettaglio limitato</b>: puoi continuare a ingrandire, ma la versione gratuita amplia i dati cartografici del livello 14. Pro carica dati più dettagliati."
     },
     "upsell": {
-        "lod": "Massimo dettaglio cartografico raggiunto — passa a Pro per andare oltre",
+        "lod": "Puoi continuare a ingrandire, ma i dettagli HD della mappa sono disponibili con Pro",
         "timeline": "📅 Accedi a qualsiasi data con Pro"
     },
     "connectivity": {
@@ -747,7 +784,10 @@
     },
     "gps": {
         "aria": {
-            "locate": "Localizza"
+            "locate": "Localizza",
+            "off": "Localizza la mia posizione",
+            "position": "Posizione centrata",
+            "follow": "Segui la mia posizione"
         },
         "toast": {
             "centered": "📍 Posizione centrata",
@@ -1249,8 +1289,16 @@
             "profile": "Profilo",
             "stop": "Ferma",
             "stopRec": "Ferma REC",
+            "finishOuting": "Termina uscita",
+            "stopRecOnly": "Ferma solo REC",
+            "stopGuidanceOnly": "Ferma solo guida",
             "details": "Dettagli",
-            "compact": "Riduci"
+            "compact": "Riduci",
+            "minimize": "Riduci a barra",
+            "open": "Apri",
+            "drag": "Trascina",
+            "resize": "Trascina per ridimensionare il pannello di guida",
+            "back": "Torna alla guida"
         },
         "confirm": {
             "approximate": "Questo percorso usa una geometria approssimativa. Controlla la traccia prima di iniziare. Continuare?"

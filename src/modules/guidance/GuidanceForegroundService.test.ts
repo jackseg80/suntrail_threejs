@@ -76,6 +76,35 @@ describe('GuidanceForegroundService native recovery', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         document.body.className = '';
+        document.body.innerHTML = '';
+    });
+
+    it('offers peek, compact and details states from the same guidance panel', () => {
+        const service = new GuidanceForegroundService();
+        const internals = service as unknown as { ensureUI(): void };
+        internals.ensureUI();
+        const panel = document.getElementById('guidance-foreground');
+        const handle = panel?.querySelector<HTMLElement>(
+            '.guidance-panel-handle'
+        );
+
+        expect(panel?.dataset.panelMode).toBe('compact');
+        handle?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+        );
+        expect(panel?.dataset.panelMode).toBe('peek');
+        panel?.querySelector<HTMLElement>('.guidance-heading')?.click();
+        expect(panel?.dataset.panelMode).toBe('compact');
+        handle?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })
+        );
+        expect(panel?.dataset.panelMode).toBe('details');
+        expect(
+            panel?.querySelector('[data-guidance-action="expand"]')
+        ).toBeNull();
+        expect(
+            panel?.querySelector('[data-guidance-action="minimize"]')
+        ).toBeNull();
     });
 
     it('recreates the prepared route layer when attaching to a surviving native session', async () => {

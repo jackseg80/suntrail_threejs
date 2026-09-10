@@ -114,6 +114,20 @@ public class TrackingServiceInstrumentedTest {
         assertFalse(recordingActive.get());
     }
 
+    @Test
+    public void finishOutingStopsRecordingAndGuidanceTogether() throws Exception {
+        ContextCompat.startForegroundService(context, action(RecordingService.ACTION_START_GUIDANCE));
+        waitFor("guidance start", guidanceActive::get);
+        ContextCompat.startForegroundService(context, action(RecordingService.ACTION_START_RECORDING));
+        waitFor("combined session", () -> guidanceActive.get() && recordingActive.get());
+
+        context.startService(action(RecordingService.ACTION_FINISH_OUTING));
+
+        waitFor("outing finish", () -> !guidanceActive.get() && !recordingActive.get());
+        assertFalse(guidanceActive.get());
+        assertFalse(recordingActive.get());
+    }
+
     private Intent action(String value) { return new Intent(context, RecordingService.class).setAction(value); }
     private boolean hasTargetForegroundNotification() throws Exception {
         ParcelFileDescriptor descriptor = InstrumentationRegistry.getInstrumentation().getUiAutomation()

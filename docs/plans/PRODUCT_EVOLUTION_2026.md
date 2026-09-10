@@ -1,8 +1,8 @@
 # SunTrail — Plan d'évolution produit révisé v5.82 → 5.90+
 
 > Autorité d'exécution de la [roadmap](../../ROADMAP.md).
-> Révision : 2026-09-09 après publication GitHub de v5.89.0 / Android 909 et clôture de la phase
-> d'optimisation cartographique. Les états de release
+> Révision : 2026-09-10 après publication GitHub de v5.89.1 / Android 910 et clôture de la passe
+> de simplification terrain qui suit l'optimisation cartographique. Les états de release
 > détaillés font foi dans `ROADMAP.md` ; les sections historiques ci-dessous restent une trace,
 > pas une autorisation de publication.
 

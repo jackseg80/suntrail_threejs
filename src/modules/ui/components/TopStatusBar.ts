@@ -18,6 +18,7 @@ export class TopStatusBar extends BaseComponent {
     private recTimer: HTMLElement | null = null;
     private recInterval: any = null;
     private lodTooltip: TooltipHandle | null = null;
+    private lodTooltipContent: HTMLElement | null = null;
 
     constructor() {
         super('template-top-status-bar', 'top-status-bar', templateHTML);
@@ -53,6 +54,7 @@ export class TopStatusBar extends BaseComponent {
         centerWidgets?.appendChild(lodInfoIcon);
         const lodContent = document.createElement('div');
         lodContent.innerHTML = i18n.t('topbar.tooltipLOD');
+        this.lodTooltipContent = lodContent;
         this.lodTooltip = createTooltip(lodInfoIcon, lodContent, {
             trigger: 'click',
         });
@@ -60,6 +62,10 @@ export class TopStatusBar extends BaseComponent {
         // LOD badge click → adaptive: packs if pack covers current zone, else layers
         const lodPill = this.element.querySelector('#top-pill-lod');
         lodPill?.addEventListener('click', () => {
+            if (state.isMapDetailLimited) {
+                this.lodTooltip?.show();
+                return;
+            }
             const lat = state.TARGET_LAT;
             const lon = state.TARGET_LON;
             const pack = packManager.findPackContaining(lat, lon);
@@ -112,6 +118,11 @@ export class TopStatusBar extends BaseComponent {
 
         this.addSubscription(
             state.subscribe('ZOOM', (val: number) => this.updateLOD(val))
+        );
+        this.addSubscription(
+            state.subscribe('isMapDetailLimited', () =>
+                this.updateLOD(state.ZOOM)
+            )
         );
         this.addSubscription(
             state.subscribe('MAP_SOURCE', () => this.updateLOD(state.ZOOM))
@@ -296,6 +307,28 @@ export class TopStatusBar extends BaseComponent {
                 delete this.lodBadge.dataset.packState;
             }
 
+            const lodPill =
+                this.element?.querySelector<HTMLElement>('#top-pill-lod');
+            if (state.isMapDetailLimited) {
+                badgeText = i18n.t(
+                    isCompact
+                        ? 'topbar.lodLimitBadgeCompact'
+                        : 'topbar.lodLimitBadge'
+                );
+                lodPill?.setAttribute('data-detail-limited', 'true');
+                if (this.lodTooltipContent) {
+                    this.lodTooltipContent.innerHTML = i18n.t(
+                        'topbar.lodLimitExplanation'
+                    );
+                }
+            } else {
+                lodPill?.removeAttribute('data-detail-limited');
+                if (this.lodTooltipContent) {
+                    this.lodTooltipContent.innerHTML =
+                        i18n.t('topbar.tooltipLOD');
+                }
+            }
+
             this.lodBadge.textContent = badgeText;
             this.updatePillAriaLabel();
         }
@@ -310,7 +343,12 @@ export class TopStatusBar extends BaseComponent {
         const lodPill = this.element?.querySelector('#top-pill-lod');
         if (lodPill) {
             const lod = this.lodBadge?.textContent ?? '';
-            lodPill.setAttribute('aria-label', lod.trim());
+            lodPill.setAttribute(
+                'aria-label',
+                state.isMapDetailLimited
+                    ? i18n.t('topbar.lodLimitAria')
+                    : lod.trim()
+            );
         }
     }
 
@@ -320,6 +358,7 @@ export class TopStatusBar extends BaseComponent {
             this.lodTooltip.dispose();
             this.lodTooltip = null;
         }
+        this.lodTooltipContent = null;
         super.dispose();
     }
 

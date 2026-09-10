@@ -1,4 +1,4 @@
-# AI UI Style Guide (v5.88.0)
+# AI UI Style Guide (v5.89.1)
 
 > Contrat visuel actuel, incluant Prepared Routes, Sortie/Bibliothèque et guidage Android/Web.
 
@@ -27,6 +27,21 @@ This guide defines the standardized UI patterns for SunTrail to ensure visual co
 - “Difficulty unknown” is a valid, explained state; never replace it with a slope-derived SAC level.
 - A/B search and the keyboard waypoint list are the semantic alternative to the WebGL canvas.
 - Approximate legacy routes always retain a visible warning and are never presented as guide-ready.
+
+### Terrain controls v5.89.1
+
+- Préparer expose les actions fréquentes directement dans l'ordre Suivre, Enregistrer, Points,
+  Profil, puis Configuration. Boucle et inversion restent des options secondaires avec des icônes
+  de même taille.
+- Un point visible ouvre le panneau Points. Ce panneau porte centrage, déplacement sur la carte,
+  réorganisation et suppression ; Configuration ne duplique pas ces commandes.
+- Guidance utilise une seule languette pour parcourir détails, compact et bandeau supérieur. Ne pas
+  ajouter de boutons Détails/Réduire concurrents. Sur écran court ou grande police, le panneau reste
+  sous la barre haute, son contenu défile et la languette demeure accessible.
+- Les trois états GPS doivent différer par la forme, la couleur et le libellé accessible : inactif,
+  position ponctuelle et suivi continu.
+- Une limite Free qui n'empêche pas le geste reste expliquée dans le contrôle concerné. Pour le zoom
+  au-delà du détail 14, l'indicateur orange « HD Pro » est persistant et ouvrable au toucher.
 
 ### Settings information architecture
 

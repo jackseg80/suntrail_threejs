@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockGetCountryCode } = vi.hoisted(() => ({
+const { mockGetCountryCode, mockTooltipShow } = vi.hoisted(() => ({
     mockGetCountryCode: vi.fn((_lat: number, _lon: number) => 'CH'),
+    mockTooltipShow: vi.fn(),
 }));
 
 vi.mock('../../geo', () => ({
@@ -35,7 +36,13 @@ vi.mock('../../packManager', () => ({
 }));
 
 vi.mock('../tooltip', () => ({
-    createTooltip: vi.fn(() => ({ dispose: vi.fn() })),
+    createTooltip: vi.fn(() => ({
+        element: document.createElement('div'),
+        show: mockTooltipShow,
+        hide: vi.fn(),
+        toggle: vi.fn(),
+        dispose: vi.fn(),
+    })),
 }));
 
 import { state } from '../../state';
@@ -44,6 +51,10 @@ import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { i18n } from '../../../i18n/I18nService';
 import { TopStatusBar } from './TopStatusBar';
+
+beforeEach(() => {
+    state.isMapDetailLimited = false;
+});
 
 describe('TopStatusBar — LOD label (country mapping)', () => {
     let bar: TopStatusBar;
@@ -185,6 +196,21 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
         createAndRender();
         const badge = document.querySelector('.lod-badge');
         expect(badge?.textContent).toContain('détail 14');
+    });
+
+    it('keeps a persistent Pro HD indicator while Free detail is magnified', () => {
+        state.isMapDetailLimited = true;
+        createAndRender();
+        const pill = document.querySelector<HTMLElement>('#top-pill-lod');
+        const badge = document.querySelector('.lod-badge');
+
+        expect(pill?.dataset.detailLimited).toBe('true');
+        expect(badge?.textContent).toBe('🔒 Détails HD avec Pro');
+        expect(pill?.getAttribute('aria-label')).toContain('niveau 14');
+
+        pill?.click();
+        expect(mockTooltipShow).toHaveBeenCalled();
+        expect(sheetManager.toggle).not.toHaveBeenCalledWith('layers-sheet');
     });
 });
 

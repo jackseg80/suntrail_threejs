@@ -84,9 +84,6 @@ eventBus.on('sceneRenderRequested', requestSceneRender);
 // v5.40.18 : Objets statiques partagés pour éviter le Garbage Collection (Zero-Allocation Pattern)
 const _sharedMatrix = new THREE.Matrix4();
 
-// Upsell LOD — debounce pour ne pas spammer le toast (1 fois par 30s max)
-let _lastLodUpsellTime = 0;
-
 // Ground plane — empêche le vide blanc quand la caméra voit sous le terrain au tilt max
 let groundPlane: THREE.Mesh | null = null;
 
@@ -246,11 +243,20 @@ function computeEffectiveDistance(): number {
     return THREE.MathUtils.lerp(heightAboveGround, rawDist, tiltBlend * 0.5);
 }
 
-function computeTargetZoom(dist: number): number {
+function computeTargetZoom(dist: number, announceLimit = false): number {
     const idealZoom = getIdealZoom(dist, state.ZOOM);
-    const effectiveMaxZoom = isFeatureEnabled('lod_high')
+    const hasHighDetail = isFeatureEnabled('lod_high');
+    const effectiveMaxZoom = hasHighDetail
         ? state.MAX_ALLOWED_ZOOM || 18
         : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
+    const isLimited = !hasHighDetail && idealZoom > effectiveMaxZoom;
+    const enteredLimitedZoom = isLimited && !state.isMapDetailLimited;
+    if (state.isMapDetailLimited !== isLimited) {
+        state.isMapDetailLimited = isLimited;
+    }
+    if (enteredLimitedZoom && announceLimit) {
+        showToast(i18n.t('upsell.lod'), 10000);
+    }
     return Math.min(idealZoom, effectiveMaxZoom);
 }
 
@@ -493,23 +499,7 @@ export async function initScene(): Promise<void> {
             dz = state.controls.target.z;
         const dist = computeEffectiveDistance();
 
-        const idealZoom = getIdealZoom(dist, state.ZOOM);
-        const effectiveMaxZoom = isFeatureEnabled('lod_high')
-            ? state.MAX_ALLOWED_ZOOM || 18
-            : Math.min(state.MAX_ALLOWED_ZOOM || 18, 14);
-        const targetZoom = Math.min(idealZoom, effectiveMaxZoom);
-
-        if (
-            !isFeatureEnabled('lod_high') &&
-            idealZoom > effectiveMaxZoom &&
-            state.ZOOM >= effectiveMaxZoom
-        ) {
-            const now = Date.now();
-            if (now - _lastLodUpsellTime > 30_000) {
-                _lastLodUpsellTime = now;
-                showToast(i18n.t('upsell.lod'), 10000);
-            }
-        }
+        const targetZoom = computeTargetZoom(dist, true);
 
         const newZoom = targetZoom;
 

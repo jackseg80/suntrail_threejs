@@ -153,8 +153,10 @@ describe('appInit.ts — Initialization Sequence', () => {
             <div id="coords-pill"><button id="close-coords"></button><span id="click-latlon"></span><span id="click-alt"></span><span id="click-poi-name"></span></div>
             <div class="fab-stack"></div><button id="layers-fab"></button><button id="compass-fab"></button>
             <button id="gps-main-btn"></button><span id="compass-svg"></span><span id="lp-indicator"></span>
-            <button id="rb-clear-btn"></button><button id="rb-settings-btn"></button>
-            <div id="route-settings" class="hidden"></div><select id="rs-profile"><option value="foot">foot</option></select><input id="rs-loop" type="checkbox" />
+            <button id="rb-clear-btn"></button><button id="rb-settings-btn"></button><button id="rb-waypoints-btn"></button><button id="rb-profile-btn"></button>
+            <div id="route-settings" class="hidden"></div><div id="route-waypoints-panel" class="hidden"></div><button id="route-waypoints-close"></button>
+            <div id="route-waypoint-move-hint" hidden></div><button id="route-waypoint-move-cancel"></button>
+            <div id="elevation-profile"></div><select id="rs-profile"><option value="foot">foot</option></select><input id="rs-loop" type="checkbox" />
             <div id="route-bar"></div><div id="nav-bar"></div><div id="top-status-bar"></div><div id="widgets-container"></div><div id="bottom-bar"></div>
         `;
         const { state } = await import('./state');
@@ -206,6 +208,17 @@ describe('appInit.ts — Initialization Sequence', () => {
                 .getElementById('route-settings')!
                 .classList.contains('hidden')
         ).toBe(false);
+        document.getElementById('rb-waypoints-btn')!.click();
+        expect(
+            document
+                .getElementById('route-waypoints-panel')!
+                .classList.contains('hidden')
+        ).toBe(false);
+        expect(
+            document
+                .getElementById('route-settings')!
+                .classList.contains('hidden')
+        ).toBe(true);
         document
             .getElementById('rs-profile')!
             .dispatchEvent(new Event('change'));
@@ -214,6 +227,88 @@ describe('appInit.ts — Initialization Sequence', () => {
         document.getElementById('rb-clear-btn')!.click();
         expect(scheduleAutoCompute).toHaveBeenCalledTimes(2);
         expect(clearRoute).toHaveBeenCalled();
+    });
+
+    it('reopens the route profile and moves a selected point with a map tap', async () => {
+        document.body.innerHTML = `
+            <div id="canvas-container"></div>
+            <div id="route-bar"></div>
+            <button id="rb-settings-btn"></button>
+            <button id="rb-waypoints-btn"></button>
+            <button id="rb-profile-btn"></button>
+            <div id="route-settings" class="hidden"></div>
+            <div id="route-waypoints-panel" class="hidden"></div>
+            <button id="route-waypoints-close"></button>
+            <div id="route-waypoint-move-hint" hidden></div>
+            <button id="route-waypoint-move-cancel"></button>
+            <div id="elevation-profile"></div>
+        `;
+        const { state } = await import('./state');
+        const { findTerrainIntersection, getAltitudeAt } =
+            await import('./analysis');
+        const { updateElevationProfile } = await import('./profile');
+        const { moveWaypointAt } = await import('./routeManager');
+        const { eventBus } = await import('./eventBus');
+        vi.mocked(findTerrainIntersection).mockReturnValue(
+            new THREE.Vector3(20, 0, 30)
+        );
+        vi.mocked(getAltitudeAt).mockReturnValue(1200);
+        Object.assign(state, {
+            renderer: {},
+            camera: new THREE.PerspectiveCamera(),
+            scene: new THREE.Scene(),
+            originTile: { x: 0, y: 0, z: 14 },
+            routeWaypoints: [
+                { lat: 46.5, lon: 7.5, name: 'Départ' },
+                { lat: 46.6, lon: 7.6, name: 'Arrivée' },
+            ],
+            gpxLayers: [
+                {
+                    id: 'manual-route',
+                    isManualRoute: true,
+                    points: [{}, {}],
+                },
+            ],
+            activeGPXLayerId: 'manual-route',
+        });
+
+        await appInit();
+
+        document.getElementById('rb-profile-btn')!.click();
+        expect(updateElevationProfile).toHaveBeenCalledWith('manual-route');
+
+        const moveRequest = vi
+            .mocked(eventBus.on)
+            .mock.calls.filter(
+                ([eventName]) => eventName === 'routeWaypointMoveRequested'
+            )
+            .slice(-1)[0]?.[1] as
+            ((payload: { index: number }) => void) | undefined;
+        moveRequest?.({ index: 0 });
+        expect(
+            (document.getElementById('route-waypoint-move-hint') as HTMLElement)
+                .hidden
+        ).toBe(false);
+
+        document
+            .getElementById('canvas-container')!
+            .dispatchEvent(
+                new MouseEvent('click', { clientX: 100, clientY: 100 })
+            );
+
+        expect(moveWaypointAt).toHaveBeenCalledWith(
+            0,
+            expect.objectContaining({ name: undefined })
+        );
+        expect(
+            (document.getElementById('route-waypoint-move-hint') as HTMLElement)
+                .hidden
+        ).toBe(true);
+        expect(
+            document
+                .getElementById('route-waypoints-panel')!
+                .classList.contains('hidden')
+        ).toBe(false);
     });
 
     it('keeps the historical long press while ignoring short taps in Prepare mode', async () => {
@@ -399,6 +494,7 @@ vi.mock('./packManager', () => ({
 }));
 vi.mock('./routeManager', () => ({
     initRouteManager: vi.fn(),
+    moveWaypointAt: vi.fn(),
     removeWaypointAt: vi.fn(),
     scheduleAutoCompute: vi.fn(),
     clearRoute: vi.fn(),

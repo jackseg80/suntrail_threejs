@@ -14,6 +14,7 @@ import { worldToLngLat, haversineDistance } from './geo';
 import { isLatLonInForest, prefetchLandcoverForPoints } from './landcover';
 import { getSunDirection } from './sun';
 import { setSolarBandData } from './profile';
+import { eventBus } from './eventBus';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -592,6 +593,10 @@ export function buildSolarOverlay(
     _overlayMesh.scale.copy(sourceMesh.scale);
 
     if (state.scene) state.scene.add(_overlayMesh);
+    // L'analyse se termine hors interaction utilisateur. La boucle de rendu
+    // mobile peut alors être au repos : afficher les couleurs sans attendre
+    // que l'utilisateur déplace la carte.
+    eventBus.emit('sceneRenderRequested');
 }
 
 export function updateSolarOverlay(analysis: RouteSolarAnalysis): void {
@@ -601,6 +606,7 @@ export function updateSolarOverlay(analysis: RouteSolarAnalysis): void {
         analysis
     );
     _overlayTexture.needsUpdate = true;
+    eventBus.emit('sceneRenderRequested');
 }
 
 /** Appelé AVANT geometry.dispose() dans gpxLayers.ts */

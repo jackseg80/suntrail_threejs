@@ -27,6 +27,7 @@ type EventMap = {
     gpxHistoryUpdated: void;
     tracksUpdated: void;
     preparedRoutesUpdated: void;
+    routeWaypointMoveRequested: { index: number };
     trackDestinationChanged: { destination: 'outing' | 'library' };
     guidanceSnapshot: import('./guidance/guidanceTypes').GuidanceSnapshot;
     guidanceStopped: void;

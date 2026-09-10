@@ -1,6 +1,6 @@
-# Stockage des traces pleine fidélité (livré en v5.87, actif en v5.88)
+# Stockage des traces pleine fidélité (livré en v5.87, actif en v5.89.1)
 
-> Contrat toujours actif dans la version source 5.88.0. L'état de publication historique de 5.87
+> Contrat toujours actif dans la version source 5.89.1. L'état de publication historique de 5.87
 > est conservé dans `CHANGELOG.md` et n'affecte pas les garanties de stockage décrites ici.
 
 ## Responsabilités séparées
@@ -60,6 +60,10 @@ abandon explicite, transaction `TrackRepository`, accusé de succès, puis seule
 marqueur et des points Room. En cas de quota ou d'échec transactionnel, l'accusé n'est pas envoyé
 et la session reste récupérable. L'abandon explicite et un enregistrement trop court sont, eux,
 acquittés sans créer d'archive.
+
+Avant le choix, le dialogue montre un aperçu borné de la trace et les métriques utiles : distance,
+durée, D+, D−, allure et nombre de points. Échap et un toucher sur le fond laissent le dialogue
+ouvert ; seule l'action « Ne pas enregistrer » constitue un abandon explicite.
 
 ## Contrat Free / Pro
 

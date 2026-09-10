@@ -174,6 +174,8 @@ L'AAB signé est disponible dans : **GitHub → Releases → vX.Y.Z → app-rele
 | **906 (publié GitHub)** | **5.86.2** | **v5.86.2** | **Tableau de bord Sortie, frontière Bibliothèque, export GPX Android dans Téléchargements et reprise sûre du shell WebView après mise à jour. AAB signé attaché par GitHub Actions ; aucun upload Play.** | **2026-08-21** |
 | **907 (publié GitHub ; Play non attribué)** | **5.87.0** | **v5.87.0** | **TrackRepository pleine fidélité, migration legacy additive, finalisation REC durable et correctifs terrain pré-v5.87. AAB signé attaché à la release GitHub ; aucun upload Play, revérifier le maximum global avant tout envoi.** | **2026-09-02** |
 | **908 (release GitHub ; Play à vérifier)** | **5.88.0** | **v5.88.0** | **Stabilisation A53/S23 : suivi 3D, 2D allégée, cache/transitions/préchargement de tuiles, STOP REC et animations cachées. AAB signé produit par GitHub Actions ; aucun upload Play. Vérifier que 908 est libre avant l'envoi manuel.** | **2026-09-06** |
+| **909 (release GitHub ; visible dans Play Console)** | **5.89.0** | **v5.89.0** | **Pipeline couleur d'abord, caches bornés et maintien de Three.js/WebGL après mesures A53/S23. AAB signé attaché à la release GitHub ; le propriétaire confirme que 909 est visible dans Play Console.** | **2026-09-09** |
+| **910 (release GitHub ; Play à vérifier)** | **5.89.1** | **v5.89.1** | **Simplification terrain validée sur A53/S23 : Préparer, Points/Profil, GPS, Guidance, fin Guidance+REC, récapitulatif REC et indicateur HD Pro. AAB signé produit par GitHub Actions ; aucun upload Play.** | **2026-09-10** |
 
 
 > À compléter à chaque release. Ne jamais laisser ce tableau vide.

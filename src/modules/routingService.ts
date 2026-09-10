@@ -333,6 +333,10 @@ export async function computeRoute(
         const rawData = buildGPXCompatibleData(points);
         const routeName = buildRouteName(waypoints, state.routeLoopEnabled);
 
+        const profileWasOpen = !!document
+            .getElementById('elevation-profile')
+            ?.classList.contains('is-open');
+        const shouldOpenProfile = !_currentRouteLayerId || profileWasOpen;
         if (_currentRouteLayerId) {
             removeGPXLayer(_currentRouteLayerId);
             _currentRouteLayerId = null;
@@ -342,6 +346,7 @@ export async function computeRoute(
                 silent: true,
                 forceVisible: true,
                 isManualRoute: true,
+                openProfile: shouldOpenProfile,
             })
         );
         _currentRouteLayerId = layer.id;

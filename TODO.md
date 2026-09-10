@@ -1,6 +1,34 @@
-# SunTrail — TODO (v5.89.0 candidate locale ; publication séparée)
+# SunTrail — TODO (v5.89.1 clôturée sur GitHub ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-09
+> Dernière mise à jour : 2026-09-10
+
+## v5.89.1 — simplification terrain
+
+- [x] Simplifier et réordonner le bandeau Préparer ; conserver boucle et inversion dans
+      Configuration avec des icônes unifiées.
+- [x] Ajouter les accès directs Points et Profil altimétrique ; gérer les points dans un panneau
+      dédié avec centrage, déplacement carte, glissement, ordre, suppression et effacement complet.
+- [x] Distinguer visuellement et pour les lecteurs d'écran les états GPS localiser, position et
+      suivi continu.
+- [x] Ajouter les modes bandeau supérieur, compact et détails au panneau Guidance, pilotés par
+      une seule languette, sans boutons redondants, avec retour explicite depuis Profil.
+- [x] Terminer Guidance et REC ensemble depuis l'action principale combinée, y compris dans la
+      notification Android, sans supprimer les commandes indépendantes.
+- [x] Enrichir le choix de fin de REC avec aperçu de trace et métriques ; rendre l'abandon
+      obligatoirement explicite.
+- [x] Rafraîchir immédiatement la trace et ses couleurs solaires après toute modification des
+      points, puis borner Guidance sous la barre haute avec une languette toujours accessible.
+- [x] Rendre visible le plafond souple Free au-delà du détail 14 par un indicateur HD Pro
+      persistant et explicatif, sans bloquer le zoom cartographique.
+- [x] Construire, installer et démarrer `5.89.1-diagnostic` / 910 sur Galaxy S23 SM-S911B sous
+      Android 16, sans toucher au paquet de production.
+- [x] Installer et démarrer la révision corrigée sur Galaxy A53 SM-A536B en 1080 × 2400 avec une
+      police Android à 110 %.
+- [x] Valider les gestes, tailles et libellés sur Galaxy A53 et Galaxy S23.
+- [x] Passer les six tests instrumentés Android sur Galaxy A53, en plus des tests JVM et du build
+      release signé.
+- [x] Commit, tag, push et release GitHub `v5.89.1` autorisés et clôturés le 2026-09-10.
+- [ ] Vérifier le maximum `versionCode` dans Play Console avant tout upload de 910.
 
 ## v5.89 — réactivité cartographique et architecture, clôture en cours
 

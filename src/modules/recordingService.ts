@@ -23,7 +23,11 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
 import { eventBus } from './eventBus';
-import { buildRecordingSummary } from './outing/outingDashboard';
+import {
+    buildRecordingSummary,
+    type RecordingSummary,
+} from './outing/outingDashboard';
+import type { LocationPoint } from './geo';
 import { normalizeTrackName, toGPXFilename } from './trackName';
 import { trackService } from './tracks/trackService';
 import type { NativeGPSPoint } from './nativeGPSService';
@@ -117,7 +121,11 @@ export class RecordingService {
         customName?: string,
         options?: {
             nativeAlreadyStopped?: boolean;
-            resolveName?: (suggestedName: string) => Promise<string | null>;
+            resolveName?: (
+                suggestedName: string,
+                points?: LocationPoint[],
+                summary?: RecordingSummary
+            ) => Promise<string | null>;
         }
     ): Promise<string> {
         if (this._isSaving) return '';
@@ -162,8 +170,19 @@ export class RecordingService {
             if (!nameToUse && completedPoints.length >= 2) {
                 const suggestedName =
                     await this.generateSuggestedName(completedPoints);
+                const summary = buildRecordingSummary(completedPoints, {
+                    name: suggestedName,
+                    now: completedAt,
+                    recordingStartTime,
+                    userAltitudeMeters,
+                    gpsAccuracyMeters,
+                });
                 const resolvedName = options?.resolveName
-                    ? await options.resolveName(suggestedName)
+                    ? await options.resolveName(
+                          suggestedName,
+                          completedPoints,
+                          summary
+                      )
                     : suggestedName;
                 if (resolvedName === null) {
                     // REC is stopped either way. A user cancellation must not

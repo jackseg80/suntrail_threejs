@@ -276,7 +276,11 @@ export class TrackSheet extends BaseComponent {
                 recBtn.setAttribute('aria-busy', 'true');
                 recBtn.disabled = true;
                 try {
-                    await stopRecordingWithFeedback();
+                    if (guidanceForegroundService.isActive()) {
+                        await guidanceForegroundService.finishOuting();
+                    } else {
+                        await stopRecordingWithFeedback();
+                    }
                 } finally {
                     _saving = false;
                     recBtn.classList.remove('btn-loading');

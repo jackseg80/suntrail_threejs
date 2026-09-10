@@ -1,4 +1,4 @@
-# SunTrail 3D — Stratégie de monétisation (v5.88.0)
+# SunTrail 3D — Stratégie de monétisation (v5.89.1)
 
 > Objectif : offrir une valeur terrain gratuite indispensable tout en réservant à Pro les
 > fonctions d'analyse, d'export et de confort. [FEATURES.md](FEATURES.md) fait foi pour la présence
@@ -18,7 +18,7 @@ inventé ni documenté comme actif sans vérification de l'offering courant.
 
 | Domaine | Version GRATUITE (Randonneur) | Version PRO (Alpiniste+) | Gate Technique |
 |---------|------------------------------|--------------------------|----------------|
-| **Rendu Terrain** | LOD 14 (1:50k) | **LOD 18 (1:5k)** | `scene.ts` |
+| **Rendu Terrain** | Données LOD 14 (1:50k), agrandies au-delà avec indicateur HD Pro | **Données jusqu'au LOD 18 (1:5k)** | `scene.ts`, `TopStatusBar.ts` |
 | **Enregistrement GPS**| **Illimité, nom personnalisé, stats et résumé essentiels** | **Identique + export fichier GPX** | `recordingService.ts` |
 | **Parcours actifs sur la carte** | 1 parcours de Bibliothèque affiché à la fois | **« Ajouter à la carte », jusqu'à 10 calques** | `TrackSheet.ts` |
 | **Bibliothèque locale préparée** | **Illimitée selon stockage appareil** | **Illimitée** | `RouteRepository` (v5.83) |
@@ -65,7 +65,9 @@ dans l'interface ou la fiche Play sans vérification live.
   fichier est le levier Pro et doit être refusé avant toute écriture.
 - **D2 — Sécurité Gratuite** : Toutes les alertes vitales (avalanche, météo, nuit) sont gratuites. C'est le contrat de confiance.
 - **D3 — Verrou Solaire** : La simulation 24h démontre la puissance. Le calendrier (planification future) convertit.
-- **D4 — Upsells Contextuels** : Déclenchés au moment de la friction (ex: toast zoom 14, verrou calendrier).
+- **D4 — Upsells Contextuels** : Déclenchés au moment de la friction. Au-delà du détail Free 14,
+  le zoom reste libre mais agrandit les données LOD 14 ; un indicateur orange persistant « HD Pro »
+  l'explique et ouvre une aide au toucher. Le toast ne s'affiche qu'à l'entrée dans cette zone.
 - **D5 — Offline Visuel** : La sélection visuelle de zone facilite l'usage hors-ligne. Limite à 1 zone pour les gratuits (v5.57.0). Le compteur est stocké en `localStorage` (soft limit client-side) et peut être réinitialisé lors d'une mise à jour de l'application ou d'un vidage de cache. L'objectif est l'incitation, pas le hard-gating.
 - **D6 — Bibliothèque ≠ multi-affichage** : importer, enregistrer et rouvrir un parcours local est
   gratuit et non limité artificiellement. Free affiche un parcours de Bibliothèque à la fois ; Pro

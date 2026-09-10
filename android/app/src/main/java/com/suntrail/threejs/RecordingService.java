@@ -88,6 +88,7 @@ public class RecordingService extends Service {
     public static final String ACTION_STOP_COURSE = "com.suntrail.threejs.STOP_COURSE";
     public static final String ACTION_START_RECORDING = "com.suntrail.threejs.START_RECORDING";
     public static final String ACTION_STOP_RECORDING = "com.suntrail.threejs.STOP_RECORDING";
+    public static final String ACTION_FINISH_OUTING = "com.suntrail.threejs.FINISH_OUTING";
     public static final String ACTION_START_GUIDANCE = "com.suntrail.threejs.START_GUIDANCE";
     public static final String ACTION_STOP_GUIDANCE = "com.suntrail.threejs.STOP_GUIDANCE";
     public static final String ACTION_PAUSE_GUIDANCE = "com.suntrail.threejs.PAUSE_GUIDANCE";
@@ -250,6 +251,13 @@ public class RecordingService extends Service {
             // needs a recoverable final course when the app returns.
             stopRecordingMode(true);
             return activeReturnCode();
+        }
+        if (ACTION_FINISH_OUTING.equals(action)) {
+            // Primary combined-mode action: guidance is stopped first so the
+            // recording flush can finish while the foreground service stays alive.
+            stopGuidanceMode(true);
+            stopRecordingMode(true);
+            return START_NOT_STICKY;
         }
         if (ACTION_STOP_GUIDANCE.equals(action)) {
             stopGuidanceMode(true);
@@ -887,7 +895,8 @@ public class RecordingService extends Service {
                 servicePendingIntent(ACTION_STOP_GUIDANCE, 11));
         }
         if (recordingActive) {
-            builder.addAction(android.R.drawable.ic_delete, "Arrêter REC",
+            builder.addAction(android.R.drawable.ic_delete,
+                guidanceActive ? "Terminer la sortie" : "Arrêter REC",
                 stopRecordingPendingIntent());
         }
         return builder.build();
@@ -915,7 +924,7 @@ public class RecordingService extends Service {
 
     private PendingIntent stopRecordingPendingIntent() {
         Intent stop = new Intent(this, MainActivity.class)
-            .setAction(ACTION_STOP_RECORDING)
+            .setAction(guidanceActive ? ACTION_FINISH_OUTING : ACTION_STOP_RECORDING)
             .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(this, 12, stop,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);

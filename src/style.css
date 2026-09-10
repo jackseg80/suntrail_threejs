@@ -133,6 +133,7 @@ body.high-quality-ui {
 body.high-quality-ui .bottom-sheet,
 body.high-quality-ui .gps-disc-card,
 body.high-quality-ui .route-settings-panel,
+body.high-quality-ui .route-waypoints-panel,
 body.high-quality-ui #elevation-profile {
     backdrop-filter: saturate(180%) blur(20px) !important;
     -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
@@ -406,6 +407,17 @@ body.preset-eco .top-collapse-toggle {
 
 .lod-badge[data-pack-state='installed'] {
     color: #22c55e;
+}
+
+#top-pill-lod[data-detail-limited='true'] {
+    border-color: rgba(245, 158, 11, 0.72);
+    background: color-mix(in srgb, #f59e0b 16%, var(--surface));
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12);
+}
+
+#top-pill-lod[data-detail-limited='true'] .lod-badge {
+    color: #fbbf24;
+    font-weight: 800;
 }
 
 .icon-btn-sm {
@@ -732,7 +744,8 @@ body.mode-2d .mode-icon-2d {
 
 /* Every actionable control inside a sheet remains usable with gloves. */
 .bottom-sheet button,
-.route-settings-panel button {
+.route-settings-panel button,
+.route-waypoints-panel button {
     min-height: 48px;
 }
 
@@ -1903,6 +1916,29 @@ body.sheet-layers-sheet-open #sheet-overlay {
     box-shadow: none;
 }
 
+#gps-main-btn .gps-state-icon {
+    display: none;
+}
+
+#gps-main-btn[data-gps-state='off'] .gps-state-icon-off,
+#gps-main-btn[data-gps-state='position'] .gps-state-icon-position,
+#gps-main-btn[data-gps-state='follow'] .gps-state-icon-follow {
+    display: block;
+}
+
+#gps-main-btn[data-gps-state='position'] {
+    background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#gps-main-btn[data-gps-state='follow'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 4px 20px var(--accent-glow);
+}
+
 /* TOGGLE 2D/3D — bouton avec icon + label */
 .nav-mode-toggle {
     width: 52px;
@@ -2332,6 +2368,8 @@ body.ui-moving #nav-bar,
 body.ui-moving #coords-pill,
 body.ui-moving #route-bar,
 body.ui-moving #route-settings,
+body.ui-moving #route-waypoints-panel,
+body.ui-moving #route-waypoint-move-hint,
 body.ui-moving .fab-stack,
 body.ui-moving #bottom-bar {
     opacity: 0;
@@ -3713,7 +3751,8 @@ body.ui-hidden #route-bar {
     body.ui-hidden #route-plan-hud,
     body.ui-moving #route-plan-hud,
     body.route-planner-chrome-hidden #route-plan-hud,
-    body:has(#route-settings:not(.hidden)) #route-plan-hud {
+    body:has(#route-settings:not(.hidden)) #route-plan-hud,
+    body:has(#route-waypoints-panel:not(.hidden)) #route-plan-hud {
         opacity: 0;
         transform: translateY(-16px);
     }
@@ -3757,10 +3796,6 @@ body.ui-hidden #route-bar {
     #route-bar .rb-info {
         display: none;
     }
-
-    #route-bar .rb-dots {
-        margin-right: auto;
-    }
 }
 
 /* PROFILE INTERACTION — masquer tout sauf le profil quand on touche le graphique */
@@ -3777,25 +3812,6 @@ body.profile-interacting #bottom-bar {
     transition:
         opacity 0.15s ease,
         transform 0.15s ease !important;
-}
-
-/* Pastilles indicatrices de waypoints */
-.rb-dots {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    flex-shrink: 0;
-}
-.rb-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    opacity: 0.35;
-    transition: opacity 0.2s;
-}
-.rb-dot.active {
-    opacity: 1;
 }
 
 /* Texte d'info (comptage, stats) */
@@ -3826,6 +3842,8 @@ body.profile-interacting #bottom-bar {
     height: 48px;
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 6px;
     transition:
         opacity var(--transition-fast),
         background var(--transition-fast);
@@ -3837,6 +3855,34 @@ body.profile-interacting #bottom-bar {
 .rb-btn:disabled {
     opacity: 0.35;
     cursor: default;
+}
+
+.rb-icon-action {
+    width: 48px;
+    padding: 0;
+    position: relative;
+}
+
+.rb-action-count {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    line-height: 1;
+}
+
+.rb-profile-btn[aria-pressed='true'] {
+    color: var(--gold);
+    border-color: color-mix(in srgb, var(--gold) 55%, var(--border));
+    background: color-mix(in srgb, var(--gold) 14%, var(--surface-hover));
 }
 
 .rb-btn-danger {
@@ -3895,7 +3941,8 @@ body.profile-interacting #bottom-bar {
 
 /* ─── Route settings panel ────────────────────────────────────────────────── */
 
-.route-settings-panel {
+.route-settings-panel,
+.route-waypoints-panel {
     position: fixed;
     bottom: calc(var(--ui-bottom-offset) + 8px);
     left: calc(var(--space-4, 16px) + var(--safe-left));
@@ -3911,7 +3958,8 @@ body.profile-interacting #bottom-bar {
     gap: var(--space-2, 8px);
     transition: opacity 0.2s;
 }
-.route-settings-panel.hidden {
+.route-settings-panel.hidden,
+.route-waypoints-panel.hidden {
     display: none;
 }
 
@@ -3920,6 +3968,80 @@ body.profile-interacting #bottom-bar {
     max-height: min(72dvh, 760px);
     overflow-y: auto;
     overscroll-behavior: contain;
+}
+
+.route-waypoints-panel {
+    max-height: min(64dvh, 620px);
+    overflow: hidden;
+}
+
+.route-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.route-panel-header h2,
+.route-panel-header p {
+    margin: 0;
+}
+
+.route-panel-header h2 {
+    color: var(--text);
+    font-size: var(--text-md);
+}
+
+.route-panel-header p {
+    margin-top: 3px;
+    color: var(--text-3);
+    font-size: var(--text-xs);
+}
+
+.route-panel-close {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-subtle);
+    color: var(--text);
+    font-size: 24px;
+}
+
+.route-waypoint-move-hint {
+    position: fixed;
+    top: calc(var(--safe-top) + 64px);
+    left: 50%;
+    z-index: 2100;
+    width: min(calc(100% - 32px), 440px);
+    min-height: 52px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 8px 8px 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+    border-radius: var(--radius-lg);
+    background: var(--surface-solid, var(--surface));
+    color: var(--text);
+    box-shadow: 0 8px 28px var(--shadow-sm, rgba(0, 0, 0, 0.25));
+    font-size: var(--text-sm);
+}
+
+.route-waypoint-move-hint[hidden] {
+    display: none;
+}
+
+.route-waypoint-move-hint button {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-md);
+    background: var(--surface-hover);
+    color: var(--text);
 }
 
 .rb-save-btn:not(:disabled) {
@@ -4531,6 +4653,20 @@ body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
     font-variant-numeric: tabular-nums;
 }
 
+/* En détails, le panneau ne doit jamais remonter sous la barre d'état. Sur un
+   écran court ou avec une grande police Android, son contenu défile dans la
+   place réellement disponible au lieu de rendre la poignée inaccessible. */
+body.guidance-active .guidance-foreground[data-panel-mode='details'] {
+    max-height: max(
+        180px,
+        calc(
+            100dvh - var(--guidance-safe-top) - var(--guidance-bottom) -
+                var(--guidance-gap)
+        )
+    );
+    overscroll-behavior: contain;
+}
+
 .guidance-foreground[hidden] {
     display: none !important;
 }
@@ -4553,6 +4689,40 @@ body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
     font-size: 15px;
     font-weight: 800;
     text-align: center;
+}
+
+.guidance-panel-handle {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 7px;
+    min-height: 20px;
+    margin: -8px 0 2px;
+    place-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    touch-action: none;
+    cursor: ns-resize;
+}
+
+.guidance-foreground[data-panel-mode='details'] .guidance-panel-handle {
+    position: sticky;
+    top: -8px;
+    z-index: 2;
+    margin-top: -8px;
+    padding: 8px 0 5px;
+    background: linear-gradient(rgba(7, 14, 25, 1) 72%, rgba(7, 14, 25, 0));
+}
+
+.guidance-panel-handle > span {
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.42);
+}
+
+.guidance-panel-handle small {
+    font-size: 10px;
+    font-weight: 700;
 }
 
 .guidance-heading,
@@ -4601,28 +4771,11 @@ body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
     font-weight: 800;
 }
 
-.guidance-expand {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    min-height: 30px;
-    padding: 4px 7px;
-    border: 1px solid rgba(255, 255, 255, 0.26);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font: inherit;
-    font-size: 11px;
-    font-weight: 800;
-}
-
-.guidance-expand > span:last-child {
-    display: inline-block;
-    transition: transform 0.18s ease;
-}
-
-.guidance-expand[aria-expanded='true'] > span:last-child {
-    transform: rotate(180deg);
+.guidance-peek-open {
+    display: none;
+    color: #bfdbfe;
+    font-size: 18px;
+    font-weight: 900;
 }
 
 .guidance-cue {
@@ -4738,6 +4891,16 @@ body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
     grid-area: stop;
 }
 
+.guidance-actions button[data-guidance-action='record'][data-recording='true'] {
+    grid-column: 1 / -1;
+}
+
+.guidance-actions
+    button[data-guidance-action='record'][data-recording='true']
+    + .guidance-stop {
+    display: none;
+}
+
 .guidance-actions button {
     min-height: 48px;
     padding: 8px 5px;
@@ -4789,6 +4952,27 @@ body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
     text-align: center;
 }
 
+.guidance-secondary-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.guidance-secondary-actions button {
+    flex: 1;
+    min-height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    background: transparent;
+    color: #cbd5e1;
+    font: 700 11px/1.2 inherit;
+}
+
+.guidance-foreground:not([data-panel-mode='details'])
+    .guidance-secondary-actions {
+    display: none;
+}
+
 /* Par défaut, le suivi ne prend qu'une bande : prochaine consigne, restant,
    ETA et commandes. Les détails restent à un toucher, sans perdre REC. */
 .guidance-foreground:not([data-expanded='true']) {
@@ -4838,6 +5022,29 @@ body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
     min-height: 42px;
 }
 
+.guidance-foreground[data-panel-mode='peek'] {
+    padding-block: 8px;
+}
+
+.guidance-foreground[data-panel-mode='peek'] .guidance-metrics,
+.guidance-foreground[data-panel-mode='peek'] .guidance-rec-summary,
+.guidance-foreground[data-panel-mode='peek'] .guidance-gps-row,
+.guidance-foreground[data-panel-mode='peek'] .guidance-actions,
+.guidance-foreground[data-panel-mode='peek'] .guidance-secondary-actions,
+.guidance-foreground[data-panel-mode='peek'] .guidance-limit,
+.guidance-foreground[data-panel-mode='peek'] .guidance-eyebrow,
+.guidance-foreground[data-panel-mode='peek'] .guidance-panel-handle {
+    display: none;
+}
+
+.guidance-foreground[data-panel-mode='peek'] .guidance-heading {
+    cursor: pointer;
+}
+
+.guidance-foreground[data-panel-mode='peek'] .guidance-peek-open {
+    display: inline-block;
+}
+
 /* Le profil devient une vue secondaire exclusive. Le guidage essentiel reste
    visible sous la barre haute et le graphique partage l'écran avec le rail. */
 body.guidance-active.guidance-profile-open .guidance-foreground {
@@ -4854,13 +5061,23 @@ body.guidance-active.guidance-profile-open .guidance-foreground {
 }
 
 body.guidance-profile-open .guidance-eyebrow,
-body.guidance-profile-open .guidance-expand,
 body.guidance-profile-open .guidance-cue-confidence,
 body.guidance-profile-open .guidance-metrics,
 body.guidance-profile-open .guidance-gps-row,
 body.guidance-profile-open .guidance-actions,
+body.guidance-profile-open .guidance-secondary-actions,
+body.guidance-profile-open .guidance-panel-handle,
+body.guidance-profile-open .guidance-peek-open,
 body.guidance-profile-open .guidance-limit {
     display: none;
+}
+
+body.guidance-profile-open #close-profile {
+    width: auto;
+    min-width: 44px;
+    padding-inline: 10px;
+    font-size: 12px;
+    font-weight: 800;
 }
 
 body.guidance-profile-open .guidance-cue {
@@ -4911,6 +5128,21 @@ body.guidance-profile-open
     .guidance-metrics {
         grid-template-columns: repeat(2, 1fr);
     }
+}
+
+/* Le niveau minimal reprend le même bandeau supérieur que la vue Profil.
+   Le panneau bas disparaît entièrement ; toucher le bandeau le rouvre. */
+body.guidance-active:not(.guidance-profile-open)
+    .guidance-foreground[data-panel-mode='peek'] {
+    z-index: 1600;
+    top: var(--guidance-safe-top);
+    right: calc(var(--guidance-gap) + var(--safe-right));
+    bottom: auto;
+    left: calc(var(--guidance-gap) + var(--safe-left));
+    width: auto;
+    max-height: none;
+    overflow: visible;
+    transform: none;
 }
 
 .prepared-route-actions
@@ -5103,8 +5335,9 @@ body.guidance-profile-open
 .rs-loop-btn {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 10px;
+    justify-content: center;
+    padding: 0;
+    width: 48px;
     min-height: 48px;
     border: 1px solid var(--border);
     border-radius: var(--radius-md, 8px);
@@ -5127,6 +5360,41 @@ body.guidance-profile-open
     background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
+.rs-icon-btn {
+    display: inline-grid;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--surface-subtle, var(--surface));
+    color: var(--text-2);
+    cursor: pointer;
+    transition:
+        border-color var(--transition-fast),
+        color var(--transition-fast),
+        background var(--transition-fast);
+}
+
+.rs-loop-btn:focus-visible,
+.rs-icon-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.rs-clear-btn {
+    min-height: 44px;
+    border: 1px solid
+        color-mix(in srgb, var(--danger, #ef4444) 35%, var(--border));
+    border-radius: var(--radius-md, 8px);
+    background: color-mix(in srgb, var(--danger, #ef4444) 7%, transparent);
+    color: var(--danger, #ef4444);
+    font: 600 var(--text-sm, 13px)/1.2 inherit;
+    cursor: pointer;
+}
+
 .rs-key-row input[type='password'] {
     flex: 1;
     min-width: 0;
@@ -5141,23 +5409,48 @@ body.guidance-profile-open
     outline: none;
     transition: border-color var(--transition-fast);
 }
-/* Liste des waypoints dans le panel réglages */
+/* Liste tactile des points dans son panneau dédié. */
 .rs-waypoints-list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-2, 8px);
     margin-top: var(--space-1, 4px);
-    max-height: 180px;
+    max-height: min(42dvh, 360px);
     overflow-y: auto;
+    overscroll-behavior: contain;
 }
 .rs-wp-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2, 8px);
-    padding: 4px var(--space-2, 8px);
-    border-radius: var(--radius-sm, 6px);
+    display: grid;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md, 10px);
     background: var(--surface-subtle, var(--surface));
     font-size: var(--text-xs, 11px);
+    transition:
+        opacity var(--transition-fast),
+        border-color var(--transition-fast),
+        transform var(--transition-fast);
+}
+.rs-wp-item.is-dragging {
+    opacity: 0.58;
+}
+.rs-wp-item.is-drag-target {
+    border-color: var(--accent);
+    transform: translateY(1px);
+}
+.rs-wp-focus {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    text-align: left;
 }
 .rs-wp-num {
     flex-shrink: 0;
@@ -5172,20 +5465,35 @@ body.guidance-profile-open
     align-items: center;
     justify-content: center;
 }
+.rs-wp-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+.rs-wp-copy strong {
+    color: var(--text);
+    font-size: var(--text-sm);
+}
 .rs-wp-label {
-    flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--text-2);
 }
+.rs-wp-actions {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+}
+.rs-wp-drag,
 .rs-wp-edit,
 .rs-wp-up,
 .rs-wp-dn,
 .rs-wp-del {
     flex-shrink: 0;
-    width: 48px;
+    width: 100%;
+    min-width: 48px;
     height: 48px;
     border-radius: var(--radius-sm, 6px);
     border: 1px solid transparent;
@@ -5201,6 +5509,25 @@ body.guidance-profile-open
         background var(--transition-fast),
         color var(--transition-fast);
     line-height: 1;
+}
+.rs-wp-drag {
+    touch-action: none;
+    cursor: grab;
+}
+.rs-wp-del {
+    color: var(--danger, #ef4444);
+}
+.rs-wp-actions button:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+.rs-waypoints-empty {
+    margin: 16px 0;
+    color: var(--text-3);
+    text-align: center;
+}
+.rs-waypoint-history-actions > button {
+    flex: 1;
 }
 
 @media (max-width: 390px) {
@@ -5218,16 +5545,18 @@ body.guidance-profile-open
         padding-inline: 8px;
         gap: 6px;
     }
-    .rb-dots {
-        display: none;
-    }
     .rb-info {
         font-size: 11px;
     }
-    .route-settings-panel {
+    .route-settings-panel,
+    .route-waypoints-panel {
         left: 8px;
         right: 8px;
         padding-inline: 10px;
+    }
+    .rs-wp-actions {
+        grid-template-columns: repeat(5, minmax(44px, 1fr));
+        overflow-x: auto;
     }
     .rs-search-grid,
     .rs-summary-grid {
@@ -5349,7 +5678,8 @@ body.guidance-profile-open
     body.ui-hidden #route-bar {
         transform: translate(-50%, 200%);
     }
-    .route-settings-panel {
+    .route-settings-panel,
+    .route-waypoints-panel {
         top: 88px;
         right: 24px;
         bottom: auto;
@@ -5721,7 +6051,9 @@ body.guidance-profile-open
 }
 
 .recording-finalization-panel {
-    width: min(100%, 360px);
+    width: min(100%, 440px);
+    max-height: min(88dvh, 720px);
+    overflow-y: auto;
     padding: var(--space-5);
     color: var(--text-1, #fff);
     text-align: center;
@@ -5743,6 +6075,63 @@ body.guidance-profile-open
     color: var(--text-2, #c7cad8);
     font-size: var(--text-sm, 14px);
     line-height: 1.45;
+}
+
+.recording-finalization-map {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: 132px;
+    margin-bottom: var(--space-3);
+    padding: 10px;
+    color: var(--accent, #4f8cff);
+    background: rgba(5, 12, 24, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+}
+
+.recording-finalization-start {
+    fill: var(--success, #22c55e);
+}
+.recording-finalization-end {
+    fill: var(--danger, #ef4444);
+}
+
+.recording-finalization-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: var(--space-4);
+}
+
+.recording-finalization-stats > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    padding: 9px 5px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+}
+
+.recording-finalization-stats span {
+    color: var(--text-2, #c7cad8);
+    font-size: 10px;
+}
+
+.recording-finalization-stats strong {
+    overflow: hidden;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recording-finalization-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-2, #c7cad8);
+    font-size: var(--text-sm, 14px);
+    text-align: left;
 }
 
 .recording-finalization-input {
@@ -5787,4 +6176,10 @@ body.guidance-profile-open
     border-top-color: var(--accent, #4f8cff);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+}
+
+@media (max-width: 380px) {
+    .recording-finalization-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
