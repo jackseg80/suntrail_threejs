@@ -88,6 +88,8 @@ public class RecordingService extends Service {
     public static final String ACTION_STOP_COURSE = "com.suntrail.threejs.STOP_COURSE";
     public static final String ACTION_START_RECORDING = "com.suntrail.threejs.START_RECORDING";
     public static final String ACTION_STOP_RECORDING = "com.suntrail.threejs.STOP_RECORDING";
+    public static final String ACTION_PAUSE_RECORDING = "com.suntrail.threejs.PAUSE_RECORDING";
+    public static final String ACTION_RESUME_RECORDING = "com.suntrail.threejs.RESUME_RECORDING";
     public static final String ACTION_FINISH_OUTING = "com.suntrail.threejs.FINISH_OUTING";
     public static final String ACTION_START_GUIDANCE = "com.suntrail.threejs.START_GUIDANCE";
     public static final String ACTION_STOP_GUIDANCE = "com.suntrail.threejs.STOP_GUIDANCE";
@@ -121,12 +123,15 @@ public class RecordingService extends Service {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private volatile boolean recordingActive;
+    private volatile boolean recordingPaused;
     private volatile boolean recordingStopPending;
     private volatile boolean guidanceActive;
     private volatile boolean explicitShutdown;
     private volatile String issue;
     private String currentCourseId;
     private long startTime;
+    private long recordingPausedAt;
+    private long recordingPausedDurationMs;
     private GuidanceEngine guidanceEngine;
     private GuidanceSession guidanceSession;
 
@@ -252,6 +257,14 @@ public class RecordingService extends Service {
             stopRecordingMode(true);
             return activeReturnCode();
         }
+        if (ACTION_PAUSE_RECORDING.equals(action)) {
+            pauseRecordingMode();
+            return activeReturnCode();
+        }
+        if (ACTION_RESUME_RECORDING.equals(action)) {
+            resumeRecordingMode();
+            return activeReturnCode();
+        }
         if (ACTION_FINISH_OUTING.equals(action)) {
             // Primary combined-mode action: guidance is stopped first so the
             // recording flush can finish while the foreground service stays alive.
@@ -310,15 +323,24 @@ public class RecordingService extends Service {
                 currentCourseId = UUID.randomUUID().toString();
                 pointCount.set(0);
                 startTime = System.currentTimeMillis();
+                recordingPaused = false;
+                recordingPausedAt = 0L;
+                recordingPausedDurationMs = 0L;
                 resetRecordingStats();
             } else {
                 SharedPreferences prefs = getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE);
                 currentCourseId = prefs.getString("currentCourseId", null);
                 startTime = prefs.getLong("startTime", System.currentTimeMillis());
+                recordingPaused = prefs.getBoolean("recordingPaused", false);
+                recordingPausedAt = prefs.getLong("recordingPausedAt", 0L);
+                recordingPausedDurationMs = prefs.getLong("recordingPausedDurationMs", 0L);
                 if (currentCourseId == null || currentCourseId.isEmpty()) {
                     currentCourseId = UUID.randomUUID().toString();
                     pointCount.set(0);
                     startTime = System.currentTimeMillis();
+                    recordingPaused = false;
+                    recordingPausedAt = 0L;
+                    recordingPausedDurationMs = 0L;
                 } else {
                     final String courseId = currentCourseId;
                     dbExecutor.execute(() -> {
@@ -333,6 +355,9 @@ public class RecordingService extends Service {
             getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE).edit()
                 .putString("currentCourseId", currentCourseId)
                 .putLong("startTime", startTime)
+                .putBoolean("recordingPaused", recordingPaused)
+                .putLong("recordingPausedAt", recordingPausedAt)
+                .putLong("recordingPausedDurationMs", recordingPausedDurationMs)
                 .apply();
             recordingActive = true;
             lastValidLocation = null;
@@ -410,6 +435,9 @@ public class RecordingService extends Service {
             SharedPreferences recordingPrefs = getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE);
             currentCourseId = recordingPrefs.getString("currentCourseId", null);
             startTime = recordingPrefs.getLong("startTime", System.currentTimeMillis());
+            recordingPaused = recordingPrefs.getBoolean("recordingPaused", false);
+            recordingPausedAt = recordingPrefs.getLong("recordingPausedAt", 0L);
+            recordingPausedDurationMs = recordingPrefs.getLong("recordingPausedDurationMs", 0L);
             final String courseId = currentCourseId;
             if (courseId != null) dbExecutor.execute(() -> restoreRecordingStats(courseId));
         }
@@ -426,29 +454,73 @@ public class RecordingService extends Service {
         recordingStopPending = true;
         String stoppedCourseId = currentCourseId;
         long stoppedStartTime = startTime;
+        long stoppedAt = System.currentTimeMillis();
+        long stoppedPausedDurationMs = currentRecordingPausedDurationMs(stoppedAt);
         recordingActive = false;
+        recordingPaused = false;
+        recordingPausedAt = 0L;
         // Une action depuis la notification peut relancer le WebView tout de
         // suite : le dernier lot doit donc être en base avant le signal STOP.
         flushPointBuffer(() -> completeStopRecordingMode(
             notifyBridge,
             stoppedCourseId,
-            stoppedStartTime
+            stoppedStartTime,
+            stoppedAt,
+            stoppedPausedDurationMs
         ));
+    }
+
+    private void pauseRecordingMode() {
+        if (!recordingActive || recordingPaused) return;
+        recordingPaused = true;
+        recordingPausedAt = System.currentTimeMillis();
+        persistRecordingTiming();
+        writeStateFile(true);
+        persistSession();
+        broadcastSessionChanged();
+        updateNotification();
+    }
+
+    private void resumeRecordingMode() {
+        if (!recordingActive || !recordingPaused) return;
+        long now = System.currentTimeMillis();
+        if (recordingPausedAt > 0L && recordingPausedAt <= now) {
+            recordingPausedDurationMs += now - recordingPausedAt;
+        }
+        recordingPaused = false;
+        recordingPausedAt = 0L;
+        lastValidLocation = null;
+        lastValidTimestamp = 0L;
+        lastSignificantLocation = null;
+        lastMovementTime = now;
+        currentSpeedMps = 0f;
+        isImmobile = false;
+        persistRecordingTiming();
+        writeStateFile(true);
+        persistSession();
+        broadcastSessionChanged();
+        updateNotification();
     }
 
     private void completeStopRecordingMode(
         boolean notifyBridge,
         String stoppedCourseId,
-        long stoppedStartTime
+        long stoppedStartTime,
+        long stoppedAt,
+        long stoppedPausedDurationMs
     ) {
         SharedPreferences.Editor recordingEditor = getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE).edit()
-            .remove("currentCourseId").remove("startTime");
+            .remove("currentCourseId").remove("startTime")
+            .remove("recordingPaused").remove("recordingPausedAt")
+            .remove("recordingPausedDurationMs");
         // Both UI and notification STOP keep a recoverable identity until the
         // WebView acknowledges the durable TrackRepository write (or discard).
         if (stoppedCourseId != null && !stoppedCourseId.isEmpty()) {
             recordingEditor
                 .putString("pendingStoppedCourseId", stoppedCourseId)
-                .putLong("pendingStoppedStartTime", stoppedStartTime);
+                .putLong("pendingStoppedStartTime", stoppedStartTime)
+                .putLong("pendingStoppedAt", stoppedAt)
+                .putLong("pendingStoppedPausedDurationMs", stoppedPausedDurationMs);
         }
         recordingEditor.apply();
         currentCourseId = null;
@@ -570,7 +642,7 @@ public class RecordingService extends Service {
                             new GuidancePosition(location.getLatitude(), location.getLongitude(), accuracy,
                                 location.getTime()), System.currentTimeMillis()));
                     }
-                    if (recordingActive) handleRecordingLocation(location, altitude);
+                    if (recordingActive && !recordingPaused) handleRecordingLocation(location, altitude);
                 }
                 updateNotificationThrottled();
             }
@@ -847,8 +919,10 @@ public class RecordingService extends Service {
     private Notification buildNotification() {
         String mode = currentMode();
         String title;
-        if ("both".equals(mode)) title = "SunTrail — Guidage + REC";
+        if ("both".equals(mode)) title = recordingPaused
+            ? "SunTrail — Guidage + REC en pause" : "SunTrail — Guidage + REC";
         else if ("guidance".equals(mode)) title = "SunTrail — Guidage actif";
+        else if (recordingPaused) title = "SunTrail — REC en pause";
         else title = isImmobile ? "Immobile — SunTrail REC" : "SunTrail — REC actif";
 
         StringBuilder text = new StringBuilder();
@@ -866,9 +940,11 @@ public class RecordingService extends Service {
         if (recordingActive) {
             if (text.length() > 0) text.append(" · ");
             text.append(getElapsedTimeString());
+            if (recordingPaused) text.append(" · Pause");
             if (pointCount.get() == 0) text.append(" · GPS…");
             else {
-                double elapsedHours = Math.max(1L, System.currentTimeMillis() - startTime) / 3_600_000.0;
+                double elapsedHours = Math.max(1L,
+                    currentRecordingElapsedMs(System.currentTimeMillis())) / 3_600_000.0;
                 double averageSpeedKmh = statsDistance / elapsedHours;
                 text.append(String.format(Locale.getDefault(), " · %.2f km · %.1f km/h",
                     statsDistance, averageSpeedKmh));
@@ -888,13 +964,14 @@ public class RecordingService extends Service {
             .setCategory(NotificationCompat.CATEGORY_SERVICE);
 
         if (guidanceActive) {
-            boolean paused = snapshot != null && "paused".equals(snapshot.status);
-            builder.addAction(android.R.drawable.ic_media_pause, paused ? "Reprendre" : "Pause",
-                servicePendingIntent(paused ? ACTION_RESUME_GUIDANCE : ACTION_PAUSE_GUIDANCE, 10));
             builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Arrêter guidage",
                 servicePendingIntent(ACTION_STOP_GUIDANCE, 11));
         }
         if (recordingActive) {
+            builder.addAction(
+                recordingPaused ? android.R.drawable.ic_media_play : android.R.drawable.ic_media_pause,
+                recordingPaused ? "Reprendre REC" : "Pause REC",
+                servicePendingIntent(recordingPaused ? ACTION_RESUME_RECORDING : ACTION_PAUSE_RECORDING, 13));
             builder.addAction(android.R.drawable.ic_delete,
                 guidanceActive ? "Terminer la sortie" : "Arrêter REC",
                 stopRecordingPendingIntent());
@@ -996,6 +1073,9 @@ public class RecordingService extends Service {
         Intent intent = packageIntent(ACTION_SESSION_CHANGED);
         intent.putExtra("mode", currentMode());
         intent.putExtra("recording", recordingActive);
+        intent.putExtra("recordingPaused", recordingPaused);
+        intent.putExtra("recordingPausedAt", recordingPausedAt);
+        intent.putExtra("recordingPausedDurationMs", recordingPausedDurationMs);
         intent.putExtra("guidance", guidanceActive);
         intent.putExtra("issue", issue);
         sendBroadcast(intent);
@@ -1098,6 +1178,27 @@ public class RecordingService extends Service {
             .apply();
     }
 
+    private void persistRecordingTiming() {
+        getSharedPreferences(RECORDING_PREFS, MODE_PRIVATE).edit()
+            .putBoolean("recordingPaused", recordingPaused)
+            .putLong("recordingPausedAt", recordingPausedAt)
+            .putLong("recordingPausedDurationMs", recordingPausedDurationMs)
+            .apply();
+    }
+
+    private long currentRecordingPausedDurationMs(long now) {
+        long total = Math.max(0L, recordingPausedDurationMs);
+        if (recordingPaused && recordingPausedAt > 0L && recordingPausedAt <= now) {
+            total += now - recordingPausedAt;
+        }
+        return total;
+    }
+
+    private long currentRecordingElapsedMs(long now) {
+        if (startTime <= 0L || startTime > now) return 0L;
+        return Math.max(0L, now - startTime - currentRecordingPausedDurationMs(now));
+    }
+
     private SharedPreferences trackingPrefs() { return getSharedPreferences(TRACKING_PREFS, MODE_PRIVATE); }
 
     private String currentMode() {
@@ -1125,8 +1226,7 @@ public class RecordingService extends Service {
     }
 
     private String getElapsedTimeString() {
-        if (startTime <= 0 || startTime > System.currentTimeMillis()) return "0min";
-        long minutes = (System.currentTimeMillis() - startTime) / 60_000L;
+        long minutes = currentRecordingElapsedMs(System.currentTimeMillis()) / 60_000L;
         if (minutes < 0 || minutes > 365L * 24 * 60) return "0min";
         return minutes >= 60 ? minutes / 60 + "h " + minutes % 60 + "min" : minutes + "min";
     }
@@ -1137,6 +1237,9 @@ public class RecordingService extends Service {
             json.put("isRunning", running);
             json.put("courseId", running && currentCourseId != null ? currentCourseId : "");
             json.put("startTime", running ? startTime : 0);
+            json.put("recordingPaused", running && recordingPaused);
+            json.put("recordingPausedAt", running ? recordingPausedAt : 0L);
+            json.put("recordingPausedDurationMs", running ? recordingPausedDurationMs : 0L);
             json.put("mode", currentMode());
             File file = new File(getFilesDir(), STATE_FILE);
             try (FileWriter writer = new FileWriter(file)) { writer.write(json.toString()); }

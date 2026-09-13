@@ -26,7 +26,7 @@ vi.mock('../../toast', () => ({
 }));
 
 vi.mock('../core/SheetManager', () => ({
-    sheetManager: { close: vi.fn() },
+    sheetManager: { close: vi.fn(), openChild: vi.fn() },
 }));
 
 vi.mock('../../terrain', () => ({
@@ -88,6 +88,7 @@ vi.mock('../templates/connectivity.html?raw', () => ({
             <div id="gps-accuracy"></div>
             <button id="conn-clear-cache">Vider le cache</button>
             <button id="conn-download-zone"><span>Zone offline</span></button>
+            <button id="conn-packs-btn">Packs</button>
         </div>`,
 }));
 
@@ -163,6 +164,16 @@ describe('ConnectivitySheet', () => {
         const btn = document.getElementById('conn-clear-cache')!;
         btn.click();
         expect(deleteTerrainCache).toHaveBeenCalled();
+    });
+
+    it('ouvre Packs comme sous-vue de Connectivité', () => {
+        const sheet = new ConnectivitySheet();
+        sheet.hydrate();
+
+        document.getElementById('conn-packs-btn')?.click();
+
+        expect(sheetManager.openChild).toHaveBeenCalledWith('packs');
+        expect(sheetManager.close).not.toHaveBeenCalled();
     });
 
     it('affiche la précision GPS avec deux décimales au maximum', () => {

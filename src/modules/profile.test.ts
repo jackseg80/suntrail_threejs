@@ -14,12 +14,16 @@ describe("Profil d'altitude (Module Profile)", () => {
         // Mock du DOM minimal
         document.body.className = '';
         document.body.innerHTML = `
-            <div id="elevation-profile"></div>
+            <div id="elevation-profile">
+                <div class="profile-header">
+                    <button id="close-profile"></button>
+                </div>
+            </div>
             <div id="profile-info"></div>
             <div id="profile-chart-container"></div>
             <svg id="profile-svg"></svg>
             <div id="profile-cursor"></div>
-            <div id="profile-legend" style="display: none"></div>
+            <div id="profile-legend" hidden></div>
             <button id="profile-expand-btn"></button>
             <button id="profile-close-btn"></button>
             <div id="gpx-dist"></div>
@@ -95,6 +99,99 @@ describe("Profil d'altitude (Module Profile)", () => {
         expect(document.body.classList.contains('guidance-profile-open')).toBe(
             false
         );
+    });
+
+    it('redessine le graphique à la fin de son agrandissement', () => {
+        const layer: GPXLayer = {
+            id: 'resize-profile',
+            name: 'Resize profile',
+            color: '#3b7ef8',
+            visible: true,
+            rawData: {
+                tracks: [
+                    {
+                        points: [
+                            { lat: 46, lon: 7, ele: 1000 },
+                            { lat: 46.1, lon: 7.1, ele: 1200 },
+                        ],
+                    },
+                ],
+            },
+            points: [
+                new THREE.Vector3(0, 2000, 0),
+                new THREE.Vector3(100, 2400, 100),
+            ],
+            mesh: null,
+            stats: { distance: 1, dPlus: 200, dMinus: 0, pointCount: 2 },
+        };
+        const svg = document.getElementById(
+            'profile-svg'
+        ) as unknown as SVGSVGElement;
+        let renderedHeight = 100;
+        Object.defineProperty(svg, 'clientWidth', {
+            configurable: true,
+            get: () => 300,
+        });
+        Object.defineProperty(svg, 'clientHeight', {
+            configurable: true,
+            get: () => renderedHeight,
+        });
+        state.gpxLayers = [layer];
+
+        updateElevationProfile('resize-profile');
+        expect(svg.innerHTML).toContain(' 100');
+
+        renderedHeight = 300;
+        document.getElementById('profile-expand-btn')!.click();
+        const transitionEnd = new Event('transitionend') as TransitionEvent;
+        Object.defineProperty(transitionEnd, 'propertyName', {
+            value: 'height',
+        });
+        document
+            .getElementById('profile-chart-container')!
+            .dispatchEvent(transitionEnd);
+
+        expect(svg.innerHTML).toContain(' 300');
+        closeElevationProfile();
+    });
+
+    it('récupère toujours le profil à sa position ancrée', () => {
+        const layer: GPXLayer = {
+            id: 'anchored-profile',
+            name: 'Anchored profile',
+            color: '#3b7ef8',
+            visible: true,
+            rawData: {
+                tracks: [
+                    {
+                        points: [
+                            { lat: 46, lon: 7, ele: 1000 },
+                            { lat: 46.01, lon: 7.01, ele: 1010 },
+                        ],
+                    },
+                ],
+            },
+            points: [
+                new THREE.Vector3(0, 2000, 0),
+                new THREE.Vector3(100, 2020, 100),
+            ],
+            mesh: null,
+            stats: { distance: 1, dPlus: 10, dMinus: 0, pointCount: 2 },
+        };
+        const profileEl = document.getElementById('elevation-profile')!;
+        profileEl.classList.add('panel-custom-pos');
+        profileEl.style.left = '-360px';
+        profileEl.style.top = '1400px';
+        profileEl.style.transform = 'translate(-50%, 200px)';
+        state.gpxLayers = [layer];
+
+        updateElevationProfile('anchored-profile');
+
+        expect(profileEl.classList.contains('panel-custom-pos')).toBe(false);
+        expect(profileEl.style.left).toBe('');
+        expect(profileEl.style.top).toBe('');
+        expect(profileEl.style.transform).toBe('');
+        closeElevationProfile();
     });
 
     describe('v5.24.3 - Fix mismatch index positions 3D', () => {

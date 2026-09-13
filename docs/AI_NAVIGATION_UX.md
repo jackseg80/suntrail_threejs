@@ -1,4 +1,4 @@
-# SunTrail — Navigation & modules fonctionnels (v5.89.1)
+# SunTrail — Navigation & modules fonctionnels (v5.90.0)
 
 > Contrat UX actuel. Point d'entrée : [CLAUDE.md](../CLAUDE.md). Inventaire utilisateur :
 > [FEATURES.md](FEATURES.md).
@@ -21,8 +21,9 @@
   avec compteur ; boucle et inversion restent dans Configuration.
 - À partir de 900 px, les sheets deviennent un rail droit et le panneau de route un atelier
   latéral. Les fonctions restent identiques à Android/mobile.
-- L'onboarding comporte trois écrans et mène vers Explorer, Planifier ou Importer. Il est
-  fermable avec Échap et piège le focus dans le dialogue.
+- L'onboarding conserve la carte réelle et se limite à deux étapes : gestes essentiels, puis
+  lecture du détail ou accès au bouton 2D/3D. Il est fermable avec Échap et piège le focus dans le
+  dialogue. Les aides Préparer, REC et Pro sont ensuite contextuelles et non bloquantes.
 
 ### Tableau de bord Sortie v5.86.2
 
@@ -99,12 +100,15 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - Le panneau met en avant la prochaine indication et sa distance, puis la distance/ETA
   restantes, l'écart à la trace et la qualité GPS. Il reste utilisable à une main et ne
   masquera ni la carte ni le prochain danger de navigation.
-- Le panneau possède trois états : détails, compact par défaut et bandeau supérieur. Une seule
-  languette assure les transitions par glissement ; les flèches clavier sont l'alternative
-  accessible. Le bandeau supérieur entier rouvre le panneau. Profil est une vue secondaire où ce
-  bandeau reste fixe, avec une action « Retour au guidage » explicite.
+- Le panneau possède trois états : détails, compact par défaut et bandeau supérieur. Les commandes
+  Bandeau, Agrandir et Détails/Réduire assurent les transitions sans geste vertical caché. Profil
+  est une vue secondaire où le bandeau reste fixe, avec une action « Retour » visible et un libellé
+  accessible « Retour au guidage ».
 - En mode combiné, « Terminer la sortie » arrête Guidance et REC ensemble. Les arrêts séparés
   restent des actions secondaires dans les détails.
+- Dans Sortie, un REC actif expose deux décisions distinctes : Pause/Reprendre suspend ou reprend
+  uniquement l'enregistrement ; STOP termine la session et ouvre le récapitulatif. La durée, l'allure
+  et la vitesse utilisent le temps réellement actif et restent figées pendant la pause.
 - Une indication issue des étapes ORS/OSRM est une manœuvre routée. Un simple changement de cap
   déduit d'une géométrie GPX est présenté comme « changement de direction approximatif », jamais
   comme une instruction certaine à une intersection.
@@ -132,6 +136,7 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 `src/modules/touchControls.ts` — module autonome interceptant les **PointerEvents**.
 
 ### Architecture 2 doigts :
+
 - **Zoom** : pinch-spread → `zoomToPoint()` via raycasting.
 - **Rotation** : twist → `doRotate()`, avec zone morte `ROT_DEADZONE`.
 - **Tilt** : Détection par le **placement initial des doigts**. Si doigts côte à côte (angle < `TILT_ANGLE`) → pré-armement du tilt.
@@ -153,27 +158,32 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 ## Modules Fonctionnels
 
 ### Offline Zones (v5.57.0)
+
 - **Selection visuelle interactive** : Un rectangle vert semi-transparent (intersection frustum camera + sol) permet de définir la zone à télécharger.
 - **LOD Slider** : Slider double LOD indépendant du zoom (5→18).
 - **Toolbar** : Affiche le compteur de tuiles et la taille estimée. Warning orange > 500, rouge > 1000, bloqué > 2000 tuiles.
 - **Fichiers** : `ZoneSelector.ts`, `ZoneOverlay.ts`, `ZoneSelectToolbar.ts`.
 
 ### Recherche & Géocodage (`SearchSheet.ts`)
+
 - **BaseComponent** avec recherche hybride : filtrage local `state.localPeaks` + géocodage distant MapTiler/OSM Nominatim (debounce 400ms).
 - **Classification** : `classifyFeature()` → pays/région/ville/village/sommet/POI. Zoom adaptatif : pays → LOD 6, ville → LOD 11, sommet → LOD 14.
 - **Filtres chips** : `activeFilter: 'all' | 'cities' | 'mountains' | 'countries'`.
 
 ### Profil d'Élévation (`profile.ts`)
+
 - **Interaction** : survol affiche distance/alt/pente% + **heure estimée** (v5.52.3).
 - **Bande solaire SVG 12px** (v5.52.3) : Affichée sous le graphique (or/bleu-ombre/bleu-nuit).
 - **Touch fix** (v5.52.3) : `touch-action:none` sur conteneur pour éviter les conflits de scroll.
 
 ### POI & Signalisation (`poi.ts`)
+
 - **Détection unifiée** (v5.40.38) : supporte SwissTopo et MapTiler.
 - **8 catégories** : trail (🔶), hut (🟤), rest (🟢), attraction (🔵), viewpoint (🔭), shelter (🏠), info (i), guidepost.
 - Sprites Three.js à altitude terrain + 12m.
 
 ### Analyse Solaire (`solarRoute.ts`)
+
 - **Deux modes** (v5.56.18) :
     - **Snapshot** : Ombre à l'heure du slider (Free).
     - **Hiker Timeline** : Ombre à l'heure d'arrivée estimée (Pro).
@@ -181,12 +191,14 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - **Recommandations** : Grille 3×2 stats + alerte exposition forte + recommendation lampe frontale si nuit.
 
 ### Météo (`weather.ts`)
+
 - **Particules 3D** (v5.56.4) : Système `THREE.Points` avec `ShaderMaterial`. Toggle pluie/neige via uniforme `uIsRain`.
 - **Garde-fou température** : Si `temp > 5°C`, force pluie au lieu de neige.
 
 ---
 
 ### Navigation Bar & 2D/3D (`NavigationBar.ts`)
+
 - **Bouton Dynamique** : Affiche le mode de destination (Cube isométrique → 3D, Plan → 2D).
 - **Verrouillage LOD ≤ 10** : Forcé en 2D pour performance overview.
 - **Timeline Auto** : S'ouvre en 3D, se ferme en 2D.

@@ -41,7 +41,7 @@ export function getVisibleTilesBBox(
 }
 
 export function getViewportBBox(): BBox | null {
-    // Dimensions du cadre CSS — doivent correspondre à ZoneSelectToolbar.createViewportOverlay()
+    // Repli pour les appels hors interface (tests, démarrage ou vue non montée).
     const OVERLAY_W = 0.85;
     const OVERLAY_H = 0.55;
     const OVERLAY_TOP = 0.06;
@@ -51,10 +51,21 @@ export function getViewportBBox(): BBox | null {
 
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const left = (w * (1 - OVERLAY_W)) / 2;
-    const top = h * OVERLAY_TOP;
-    const ow = w * OVERLAY_W;
-    const oh = h * OVERLAY_H;
+    const guideRect = document
+        .getElementById('zone-select-viewport')
+        ?.getBoundingClientRect();
+    const hasRenderedGuide =
+        guideRect && guideRect.width > 0 && guideRect.height > 0;
+    const left = hasRenderedGuide
+        ? Math.max(0, guideRect.left)
+        : (w * (1 - OVERLAY_W)) / 2;
+    const top = hasRenderedGuide ? Math.max(0, guideRect.top) : h * OVERLAY_TOP;
+    const ow = hasRenderedGuide
+        ? Math.min(w, guideRect.right) - left
+        : w * OVERLAY_W;
+    const oh = hasRenderedGuide
+        ? Math.min(h, guideRect.bottom) - top
+        : h * OVERLAY_H;
 
     const screenCorners = [
         { sx: left, sy: top },

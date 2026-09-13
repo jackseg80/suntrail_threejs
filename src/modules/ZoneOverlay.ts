@@ -25,7 +25,7 @@ export class ZoneOverlay {
     private mode: OverlayMode = 'selecting';
 
     get isLocked(): boolean {
-        return this.mode === 'cached';
+        return this.mode !== 'selecting';
     }
 
     show(bbox: BBox, mode: OverlayMode = 'selecting'): void {
@@ -128,60 +128,50 @@ export class ZoneOverlay {
         this.fill.renderOrder = 998;
         this.fill.frustumCulled = false;
 
-        // Borders only for downloading/cached states — selection uses the CSS screen-space frame
-        if (this.mode !== 'selecting') {
-            const borderColor = this.mode === 'cached' ? 0x6699ff : 0xffffff;
-            const borderMat = new THREE.MeshBasicMaterial({
-                color: borderColor,
-                transparent: false,
-                depthTest: false,
-            });
+        const borderColor =
+            this.mode === 'selecting'
+                ? 0xffb020
+                : this.mode === 'cached'
+                  ? 0x6699ff
+                  : 0x34d399;
+        const borderMat = new THREE.MeshBasicMaterial({
+            color: borderColor,
+            transparent: false,
+            depthTest: false,
+        });
 
-            const t = computeBorderThickness(sizeX, sizeZ);
+        const t = computeBorderThickness(sizeX, sizeZ);
 
-            const bottomBorder = new THREE.Mesh(
-                new THREE.BoxGeometry(sizeX + t, 0.1, t),
-                borderMat
-            );
-            bottomBorder.position.set(centerX, y + 0.2, centerZ + sizeZ / 2);
+        const bottomBorder = new THREE.Mesh(
+            new THREE.BoxGeometry(sizeX + t, 0.1, t),
+            borderMat
+        );
+        bottomBorder.position.set(centerX, y + 0.2, centerZ + sizeZ / 2);
 
-            const topBorder = new THREE.Mesh(
-                new THREE.BoxGeometry(sizeX + t, 0.1, t),
-                borderMat
-            );
-            topBorder.position.set(centerX, y + 0.2, centerZ - sizeZ / 2);
+        const topBorder = new THREE.Mesh(
+            new THREE.BoxGeometry(sizeX + t, 0.1, t),
+            borderMat
+        );
+        topBorder.position.set(centerX, y + 0.2, centerZ - sizeZ / 2);
 
-            const rightBorder = new THREE.Mesh(
-                new THREE.BoxGeometry(t, 0.1, sizeZ + t),
-                borderMat
-            );
-            rightBorder.position.set(centerX + sizeX / 2, y + 0.2, centerZ);
+        const rightBorder = new THREE.Mesh(
+            new THREE.BoxGeometry(t, 0.1, sizeZ + t),
+            borderMat
+        );
+        rightBorder.position.set(centerX + sizeX / 2, y + 0.2, centerZ);
 
-            const leftBorder = new THREE.Mesh(
-                new THREE.BoxGeometry(t, 0.1, sizeZ + t),
-                borderMat
-            );
-            leftBorder.position.set(centerX - sizeX / 2, y + 0.2, centerZ);
+        const leftBorder = new THREE.Mesh(
+            new THREE.BoxGeometry(t, 0.1, sizeZ + t),
+            borderMat
+        );
+        leftBorder.position.set(centerX - sizeX / 2, y + 0.2, centerZ);
 
-            for (const m of [
-                bottomBorder,
-                topBorder,
-                rightBorder,
-                leftBorder,
-            ]) {
-                m.renderOrder = 999;
-                m.frustumCulled = false;
-            }
-
-            this.borderMeshes = [
-                bottomBorder,
-                topBorder,
-                rightBorder,
-                leftBorder,
-            ];
-        } else {
-            this.borderMeshes = [];
+        for (const m of [bottomBorder, topBorder, rightBorder, leftBorder]) {
+            m.renderOrder = 999;
+            m.frustumCulled = false;
         }
+
+        this.borderMeshes = [bottomBorder, topBorder, rightBorder, leftBorder];
 
         if (this.group) {
             if (state.scene) state.scene.remove(this.group);

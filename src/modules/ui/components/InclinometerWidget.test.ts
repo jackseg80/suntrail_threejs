@@ -57,6 +57,10 @@ describe('InclinometerWidget', () => {
         const reticle = document.getElementById('inclinometer-reticle');
         expect(el).not.toBeNull();
         expect(reticle).not.toBeNull();
+        expect(el?.tagName).toBe('BUTTON');
+        expect(reticle?.tagName).toBe('BUTTON');
+        expect(el?.getAttribute('aria-expanded')).toBe('false');
+        expect(reticle?.getAttribute('aria-label')).toBeTruthy();
     });
 
     it('should display correct format in Free Look mode', () => {
@@ -69,7 +73,8 @@ describe('InclinometerWidget', () => {
         vi.advanceTimersByTime(200);
 
         const el = document.getElementById('inclinometer-widget')!;
-        expect(el.textContent).toContain('⛰ 45° (100%)');
+        expect(el.textContent).toContain('45° (100%)');
+        expect(el.textContent).not.toContain('⛰');
     });
 
     it('should display correct format in Follow Mode with path slope', () => {
@@ -85,39 +90,73 @@ describe('InclinometerWidget', () => {
         vi.advanceTimersByTime(200);
 
         const el = document.getElementById('inclinometer-widget')!;
-        expect(el.textContent).toContain('📈 0% (max. 100%)');
+        expect(el.textContent).toContain('0% · max. 100%');
+        expect(el.textContent).not.toContain('📈');
     });
 
-    it('should update positioning when timeline is open', async () => {
+    it('keeps the summary anchored instead of exposing a hidden drag gesture', () => {
         const el = document.getElementById('inclinometer-widget')!;
+        el.dispatchEvent(
+            new PointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+        );
+        vi.advanceTimersByTime(300);
+        window.dispatchEvent(
+            new PointerEvent('pointermove', { clientX: 180, clientY: 180 })
+        );
+        window.dispatchEvent(new PointerEvent('pointerup'));
 
-        // Mock style.bottom setter because JSDOM doesn't store complex values like calc() well
-        const spy = vi.spyOn(el.style, 'bottom', 'set');
+        expect(el.style.left).toBe('');
+        expect(el.style.top).toBe('');
+    });
 
-        document.body.classList.remove('timeline-open');
-        (widget as any).syncPosition();
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('16px'));
+    it('places the same slope control inside Guidance and restores it afterwards', () => {
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<div id="guidance-inclinometer-slot"></div>'
+        );
+        const internals = widget as unknown as {
+            syncGuidanceHost(): void;
+        };
+        document.body.classList.add('guidance-active');
+        internals.syncGuidanceHost();
 
-        document.body.classList.add('timeline-open');
-        (widget as any).syncPosition();
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('120px'));
+        expect(
+            document.getElementById('inclinometer-widget')?.parentElement
+        ).toBe(document.getElementById('guidance-inclinometer-slot'));
+
+        document.body.classList.remove('guidance-active');
+        internals.syncGuidanceHost();
+        expect(
+            document.getElementById('inclinometer-widget')?.parentElement
+        ).toBe(document.body);
     });
 
     it('should stay open when clicked (persistent detail)', () => {
         const el = document.getElementById('inclinometer-widget')!;
 
-        el.dispatchEvent(
-            new PointerEvent('pointerdown', { clientX: 0, clientY: 0 })
-        );
-        vi.advanceTimersByTime(250);
-        window.dispatchEvent(new PointerEvent('pointerup'));
+        el.click();
 
         let detail = document.getElementById('inclinometer-detail');
         expect(detail).not.toBeNull();
+        expect(el.getAttribute('aria-expanded')).toBe('true');
 
         vi.advanceTimersByTime(10000);
         detail = document.getElementById('inclinometer-detail');
         expect(detail).not.toBeNull();
+    });
+
+    it('moves the reticle with arrow keys and resets it with Home', () => {
+        const reticle = document.getElementById('inclinometer-reticle')!;
+        reticle.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+        );
+        expect(reticle.style.left).toBe(`${window.innerWidth / 2 + 8}px`);
+
+        reticle.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Home', bubbles: true })
+        );
+        expect(reticle.style.left).toBe('50%');
+        expect(reticle.style.top).toBe('50%');
     });
 
     it('should display --° when no elevation data is available', () => {

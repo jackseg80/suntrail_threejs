@@ -17,12 +17,19 @@ test.describe('First Launch Experience', () => {
 
         // 2. Onboarding Tutorial
         await expect(page.locator('#onboarding-overlay')).toBeVisible();
-        // Navigate through the three concise slides
-        for (let i = 0; i < 2; i++) {
-            await page.click('#ob-next');
+        await expect(page.locator('.ob-gestures li')).toHaveCount(3);
+        await expect(page.locator('#canvas-container')).toHaveClass(
+            /onboarding-live-target/
+        );
+        await page.click('#ob-next');
+        const modeToggle = page.locator('#nav-2d-toggle');
+        if (await modeToggle.isEnabled()) {
+            await expect(modeToggle).toHaveClass(/onboarding-live-target/);
+        } else {
+            await expect(page.locator('#top-pill-lod')).toHaveClass(
+                /onboarding-live-target/
+            );
         }
-        await expect(page.locator('.ob-menu-item')).toHaveCount(3);
-        await expect(page.locator('#ob-skip')).toBeHidden();
         await page.click('#ob-next');
         await expect(page.locator('#onboarding-overlay')).not.toBeVisible();
 

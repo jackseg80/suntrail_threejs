@@ -104,7 +104,6 @@ describe('TopStatusBar — LOD label (country mapping)', () => {
     function createAndRender() {
         bar = new TopStatusBar();
         bar.hydrate();
-        bar.render();
     }
 
     it('shows the localized Swiss map label for CH', () => {
@@ -248,25 +247,24 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
         `;
         bar = new TopStatusBar();
         bar.hydrate();
-        bar.render();
     });
 
     it('affiche le REC indicator quand isRecording devient true', async () => {
         const widget = document.querySelector('.rec-indicator') as HTMLElement;
-        expect(widget.style.display).toBe('none');
+        expect(widget.hidden).toBe(true);
         state.isRecording = true;
         await Promise.resolve();
-        expect(widget.style.display).toBe('flex');
+        expect(widget.hidden).toBe(false);
     });
 
     it('cache le REC indicator quand isRecording devient false', async () => {
         const widget = document.querySelector('.rec-indicator') as HTMLElement;
         state.isRecording = true;
         await Promise.resolve();
-        expect(widget.style.display).toBe('flex');
+        expect(widget.hidden).toBe(false);
         state.isRecording = false;
         await Promise.resolve();
-        expect(widget.style.display).toBe('none');
+        expect(widget.hidden).toBe(true);
     });
 
     it("affiche le timer pendant l'enregistrement", async () => {
@@ -280,16 +278,25 @@ describe('TopStatusBar — REC indicator (v5.57.2)', () => {
     it('le toggle de repli est visible et bascule la classe collapsed sur #top-status-bar (v5.58)', () => {
         const toggle = document.querySelector(
             '.top-collapse-toggle'
-        ) as HTMLElement;
+        ) as HTMLButtonElement;
         const topBar = document.getElementById('top-status-bar');
+        const content = document.querySelector(
+            '.top-status-bar-content'
+        ) as HTMLElement;
         expect(toggle).not.toBeNull();
         expect(topBar?.classList.contains('collapsed')).toBe(false);
 
-        topBar?.classList.toggle('collapsed');
+        toggle.click();
         expect(topBar?.classList.contains('collapsed')).toBe(true);
+        expect(content.inert).toBe(true);
+        expect(content.getAttribute('aria-hidden')).toBe('true');
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
 
-        topBar?.classList.toggle('collapsed');
+        toggle.click();
         expect(topBar?.classList.contains('collapsed')).toBe(false);
+        expect(content.inert).toBe(false);
+        expect(content.getAttribute('aria-hidden')).toBe('false');
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
     });
 });
 
@@ -346,7 +353,6 @@ describe('TopStatusBar — LOD badge click handler', () => {
     function render() {
         const bar = new TopStatusBar();
         bar.hydrate();
-        bar.render();
         return bar;
     }
 
@@ -431,7 +437,6 @@ describe('TopStatusBar — LOD badge pack visual indicator', () => {
     function render() {
         const bar = new TopStatusBar();
         bar.hydrate();
-        bar.render();
         return bar;
     }
 

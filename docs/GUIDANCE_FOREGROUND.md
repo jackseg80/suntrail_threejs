@@ -42,24 +42,24 @@ d'oiseau pour la retrouver.
 
 ## Seuils v5.84
 
-| Seuil | Valeur | Effet |
-|---|---:|---|
-| Précision GPS maximale | 60 m | Au-delà : `acquiring`, aucune alerte |
-| Fraîcheur maximale | 15 s | Position plus vieille : `acquiring`, aucune alerte |
-| Acquisition | 2 positions valides | Passage à `onRoute` |
-| Hors-trace | `max(40 m, 1,5 × accuracy)` | Seuil dynamique |
-| Maintien hors-trace | 20 s | Évite une alerte sur un point isolé |
-| Retour sur trace | 60 % du seuil hors-trace | Hystérésis spatiale |
-| Maintien récupération | 10 s | Passage à `recovered` |
-| Affichage récupération | 5 s | État transitoire lisible |
-| Cooldown alerte | 120 s | Pas de répétition haptique rapprochée |
-| Arrivée | 25 m pendant 10 s | Passage à `arrived` |
-| Retour arrière toléré | 35 m | Protection bruit/lacets |
-| Fenêtre avant | 600 m | Protection croisements/sauts |
-| Vitesse plausible max | 12 m/s | Détection de saut GPS |
-| Saut GPS minimum | 250 m | Rejet avant matching |
-| Look-ahead | 35 m | Bearing de la direction à venir |
-| Cue dépassée | 12 m | Passage à l'indication suivante |
+| Seuil                  |                      Valeur | Effet                                              |
+| ---------------------- | --------------------------: | -------------------------------------------------- |
+| Précision GPS maximale |                        60 m | Au-delà : `acquiring`, aucune alerte               |
+| Fraîcheur maximale     |                        15 s | Position plus vieille : `acquiring`, aucune alerte |
+| Acquisition            |         2 positions valides | Passage à `onRoute`                                |
+| Hors-trace             | `max(40 m, 1,5 × accuracy)` | Seuil dynamique                                    |
+| Maintien hors-trace    |                        20 s | Évite une alerte sur un point isolé                |
+| Retour sur trace       |    60 % du seuil hors-trace | Hystérésis spatiale                                |
+| Maintien récupération  |                        10 s | Passage à `recovered`                              |
+| Affichage récupération |                         5 s | État transitoire lisible                           |
+| Cooldown alerte        |                       120 s | Pas de répétition haptique rapprochée              |
+| Arrivée                |           25 m pendant 10 s | Passage à `arrived`                                |
+| Retour arrière toléré  |                        35 m | Protection bruit/lacets                            |
+| Fenêtre avant          |                       600 m | Protection croisements/sauts                       |
+| Vitesse plausible max  |                      12 m/s | Détection de saut GPS                              |
+| Saut GPS minimum       |                       250 m | Rejet avant matching                               |
+| Look-ahead             |                        35 m | Bearing de la direction à venir                    |
+| Cue dépassée           |                        12 m | Passage à l'indication suivante                    |
 
 Les positions stale, imprécises ou rejetées ne déclenchent jamais d'alerte visuelle/haptique.
 
@@ -88,19 +88,25 @@ de nom de sentier.
 
 ```ts
 interface GuidanceSnapshot {
-  routeId: string;
-  status: 'idle' | 'acquiring' | 'onRoute' | 'offRoute' | 'recovered' |
-    'arrived' | 'paused';
-  progressMeters: number;
-  remainingMeters: number;
-  crossTrackMeters: number;
-  eta: string | null;
-  bearing: number | null;
-  nextCue: GuidanceCueV1 | null;
-  distanceToNextCueMeters: number | null;
-  accuracyMeters: number | null;
-  positionAgeMs: number | null;
-  updatedAt: string;
+    routeId: string;
+    status:
+        | 'idle'
+        | 'acquiring'
+        | 'onRoute'
+        | 'offRoute'
+        | 'recovered'
+        | 'arrived'
+        | 'paused';
+    progressMeters: number;
+    remainingMeters: number;
+    crossTrackMeters: number;
+    eta: string | null;
+    bearing: number | null;
+    nextCue: GuidanceCueV1 | null;
+    distanceToNextCueMeters: number | null;
+    accuracyMeters: number | null;
+    positionAgeMs: number | null;
+    updatedAt: string;
 }
 ```
 
@@ -109,9 +115,10 @@ interface GuidanceSnapshot {
 - `guidanceQuality=full` : démarrage direct depuis une route sauvegardée.
 - `approximate` : confirmation explicite avant démarrage.
 - `not-ready` : refus avec demande de recalcul/réimport de la géométrie complète.
-- Le panneau démarre compact. Le déplier n'active pas le suivi caméra permanent, mais effectue
-  une correction ponctuelle si une position GPS existe afin de placer le point dans la zone
-  visible haute.
+- Le panneau démarre compact. Ses trois hauteurs sont commandées sans geste vertical : Bandeau
+  ouvre la réduction minimale, Agrandir restaure le panneau compact et Détails/Réduire bascule entre
+  compact et détaillé. Déplier n'active pas le suivi caméra permanent, mais effectue une correction
+  ponctuelle si une position GPS existe afin de placer le point dans la zone visible haute.
 - Le suivi caméra est déclenché explicitement avec **Recentrer**. La position est alors conservée
   au-dessus du centre par un décalage stable lié à l'orbite, sans recentrage forcé au démarrage.
   La rotation utilise une hystérésis de cap de 12° à l'entrée et 5° à la sortie pour absorber le
@@ -137,6 +144,9 @@ interface GuidanceSnapshot {
 - STOP REC depuis le panneau passe par le même arrêt central que Sortie. Les statistiques de
   notification sont coupées avant l'arrêt natif et le service Android annule explicitement toute
   notification résiduelle.
+- Pause/Reprendre apparaît dans le panneau uniquement lorsque Guidance et REC sont actifs ensemble.
+  La commande appelle la même pause native que Sortie : les points et la durée active du REC se
+  figent, tandis que Guidance continue. En guidage seul, aucune commande Pause n'est affichée.
 
 Fixtures partagées : `src/modules/guidance/fixtures/guidance-fixtures.json` (droite, boucle,
 aller-retour, épingles proches, croisement, bruit, saut GPS, récupération et arrivée).

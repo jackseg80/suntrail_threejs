@@ -80,12 +80,12 @@ describe('ZoneOverlay', () => {
             expect(overlay.isLocked).toBe(true);
         });
 
-        it("retourne false si le mode n'est pas cached", () => {
+        it('reste mobile uniquement pendant la sélection', () => {
             overlay.show(testBbox, 'selecting');
             expect(overlay.isLocked).toBe(false);
 
             overlay.setMode('downloading');
-            expect(overlay.isLocked).toBe(false);
+            expect(overlay.isLocked).toBe(true);
         });
     });
 
@@ -129,15 +129,13 @@ describe('ZoneOverlay', () => {
             expect(mat.color.getHex()).toBe(0x00ff66);
         });
 
-        it('crée des bordures en mode downloading et cached, pas en selecting', () => {
+        it('conserve des bordures dans les trois états', () => {
             overlay.show(testBbox, 'selecting');
             let group = (scene.add as any).mock.calls[0][0] as THREE.Group;
-            const borders = group.children.filter(
-                (c) =>
-                    c instanceof THREE.Mesh &&
-                    c !== group.children.find((f) => f instanceof THREE.Mesh)
+            const selectingMeshes = group.children.filter(
+                (c) => c instanceof THREE.Mesh
             );
-            expect(borders.length).toBe(0);
+            expect(selectingMeshes.length).toBeGreaterThanOrEqual(5);
 
             (scene.add as any).mockClear();
             overlay.show(testBbox, 'downloading');

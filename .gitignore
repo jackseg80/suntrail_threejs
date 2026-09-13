@@ -71,3 +71,6 @@ android/.idea/
 coverage/
 playwright-report/
 test-results/
+
+# Preuves locales d'appareil, matrices visuelles et profils de diagnostic
+outputs/

@@ -41,6 +41,7 @@ public class TrackingServiceInstrumentedTest {
     private final Context context = ApplicationProvider.getApplicationContext();
     private final AtomicBoolean guidanceActive = new AtomicBoolean(false);
     private final AtomicBoolean recordingActive = new AtomicBoolean(false);
+    private final AtomicBoolean recordingPaused = new AtomicBoolean(false);
     private final AtomicReference<String> guidanceStatus = new AtomicReference<>("");
     private BroadcastReceiver sessionReceiver;
 
@@ -50,6 +51,7 @@ public class TrackingServiceInstrumentedTest {
                 context.getPackageName(), Manifest.permission.POST_NOTIFICATIONS);
         }
         context.getSharedPreferences("TrackingPrefs", Context.MODE_PRIVATE).edit().clear().commit();
+        context.getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE).edit().clear().commit();
         AppDatabase db = AppDatabase.getInstance(context);
         db.clearAllTables();
         ActiveGuidanceRoute route = new ActiveGuidanceRoute();
@@ -77,6 +79,7 @@ public class TrackingServiceInstrumentedTest {
                 }
                 guidanceActive.set(intent.getBooleanExtra("guidance", false));
                 recordingActive.set(intent.getBooleanExtra("recording", false));
+                recordingPaused.set(intent.getBooleanExtra("recordingPaused", false));
             }
         };
         IntentFilter sessionEvents = new IntentFilter(RecordingService.ACTION_SESSION_CHANGED);
@@ -126,6 +129,25 @@ public class TrackingServiceInstrumentedTest {
         waitFor("outing finish", () -> !guidanceActive.get() && !recordingActive.get());
         assertFalse(guidanceActive.get());
         assertFalse(recordingActive.get());
+    }
+
+    @Test
+    public void recordingPauseAndResumeKeepTheCourseActive() throws Exception {
+        Intent start = action(RecordingService.ACTION_START_RECORDING)
+            .putExtra("isNewCourse", true);
+        ContextCompat.startForegroundService(context, start);
+        waitFor("recording start", recordingActive::get);
+
+        context.startService(action(RecordingService.ACTION_PAUSE_RECORDING));
+        waitFor("recording pause", recordingPaused::get);
+        assertTrue(recordingActive.get());
+        Thread.sleep(25L);
+
+        context.startService(action(RecordingService.ACTION_RESUME_RECORDING));
+        waitFor("recording resume", () -> !recordingPaused.get());
+        assertTrue(recordingActive.get());
+        assertTrue(context.getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE)
+            .getLong("recordingPausedDurationMs", 0L) > 0L);
     }
 
     private Intent action(String value) { return new Intent(context, RecordingService.class).setAction(value); }

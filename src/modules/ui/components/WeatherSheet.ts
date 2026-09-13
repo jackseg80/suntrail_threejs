@@ -7,7 +7,6 @@ import {
     getComfortIndex,
     getFreezingAlert,
     computeTemperatureChartData,
-    getComfortCategory,
 } from '../../weatherUtils';
 import { sheetManager } from '../core/SheetManager';
 import { i18n } from '../../../i18n/I18nService';
@@ -15,7 +14,7 @@ import SunCalc from '../../suncalcCompat';
 import { expertService } from '../../expertService';
 import { showUpgradePrompt } from '../../iap';
 import { showToast } from '../../toast';
-import { ICON_LOCK } from '../icons';
+import { ICON_COPY, ICON_INFO, ICON_LOCK } from '../icons';
 import { eventBus } from '../../eventBus';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/weather.html?raw';
@@ -43,23 +42,17 @@ export class WeatherSheet extends BaseComponent {
         const div = document.createElement('div');
         div.classList.add(cssClass);
         const labelRow = document.createElement('div');
-        labelRow.style.cssText =
-            'display:flex;align-items:center;gap:3px;margin-bottom:2px;';
+        labelRow.className = 'weather-stat-label-row';
 
         const lbl = document.createElement('div');
         lbl.classList.add('exp-stat-label');
         lbl.textContent = label;
 
-        const wrapper = document.createElement('span');
-        wrapper.className = 'touch-hit-target';
-        const info = document.createElement('span');
-        info.textContent = 'ⓘ';
-        info.style.cssText =
-            'font-size:var(--text-xs);opacity:0.45;cursor:pointer;';
-        info.setAttribute('role', 'button');
-        info.setAttribute('tabindex', '0');
+        const info = document.createElement('button');
+        info.className = 'touch-hit-target weather-info-button';
+        info.setAttribute('type', 'button');
         info.setAttribute('aria-label', i18n.t('ui.aria.info') || 'Info');
-        wrapper.appendChild(info);
+        info.innerHTML = ICON_INFO;
 
         const val = document.createElement('div');
         val.classList.add('exp-stat-value');
@@ -73,7 +66,7 @@ export class WeatherSheet extends BaseComponent {
         this.statTooltips.push(tooltip);
 
         labelRow.appendChild(lbl);
-        labelRow.appendChild(wrapper);
+        labelRow.appendChild(info);
         div.appendChild(labelRow);
         div.appendChild(val);
         parent.appendChild(div);
@@ -83,19 +76,19 @@ export class WeatherSheet extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
-        this.contentEl = document.getElementById('weather-content');
+        this.contentEl = this.element.querySelector('#weather-content');
         this.contentEl?.setAttribute('aria-live', 'polite');
 
-        const closeWeather = document.getElementById('close-weather');
+        const closeWeather = this.element.querySelector('#close-weather');
         closeWeather?.setAttribute(
             'aria-label',
             i18n.t('weather.aria.close') || 'Fermer météo'
         );
         closeWeather?.addEventListener('click', () => {
-            sheetManager.close();
+            sheetManager.back();
         });
 
-        const refreshBtn = document.getElementById('weather-refresh-btn');
+        const refreshBtn = this.element.querySelector('#weather-refresh-btn');
         if (refreshBtn) {
             const refreshLabel =
                 i18n.t('weather.aria.refresh') || 'Rafraîchir la météo';
@@ -172,8 +165,16 @@ export class WeatherSheet extends BaseComponent {
             try {
                 const sun = SunCalc.getTimes(now, sunLat, sunLon);
                 sunEvents = [
-                    { time: sun.sunrise, icon: '🌅', label: 'Sunrise' },
-                    { time: sun.sunset, icon: '🌇', label: 'Sunset' },
+                    {
+                        time: sun.sunrise,
+                        icon: '🌅',
+                        label: i18n.t('solar.stat.sunrise'),
+                    },
+                    {
+                        time: sun.sunset,
+                        icon: '🌇',
+                        label: i18n.t('solar.stat.sunset'),
+                    },
                 ];
             } catch {
                 // silently skip sun events if SunCalc fails
@@ -202,8 +203,7 @@ export class WeatherSheet extends BaseComponent {
 
             if (h.precip !== undefined && h.precip > 0) {
                 const precipDiv = document.createElement('div');
-                precipDiv.style.fontSize = '9px';
-                precipDiv.style.color = '#60a5fa';
+                precipDiv.className = 'exp-hourly-precip';
                 precipDiv.textContent = `${h.precip}%`;
                 hDiv.appendChild(precipDiv);
             }
@@ -214,12 +214,11 @@ export class WeatherSheet extends BaseComponent {
             sunEvents.forEach((ev) => {
                 if (ev.time.getHours() === hHour) {
                     const evDiv = document.createElement('div');
-                    evDiv.classList.add('exp-hourly-item');
-                    evDiv.style.opacity = '0.7';
+                    evDiv.classList.add('exp-hourly-item', 'exp-hourly-event');
                     evDiv.innerHTML = `
                         <div class="exp-hourly-time">${ev.time.getHours()}h${ev.time.getMinutes().toString().padStart(2, '0')}</div>
                         <div class="exp-hourly-icon">${ev.icon}</div>
-                        <div class="exp-hourly-temp" style="font-size:var(--text-xs); color:var(--gold)">${ev.label}</div>
+                        <div class="exp-hourly-temp exp-hourly-event-label">${ev.label}</div>
                     `;
                     container.appendChild(evDiv);
                 }
@@ -272,7 +271,8 @@ export class WeatherSheet extends BaseComponent {
             rect.setAttribute('y', String(bar.y));
             rect.setAttribute('width', String(xStep));
             rect.setAttribute('height', String(bar.height));
-            rect.setAttribute('fill', 'rgba(96,165,250,0.25)');
+            rect.setAttribute('fill', 'var(--accent)');
+            rect.setAttribute('opacity', '0.25');
             svg.appendChild(rect);
         }
 
@@ -287,7 +287,7 @@ export class WeatherSheet extends BaseComponent {
             line.setAttribute('x2', String(W));
             line.setAttribute('y1', String(y0));
             line.setAttribute('y2', String(y0));
-            line.setAttribute('stroke', '#ef4444');
+            line.setAttribute('stroke', 'var(--danger)');
             line.setAttribute('stroke-width', '1');
             line.setAttribute('stroke-dasharray', '3,2');
             svg.appendChild(line);
@@ -303,7 +303,7 @@ export class WeatherSheet extends BaseComponent {
                 'polyline'
             );
             poly.setAttribute('points', pts);
-            poly.setAttribute('stroke', '#ffd700');
+            poly.setAttribute('stroke', 'var(--gold)');
             poly.setAttribute('stroke-width', '2');
             poly.setAttribute('fill', 'none');
             svg.appendChild(poly);
@@ -346,10 +346,12 @@ export class WeatherSheet extends BaseComponent {
         const days = (wd.daily ?? []).slice(0, 3);
         days.forEach((d, index) => {
             const isLocked = index > 0;
-            const row = document.createElement('div');
+            const row = document.createElement(isLocked ? 'button' : 'div');
             row.classList.add('weather-daily-row');
             if (isLocked) {
-                row.style.cursor = 'pointer';
+                row.classList.add('weather-daily-row--locked');
+                row.setAttribute('type', 'button');
+                row.setAttribute('aria-label', i18n.t('weather.upsell.pro'));
                 row.addEventListener('click', () =>
                     showUpgradePrompt('weather_extended')
                 );
@@ -377,15 +379,14 @@ export class WeatherSheet extends BaseComponent {
             if (isLocked) {
                 // a11y: opacity sur chaque élément placeholder individuellement (pas sur la row)
                 // → le badge PRO ↗ reste à opacité pleine et lisible (ratio 6.2:1)
-                icon.style.opacity = '0.38';
+                icon.classList.add('weather-daily-placeholder');
                 icon.setAttribute('aria-hidden', 'true');
-                dateEl.style.opacity = '0.38';
+                dateEl.classList.add('weather-daily-placeholder');
                 dateEl.setAttribute('aria-hidden', 'true');
-                temps.style.opacity = '0.38';
+                temps.classList.add('weather-daily-placeholder');
                 temps.setAttribute('aria-hidden', 'true');
                 const badge = document.createElement('span');
-                badge.style.cssText =
-                    'font-size:10px; color:var(--accent,#4a8ef8); font-weight:700; margin-left:auto; padding-left:8px;';
+                badge.className = 'weather-daily-pro-badge';
                 badge.textContent = 'PRO ↗';
                 row.appendChild(icon);
                 row.appendChild(dateEl);
@@ -394,7 +395,7 @@ export class WeatherSheet extends BaseComponent {
             } else {
                 const sub = document.createElement('span');
                 sub.classList.add('weather-daily-sub');
-                sub.innerHTML = `💧${d.precipSum.toFixed(1)}mm · 💨${Math.round(d.windSpeedMax)}km/h`;
+                sub.textContent = `${d.precipSum.toFixed(1)} mm · ${Math.round(d.windSpeedMax)} km/h`;
                 row.appendChild(icon);
                 row.appendChild(dateEl);
                 row.appendChild(temps);
@@ -434,14 +435,12 @@ export class WeatherSheet extends BaseComponent {
             const sub = document.createElement('span');
             sub.classList.add('weather-daily-sub');
             const uvCat = getUVCategory(d.uvIndexMax);
-            const uvColor = {
-                low: '#22c55e',
-                moderate: '#eab308',
-                high: '#f97316',
-                veryHigh: '#ef4444',
-                extreme: '#a855f7',
-            }[uvCat];
-            sub.innerHTML = `💧${d.precipSum.toFixed(1)}mm · <span style="color:${uvColor}">UV${Math.round(d.uvIndexMax)}</span> · 💨${Math.round(d.windSpeedMax)}km/h`;
+            sub.append(`${d.precipSum.toFixed(1)} mm · `);
+            const uv = document.createElement('span');
+            uv.className = 'weather-daily-uv';
+            uv.dataset.level = uvCat;
+            uv.textContent = `UV ${Math.round(d.uvIndexMax)}`;
+            sub.append(uv, ` · ${Math.round(d.windSpeedMax)} km/h`);
 
             row.appendChild(icon);
             row.appendChild(dateEl);
@@ -467,12 +466,13 @@ export class WeatherSheet extends BaseComponent {
         if (freezingLevel > 0) {
             const alertKey = getFreezingAlert(alt, freezingLevel);
             const alertTexts: Record<string, string> = {
-                aboveFreezing: `❄️ ${i18n.t('weather.mountain.aboveFreezing')} (${Math.round(freezingLevel)}m)`,
-                nearFreezing: `⚠️ ${i18n.t('weather.mountain.nearFreezing')} ${Math.round(freezingLevel)}m`,
-                belowFreezing: `✅ ${i18n.t('weather.mountain.belowFreezing')} — ${Math.round(freezingLevel)}m`,
+                aboveFreezing: `${i18n.t('weather.mountain.aboveFreezing')} (${Math.round(freezingLevel)} m)`,
+                nearFreezing: `${i18n.t('weather.mountain.nearFreezing')} ${Math.round(freezingLevel)} m`,
+                belowFreezing: `${i18n.t('weather.mountain.belowFreezing')} — ${Math.round(freezingLevel)} m`,
             };
             const alertDiv = document.createElement('div');
-            alertDiv.style.marginBottom = 'var(--space-2)';
+            alertDiv.className = 'weather-freezing-alert';
+            alertDiv.dataset.level = alertKey;
             alertDiv.textContent = alertTexts[alertKey];
             container.appendChild(alertDiv);
         }
@@ -491,25 +491,34 @@ export class WeatherSheet extends BaseComponent {
             wd.cloudCover
         );
         const scoreRounded = Math.round(score * 10) / 10;
-        const { emoji, label } = getComfortCategory(score);
-        const comfortText = `${emoji} ${label}`;
+        const comfortKey =
+            score >= 8
+                ? 'excellent'
+                : score >= 6
+                  ? 'good'
+                  : score >= 4
+                    ? 'fair'
+                    : 'difficult';
+        const comfortCategoryLabel = i18n.t(
+            `weather.mountain.comfortCategory.${comfortKey}`
+        );
 
-        const comfortDiv = document.createElement('div');
-        comfortDiv.style.cssText =
-            'display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; margin-top: var(--space-2);';
+        const comfortDiv = document.createElement('button');
+        comfortDiv.className = 'weather-comfort-button';
+        comfortDiv.setAttribute('type', 'button');
 
         const comfortLabel = document.createElement('span');
         comfortLabel.classList.add('exp-stat-label');
-        comfortLabel.textContent = `${i18n.t('weather.mountain.comfort')}: `;
+        comfortLabel.textContent = `${i18n.t('weather.mountain.comfort')}:`;
 
         const comfortScore = document.createElement('span');
         comfortScore.classList.add('weather-comfort-score');
-        comfortScore.textContent = `${comfortText} (${scoreRounded}/10)`;
+        comfortScore.textContent = `${comfortCategoryLabel} (${scoreRounded}/10)`;
 
         const infoIcon = document.createElement('span');
-        infoIcon.textContent = 'ⓘ';
-        infoIcon.style.cssText =
-            'font-size: 12px; opacity: 0.5; margin-left: 2px;';
+        infoIcon.className = 'weather-comfort-info';
+        infoIcon.setAttribute('aria-hidden', 'true');
+        infoIcon.innerHTML = ICON_INFO;
 
         comfortDiv.appendChild(comfortLabel);
         comfortDiv.appendChild(comfortScore);
@@ -535,7 +544,7 @@ export class WeatherSheet extends BaseComponent {
             <div class="comfort-tooltip-title">${i18n.t('weather.mountain.comfort')} — ${score}/10</div>
             <div class="comfort-tooltip-desc">${i18n.t('weather.mountain.comfortTooltip')}</div>
             <div class="comfort-tooltip-formula">
-                <div class="comfort-tooltip-formula-title">Formule</div>
+                <div class="comfort-tooltip-formula-title">${i18n.t('weather.mountain.formula')}</div>
                 <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaCold')}</div>
                 <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaHot')}</div>
                 <div class="comfort-tooltip-line">${i18n.t('weather.mountain.comfortFormulaWind')}</div>
@@ -562,14 +571,9 @@ export class WeatherSheet extends BaseComponent {
         if (state.weatherUnavailable) {
             const msgContainer = document.createElement('div');
             msgContainer.className = 'weather-unavailable-message';
-            msgContainer.style.cssText =
-                'padding: var(--space-8) var(--space-4); text-align: center; color: var(--text-3);';
             msgContainer.innerHTML = `
-                <div style="font-size: 32px; margin-bottom: var(--space-3);">🌤️</div>
-                <div style="font-weight: 600; color: var(--text);">${i18n.t('weather.noData')}</div>
-                <div style="font-size: var(--text-sm); margin-top: var(--space-2); opacity: 0.7;">
-                    Service météo temporairement indisponible.
-                </div>
+                <div class="weather-message-title">${i18n.t('weather.noData')}</div>
+                <div class="weather-message-detail">${i18n.t('weather.unavailableDescription')}</div>
             `;
             this.contentEl.appendChild(msgContainer);
             return;
@@ -577,15 +581,11 @@ export class WeatherSheet extends BaseComponent {
 
         if (!wd) {
             const loadingContainer = document.createElement('div');
-            loadingContainer.className = 'weather-unavailable-message';
-            loadingContainer.style.cssText =
-                'padding: var(--space-8) var(--space-4); text-align: center; color: var(--text-3);';
+            loadingContainer.className =
+                'weather-unavailable-message weather-loading-message';
             loadingContainer.innerHTML = `
-                <div style="font-size: 32px; margin-bottom: var(--space-3);">🌤️</div>
-                <div style="font-weight: 600; color: var(--text);">Chargement...</div>
-                <div style="margin-top: var(--space-2);">
-                    <div class="spinner"></div>
-                </div>
+                <div class="weather-message-title">${i18n.t('common.loading')}</div>
+                <div class="weather-message-spinner"><div class="spinner"></div></div>
             `;
             this.contentEl.appendChild(loadingContainer);
             return;
@@ -599,10 +599,7 @@ export class WeatherSheet extends BaseComponent {
         } else {
             const newHeader = document.createElement('div');
             newHeader.id = 'weather-location-name';
-            newHeader.style.marginBottom = 'var(--space-4)';
-            newHeader.style.fontSize = 'var(--text-lg)';
-            newHeader.style.fontWeight = '700';
-            newHeader.style.textAlign = 'center';
+            newHeader.className = 'weather-location-name';
             newHeader.textContent = locName;
             this.contentEl.appendChild(newHeader);
         }
@@ -678,12 +675,11 @@ export class WeatherSheet extends BaseComponent {
             const leftBox = document.createElement('div');
             leftBox.classList.add('weather-instrument-main');
             const mainIcon = document.createElement('div');
-            mainIcon.style.fontSize = '40px';
+            mainIcon.className = 'weather-instrument-icon';
             const currentCode = wd.hourly?.[0]?.code ?? 0;
             mainIcon.textContent = getWeatherIcon(currentCode);
             const mainTemp = document.createElement('div');
-            mainTemp.style.fontSize = '32px';
-            mainTemp.style.fontWeight = '800';
+            mainTemp.className = 'weather-instrument-temp';
             mainTemp.textContent = `${Math.round(wd.temp)}°`;
             leftBox.appendChild(mainIcon);
             leftBox.appendChild(mainTemp);
@@ -696,8 +692,7 @@ export class WeatherSheet extends BaseComponent {
                 'svg'
             );
             windSvg.setAttribute('viewBox', '0 0 100 100');
-            windSvg.style.width = '70px';
-            windSvg.style.height = '70px';
+            windSvg.classList.add('weather-wind-dial');
             const dial = document.createElementNS(
                 'http://www.w3.org/2000/svg',
                 'circle'
@@ -713,7 +708,7 @@ export class WeatherSheet extends BaseComponent {
                 'path'
             );
             arrow.setAttribute('d', 'M50 15 L60 85 L50 75 L40 85 Z');
-            arrow.setAttribute('fill', '#60a5fa');
+            arrow.setAttribute('fill', 'var(--accent)');
             arrow.setAttribute(
                 'transform',
                 `rotate(${wd.windDir + 180}, 50, 50)`
@@ -721,8 +716,7 @@ export class WeatherSheet extends BaseComponent {
             windSvg.appendChild(arrow);
             windBox.appendChild(windSvg);
             const windSpd = document.createElement('div');
-            windSpd.style.fontSize = '12px';
-            windSpd.style.fontWeight = '700';
+            windSpd.className = 'weather-wind-speed';
             windSpd.textContent = `${Math.round(wd.windSpeed)} km/h`;
             windBox.appendChild(windSpd);
 
@@ -743,20 +737,27 @@ export class WeatherSheet extends BaseComponent {
             const uvRow = document.createElement('div');
             uvRow.className = 'weather-rt-row';
             const uvLabel = document.createElement('span');
-            uvLabel.className = 'exp-stat-label';
-            uvLabel.style.cssText = 'display:flex;align-items:center;gap:3px;';
-            uvLabel.innerHTML = `${i18n.t('weather.stat.uvIndex')} <span class="touch-hit-target"><span style="font-size:var(--text-xs);opacity:0.45;cursor:pointer;" role="button" tabindex="0" aria-label="${i18n.t('ui.aria.info') || 'Info'}">ⓘ</span></span>`;
+            uvLabel.className = 'exp-stat-label weather-stat-label-row';
+            uvLabel.append(i18n.t('weather.stat.uvIndex'));
+            const uvInfoIcon = document.createElement('button');
+            uvInfoIcon.className = 'touch-hit-target weather-info-button';
+            uvInfoIcon.setAttribute('type', 'button');
+            uvInfoIcon.setAttribute(
+                'aria-label',
+                i18n.t('ui.aria.info') || 'Info'
+            );
+            uvInfoIcon.innerHTML = ICON_INFO;
+            uvLabel.appendChild(uvInfoIcon);
             const uvVal = document.createElement('span');
             uvVal.className = 'exp-stat-value';
             uvVal.textContent = `${Math.round(wd.uvIndex ?? 0)}`;
             uvRow.appendChild(uvLabel);
             uvRow.appendChild(uvVal);
             rightStats.appendChild(uvRow);
-            const uvInfoIcon = uvLabel.querySelector('.touch-hit-target span')!;
             const uvTooltipContent = document.createElement('div');
             uvTooltipContent.innerHTML = i18n.t('weather.mountain.tooltipUV');
             this.statTooltips.push(
-                createTooltip(uvInfoIcon as HTMLElement, uvTooltipContent, {
+                createTooltip(uvInfoIcon, uvTooltipContent, {
                     trigger: 'click',
                 })
             );
@@ -820,15 +821,17 @@ export class WeatherSheet extends BaseComponent {
             }
 
             const mountainBox = document.createElement('div');
-            mountainBox.style.marginTop = 'var(--space-4)';
+            mountainBox.className = 'weather-mountain-box';
             mountainBox.appendChild(this.buildMountainAlert(wd));
             this.contentEl.appendChild(mountainBox);
 
             // 5. Copy Report
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'btn-go';
-            copyBtn.textContent = i18n.t('solar.btn.copy');
-            copyBtn.style.marginTop = 'var(--space-4)';
+            copyBtn.className = 'btn-go weather-copy-button';
+            copyBtn.innerHTML = ICON_COPY;
+            const copyLabel = document.createElement('span');
+            copyLabel.textContent = i18n.t('solar.btn.copy');
+            copyBtn.appendChild(copyLabel);
             copyBtn.onclick = () => this.copyWeatherReport(wd);
             this.contentEl.appendChild(copyBtn);
         }

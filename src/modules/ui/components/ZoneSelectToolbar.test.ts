@@ -104,7 +104,7 @@ vi.mock('../../geocodingService', () => ({
 vi.mock('../templates/zone-select-toolbar.html?raw', () => ({
     default: `<div id="zone-select-toolbar" class="zone-select-toolbar">
         <div class="zone-select-info">
-            <div class="zone-select-tile-count" id="zst-tile-count">Zone: ...</div>
+            <div class="zone-select-tile-count"><span id="zst-tile-count">Zone: ...</span></div>
             <div class="zone-select-lod-range" id="zst-total-info"></div>
             <div class="zone-select-warning" id="zst-warning"></div>
         </div>
@@ -119,6 +119,9 @@ vi.mock('../templates/zone-select-toolbar.html?raw', () => ({
                 <input type="range" id="zst-max-slider" class="zone-select-slider" min="5" max="18" value="14" />
             </div>
         </div>
+        <button type="button" class="zone-select-free-badge" id="zst-free-badge" hidden>
+            <span>Gratuit : 1 niveau de détail</span>
+        </button>
         <div class="zone-select-actions">
             <button id="zst-cancel" class="btn-go zone-select-btn-cancel">Annuler</button>
             <button id="zst-download" class="btn-go zone-select-btn-download">Telecharger</button>
@@ -147,7 +150,7 @@ function setupDOM() {
         template.id = 'template-zone-select-toolbar';
         template.innerHTML = `<div id="zone-select-toolbar" class="zone-select-toolbar">
             <div class="zone-select-info">
-                <div class="zone-select-tile-count" id="zst-tile-count">Zone: ...</div>
+                <div class="zone-select-tile-count"><span id="zst-tile-count">Zone: ...</span></div>
                 <div class="zone-select-lod-range" id="zst-total-info"></div>
                 <div class="zone-select-warning" id="zst-warning"></div>
             </div>
@@ -162,6 +165,9 @@ function setupDOM() {
                     <input type="range" id="zst-max-slider" class="zone-select-slider" min="5" max="18" value="14" />
                 </div>
             </div>
+            <button type="button" class="zone-select-free-badge" id="zst-free-badge" hidden>
+                <span>Gratuit : 1 niveau de détail</span>
+            </button>
             <div class="zone-select-actions">
                 <button id="zst-cancel" class="btn-go zone-select-btn-cancel">Annuler</button>
                 <button id="zst-download" class="btn-go zone-select-btn-download">Telecharger</button>
@@ -176,6 +182,8 @@ describe('ZoneSelectToolbar', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockGetViewportBBox.mockReset();
+        mockComputeZoneSelection.mockReset();
         mockState.ZOOM = 14;
         mockState.IS_2D_MODE = true;
         mockState.zoneSelectionActive = false;
@@ -192,6 +200,7 @@ describe('ZoneSelectToolbar', () => {
 
     afterEach(() => {
         toolbar.dispose();
+        vi.unstubAllGlobals();
     });
 
     describe('render', () => {
@@ -227,6 +236,83 @@ describe('ZoneSelectToolbar', () => {
                 expect.any(Function)
             );
         });
+
+        it('affiche une commande Pro accessible en Free', () => {
+            const badge = document.getElementById(
+                'zst-free-badge'
+            ) as HTMLButtonElement;
+            expect(badge.hidden).toBe(false);
+
+            badge.click();
+
+            expect(mockShowUpgradePrompt).toHaveBeenCalledWith('offline_zones');
+        });
+
+        it('masque la commande Free en Pro', () => {
+            toolbar.dispose();
+            document.body.innerHTML = '';
+            mockIsProActive.mockReturnValue(true);
+            toolbar = new ZoneSelectToolbar();
+            toolbar.hydrate();
+
+            const badge = document.getElementById(
+                'zst-free-badge'
+            ) as HTMLButtonElement;
+            expect(badge.hidden).toBe(true);
+        });
+    });
+
+    describe('cadre de sélection', () => {
+        it("s'arrête avant le panneau en portrait", () => {
+            vi.stubGlobal('innerWidth', 400);
+            vi.stubGlobal('innerHeight', 800);
+            vi.spyOn(
+                toolbar['element'] as HTMLElement,
+                'getBoundingClientRect'
+            ).mockReturnValue({
+                top: 600,
+                bottom: 780,
+                height: 180,
+            } as DOMRect);
+            const overlay = document.createElement('div');
+
+            toolbar['updateViewportOverlaySize'](overlay);
+
+            expect(overlay.style.width).toBe('340px');
+            expect(overlay.style.height).toBe('');
+            expect(
+                overlay.style.getPropertyValue('--zone-toolbar-height')
+            ).toBe('180px');
+            expect(overlay.style.left).toBe('50%');
+            expect(overlay.style.transform).toBe('translateX(-50%)');
+        });
+
+        it('sépare le cadre et le panneau en paysage', () => {
+            vi.stubGlobal('innerWidth', 900);
+            vi.stubGlobal('innerHeight', 400);
+            vi.spyOn(
+                toolbar['element'] as HTMLElement,
+                'getBoundingClientRect'
+            ).mockReturnValue({
+                left: 500,
+                bottom: 360,
+                width: 380,
+            } as DOMRect);
+            const overlay = document.createElement('div');
+
+            toolbar['updateViewportOverlaySize'](overlay);
+
+            expect(overlay.style.width).toBe('');
+            expect(overlay.style.height).toBe('');
+            expect(overlay.style.getPropertyValue('--zone-toolbar-width')).toBe(
+                '380px'
+            );
+            expect(overlay.style.left).toBe('');
+            expect(overlay.style.transform).toBe('');
+            expect(
+                overlay.classList.contains('zone-select-viewport-landscape')
+            ).toBe(true);
+        });
     });
 
     describe('updateLabels', () => {
@@ -243,7 +329,7 @@ describe('ZoneSelectToolbar', () => {
 
         it('affiche le nombre de tuiles visibles au LOD courant', () => {
             const el = document.getElementById('zst-tile-count');
-            expect(el?.textContent).toContain('📦');
+            expect(el?.textContent).toContain('tiles');
             expect(el?.textContent).toContain('LOD 14');
         });
 
@@ -410,6 +496,41 @@ describe('ZoneSelectToolbar', () => {
             expect(mockHaptic).toHaveBeenCalledWith('success');
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.stringContaining('✅')
+            );
+        });
+
+        it("fige au clic l'emprise affichée pour les états téléchargement et disponible", async () => {
+            const latestSelection = makeFakeZoneSelection({
+                bbox: {
+                    minLat: 46.5,
+                    maxLat: 46.7,
+                    minLon: 7.1,
+                    maxLon: 7.4,
+                },
+            });
+            mockGetViewportBBox.mockReturnValue(latestSelection.bbox);
+            mockComputeZoneSelection.mockReturnValue(latestSelection);
+            const overlay = {
+                updateFromBBox: vi.fn(),
+                setMode: vi.fn(),
+                hide: vi.fn(),
+            } as any;
+            toolbar['zoneOverlay'] = overlay;
+            const btn = document.getElementById(
+                'zst-download'
+            ) as HTMLButtonElement;
+
+            await toolbar['download'](btn);
+
+            expect(overlay.setMode).toHaveBeenNthCalledWith(
+                1,
+                'downloading',
+                latestSelection.bbox
+            );
+            expect(overlay.setMode).toHaveBeenNthCalledWith(
+                2,
+                'cached',
+                latestSelection.bbox
             );
         });
     });

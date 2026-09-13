@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { state } from '../../state';
+import { isProActive, state } from '../../state';
 
 const mockUpdateSunPosition = vi.fn();
 
@@ -37,9 +37,6 @@ vi.mock('../../state', async () => {
         saveLastView: vi.fn(),
     };
 });
-vi.mock('../draggablePanel', () => ({
-    attachDraggablePanel: vi.fn().mockReturnValue(() => {}),
-}));
 vi.mock('../../../i18n/I18nService', () => ({
     i18n: { t: (k: string) => k },
 }));
@@ -51,12 +48,23 @@ vi.mock('../../suncalcCompat', () => ({
 
 function buildDOM() {
     document.body.innerHTML = `
-        <input id="time-slider" type="range" min="0" max="1439" value="720" />
-        <input id="date-input" type="date" value="2024-06-21" />
-        <button id="play-btn">▶</button>
-        <select id="speed-select"><option value="1">1x</option><option value="2">2x</option></select>
         <button id="timeline-toggle-btn"></button>
-        <div id="bottom-bar"></div>
+        <section id="bottom-bar">
+            <div class="timeline-summary-row">
+                <time id="time-disp"></time>
+                <span id="sun-phase" data-phase="day"></span>
+                <input id="date-input" type="date" value="2024-06-21" />
+            </div>
+            <div class="timeline-control-row">
+                <button id="play-btn"></button>
+                <input id="time-slider" type="range" min="0" max="1439" value="720" />
+                <select id="speed-select"><option value="1">1×</option><option value="5">5×</option></select>
+            </div>
+            <div id="timeline-solar-info" hidden>
+                <span id="tl-azimuth"></span>
+                <span id="tl-elevation"></span>
+            </div>
+        </section>
     `;
 }
 
@@ -69,6 +77,7 @@ describe('TimelineComponent', () => {
         state.isSunAnimating = false;
         state.animationSpeed = 1.0;
         state.IS_2D_MODE = false;
+        vi.mocked(isProActive).mockReturnValue(false);
     });
 
     afterEach(() => {
@@ -147,7 +156,7 @@ describe('TimelineComponent', () => {
     });
 
     describe('bouton play/pause', () => {
-        it('affiche ⏸ quand isSunAnimating passe à true', async () => {
+        it('affiche une icône pause accessible quand la simulation démarre', async () => {
             const { TimelineComponent } = await import('./TimelineComponent');
             const comp = new TimelineComponent();
             const btn = document.getElementById('play-btn')!;
@@ -155,11 +164,13 @@ describe('TimelineComponent', () => {
             state.isSunAnimating = true;
             await Promise.resolve();
 
-            expect(btn.textContent).toBe('⏸');
+            expect(btn.getAttribute('aria-label')).toBe('timeline.pause');
+            expect(btn.getAttribute('aria-pressed')).toBe('true');
+            expect(btn.querySelectorAll('rect')).toHaveLength(2);
             comp.dispose();
         });
 
-        it('affiche ▶ quand isSunAnimating passe à false', async () => {
+        it('affiche une icône lecture accessible quand la simulation s’arrête', async () => {
             const { TimelineComponent } = await import('./TimelineComponent');
             const comp = new TimelineComponent();
             const btn = document.getElementById('play-btn')!;
@@ -169,7 +180,51 @@ describe('TimelineComponent', () => {
             state.isSunAnimating = false;
             await Promise.resolve();
 
-            expect(btn.textContent).toBe('▶');
+            expect(btn.getAttribute('aria-label')).toBe('timeline.play');
+            expect(btn.getAttribute('aria-pressed')).toBe('false');
+            expect(btn.querySelector('polygon')).not.toBeNull();
+            comp.dispose();
+        });
+
+        it('présente le calendrier Free verrouillé sans dupliquer son cadenas', async () => {
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+            const input = document.getElementById(
+                'date-input'
+            ) as HTMLInputElement;
+            const wrapper = input.parentElement!;
+
+            expect(wrapper.classList.contains('timeline-date-wrapper')).toBe(
+                true
+            );
+            expect(wrapper.querySelectorAll('.date-input-lock')).toHaveLength(
+                1
+            );
+            expect(
+                (wrapper.querySelector('.date-input-lock') as HTMLElement)
+                    .hidden
+            ).toBe(false);
+            expect(input.getAttribute('aria-label')).toBe('timeline.date');
+
+            comp.dispose();
+        });
+
+        it('affiche immédiatement les mesures solaires en Pro', async () => {
+            vi.mocked(isProActive).mockReturnValue(true);
+            const { TimelineComponent } = await import('./TimelineComponent');
+            const comp = new TimelineComponent();
+
+            expect(
+                (document.getElementById('timeline-solar-info') as HTMLElement)
+                    .hidden
+            ).toBe(false);
+            expect(document.getElementById('tl-azimuth')?.textContent).toBe(
+                '249°'
+            );
+            expect(document.getElementById('tl-elevation')?.textContent).toBe(
+                '29°'
+            );
+
             comp.dispose();
         });
     });

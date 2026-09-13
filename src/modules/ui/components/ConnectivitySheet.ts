@@ -71,11 +71,15 @@ export class ConnectivitySheet extends BaseComponent {
             const isFreeAndUsed = !isProActive() && getOfflineZoneCount() >= 1;
             const span = downloadZoneBtn.querySelector('span');
             if (span) {
-                span.innerHTML = isFreeAndUsed
-                    ? `🔒 ${i18n.t('connectivity.btn.downloadZone')}`
-                    : i18n.t('connectivity.btn.downloadZone');
+                span.textContent = i18n.t('connectivity.btn.downloadZone');
             }
             downloadZoneBtn.classList.toggle('btn-disabled', isFreeAndUsed);
+            downloadZoneBtn.classList.toggle('is-locked', isFreeAndUsed);
+            if (isFreeAndUsed) {
+                downloadZoneBtn.setAttribute('aria-disabled', 'true');
+            } else {
+                downloadZoneBtn.removeAttribute('aria-disabled');
+            }
         };
 
         this.addSubscription(state.subscribe('isPro', syncDownloadBtnGate));
@@ -118,8 +122,7 @@ export class ConnectivitySheet extends BaseComponent {
         // Country Packs button
         const packsBtn = this.element.querySelector('#conn-packs-btn');
         packsBtn?.addEventListener('click', () => {
-            sheetManager.close();
-            setTimeout(() => sheetManager.open('packs'), 150);
+            sheetManager.openChild('packs');
         });
 
         // Real-time updates
@@ -187,7 +190,7 @@ export class ConnectivitySheet extends BaseComponent {
             state.TARGET_LON
         );
         if (!pack) {
-            el.style.display = 'none';
+            el.hidden = true;
             return;
         }
 
@@ -196,24 +199,24 @@ export class ConnectivitySheet extends BaseComponent {
         const name = pack.name[lang] || pack.name['en'] || pack.id;
 
         let statusText: string;
-        let statusColor: string;
+        let status: 'installed' | 'update' | 'online' | 'available';
         if (ps?.status === 'installed') {
             statusText = `\u2713 ${name} \u00b7 ${i18n.t('packs.status.installed')}`;
-            statusColor = '#22c55e';
+            status = 'installed';
         } else if (ps?.status === 'update_available') {
             statusText = `${name} \u00b7 ${i18n.t('packs.status.updateAvailable')}`;
-            statusColor = '#f97316';
+            status = 'update';
         } else if (ps?.status === 'purchased') {
             statusText = `${name} \u00b7 ${i18n.t('packs.status.online')}`;
-            statusColor = '#f59e0b';
+            status = 'online';
         } else {
-            statusText = `\u{1F4E6} ${name} \u00b7 ${i18n.t('connectivity.label.packAvailable')}`;
-            statusColor = 'var(--accent, #3b7ef8)';
+            statusText = `${name} \u00b7 ${i18n.t('connectivity.label.packAvailable')}`;
+            status = 'available';
         }
 
-        el.style.display = 'block';
-        el.innerHTML = statusText;
-        el.style.color = statusColor;
+        el.hidden = false;
+        el.dataset.status = status;
+        el.textContent = statusText;
     }
 
     private renderCachedZones(): void {
@@ -227,15 +230,17 @@ export class ConnectivitySheet extends BaseComponent {
         if (zones.length === 0) return;
 
         const title = document.createElement('div');
-        title.className = 'setting-label';
-        title.style.cssText =
-            'font-size:11px;color:var(--text-3);margin-bottom:4px';
-        title.textContent = `💾 Zones en cache (${zones.length})`;
+        title.className = 'cached-zones-title';
+        title.textContent = i18n.t('connectivity.label.cachedZones', {
+            count: String(zones.length),
+        });
         container.appendChild(title);
 
         for (const zone of zones) {
             const item = document.createElement('div');
             item.className = 'cached-zone-item';
+            item.tabIndex = 0;
+            item.setAttribute('role', 'button');
 
             const info = document.createElement('div');
             info.className = 'cached-zone-info';
@@ -318,6 +323,12 @@ export class ConnectivitySheet extends BaseComponent {
                             state.zoneOverlay = null;
                     }, 4000);
                 });
+            });
+            item.addEventListener('keydown', (event) => {
+                if (event.target !== item) return;
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                item.click();
             });
 
             item.appendChild(info);

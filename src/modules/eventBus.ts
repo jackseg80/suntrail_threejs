@@ -28,6 +28,7 @@ type EventMap = {
     tracksUpdated: void;
     preparedRoutesUpdated: void;
     routeWaypointMoveRequested: { index: number };
+    routeWorkBackRequested: void;
     trackDestinationChanged: { destination: 'outing' | 'library' };
     guidanceSnapshot: import('./guidance/guidanceTypes').GuidanceSnapshot;
     guidanceStopped: void;

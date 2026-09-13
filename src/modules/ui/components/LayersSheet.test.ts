@@ -25,7 +25,7 @@ vi.mock('../../terrain', () => ({
 }));
 
 vi.mock('../core/SheetManager', () => ({
-    sheetManager: { close: vi.fn() },
+    sheetManager: { back: vi.fn() },
 }));
 
 vi.mock('../../../i18n/I18nService', () => ({
@@ -93,12 +93,12 @@ describe('LayersSheet', () => {
         expect(() => sheet.hydrate()).not.toThrow();
     });
 
-    it('close button calls sheetManager.close', () => {
+    it('close button follows the common sheet back contract', () => {
         const sheet = new LayersSheet();
         sheet.hydrate();
         const btn = document.getElementById('close-layers')!;
         btn.click();
-        expect(sheetManager.close).toHaveBeenCalled();
+        expect(sheetManager.back).toHaveBeenCalled();
     });
 
     it('clicking a layer item changes MAP_SOURCE', () => {
@@ -110,6 +110,18 @@ describe('LayersSheet', () => {
         item.click();
         expect(mockState.MAP_SOURCE).toBe('opentopomap');
         expect(mockState.hasManualSource).toBe(true);
+    });
+
+    it('activates a layer with the keyboard', () => {
+        const sheet = new LayersSheet();
+        sheet.hydrate();
+        const item = document.querySelector(
+            '[data-source="opentopomap"]'
+        ) as HTMLElement;
+        item.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        );
+        expect(mockState.MAP_SOURCE).toBe('opentopomap');
     });
 
     it('clicking swisstopo sets hasManualSource to false', () => {

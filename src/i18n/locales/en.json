@@ -29,6 +29,8 @@
         "btn": {
             "rec": "REC",
             "stop": "STOP",
+            "pause": "Pause",
+            "resume": "Resume",
             "import": "Import GPX",
             "export": "Export"
         },
@@ -52,6 +54,8 @@
         "aria": {
             "close": "Close track",
             "rec": "Record a track",
+            "pause": "Pause REC",
+            "resume": "Resume REC",
             "import": "Import a GPX file",
             "export": "Export as GPX"
         },
@@ -103,6 +107,8 @@
             "recording": {
                 "eyebrow": "REC in progress",
                 "live": "Live activity",
+                "pausedEyebrow": "REC paused",
+                "paused": "Recording paused",
                 "duration": "Actual duration",
                 "pace": "Average pace",
                 "speed": "Average speed",
@@ -239,9 +245,10 @@
             "scope": "Your itineraries to follow and recorded activities, together in one place.",
             "title": "My routes",
             "emptyTitle": "No routes yet",
-            "emptyBody": "Import a GPX, create an itinerary or record an activity.",
+            "emptyBody": "Your prepared itineraries and recorded activities will appear here.",
             "statusFollow": "To follow",
             "statusRecorded": "Recorded",
+            "statusPrepare": "To prepare",
             "originManual": "Created in SunTrail",
             "originImport": "GPX import",
             "originRecording": "GPS recording",
@@ -250,6 +257,8 @@
             "moreActions": "More actions",
             "repeat": "Repeat",
             "createItinerary": "Create itinerary",
+            "detailsAndActions": "Preparation and options",
+            "archivesTitle": "Other activities and tracks",
             "legacyTitle": "Recent tracks",
             "legacyHelp": "The GPX history is unchanged. A conversion from its simplified geometry is always approximate."
         },
@@ -471,7 +480,7 @@
             "benchmarkTitle": "Performance Test",
             "benchmarkDesc": "Analyzes CPU/GPU power to calibrate optimal settings.",
             "benchmarkBtn": "Relaunch Optimization",
-            "apiKeys": "🔑 API Keys",
+            "apiKeys": "API Keys",
             "orsLabel": "ORS Key",
             "orsPlaceholder": "ORS Key (optional)",
             "orsLink": "Get a free key →",
@@ -481,19 +490,22 @@
             "hardwareCpu": "CPU",
             "hardwareCores": "cores",
             "hardwarePreset": "Detected preset",
-            "testerId": "🆔 Tester ID",
+            "testerId": "Tester ID",
             "testerIdCopy": "Copy",
             "testerIdCopied": "Copied",
             "testerIdUnavailable": "Not available (web)"
         },
         "aria": {
-            "close": "Close settings"
+            "close": "Close settings",
+            "back": "Back to settings",
+            "vegetationOptions": "Vegetation options",
+            "weatherOptions": "Weather options"
         },
         "section": {
             "presets": "Performance profile",
             "rendering": "3D Rendering & Details",
             "density": "Detail Density",
-            "advanced": "Developer lab",
+            "advanced": "Advanced settings",
             "dataManagement": "Data management",
             "language": "Language",
             "account": "Account",
@@ -504,20 +516,20 @@
         "category": {
             "ariaLabel": "Settings categories",
             "essentials": "Essentials",
-            "hiking": "Advanced hiking",
-            "developer": "Developer lab"
+            "hiking": "Map",
+            "developer": "Advanced"
         },
         "pro": {
             "description": "Unlock all premium features with SunTrail Pro",
+            "activeDescription": "Your Pro features are available on this device",
             "buildingsDesc": "Realistic architecture on terrain",
             "inclinometerDesc": "Terrain slope in real-time (°, %)",
             "weatherDesc": "24h chart + 3-day forecast",
-            "cta": "Upgrade to Pro",
+            "cta": "Discover Pro",
             "active": "Pro Active",
             "includedLabel": "Included with Pro",
             "solarCalLabel": "Solar calendar",
             "solarCalDesc": "Shadows for any day of the year",
-            "solarCalBtn": "Buy Pro",
             "solarAnalLabel": "Pro solar analysis",
             "solarAnalDesc": "Azimuth, elevation, 24h chart, moon phase",
             "lodLabel": "Maximum map detail + Satellite",
@@ -602,8 +614,8 @@
             "openmeteoLabel": "Open-Meteo — open-meteo.com"
         },
         "tutorial": {
-            "btn": "❓ Help & Tutorial",
-            "youtube": "📺 Videos & Demos"
+            "btn": "Help and tutorial",
+            "youtube": "Videos and demos"
         },
         "toast": {}
     },
@@ -672,6 +684,7 @@
             "weather": "Weather",
             "network": "Network status",
             "recording": "Recording in progress",
+            "recordingPaused": "Recording paused",
             "sos": "SOS emergency"
         },
         "mapDetail": "{{source}} · detail {{detail}}",
@@ -711,18 +724,18 @@
         "timeline": "📅 Access any date with Pro"
     },
     "connectivity": {
-        "title": "System & Data",
+        "title": "Connection and offline maps",
         "aria": {
             "close": "Close connectivity"
         },
         "status": {
-            "online": "ONLINE",
-            "offline": "OFFLINE",
-            "degraded": "DEGRADED"
+            "online": "Online",
+            "offline": "Offline",
+            "degraded": "Limited"
         },
         "section": {
-            "signal": "Signal Status",
-            "embeddedData": "Embedded Data",
+            "signal": "Connection status",
+            "embeddedData": "Offline maps",
             "cache": "Cache Management",
             "external": "External Services",
             "network": "Network",
@@ -730,18 +743,21 @@
             "api": "API Key"
         },
         "label": {
-            "offlineMode": "Offline Mode",
-            "offlineHint": "Force cache-only usage",
+            "offlineMode": "Offline mode",
+            "offlineHint": "Use downloaded maps only",
             "gpsAccuracy": "GPS Signal",
             "network": "Network",
             "pmtiles": "Local map archive",
+            "pmtilesHint": "Import a PMTiles file from this device.",
+            "cachedZones": "Downloaded zones ({{count}})",
             "packAvailable": "Pack available",
             "zonesUsed": "zone used",
             "tiles": "tiles"
         },
         "btn": {
-            "clearCache": "Clear Cache",
-            "downloadZone": "Download Zone"
+            "clearCache": "Clear cache",
+            "downloadZone": "Download a zone",
+            "importArchive": "Import a file"
         },
         "toast": {
             "cacheCleared": "Cache cleared"
@@ -823,6 +839,7 @@
     "weather": {
         "title": "Weather Bulletin",
         "noData": "No weather data",
+        "unavailableDescription": "The weather service is temporarily unavailable.",
         "toast": {
             "timeout": "Weather offline (Timeout)"
         },
@@ -866,8 +883,7 @@
             "cloudCover": "Cloud cover",
             "uvIndex": "UV Index",
             "precipProb": "Precipitation",
-            "comfortIndex": "Hiking comfort",
-            "mountainComfort": "Mountain Comfort"
+            "comfortIndex": "Hiking comfort"
         },
         "uv": {
             "low": "Low",
@@ -881,6 +897,13 @@
             "nearFreezing": "Snow possible near your position — isotherm at",
             "belowFreezing": "0°C isotherm",
             "comfort": "Hiking comfort",
+            "formula": "Formula",
+            "comfortCategory": {
+                "excellent": "Excellent",
+                "good": "Good",
+                "fair": "Fair",
+                "difficult": "Difficult"
+            },
             "title": "Mountain Alert",
             "comfortTooltip": "Calculated from temperature, humidity, wind, precipitation, UV, visibility and weather code.",
             "comfortFormulaCold": "cold (<5°C): −0.25/°C",
@@ -911,15 +934,16 @@
     "solar": {
         "title": "Solar Analysis",
         "phase": {
-            "day": "☀️ Full daylight",
-            "golden": "🌅 Golden Hour",
-            "twilight": "🌌 Twilight",
-            "night": "🌙 Night"
+            "day": "Full daylight",
+            "golden": "Golden hour",
+            "twilight": "Twilight",
+            "night": "Night"
         },
         "status": {
+            "loading": "Analyzing…",
             "done": "Analysis complete",
-            "noTerrain": "Solar analysis unavailable",
-            "noTerrainHint": "Terrain data is not yet loaded. Zoom in on the terrain and try again."
+            "noTerrain": "Terrain unavailable for this point",
+            "noTerrainHint": "Sun times and position are still calculated. Terrain shade, first light and sunlight duration require elevation data."
         },
         "section": {
             "dayData": "Day data",
@@ -944,13 +968,13 @@
             "tooltipElevation": "<b>Elevation</b>: sun height above horizon (0°=horizon, 90°=zenith). Elevation determines light intensity and ground-level heat."
         },
         "upsell": {
-            "solar": "☀️ Full solar data available with Pro"
+            "solar": "Full solar data available with Pro"
         },
         "btn": {
-            "copy": "📋 Copy report"
+            "copy": "Copy report"
         },
         "toast": {
-            "copied": "📋 Report copied",
+            "copied": "Report copied",
             "clickFirst": "Click on terrain first",
             "notIn2D": "Solar simulation only available in 3D mode"
         },
@@ -959,11 +983,13 @@
         }
     },
     "sos": {
-        "title": "SOS EMERGENCY",
+        "title": "SOS emergency",
         "subtitle": "Here is your estimated GPS position and available accuracy to share with emergency services.",
-        "locating": "⌛ Locating...",
+        "locating": "Locating...",
+        "error": "Unable to generate the SOS message.",
         "copy": "Copy message",
-        "sms": "📱 Send SMS",
+        "copied": "SOS message copied",
+        "sms": "Send SMS",
         "close": "Close"
     },
     "setup": {
@@ -987,11 +1013,13 @@
         "applied": "Applied preset: {{preset}}",
         "lowBattery": "🔋 Low battery: Eco mode enabled",
         "batteryTooLow": "🔋 Battery too low: charge above 20% to enable this profile",
-        "batteryLocked": "🔋 Low battery — 3D profiles locked to save power. Charge above 20% to unlock them.",
+        "batteryLocked": "Low battery — 3D profiles locked to save power. Charge above 20% to unlock them.",
         "batteryRestored": "🔋 Battery OK — 3D profiles restored"
     },
     "coords": {
-        "solar": "☀ Solar"
+        "title": "Selected point",
+        "solar": "Sun",
+        "close": "Close selected point"
     },
     "apiKey": {
         "label": "MapTiler Key",
@@ -999,9 +1027,10 @@
         "link": "Get a free key ↗"
     },
     "profile": {
-        "title": "📈 Elevation Profile & Slopes",
+        "backFromAnalysis": "Back to profile",
+        "title": "Elevation and slopes",
         "info": "Distance: 0 km | Elevation: 0 m | Slope: 0%",
-        "analysis": "☀️ Analysis",
+        "analysis": "Solar analysis",
         "expand": "Expand profile",
         "slopes": "Slopes",
         "solar": "Solar",
@@ -1014,7 +1043,13 @@
         "cursorIdle": "Distance: {{distance}} km | Elevation: 0 m"
     },
     "timeline": {
-        "sunPhase": "☀️ Full daylight",
+        "title": "Solar simulation",
+        "time": "Simulation time",
+        "date": "Simulation date",
+        "play": "Start solar simulation",
+        "pause": "Pause solar simulation",
+        "speed": "Simulation speed",
+        "sunPhase": "Full daylight",
         "requires3D": "Solar simulation available in 3D mode"
     },
     "vram": {
@@ -1032,43 +1067,54 @@
     "onboarding": {
         "skip": "Skip",
         "next": "Next",
-        "start": "Start",
-        "explore": "Explore the map",
-        "prepareRoute": "Plan a route",
-        "importGpx": "Import GPX",
-        "searchPeak": "Search for a peak",
-        "slide1": {
-            "title": "Explore the terrain",
-            "desc": "Search for a place, then use the 2D map or 3D relief and sunlight to understand the terrain."
+        "finish": "Finish",
+        "step": "Getting started {{current}}/{{total}}",
+        "map": {
+            "title": "The map is your starting point",
+            "desc": "Try it now: the map stays active during this introduction.",
+            "drag": "Drag to move around",
+            "zoom": "Pinch to zoom",
+            "tilt": "Use two fingers to tilt"
         },
-        "slide2": {
-            "title": "Prepare with simple taps",
-            "desc": "Open Prepare, then tap the map to place start A and finish B. SunTrail then calculates the route and its statistics."
+        "relief": {
+            "title": "Compare the map and relief",
+            "desc": "The highlighted control on the right switches between 2D and 3D. Tap it to see the terrain, or finish the tour."
         },
-        "slide3": {
-            "title": "Head out with confidence",
-            "desc": "Find GPS recording under Outing and your GPX files under Library. GPS and terrain models have limits: always check conditions on site."
+        "detail": {
+            "title": "Zoom in to reveal more detail",
+            "desc": "SunTrail starts with an overview. Zoom in to load the detailed map: the 3D control becomes available when relief data is ready."
         },
-        "slide4": {
-            "title": "Solar Analysis",
-            "desc": "Signature feature: tap anywhere to get a full sunlight report. Essential for bivouacs and winter outings."
-        },
-        "slide5": {
-            "title": "Expert & Conditions",
-            "desc": "Analyze the exact slope (PRO) and check weather at the top. Auto HD maps (CH, FR, AT, DE, ES) via the 'Layers' tab."
-        },
-        "slide6": {
-            "title": "Security & Autonomy",
-            "desc": "The SOS button at the top right shows your emergency coordinates. Download Country Packs in Settings for offline mode."
+        "context": {
+            "eyebrow": "Right when you need it",
+            "gotIt": "Got it",
+            "planning": {
+                "title": "Place your start on the real map",
+                "body": "Press and hold the map to place A, then repeat for B. A short tap stays available for moving the map."
+            },
+            "recording": {
+                "title": "REC saves your outing",
+                "body": "Tap REC when you leave. SunTrail asks for location only then, and shows duration, distance and progress."
+            },
+            "pro": {
+                "title": "This action is part of Pro",
+                "body": "The lock and Pro badge identify paid features. Essential features remain available for free.",
+                "view": "View SunTrail Pro",
+                "later": "Later"
+            }
         }
     },
     "upgrade": {
         "title": "Go Pro",
+        "aria": {
+            "close": "Close Pro offer",
+            "back": "Back to settings"
+        },
         "hero": {
             "title": "World's only solar terrain simulation",
             "subtitle": "Estimate when the sun hits your trail. Shadows simulated on 3D terrain — for any day of the year."
         },
         "feature": {
+            "heading": "Everything in Pro, without limits",
             "maxDetail": "Maximum map detail",
             "satellite": "HD Satellite view",
             "buildings": "Realistic 3D buildings",
@@ -1081,6 +1127,7 @@
             "offlineZones": "Unlimited offline"
         },
         "plan": {
+            "heading": "Choose your plan",
             "monthly": "Monthly",
             "yearly": "Yearly",
             "lifetime": "Lifetime",
@@ -1109,6 +1156,7 @@
     "inclinometer": {
         "label": "slope at reticle",
         "label_following": "current slope",
+        "moveReticle": "Move the slope reticle",
         "aspect": "Direction",
         "danger": {
             "low": "Moderate terrain",
@@ -1220,12 +1268,18 @@
             "austria": "basemap.at high-resolution maps"
         },
         "aria": {
-            "close": "Close packs"
+            "close": "Close packs",
+            "back": "Back to System and Data"
         }
     },
     "solarRoute": {
         "section": {
             "title": "Route solar analysis"
+        },
+        "mode": {
+            "snapshot": "Snapshot",
+            "timeline": "Progress",
+            "change": "Change analysis mode"
         },
         "stat": {
             "sunPct": "In sun",
@@ -1242,9 +1296,9 @@
             "hikerShade": "Cool shade km {{start}}–{{end}} — arriving ~{{time}}",
             "optimalDeparture": "Best departure {{time}} → {{pct}}% in sun",
             "goldenHour": "Golden hour at summit ({{alt}}m): {{start}}–{{end}}",
-            "strongExposure": "⚠️ Strong exposure: km {{start}}–{{end}} ({{duration}} min)",
+            "strongExposure": "Strong exposure: km {{start}}–{{end}} ({{duration}} min)",
             "estimatedArrival": "Estimated arrival: {{time}}",
-            "forestSection": "🌲 {{km}} km under forest canopy",
+            "forestSection": "{{km}} km under forest canopy",
             "headlamp": "Bring a headlamp: {{km}} km at night ({{pct}}% of the route)"
         },
         "speed": {
@@ -1265,9 +1319,9 @@
     },
     "guidance": {
         "title": "Route guidance",
-        "modeNative": "Android guidance active",
+        "modeNative": "Guidance active",
         "modeWeb": "Foreground guidance",
-        "nativeLimit": "On Android, the location service and persistent notification keep guidance running with the screen off or after the interface closes. No voice instructions or automatic rerouting.",
+        "nativeLimit": "Guidance continues with the screen off or if you close the app. No voice instructions or automatic rerouting.",
         "webLimit": "On the Web, guidance depends on the browser and is guaranteed only while the page stays active. No native notification or recovery after closing.",
         "remaining": "Remaining",
         "eta": "Arrival",
@@ -1286,9 +1340,9 @@
             "start": "Follow",
             "saveAndStart": "Save and follow",
             "startAnyway": "Follow anyway",
-            "pause": "Pause",
-            "resume": "Resume",
             "profile": "Profile",
+            "record": "Record",
+            "stopGuidance": "Stop guidance",
             "stop": "Stop",
             "stopRec": "Stop REC",
             "finishOuting": "Finish outing",
@@ -1296,11 +1350,10 @@
             "stopGuidanceOnly": "Stop guidance only",
             "details": "Details",
             "compact": "Collapse",
-            "minimize": "Minimize to bar",
-            "open": "Open",
-            "drag": "Drag",
-            "resize": "Drag to resize the guidance panel",
-            "back": "Back to guidance"
+            "minimize": "Bar",
+            "open": "Expand",
+            "back": "Back",
+            "backAria": "Back to guidance"
         },
         "confirm": {
             "approximate": "This route uses approximate geometry. Check the track before starting guidance. Continue?"

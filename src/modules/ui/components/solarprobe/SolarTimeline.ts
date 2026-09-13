@@ -16,11 +16,11 @@ export function buildTimeline(
         const bar = document.createElement('div');
         bar.classList.add('exp-timeline-bar');
         if (t.isNight) {
-            bar.style.background = '#000';
+            bar.dataset.phase = 'night';
         } else if (t.inShadow) {
-            bar.style.background = 'rgba(255,80,80,0.3)';
+            bar.dataset.phase = 'shadow';
         } else {
-            bar.style.background = 'var(--gold)';
+            bar.dataset.phase = 'sun';
         }
         timelineContainer.appendChild(bar);
     });

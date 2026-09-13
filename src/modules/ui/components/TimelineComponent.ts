@@ -1,12 +1,10 @@
 import { state, isProActive } from '../../state';
 import { updateSunPosition } from '../../sun';
-import { haptic } from '../../haptics';
 import { showToast } from '../../toast';
 import { i18n } from '../../../i18n/I18nService';
 import { worldToLngLat } from '../../geo';
 import { showUpgradePrompt } from '../../iap';
-import { attachDraggablePanel } from '../draggablePanel';
-import { ICON_LOCK } from '../icons';
+import { ICON_LOCK, ICON_PAUSE, ICON_PLAY } from '../icons';
 import SunCalc from '../../suncalcCompat';
 
 export class TimelineComponent {
@@ -36,7 +34,7 @@ export class TimelineComponent {
 
         if (this.timeSlider && bottomBar) {
             // ARIA: time slider attributes
-            this.timeSlider.setAttribute('aria-label', 'Heure de simulation');
+            this.timeSlider.setAttribute('aria-label', i18n.t('timeline.time'));
             this.timeSlider.setAttribute('aria-valuemin', this.timeSlider.min);
             this.timeSlider.setAttribute('aria-valuemax', this.timeSlider.max);
             this.timeSlider.setAttribute(
@@ -80,19 +78,34 @@ export class TimelineComponent {
         }
 
         if (this.dateInput) {
-            // v5.54 : Plus de trap pour permettre l'ouverture du calendrier (Teasing)
-            const dateWrapper = document.createElement('div');
-            dateWrapper.className = 'date-input-wrapper';
-            this.dateInput.parentNode!.insertBefore(
-                dateWrapper,
-                this.dateInput
-            );
-            dateWrapper.appendChild(this.dateInput);
+            this.dateInput.setAttribute('aria-label', i18n.t('timeline.date'));
 
-            const lockIcon = document.createElement('div');
-            lockIcon.className = 'date-input-lock';
-            lockIcon.innerHTML = ICON_LOCK;
-            dateWrapper.appendChild(lockIcon);
+            // v5.54 : Plus de trap pour permettre l'ouverture du calendrier (Teasing)
+            const existingWrapper = this.dateInput.parentElement;
+            const dateWrapper = existingWrapper?.classList.contains(
+                'date-input-wrapper'
+            )
+                ? existingWrapper
+                : document.createElement('div');
+            dateWrapper.classList.add(
+                'date-input-wrapper',
+                'timeline-date-wrapper'
+            );
+            if (dateWrapper !== existingWrapper) {
+                this.dateInput.parentNode!.insertBefore(
+                    dateWrapper,
+                    this.dateInput
+                );
+                dateWrapper.appendChild(this.dateInput);
+            }
+
+            if (!dateWrapper.querySelector('.date-input-lock')) {
+                const lockIcon = document.createElement('div');
+                lockIcon.className = 'date-input-lock';
+                lockIcon.setAttribute('aria-hidden', 'true');
+                lockIcon.innerHTML = ICON_LOCK;
+                dateWrapper.appendChild(lockIcon);
+            }
 
             // Initialiser l'aspect visuel du sélecteur de date selon isProActive
             this.syncDateInputLock();
@@ -133,10 +146,7 @@ export class TimelineComponent {
 
         const playBtn = document.getElementById('play-btn');
         if (playBtn) {
-            playBtn.setAttribute(
-                'aria-label',
-                'Lecture/Pause simulation solaire'
-            );
+            this.syncPlayControl(playBtn, state.isSunAnimating);
             playBtn.addEventListener('click', () => {
                 state.isSunAnimating = !state.isSunAnimating;
             });
@@ -146,6 +156,7 @@ export class TimelineComponent {
             'speed-select'
         ) as HTMLSelectElement;
         if (speedSelect) {
+            speedSelect.setAttribute('aria-label', i18n.t('timeline.speed'));
             speedSelect.addEventListener('change', () => {
                 state.animationSpeed = parseFloat(speedSelect.value);
             });
@@ -172,69 +183,6 @@ export class TimelineComponent {
                 } else {
                     bottomBar.style.removeProperty('--timeline-top');
                 }
-            });
-
-            // Drag handle — swipe down to close
-            this.attachSwipeGesture(bottomBar);
-
-            // Masquage dynamique des widgets couverts quand la timebar est déplacée
-            const OVERLAP_TARGETS_TL = [
-                document.getElementById('top-pill-weather'),
-                document.getElementById('top-pill-lod'),
-                document.getElementById('rec-status-widget'),
-                document.getElementById('net-status-icon'),
-                document.getElementById('sos-main-btn'),
-                document.querySelector('.fab-stack') as HTMLElement | null,
-            ];
-            const OVERLAP_CLS_TL = 'widget-overlap-hidden';
-
-            const checkTimelineOverlap = (): void => {
-                const isOpen = bottomBar.classList.contains('is-open');
-                if (isOpen) this.updateTopAnchor(bottomBar);
-                const isCustomPos =
-                    bottomBar.classList.contains('panel-custom-pos');
-                // body.timeline-custom-pos désactive la règle CSS statique et laisse
-                // le contrôle dynamique (widget-overlap-hidden) gérer la visibilité des FABs
-                document.body.classList.toggle(
-                    'timeline-custom-pos',
-                    isOpen && isCustomPos
-                );
-                if (!isOpen || !isCustomPos) {
-                    OVERLAP_TARGETS_TL.forEach((el) =>
-                        el?.classList.remove(OVERLAP_CLS_TL)
-                    );
-                    return;
-                }
-                const pr = bottomBar.getBoundingClientRect();
-                OVERLAP_TARGETS_TL.forEach((el) => {
-                    if (!el) return;
-                    const had = el.classList.contains(OVERLAP_CLS_TL);
-                    if (had) el.classList.remove(OVERLAP_CLS_TL);
-                    const r = el.getBoundingClientRect();
-                    if (had) el.classList.add(OVERLAP_CLS_TL);
-                    const overlaps =
-                        pr.right > r.left - 8 &&
-                        pr.left < r.right + 8 &&
-                        pr.bottom > r.top - 8 &&
-                        pr.top < r.bottom + 8;
-                    el.classList.toggle(OVERLAP_CLS_TL, overlaps);
-                });
-            };
-
-            window.addEventListener('pointermove', checkTimelineOverlap, {
-                passive: true,
-            });
-            const tlOverlapObserver = new MutationObserver(
-                checkTimelineOverlap
-            );
-            tlOverlapObserver.observe(bottomBar, {
-                attributes: true,
-                attributeFilter: ['class', 'style'],
-            });
-            this.subscriptions.push(() => {
-                window.removeEventListener('pointermove', checkTimelineOverlap);
-                tlOverlapObserver.disconnect();
-                document.body.classList.remove('timeline-custom-pos');
             });
 
             // Le panneau de contexte Préparer et le résumé réduit du guidage
@@ -273,24 +221,24 @@ export class TimelineComponent {
 
         // Solar info (azimuth + elevation) — Pro only, below slider
         if (this.timeSlider) {
-            const solarInfo = document.createElement('div');
-            solarInfo.id = 'timeline-solar-info';
-            solarInfo.style.cssText =
-                'display:flex; justify-content:center; gap:20px; font-size:11px; color:var(--text-2); margin-top:4px;';
-            const azSpan = document.createElement('span');
-            azSpan.id = 'tl-azimuth';
-            const elevSpan = document.createElement('span');
-            elevSpan.id = 'tl-elevation';
-            solarInfo.appendChild(azSpan);
-            solarInfo.appendChild(elevSpan);
-            this.timeSlider.parentNode?.appendChild(solarInfo);
-            this.tlAzimuthEl = azSpan;
-            this.tlElevationEl = elevSpan;
+            const solarInfo = document.getElementById('timeline-solar-info');
+            const azSpan = document.getElementById('tl-azimuth');
+            const elevSpan = document.getElementById('tl-elevation');
+            if (!solarInfo || !azSpan || !elevSpan) {
+                this.tlAzimuthEl = null;
+                this.tlElevationEl = null;
+            } else {
+                this.tlAzimuthEl = azSpan;
+                this.tlElevationEl = elevSpan;
+            }
             const syncSolarVis = () => {
-                solarInfo.style.display = isProActive() ? 'flex' : 'none';
+                const isPro = isProActive();
+                if (solarInfo) solarInfo.hidden = !isPro;
+                if (isPro) this.updateSolarInfo();
             };
             syncSolarVis();
             this.subscriptions.push(state.subscribe('isPro', syncSolarVis));
+            this.subscriptions.push(state.subscribe('trialEnd', syncSolarVis));
         }
 
         // Initial sync
@@ -313,7 +261,7 @@ export class TimelineComponent {
 
         this.subscriptions.push(
             state.subscribe('isSunAnimating', (val: boolean) => {
-                if (playBtn) playBtn.textContent = val ? '⏸' : '▶';
+                if (playBtn) this.syncPlayControl(playBtn, val);
             })
         );
 
@@ -326,7 +274,6 @@ export class TimelineComponent {
                     _wasOpenIn3D = bottomBar.classList.contains('is-open');
                     bottomBar.classList.remove('is-open');
                     document.body.classList.remove('timeline-open');
-                    document.body.classList.remove('timeline-custom-pos');
                     if (toggleBtn) toggleBtn.classList.remove('active');
                 }
                 if (!is2D && bottomBar) {
@@ -404,39 +351,6 @@ export class TimelineComponent {
         }
     }
 
-    private attachSwipeGesture(bottomBar: HTMLElement): void {
-        // Inject drag handle if not already present
-        if (!bottomBar.querySelector('.timeline-drag-handle')) {
-            const handle = document.createElement('div');
-            handle.className = 'timeline-drag-handle';
-            handle.setAttribute('aria-hidden', 'true');
-            handle.innerHTML = '<div class="sheet-drag-indicator"></div>';
-            bottomBar.insertBefore(handle, bottomBar.firstChild);
-        }
-
-        const handle = bottomBar.querySelector<HTMLElement>(
-            '.timeline-drag-handle'
-        )!;
-
-        // v5.19.1 : drag repositionnable + swipe dismiss via helper unifié
-        const cleanup = attachDraggablePanel({
-            panel: bottomBar,
-            handle,
-            customPosClass: 'panel-custom-pos',
-            onDismiss: () => {
-                void haptic('medium');
-                bottomBar.classList.remove('is-open');
-                document.body.classList.remove('timeline-open');
-                document.body.classList.remove('timeline-custom-pos');
-                const toggleBtn = document.getElementById(
-                    'timeline-toggle-btn'
-                );
-                if (toggleBtn) toggleBtn.classList.remove('active');
-            },
-        });
-        this.subscriptions.push(cleanup);
-    }
-
     private syncDateInputLock(): void {
         if (!this.dateInput) return;
         const locked = !isProActive();
@@ -444,7 +358,15 @@ export class TimelineComponent {
         const lock = this.dateInput.parentNode?.querySelector(
             '.date-input-lock'
         ) as HTMLElement;
-        if (lock) lock.style.display = locked ? 'flex' : 'none';
+        if (lock) lock.hidden = !locked;
+    }
+
+    private syncPlayControl(button: HTMLElement, isPlaying: boolean): void {
+        const labelKey = isPlaying ? 'timeline.pause' : 'timeline.play';
+        button.innerHTML = isPlaying ? ICON_PAUSE : ICON_PLAY;
+        button.dataset.i18nAriaLabel = labelKey;
+        button.setAttribute('aria-label', i18n.t(labelKey));
+        button.setAttribute('aria-pressed', String(isPlaying));
     }
 
     private updateSolarInfo(): void {
@@ -477,8 +399,8 @@ export class TimelineComponent {
             (pos.azimuth * (180 / Math.PI) + 180 + 360) % 360
         );
 
-        this.tlAzimuthEl.textContent = `↗ ${azDeg}°`;
-        this.tlElevationEl.textContent = `▲ ${elevDeg}°`;
+        this.tlAzimuthEl.textContent = `${azDeg}°`;
+        this.tlElevationEl.textContent = `${elevDeg}°`;
     }
 
     public dispose(): void {

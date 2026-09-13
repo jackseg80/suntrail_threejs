@@ -22,6 +22,7 @@ vi.mock('../core/SheetManager', () => ({
         open: vi.fn(),
         close: vi.fn(),
         getActiveSheetId: vi.fn(() => null),
+        getRootSheetId: vi.fn(() => null),
     },
 }));
 
@@ -39,6 +40,10 @@ vi.mock('../../haptics', () => ({
 
 vi.mock('../../toast', () => ({
     showToast: vi.fn(),
+}));
+
+vi.mock('../../profile', () => ({
+    closeElevationProfile: vi.fn(),
 }));
 
 vi.mock('../../routeManager', () => ({
@@ -89,6 +94,7 @@ import {
     toggleRoutePlanningMode,
     toggleRoutePlannerChrome,
 } from '../../routeManager';
+import { closeElevationProfile } from '../../profile';
 
 describe('NavigationBar', () => {
     let container: HTMLElement;
@@ -98,6 +104,8 @@ describe('NavigationBar', () => {
         mockState.IS_2D_MODE = false;
         mockState.ZOOM = 14;
         mockState.isRoutePlanningMode = false;
+        vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(null);
+        vi.mocked(sheetManager.getRootSheetId).mockReturnValue(null);
         mockState.gpxLayers = [];
         mockState.activeGPXLayerId = null;
         mockState.routeComputation = null;
@@ -154,6 +162,7 @@ describe('NavigationBar', () => {
         ) as HTMLElement;
         tab.click();
         expect(sheetManager.open).toHaveBeenCalledWith('search');
+        expect(closeElevationProfile).toHaveBeenCalledOnce();
     });
 
     it('closes sheet when clicking active tab', () => {
@@ -215,8 +224,10 @@ describe('NavigationBar', () => {
     it('keeps the library destination on the legacy track sheet adapter', async () => {
         document.body.insertAdjacentHTML(
             'beforeend',
-            '<div id="track"><span class="sheet-title"></span><p id="track-library-scope" hidden></p><div id="gpx-layers-list"></div></div>'
+            '<div id="track"><span class="sheet-title"></span><p id="track-library-scope" hidden></p><section id="prepared-routes-section"></section><div id="gpx-layers-list"></div></div>'
         );
+        const track = document.getElementById('track')!;
+        track.scrollTop = 120;
         const nav = new NavigationBar();
         nav.hydrate();
         const tab = container.querySelector(
@@ -231,6 +242,7 @@ describe('NavigationBar', () => {
                 (document.getElementById('track-library-scope') as HTMLElement)
                     .hidden
             ).toBe(false);
+            expect(track.scrollTop).toBe(0);
         });
     });
 
@@ -254,6 +266,21 @@ describe('NavigationBar', () => {
             'sheetClosed',
             expect.any(Function)
         );
+    });
+
+    it('keeps Plus active while a Settings child sheet is open', () => {
+        vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(
+            'upgrade-sheet'
+        );
+        vi.mocked(sheetManager.getRootSheetId).mockReturnValue('settings');
+        const nav = new NavigationBar();
+        nav.hydrate();
+
+        expect(
+            container
+                .querySelector('[data-tab="settings"]')
+                ?.getAttribute('aria-selected')
+        ).toBe('true');
     });
 
     it('subscribes to localeChanged for tab label updates', () => {

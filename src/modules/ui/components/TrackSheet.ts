@@ -45,6 +45,7 @@ import { confirmDialog } from '../confirmDialog';
 import { guidanceForegroundService } from '../../guidance/GuidanceForegroundService';
 import templateHTML from '../templates/track.html?raw';
 import { preparedRouteService } from '../../preparedRoutes/preparedRouteService';
+import type { PreparedRouteV1 } from '../../preparedRoutes/preparedRoute';
 import { releaseFlags } from '../../releaseFlags';
 import { setRoutePlanningMode } from '../../routeManager';
 import {
@@ -73,6 +74,8 @@ import { STORAGE_KEYS } from '../../../constants/storage';
 import { trackService } from '../../tracks/trackService';
 import { toTrackCatalogEntry } from '../../tracks/trackCatalogAdapter';
 import type { StoredTrackV1 } from '../../tracks/storedTrack';
+import { formatTrackDisplayName } from '../../tracks/trackDisplayName';
+import { showRecordingContextHint } from '../../contextualHelp';
 
 const pendingGeocode = new Set<string>();
 
@@ -96,6 +99,35 @@ function escapeText(value: string): string {
                 "'": '&#39;',
                 '"': '&quot;',
             })[char] ?? char
+    );
+}
+
+function isPreparedRouteSource(
+    track: StoredTrackV1,
+    route: PreparedRouteV1
+): boolean {
+    if (
+        track.origin.type !== 'gpx-import' ||
+        route.source !== 'gpx-import' ||
+        track.geometry.length !== route.geometry.length ||
+        track.stats.pointCount !== route.stats.pointCount ||
+        Math.abs(track.stats.distanceKm - route.stats.distance) > 0.01
+    ) {
+        return false;
+    }
+
+    const trackFirst = track.geometry[0];
+    const trackLast = track.geometry.at(-1)!;
+    const routeFirst = route.geometry[0];
+    const routeLast = route.geometry.at(-1)!;
+    const samePosition = (
+        a: { lat: number; lon: number },
+        b: { lat: number; lon: number }
+    ) => Math.abs(a.lat - b.lat) < 1e-7 && Math.abs(a.lon - b.lon) < 1e-7;
+
+    return (
+        samePosition(trackFirst, routeFirst) &&
+        samePosition(trackLast, routeLast)
     );
 }
 
@@ -149,6 +181,7 @@ function renderReadinessStatus(
 
 export class TrackSheet extends BaseComponent {
     private statTooltips: TooltipHandle[] = [];
+    private dialogReturnFocus = new WeakMap<HTMLDivElement, HTMLElement>();
     private guidanceSnapshot: GuidanceSnapshot | null =
         guidanceForegroundService.getSnapshot();
     private completedRecording: RecordingSummary | null = null;
@@ -231,10 +264,10 @@ export class TrackSheet extends BaseComponent {
                 : 'outing'
         );
 
-        const closeBtn = document.getElementById('close-track');
+        const closeBtn = this.element.querySelector('#close-track');
         closeBtn?.setAttribute('aria-label', i18n.t('track.aria.close'));
         closeBtn?.addEventListener('click', () => {
-            sheetManager.close();
+            sheetManager.back();
         });
 
         this.attachStatTooltips();
@@ -262,7 +295,26 @@ export class TrackSheet extends BaseComponent {
         const recBtn = document.getElementById(
             'rec-btn-sheet'
         ) as HTMLButtonElement;
+        const pauseBtn = document.getElementById(
+            'rec-pause-btn'
+        ) as HTMLButtonElement;
         recBtn?.setAttribute('aria-label', i18n.t('track.aria.rec'));
+        pauseBtn?.setAttribute('aria-label', i18n.t('track.aria.pause'));
+        let _pausePending = false;
+        pauseBtn?.addEventListener('click', async () => {
+            if (_pausePending || pauseBtn.disabled || !state.isRecording)
+                return;
+            _pausePending = true;
+            pauseBtn.disabled = true;
+            pauseBtn.setAttribute('aria-busy', 'true');
+            try {
+                await recordingService.toggleRecordingPause();
+            } finally {
+                _pausePending = false;
+                pauseBtn.disabled = false;
+                pauseBtn.removeAttribute('aria-busy');
+            }
+        });
         let _saving = false;
         recBtn?.addEventListener('click', async () => {
             if (_saving || recBtn.disabled) return;
@@ -327,9 +379,6 @@ export class TrackSheet extends BaseComponent {
             .getElementById('outing-open-library')
             ?.addEventListener('click', openLibrary);
         document
-            .getElementById('outing-route-library')
-            ?.addEventListener('click', openLibrary);
-        document
             .getElementById('outing-completed-library')
             ?.addEventListener('click', openLibrary);
         document
@@ -337,12 +386,6 @@ export class TrackSheet extends BaseComponent {
             ?.addEventListener('click', () => {
                 sheetManager.close();
                 setRoutePlanningMode(true, { announceHint: false });
-            });
-        document
-            .getElementById('outing-route-profile')
-            ?.addEventListener('click', () => {
-                if (!state.activeGPXLayerId) return;
-                updateElevationProfile(state.activeGPXLayerId);
             });
         document
             .getElementById('outing-route-guidance')
@@ -460,6 +503,17 @@ export class TrackSheet extends BaseComponent {
             state.subscribe('recordingStartTime', () => this.updateStats())
         );
         this.addSubscription(
+            state.subscribe('isPaused', () => this.updateRecUI())
+        );
+        this.addSubscription(
+            state.subscribe('recordingPausedAt', () => this.updateStats())
+        );
+        this.addSubscription(
+            state.subscribe('recordingPausedDurationMs', () =>
+                this.updateStats()
+            )
+        );
+        this.addSubscription(
             state.subscribe('userLocation', () => this.updateStats())
         );
         this.addSubscription(
@@ -568,7 +622,12 @@ export class TrackSheet extends BaseComponent {
             destination,
         }: {
             destination: 'outing' | 'library';
-        }) => this.syncDestination(destination);
+        }) => {
+            this.syncDestination(destination);
+            if (destination === 'outing' && !state.isRecording) {
+                window.setTimeout(() => void showRecordingContextHint(), 80);
+            }
+        };
         eventBus.on('trackDestinationChanged', onDestinationChanged);
         this.addSubscription(() =>
             eventBus.off('trackDestinationChanged', onDestinationChanged)
@@ -596,24 +655,36 @@ export class TrackSheet extends BaseComponent {
         width = '340px'
     ): HTMLDivElement {
         const overlay = document.createElement('div');
-        overlay.style.cssText =
-            'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);';
+        overlay.className = 'confirm-dialog-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
         const panel = document.createElement('div');
-        panel.style.cssText = `
-            background: var(--glass-bg, rgba(30,30,50,0.95));
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-radius: var(--radius-xl, 20px);
-            padding: var(--space-4, 24px);
-            max-width: ${width}; width: 90%;
-            color: var(--text-1, #fff);
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
-        `;
+        panel.className = 'confirm-dialog-card track-dialog-card';
+        panel.style.maxWidth = width;
         panel.innerHTML = innerHTML;
+        const title = panel.querySelector<HTMLElement>('.confirm-dialog-title');
+        if (title) {
+            title.id = 'track-dialog-title';
+            overlay.setAttribute('aria-labelledby', title.id);
+        }
         overlay.appendChild(panel);
+        const previouslyFocused = document.activeElement;
+        if (previouslyFocused instanceof HTMLElement) {
+            this.dialogReturnFocus.set(overlay, previouslyFocused);
+        }
         document.body.appendChild(overlay);
+        requestAnimationFrame(() => {
+            panel
+                .querySelector<HTMLButtonElement>('button:not(:disabled)')
+                ?.focus();
+        });
         return overlay;
+    }
+
+    private removeGlassModal(overlay: HTMLDivElement): void {
+        const returnFocus = this.dialogReturnFocus.get(overlay);
+        overlay.remove();
+        returnFocus?.focus();
     }
 
     public async showSaveTrackPrompt(
@@ -629,21 +700,21 @@ export class TrackSheet extends BaseComponent {
             const canSave =
                 !!state.routeComputation && state.routeWaypoints.length >= 2;
             const overlay = this.createGlassModal(`
-                <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,12px)">
+                <h3 class="confirm-dialog-title">
                     ${escapeText(i18n.t('preparedRoutes.draftConflict.title'))}
-                </div>
-                <div style="font-size:var(--text-sm,14px);margin-bottom:var(--space-4,20px);opacity:0.85;line-height:1.45">
+                </h3>
+                <p class="confirm-dialog-message">
                     ${escapeText(i18n.t('preparedRoutes.draftConflict.body', { name: incomingName }))}
-                </div>
-                <div class="prepared-draft-conflict-actions">
-                    <button id="prepared-draft-save" ${canSave ? '' : 'disabled'}>${escapeText(i18n.t('preparedRoutes.draftConflict.save'))}</button>
-                    <button id="prepared-draft-replace">${escapeText(i18n.t('preparedRoutes.draftConflict.replace'))}</button>
-                    <button id="prepared-draft-cancel">${escapeText(i18n.t('common.cancel'))}</button>
+                </p>
+                <div class="confirm-dialog-actions prepared-draft-conflict-actions">
+                    <button class="confirm-dialog-btn confirm-dialog-accept" id="prepared-draft-save" ${canSave ? '' : 'disabled'}>${escapeText(i18n.t('preparedRoutes.draftConflict.save'))}</button>
+                    <button class="confirm-dialog-btn confirm-dialog-danger" id="prepared-draft-replace">${escapeText(i18n.t('preparedRoutes.draftConflict.replace'))}</button>
+                    <button class="confirm-dialog-btn confirm-dialog-cancel" id="prepared-draft-cancel">${escapeText(i18n.t('common.cancel'))}</button>
                 </div>
             `);
 
             const dismiss = (choice: 'save' | 'replace' | 'cancel') => {
-                overlay.remove();
+                this.removeGlassModal(overlay);
                 document.removeEventListener('keydown', onEscape);
                 resolve(choice);
             };
@@ -707,21 +778,15 @@ export class TrackSheet extends BaseComponent {
 
         const overlay = this.createGlassModal(
             `
-            <div style="font-size:var(--text-lg,18px);font-weight:700;margin-bottom:var(--space-2,8px)">
+            <h3 class="confirm-dialog-title">
                 ${i18n.t('track.recovery.title')}
-            </div>
-            <div style="font-size:var(--text-sm,14px);margin-bottom:var(--space-3,12px);opacity:0.85">
+            </h3>
+            <p class="confirm-dialog-message">
                 ${i18n.t('track.recovery.body', { count: String(pts.length), mins: String(mins) })}
-            </div>
-            <div style="display:flex;gap:var(--space-2,8px);justify-content:center">
-                <button id="rec-recovery-restore" style="
-                    padding:10px 20px;border:none;border-radius:var(--radius-sm,8px);
-                    background:var(--accent,#4f8cff);color:#fff;font-weight:600;cursor:pointer;
-                ">${i18n.t('track.recovery.restore')}</button>
-                <button id="rec-recovery-discard" style="
-                    padding:10px 20px;border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius-sm,8px);
-                    background:transparent;color:var(--text-2,#a0a4bc);font-weight:600;cursor:pointer;
-                ">${i18n.t('track.recovery.discard')}</button>
+            </p>
+            <div class="confirm-dialog-actions">
+                <button class="confirm-dialog-btn confirm-dialog-accept" id="rec-recovery-restore">${i18n.t('track.recovery.restore')}</button>
+                <button class="confirm-dialog-btn confirm-dialog-danger" id="rec-recovery-discard">${i18n.t('track.recovery.discard')}</button>
             </div>
         `,
             '320px'
@@ -746,7 +811,7 @@ export class TrackSheet extends BaseComponent {
                 state.recoveredPoints = null;
                 clearInterruptedRecording();
                 void stopRecordingService();
-                overlay.remove();
+                this.removeGlassModal(overlay);
                 void haptic('success');
                 showToast(
                     i18n.t('track.recovery.restored', {
@@ -761,7 +826,7 @@ export class TrackSheet extends BaseComponent {
                 state.recoveredPoints = null;
                 clearInterruptedRecording();
                 void stopRecordingService();
-                overlay.remove();
+                this.removeGlassModal(overlay);
                 showToast(i18n.t('track.recovery.discarded'));
             });
     }
@@ -797,6 +862,7 @@ export class TrackSheet extends BaseComponent {
 
     private syncDestination(destination: 'outing' | 'library'): void {
         if (!this.element) return;
+        this.element.scrollTop = 0;
         document.body.dataset.trackDestination = destination;
         const isLibrary = destination === 'library';
         this.element
@@ -804,11 +870,12 @@ export class TrackSheet extends BaseComponent {
             .forEach((item) => {
                 item.hidden = isLibrary;
             });
-        const preparedSection = document.getElementById(
-            'prepared-routes-section'
+        const preparedSection = this.element.querySelector<HTMLElement>(
+            '#prepared-routes-section'
         );
         if (preparedSection) preparedSection.hidden = !isLibrary;
-        const legacyList = document.getElementById('gpx-layers-list');
+        const legacyList =
+            this.element.querySelector<HTMLElement>('#gpx-layers-list');
         const destinationAnchor = this.element.querySelector(
             '#legacy-tracks-anchor'
         );
@@ -833,9 +900,16 @@ export class TrackSheet extends BaseComponent {
     }
 
     private renderPreparedRoutes(): void {
-        const container = document.getElementById('prepared-routes-list');
-        const empty = document.getElementById('prepared-routes-empty');
-        const error = document.getElementById('prepared-storage-error');
+        if (!this.element) return;
+        const container = this.element.querySelector<HTMLElement>(
+            '#prepared-routes-list'
+        );
+        const empty = this.element.querySelector<HTMLElement>(
+            '#prepared-routes-empty'
+        );
+        const error = this.element.querySelector<HTMLElement>(
+            '#prepared-storage-error'
+        );
         if (!container || !empty || !error) return;
         if (!releaseFlags.isEnabled('preparedRoutes')) {
             container.innerHTML = '';
@@ -851,10 +925,14 @@ export class TrackSheet extends BaseComponent {
               storageError.message
             : '';
         const routes = state.preparedRoutes;
-        empty.hidden =
-            routes.length > 0 || trackService.getCachedTracks().length > 0;
+        const storedTracks = trackService.getCachedTracks();
+        empty.hidden = routes.length > 0 || storedTracks.length > 0;
         container.innerHTML = routes
             .map((route) => {
+                const displayName = formatTrackDisplayName(route.name);
+                const sourceTrack = storedTracks.find((track) =>
+                    isPreparedRouteSource(track, route)
+                );
                 const originKey =
                     route.source === 'gpx-import'
                         ? 'preparedRoutes.library.originImport'
@@ -901,73 +979,87 @@ export class TrackSheet extends BaseComponent {
                 const readinessMarkup = readiness
                     ? `<section class="prepared-readiness" aria-label="${escapeText(i18n.t('readiness.title'))}">
                         <strong>${escapeText(i18n.t('readiness.title'))}</strong>
-                        <div class="prepared-readiness-statuses">
-                            ${renderReadinessStatus('route', readiness.sections.route.status)}
-                            ${renderReadinessStatus('light', readiness.sections.light.status)}
-                            ${renderReadinessStatus('offline', readiness.sections.offline.status)}
-                            ${renderReadinessStatus('conditions', readiness.sections.conditions.status)}
-                            ${renderReadinessStatus('device', readiness.sections.device.status)}
+                        <div class="prepared-readiness-details">
+                            <div class="prepared-readiness-statuses">
+                                ${renderReadinessStatus('route', readiness.sections.route.status)}
+                                ${renderReadinessStatus('light', readiness.sections.light.status)}
+                                ${renderReadinessStatus('offline', readiness.sections.offline.status)}
+                                ${renderReadinessStatus('conditions', readiness.sections.conditions.status)}
+                                ${renderReadinessStatus('device', readiness.sections.device.status)}
+                            </div>
+                            ${
+                                readiness.sections.offline.data
+                                    ? `<p class="prepared-readiness-coverage">${escapeText(
+                                          i18n.t('readiness.offline.coverage', {
+                                              percent: String(
+                                                  readiness.sections.offline
+                                                      .data.coveragePercent
+                                              ),
+                                              covered: String(
+                                                  readiness.sections.offline
+                                                      .data.coveredTileCount
+                                              ),
+                                              required: String(
+                                                  readiness.sections.offline
+                                                      .data.requiredTileCount
+                                              ),
+                                          })
+                                      )}</p>`
+                                    : ''
+                            }
+                            ${
+                                readinessSignals.length > 0
+                                    ? `<ul>${readinessSignals
+                                          .map(
+                                              (signal) =>
+                                                  `<li data-severity="${signal.severity}">${escapeText(i18n.t(signal.code))}</li>`
+                                          )
+                                          .join('')}</ul>`
+                                    : ''
+                            }
+                            <small>${escapeText(i18n.t('readiness.networkOptional'))}</small>
                         </div>
-                        ${
-                            readiness.sections.offline.data
-                                ? `<p class="prepared-readiness-coverage">${escapeText(
-                                      i18n.t('readiness.offline.coverage', {
-                                          percent: String(
-                                              readiness.sections.offline.data
-                                                  .coveragePercent
-                                          ),
-                                          covered: String(
-                                              readiness.sections.offline.data
-                                                  .coveredTileCount
-                                          ),
-                                          required: String(
-                                              readiness.sections.offline.data
-                                                  .requiredTileCount
-                                          ),
-                                      })
-                                  )}</p>`
-                                : ''
-                        }
-                        ${
-                            readinessSignals.length > 0
-                                ? `<ul>${readinessSignals
-                                      .map(
-                                          (signal) =>
-                                              `<li data-severity="${signal.severity}">${escapeText(i18n.t(signal.code))}</li>`
-                                      )
-                                      .join('')}</ul>`
-                                : ''
-                        }
-                        <small>${escapeText(i18n.t('readiness.networkOptional'))}</small>
                     </section>`
                     : '';
                 const corridorMarkup = this.renderCorridorControl(route.id);
+                const sourceExportMarkup = sourceTrack
+                    ? `<button type="button" data-route-action="export-source" data-route-id="${route.id}" data-source-track-id="${sourceTrack.id}" class="${isProActive() ? '' : 'is-pro-locked'}" aria-label="${escapeText(i18n.t('track.imported.export'))}${isProActive() ? '' : ' · Pro'}" title="${escapeText(i18n.t('track.imported.export'))}${isProActive() ? '' : ' · Pro'}">
+                            ${isProActive() ? '' : ICON_LOCK}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        </button>`
+                    : '';
                 return `<article class="prepared-route-card library-route-card" data-route-id="${route.id}">
                     <div class="prepared-route-card-main">
                         <div class="library-card-classification">
                             <span class="library-status-badge" data-status="follow">${escapeText(i18n.t('preparedRoutes.library.statusFollow'))}</span>
                             <span class="library-origin-label">${escapeText(i18n.t(originKey))}</span>
                         </div>
-                        <strong>${escapeText(route.name)}</strong>
+                        <strong class="prepared-route-name" title="${escapeText(route.name)}">${escapeText(displayName)}</strong>
                         <span>${route.stats.distance.toFixed(1)} km · D+ ${Math.round(route.stats.ascent)} m · ${difficultyText}</span>
                         <span>${i18n.t(`preparedRoutes.effort.${route.stats.effort.level}`)} · ETA ${route.stats.light.etaAt ? new Date(route.stats.light.etaAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'} · ${light}</span>
                         ${warning}
-                        ${readinessMarkup}
-                        ${corridorMarkup}
                     </div>
                     <div class="prepared-route-actions">
                         <div class="prepared-route-primary-actions${releaseFlags.isEnabled('guidanceForeground') ? '' : ' is-single'}">
                             ${releaseFlags.isEnabled('guidanceForeground') ? `<button type="button" data-route-action="guidance" data-route-id="${route.id}" class="prepared-route-guidance">${i18n.t('guidance.actions.start')}</button>` : ''}
                             <button type="button" data-route-action="open" data-route-id="${route.id}">${i18n.t('preparedRoutes.actions.open')}</button>
                         </div>
-                        <div class="prepared-route-secondary-actions" role="group" aria-label="${escapeText(i18n.t('preparedRoutes.library.moreActions'))}">
-                            <button type="button" data-route-action="overlay" data-route-id="${route.id}" class="prepared-route-overlay${overlayLocked ? ' is-pro-locked' : ''}" aria-label="${escapeText(i18n.t(isOverlayVisible ? 'preparedRoutes.actions.removeFromMap' : 'preparedRoutes.actions.addToMap'))}${overlayLocked ? ' · PRO' : ''}" title="${escapeText(i18n.t(isOverlayVisible ? 'preparedRoutes.actions.removeFromMap' : 'preparedRoutes.actions.addToMap'))}${overlayLocked ? ' · PRO' : ''}">
-                                ${ICON_MAP_LAYERS}${overlayLocked ? '<small>PRO</small>' : ''}
-                            </button>
-                            <button type="button" data-route-action="favorite" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.favorite')}" title="${i18n.t('preparedRoutes.actions.favorite')}" aria-pressed="${route.favorite}">${ICON_STAR}</button>
-                            <button type="button" data-route-action="duplicate" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.duplicate')}" title="${i18n.t('preparedRoutes.actions.duplicate')}">${ICON_COPY}</button>
-                            <button type="button" data-route-action="delete" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.delete')}" title="${i18n.t('preparedRoutes.actions.delete')}">${ICON_CLOSE}</button>
-                        </div>
+                        <details class="prepared-route-more">
+                            <summary>${escapeText(i18n.t('preparedRoutes.library.detailsAndActions'))}</summary>
+                            <div class="prepared-route-more-content">
+                                ${readinessMarkup}
+                                ${corridorMarkup}
+                                <div class="prepared-route-secondary-actions" role="group" aria-label="${escapeText(i18n.t('preparedRoutes.library.moreActions'))}">
+                                    <button type="button" data-route-action="overlay" data-route-id="${route.id}" class="prepared-route-overlay${overlayLocked ? ' is-pro-locked' : ''}" aria-label="${escapeText(i18n.t(isOverlayVisible ? 'preparedRoutes.actions.removeFromMap' : 'preparedRoutes.actions.addToMap'))}${overlayLocked ? ' · PRO' : ''}" title="${escapeText(i18n.t(isOverlayVisible ? 'preparedRoutes.actions.removeFromMap' : 'preparedRoutes.actions.addToMap'))}${overlayLocked ? ' · PRO' : ''}">
+                                        ${ICON_MAP_LAYERS}${overlayLocked ? '<small>PRO</small>' : ''}
+                                    </button>
+                                    <button type="button" data-route-action="favorite" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.favorite')}" title="${i18n.t('preparedRoutes.actions.favorite')}" aria-pressed="${route.favorite}">${ICON_STAR}</button>
+                                    <button type="button" data-route-action="duplicate" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.duplicate')}" title="${i18n.t('preparedRoutes.actions.duplicate')}">${ICON_COPY}</button>
+                                    ${sourceExportMarkup}
+                                    <button type="button" data-route-action="delete" data-route-id="${route.id}" aria-label="${i18n.t('preparedRoutes.actions.delete')}" title="${i18n.t('preparedRoutes.actions.delete')}">${ICON_CLOSE}</button>
+                                </div>
+                            </div>
+                        </details>
                     </div>
                 </article>`;
             })
@@ -993,6 +1085,12 @@ export class TrackSheet extends BaseComponent {
                     const id = button.dataset.routeId;
                     const action = button.dataset.routeAction;
                     if (!id || !action) return;
+                    if (action === 'export-source') {
+                        await this.exportStoredTrack(
+                            button.dataset.sourceTrackId ?? ''
+                        );
+                        return;
+                    }
                     if (action === 'overlay') {
                         this.togglePreparedRouteOverlay(id);
                         return;
@@ -1469,6 +1567,32 @@ export class TrackSheet extends BaseComponent {
 </gpx>`;
     }
 
+    private async exportStoredTrack(id: string): Promise<void> {
+        if (!isProActive()) {
+            showUpgradePrompt('export_gpx');
+            return;
+        }
+        const stored = trackService
+            .getCachedTracks()
+            .find((track) => track.id === id);
+        if (!stored) return;
+        try {
+            const filename = await recordingService.saveToFile(
+                stored.name,
+                this.buildHistoryGPXString(toTrackCatalogEntry(stored))
+            );
+            showToast(
+                i18n.t(
+                    filename
+                        ? 'track.toast.exported'
+                        : 'track.toast.exportError'
+                )
+            );
+        } catch {
+            showToast(i18n.t('track.toast.exportError'));
+        }
+    }
+
     private drawPolylineOnCanvas(
         ctx: CanvasRenderingContext2D,
         entry: GPXHistoryEntry,
@@ -1571,7 +1695,14 @@ export class TrackSheet extends BaseComponent {
             this.updateOutingDashboard();
             return;
         }
-        const storedTracks = trackService.getCachedTracks();
+        const storedTracks = trackService
+            .getCachedTracks()
+            .filter(
+                (track) =>
+                    !state.preparedRoutes.some((route) =>
+                        isPreparedRouteSource(track, route)
+                    )
+            );
         const history = storedTracks.map(toTrackCatalogEntry);
 
         // Lazy geocoding for entries missing locationName
@@ -1611,8 +1742,9 @@ export class TrackSheet extends BaseComponent {
 
         const loadedLayers = state.gpxLayers;
 
-        // The secondary store contains activities and legacy imports only.
-        // Loaded planning/overlay layers are deliberately not duplicated here.
+        // The secondary store contains activities and imports which are not yet
+        // represented by a prepared route. A matching full GPX source stays in
+        // storage and is exposed from the prepared route card instead.
         interface UnifiedRow {
             id: string;
             name: string;
@@ -1699,6 +1831,7 @@ export class TrackSheet extends BaseComponent {
             </div>
         </div>`
             : '';
+        html += `<h3 class="legacy-library-title">${escapeText(i18n.t('preparedRoutes.library.archivesTitle'))}</h3>`;
         const entryMap = new Map<number, GPXHistoryEntry>();
 
         for (let i = 0; i < displayedRows.length; i++) {
@@ -1706,8 +1839,11 @@ export class TrackSheet extends BaseComponent {
             const duration = row.stats.estimatedTime
                 ? fmtDuration(row.stats.estimatedTime)
                 : '—';
+            const displayName = formatTrackDisplayName(row.name);
             const truncName =
-                row.name.length > 20 ? row.name.slice(0, 20) + '...' : row.name;
+                displayName.length > 28
+                    ? displayName.slice(0, 28).trimEnd() + '…'
+                    : displayName;
             const layerClass = row.isActive ? ' active' : '';
 
             entryMap.set(i, row.entry!);
@@ -1738,13 +1874,13 @@ export class TrackSheet extends BaseComponent {
                     <canvas class="gpx-layer-minimap" data-history-idx="${row.entryIndex ?? i}" width="120" height="84"></canvas>
                     <div class="gpx-layer-info">
                         <span class="library-card-classification">
-                            <span class="library-status-badge" data-status="${isRecorded ? 'recorded' : 'follow'}">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.statusRecorded' : 'preparedRoutes.library.statusFollow'))}</span>
+                            <span class="library-status-badge" data-status="${isRecorded ? 'recorded' : 'prepare'}">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.statusRecorded' : 'preparedRoutes.library.statusPrepare'))}</span>
                             <span class="library-origin-label">${escapeText(i18n.t(isRecorded ? 'preparedRoutes.library.originRecording' : 'preparedRoutes.library.originImport'))}</span>
                             <span class="library-origin-label">${escapeText(i18n.t(row.storedTrack?.quality.geometry === 'approximate' ? 'track.quality.approximate' : 'track.quality.full'))}</span>
                         </span>
                         <span class="gpx-layer-name">${truncName}</span>
                         <span class="gpx-layer-location">${subInfo}</span>
-                        <span class="gpx-layer-stats">${row.stats.distance.toFixed(2)} km · D+ ${Math.round(row.stats.dPlus)} m · D− ${Math.round(row.stats.dMinus)} m · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:text-top"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
+                        <span class="gpx-layer-stats">${row.stats.distance.toFixed(2)} km · D+ ${Math.round(row.stats.dPlus)} m · D− ${Math.round(row.stats.dMinus)} m · <svg class="gpx-layer-duration-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${duration}</span>
                     </div>
                     <div class="library-activity-actions">
                         <div class="library-activity-primary-actions">
@@ -2169,6 +2305,8 @@ export class TrackSheet extends BaseComponent {
             now: Date.now(),
             isRecording: state.isRecording,
             recordingStartTime: state.recordingStartTime,
+            recordingPausedAt: state.recordingPausedAt,
+            recordingPausedDurationMs: state.recordingPausedDurationMs,
             recordedPoints: state.recordedPoints,
             activeRoute: this.getActiveRouteSummary(),
             guidanceSnapshot: this.guidanceSnapshot,
@@ -2177,6 +2315,7 @@ export class TrackSheet extends BaseComponent {
             completedRecording: this.completedRecording,
         });
         dashboard.dataset.phase = model.phase;
+        dashboard.dataset.recordingPaused = String(state.isPaused);
 
         const setHidden = (id: string, hidden: boolean) => {
             const element = document.getElementById(id);
@@ -2194,7 +2333,10 @@ export class TrackSheet extends BaseComponent {
         };
 
         if (model.route) {
-            setText('outing-route-name', model.route.name);
+            setText(
+                'outing-route-name',
+                formatTrackDisplayName(model.route.name)
+            );
             setText(
                 'outing-route-stats',
                 `${model.route.distanceKm.toFixed(2)} km · D+ ${Math.round(model.route.ascentMeters)} m · D− ${Math.round(model.route.descentMeters)} m`
@@ -2242,6 +2384,22 @@ export class TrackSheet extends BaseComponent {
 
         if (model.recording) {
             const recording = model.recording;
+            setText(
+                'outing-rec-eyebrow',
+                i18n.t(
+                    state.isPaused
+                        ? 'track.outing.recording.pausedEyebrow'
+                        : 'track.outing.recording.eyebrow'
+                )
+            );
+            setText(
+                'outing-rec-status',
+                i18n.t(
+                    state.isPaused
+                        ? 'track.outing.recording.paused'
+                        : 'track.outing.recording.live'
+                )
+            );
             setText(
                 'track-stats-context',
                 i18n.t('track.statsContext.recording')
@@ -2323,6 +2481,9 @@ export class TrackSheet extends BaseComponent {
         const recBtn = document.getElementById(
             'rec-btn-sheet'
         ) as HTMLButtonElement;
+        const pauseBtn = document.getElementById(
+            'rec-pause-btn'
+        ) as HTMLButtonElement | null;
         const navTab = document.querySelector('.nav-tab[data-tab="track"]');
         if (!recBtn) return;
 
@@ -2337,12 +2498,41 @@ export class TrackSheet extends BaseComponent {
             navTab?.classList.add('has-notif');
             trackEl?.classList.add('recording');
             trackEl?.classList.toggle('is-pro', isProActive());
+            if (pauseBtn) {
+                pauseBtn.hidden = false;
+                pauseBtn.classList.toggle('active', state.isPaused);
+                pauseBtn.setAttribute(
+                    'aria-label',
+                    i18n.t(
+                        state.isPaused
+                            ? 'track.aria.resume'
+                            : 'track.aria.pause'
+                    )
+                );
+                pauseBtn.setAttribute('aria-pressed', String(state.isPaused));
+                const pauseLabel =
+                    pauseBtn.querySelector<HTMLElement>('.rec-pause-label');
+                if (pauseLabel) {
+                    pauseLabel.textContent = i18n.t(
+                        state.isPaused ? 'track.btn.resume' : 'track.btn.pause'
+                    );
+                }
+                const pauseIcon =
+                    pauseBtn.querySelector<HTMLElement>('.rec-pause-icon');
+                if (pauseIcon)
+                    pauseIcon.textContent = state.isPaused ? '▶' : 'Ⅱ';
+            }
         } else {
             recBtn.classList.remove('active');
             if (label) label.textContent = i18n.t('track.btn.rec');
             navTab?.classList.remove('has-notif');
             trackEl?.classList.remove('recording');
             trackEl?.classList.remove('is-pro');
+            if (pauseBtn) {
+                pauseBtn.hidden = true;
+                pauseBtn.classList.remove('active');
+                pauseBtn.setAttribute('aria-pressed', 'false');
+            }
         }
         this.renderUnifiedTrackList();
         this.updateOutingDashboard();

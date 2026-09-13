@@ -41,10 +41,20 @@ export class PacksSheet extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
-        // Close button
+        // Back to Connectivity when opened from there, otherwise close.
         const closeBtn = this.element.querySelector('#close-packs');
-        closeBtn?.setAttribute('aria-label', i18n.t('packs.aria.close'));
-        closeBtn?.addEventListener('click', () => sheetManager.close());
+        const syncNavigationControl = () => {
+            closeBtn?.setAttribute(
+                'aria-label',
+                i18n.t(
+                    sheetManager.canGoBack()
+                        ? 'packs.aria.back'
+                        : 'packs.aria.close'
+                )
+            );
+        };
+        syncNavigationControl();
+        closeBtn?.addEventListener('click', () => sheetManager.back());
 
         // Restore purchases
         const restoreBtn = this.element.querySelector('#packs-restore-btn');
@@ -80,6 +90,7 @@ export class PacksSheet extends BaseComponent {
 
         // Scroll to highlighted pack when this sheet opens
         const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'packs') syncNavigationControl();
             if (id === 'packs' && this.highlightPackId) {
                 this.scrollToPack(this.highlightPackId);
                 this.highlightPackId = null;
@@ -92,6 +103,7 @@ export class PacksSheet extends BaseComponent {
 
         const onLocaleChanged = () => {
             if (this.element) i18n.applyToDOM(this.element);
+            syncNavigationControl();
             this.renderPackList();
             this.updateStorageInfo();
         };
@@ -140,8 +152,6 @@ export class PacksSheet extends BaseComponent {
 
         const card = document.createElement('div');
         card.className = 'pack-card';
-        card.style.cssText =
-            'padding:var(--space-3); margin-bottom:var(--space-3); background:var(--glass-bg); border-radius:var(--radius-lg); border:1px solid var(--glass-border);';
 
         // Header: flag + name + size
         const flag =
@@ -149,38 +159,32 @@ export class PacksSheet extends BaseComponent {
         const name = meta.name[lang] || meta.name['en'] || meta.id;
 
         const header = document.createElement('div');
-        header.style.cssText =
-            'display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);';
+        header.className = 'pack-card-header';
         header.innerHTML = `
-            <div style="display:flex; align-items:center; gap:var(--space-2);">
-                <span style="font-size:24px;">${flag}</span>
-                <div>
-                    <div style="font-weight:600; font-size:var(--text-sm);">${name}</div>
-                    <div style="font-size:var(--text-xs); color:var(--text-3);">${i18n.t('packs.detailRange', { min: String(meta.lodRange.min), max: String(meta.lodRange.max) })}</div>
+            <div class="pack-card-identity">
+                <span class="pack-card-flag" aria-hidden="true">${flag}</span>
+                <div class="pack-card-copy">
+                    <div class="pack-card-name">${name}</div>
+                    <div class="pack-card-detail">${i18n.t('packs.detailRange', { min: String(meta.lodRange.min), max: String(meta.lodRange.max) })}</div>
                 </div>
             </div>
-            <div style="font-size:var(--text-xs); color:var(--text-3);">${meta.sizeMB} MB</div>
+            <div class="pack-card-size">${meta.sizeMB} MB</div>
         `;
         card.appendChild(header);
 
         // Description
         const descKey = `packs.description.${meta.id}`;
         const desc = document.createElement('div');
-        desc.style.cssText =
-            'font-size:var(--text-xs); color:var(--text-3); margin-bottom:var(--space-2);';
+        desc.className = 'pack-card-description';
         desc.textContent = i18n.t(descKey);
         card.appendChild(desc);
 
         // Status & action button
         const actions = document.createElement('div');
-        actions.style.cssText =
-            'display:flex; align-items:center; gap:var(--space-2);';
+        actions.className = 'pack-card-actions';
 
         if (status === 'not_purchased') {
-            const buyBtn = this.createButton(
-                'packs.btn.buy',
-                'var(--accent, #3b7ef8)'
-            );
+            const buyBtn = this.createButton('packs.btn.buy');
             buyBtn.addEventListener('click', () => this.handleBuy(meta.id));
             // Afficher le prix (natif + web)
             void iapService.getPackPrice(meta.id).then((price) => {
@@ -191,82 +195,69 @@ export class PacksSheet extends BaseComponent {
         } else if (status === 'purchased') {
             // Pack acheté = streaming CDN (réseau requis, pas de copie locale)
             const badge = document.createElement('span');
-            badge.style.cssText =
-                'color:#f59e0b; font-size:var(--text-sm); font-weight:600;';
+            badge.className = 'pack-status pack-status--online';
             badge.textContent = i18n.t('packs.status.online');
             actions.appendChild(badge);
 
             // Bouton download pour mode offline
-            const dlBtn = this.createButton(
-                'packs.btn.download',
-                'var(--accent, #3b7ef8)'
-            );
-            dlBtn.style.marginLeft = 'auto';
+            const dlBtn = this.createButton('packs.btn.download');
+            dlBtn.classList.add('pack-action--end');
             dlBtn.addEventListener('click', () => this.handleDownload(meta.id));
             actions.appendChild(dlBtn);
         } else if (status === 'downloading') {
             // Progress bar
             const progress = ps?.downloadProgress ?? 0;
             const bar = document.createElement('div');
-            bar.style.cssText =
-                'flex:1; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;';
+            bar.className = 'pack-progress';
             const fill = document.createElement('div');
             fill.id = `pack-progress-${meta.id}`;
-            fill.style.cssText = `height:100%; background:var(--accent, #3b7ef8); border-radius:3px; width:${Math.round(progress * 100)}%; transition:width 0.3s;`;
+            fill.className = 'pack-progress-fill';
+            fill.style.width = `${Math.round(progress * 100)}%`;
             bar.appendChild(fill);
             actions.appendChild(bar);
 
             const pct = document.createElement('span');
             pct.id = `pack-pct-${meta.id}`;
-            pct.style.cssText =
-                'font-size:var(--text-xs); color:var(--text-2); min-width:35px; text-align:right;';
+            pct.className = 'pack-progress-value';
             pct.textContent = `${Math.round(progress * 100)}%`;
             actions.appendChild(pct);
 
-            const cancelBtn = this.createButton('packs.btn.cancel', '#ef4444');
-            cancelBtn.style.padding = 'var(--space-1) var(--space-2)';
-            cancelBtn.style.fontSize = 'var(--text-xs)';
+            const cancelBtn = this.createButton('packs.btn.cancel', 'danger');
+            cancelBtn.classList.add('pack-action--compact');
             cancelBtn.addEventListener('click', () =>
                 packManager.cancelDownload(meta.id)
             );
             actions.appendChild(cancelBtn);
         } else if (status === 'installed') {
             const badge = document.createElement('span');
-            badge.style.cssText =
-                'color:#22c55e; font-size:var(--text-sm); font-weight:600;';
+            badge.className = 'pack-status pack-status--installed';
             badge.textContent = `\u2713 ${i18n.t('packs.status.installed')}`;
             actions.appendChild(badge);
 
-            const delBtn = this.createButton('packs.btn.delete', '#ef4444');
-            delBtn.style.marginLeft = 'auto';
+            const delBtn = this.createButton('packs.btn.delete', 'danger');
+            delBtn.classList.add('pack-action--end');
             delBtn.addEventListener('click', () => this.handleDelete(meta.id));
             actions.appendChild(delBtn);
         } else if (status === 'update_available') {
             const badge = document.createElement('span');
-            badge.style.cssText = 'color:#f97316; font-size:var(--text-xs);';
+            badge.className = 'pack-status pack-status--update';
             badge.textContent = i18n.t('packs.status.updateAvailable');
             actions.appendChild(badge);
 
-            const updateBtn = this.createButton(
-                'packs.btn.update',
-                'var(--accent, #3b7ef8)'
-            );
-            updateBtn.style.marginLeft = 'auto';
+            const updateBtn = this.createButton('packs.btn.update');
+            updateBtn.classList.add('pack-action--end');
             updateBtn.addEventListener('click', () =>
                 this.handleDownload(meta.id)
             );
             actions.appendChild(updateBtn);
         } else if (status === 'error') {
             const errMsg = document.createElement('span');
-            errMsg.style.cssText = 'color:#ef4444; font-size:var(--text-xs);';
+            errMsg.className = 'pack-status pack-status--error';
             errMsg.textContent = i18n.t('packs.status.error');
             actions.appendChild(errMsg);
 
-            const retryBtn = this.createButton(
-                'packs.btn.retry',
-                'var(--accent, #3b7ef8)'
-            );
-            retryBtn.style.marginLeft = 'auto';
+            const retryBtn = this.createButton('packs.btn.retry');
+            retryBtn.classList.add('pack-action--end');
             retryBtn.addEventListener('click', () =>
                 this.handleDownload(meta.id)
             );
@@ -277,10 +268,13 @@ export class PacksSheet extends BaseComponent {
         return card;
     }
 
-    private createButton(i18nKey: string, bg: string): HTMLButtonElement {
+    private createButton(
+        i18nKey: string,
+        variant: 'primary' | 'danger' = 'primary'
+    ): HTMLButtonElement {
         const btn = document.createElement('button');
-        btn.className = 'btn-go';
-        btn.style.cssText = `margin:0; padding:var(--space-2) var(--space-3); font-size:var(--text-xs); background:${bg};`;
+        btn.type = 'button';
+        btn.className = `pack-action pack-action--${variant}`;
         btn.textContent = i18n.t(i18nKey);
         return btn;
     }
@@ -288,8 +282,7 @@ export class PacksSheet extends BaseComponent {
     private renderFallbackList(container: Element): void {
         // When catalog is not loaded, show minimal info
         const fallback = document.createElement('div');
-        fallback.style.cssText =
-            'text-align:center; padding:var(--space-4); color:var(--text-3); font-size:var(--text-sm);';
+        fallback.className = 'packs-empty-state';
         fallback.textContent = i18n.t('packs.error.catalogFailed');
         container.appendChild(fallback);
     }
@@ -311,10 +304,9 @@ export class PacksSheet extends BaseComponent {
 
         const card = cards[index] as HTMLElement;
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        card.style.transition = 'box-shadow 0.3s';
-        card.style.boxShadow = '0 0 12px 2px var(--accent, #3b7ef8)';
+        card.classList.add('is-highlighted');
         setTimeout(() => {
-            card.style.boxShadow = '';
+            card.classList.remove('is-highlighted');
         }, 2000);
     }
 

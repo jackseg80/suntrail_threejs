@@ -8,6 +8,7 @@ import { getWeatherIcon } from '../../weather';
 import { getCountryCode } from '../../geo';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/top-status-bar.html?raw';
+import { getRecordingElapsedMs } from '../../outing/outingDashboard';
 
 export class TopStatusBar extends BaseComponent {
     private lodBadge: HTMLElement | null = null;
@@ -44,14 +45,14 @@ export class TopStatusBar extends BaseComponent {
             sheetManager.toggle('weather');
         });
 
-        // LOD tooltip icon on the LOD pill
-        const centerWidgets = this.element.querySelector('.top-center-widgets');
+        // L'explication reste dans le contrôle Carte, sans créer un élément
+        // visuel indépendant dans la barre supérieure.
+        const lodPill = this.element.querySelector('#top-pill-lod');
         const lodInfoIcon = document.createElement('span');
         lodInfoIcon.className = 'lod-info-trigger';
         lodInfoIcon.textContent = 'ⓘ';
-        lodInfoIcon.style.cssText =
-            'font-size:var(--text-xs);opacity:0.4;cursor:pointer;margin-left:2px;align-self:center;';
-        centerWidgets?.appendChild(lodInfoIcon);
+        lodInfoIcon.setAttribute('aria-hidden', 'true');
+        lodPill?.appendChild(lodInfoIcon);
         const lodContent = document.createElement('div');
         lodContent.innerHTML = i18n.t('topbar.tooltipLOD');
         this.lodTooltipContent = lodContent;
@@ -60,7 +61,6 @@ export class TopStatusBar extends BaseComponent {
         });
 
         // LOD badge click → adaptive: packs if pack covers current zone, else layers
-        const lodPill = this.element.querySelector('#top-pill-lod');
         lodPill?.addEventListener('click', () => {
             if (state.isMapDetailLimited) {
                 this.lodTooltip?.show();
@@ -88,7 +88,14 @@ export class TopStatusBar extends BaseComponent {
         });
 
         const recWidget = this.element.querySelector('.rec-indicator');
-        recWidget?.setAttribute('aria-label', i18n.t('topbar.aria.recording'));
+        recWidget?.setAttribute(
+            'aria-label',
+            i18n.t(
+                state.isPaused
+                    ? 'topbar.aria.recordingPaused'
+                    : 'topbar.aria.recording'
+            )
+        );
         recWidget?.setAttribute('aria-live', 'polite');
         recWidget?.addEventListener('click', () => {
             // Une session REC ouvre toujours le tableau Sortie, même si la
@@ -105,10 +112,17 @@ export class TopStatusBar extends BaseComponent {
         });
 
         const parent = this.element?.parentElement;
-        const collapseToggle = parent?.querySelector('.top-collapse-toggle');
+        const collapseToggle = parent?.querySelector(
+            '.top-collapse-toggle'
+        ) as HTMLButtonElement | null;
         collapseToggle?.addEventListener('click', (e) => {
             e.stopPropagation();
-            parent?.classList.toggle('collapsed');
+            const isCollapsed = parent?.classList.toggle('collapsed') ?? false;
+            if (this.element) {
+                this.element.inert = isCollapsed;
+                this.element.setAttribute('aria-hidden', String(isCollapsed));
+            }
+            collapseToggle.setAttribute('aria-expanded', String(!isCollapsed));
         });
 
         this.updateLOD(state.ZOOM);
@@ -151,6 +165,9 @@ export class TopStatusBar extends BaseComponent {
                 this.updateRecStatus(val)
             )
         );
+        this.addSubscription(
+            state.subscribe('isPaused', () => this.updateRecPauseState())
+        );
 
         const degradedServices = new Set<string>();
         const onServiceDegraded = (payload: {
@@ -185,7 +202,14 @@ export class TopStatusBar extends BaseComponent {
             i18n.t('topbar.aria.network')
         );
         const recWidget = this.element.querySelector('.rec-indicator');
-        recWidget?.setAttribute('aria-label', i18n.t('topbar.aria.recording'));
+        recWidget?.setAttribute(
+            'aria-label',
+            i18n.t(
+                state.isPaused
+                    ? 'topbar.aria.recordingPaused'
+                    : 'topbar.aria.recording'
+            )
+        );
         const sosBtn = this.element.querySelector('#sos-main-btn');
         sosBtn?.setAttribute('aria-label', i18n.t('topbar.aria.sos'));
         // Also refresh LOD badge with new locale strings
@@ -196,24 +220,30 @@ export class TopStatusBar extends BaseComponent {
         if (!this.recWidget) return;
 
         if (isRecording) {
-            this.recWidget.style.display = 'flex';
+            this.recWidget.hidden = false;
+            this.updateRecPauseState();
             this.startTimer();
         } else {
-            this.recWidget.style.display = 'none';
+            this.recWidget.hidden = true;
             this.stopTimer();
         }
     }
 
     private startTimer() {
         if (this.recInterval) clearInterval(this.recInterval);
-        const startTime =
-            state.recordedPoints.length > 0
-                ? state.recordedPoints[0].timestamp
-                : Date.now();
 
         const update = () => {
             if (!this.recTimer) return;
-            const elapsed = Date.now() - startTime;
+            const startTime =
+                state.recordingStartTime ??
+                state.recordedPoints[0]?.timestamp ??
+                Date.now();
+            const elapsed = getRecordingElapsedMs({
+                now: Date.now(),
+                startedAt: startTime,
+                pausedAt: state.recordingPausedAt,
+                pausedDurationMs: state.recordingPausedDurationMs,
+            });
             const sec = Math.floor((elapsed / 1000) % 60);
             const min = Math.floor((elapsed / 60000) % 60);
             const hrs = Math.floor(elapsed / 3600000);
@@ -228,6 +258,19 @@ export class TopStatusBar extends BaseComponent {
 
         update();
         this.recInterval = setInterval(update, 1000);
+    }
+
+    private updateRecPauseState(): void {
+        if (!this.recWidget) return;
+        this.recWidget.classList.toggle('is-paused', state.isPaused);
+        this.recWidget.setAttribute(
+            'aria-label',
+            i18n.t(
+                state.isPaused
+                    ? 'topbar.aria.recordingPaused'
+                    : 'topbar.aria.recording'
+            )
+        );
     }
 
     private stopTimer() {

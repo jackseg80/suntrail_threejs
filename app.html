@@ -78,7 +78,7 @@
             <span class="map-loading-text" data-i18n="loading.map"
                 >Chargement de la carte...</span
             >
-            <div id="map-loading-offline-msg" style="display: none">
+            <div id="map-loading-offline-msg" hidden>
                 <span data-i18n="network.overlay.title">Pas de connexion</span>
                 <span
                     class="map-loading-offline-sub"
@@ -86,22 +86,7 @@
                     >La carte sera chargée depuis le cache si disponible</span
                 >
             </div>
-            <button
-                id="map-loading-retry"
-                style="
-                    display: none;
-                    margin-top: var(--space-4);
-                    padding: 10px 24px;
-                    border-radius: var(--radius-md);
-                    background: var(--accent-btn);
-                    color: var(--on-accent);
-                    border: none;
-                    font-weight: 700;
-                    cursor: pointer;
-                "
-            >
-                Réessayer
-            </button>
+            <button id="map-loading-retry" hidden>Réessayer</button>
         </div>
 
         <main>
@@ -130,34 +115,76 @@
             </div>
         </div>
 
-        <!-- COORDS PILL -->
-        <div id="coords-pill" class="hidden">
-            <div class="coords-lat" id="click-latlon">—</div>
-            <div class="coords-alt" id="click-alt">—</div>
-            <div
-                class="coords-poi"
-                id="click-poi-name"
-                style="display: none"
-            ></div>
-            <div class="coords-actions">
-                <button
-                    class="coords-btn solar"
-                    id="probe-btn"
-                    data-i18n="coords.solar"
-                >
-                    ☀️ Solaire
-                </button>
-                <button
-                    class="coords-btn sos"
-                    id="sos-btn-pill"
-                    style="display: none"
-                >
-                    SOS
-                </button>
+        <!-- Sélection cartographique compacte -->
+        <section
+            id="coords-pill"
+            class="hidden"
+            aria-labelledby="coords-title"
+            aria-hidden="true"
+            inert
+        >
+            <span id="coords-title" class="sr-only" data-i18n="coords.title"
+                >Point sélectionné</span
+            >
+            <svg
+                class="coords-marker-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                <circle cx="12" cy="10" r="2.5" />
+            </svg>
+            <div class="coords-copy">
+                <div class="coords-poi" id="click-poi-name" hidden></div>
+                <div class="coords-values">
+                    <strong class="coords-alt" id="click-alt">—</strong>
+                    <span class="coords-lat" id="click-latlon">—</span>
+                </div>
             </div>
-        </div>
+            <button class="coords-btn solar" id="probe-btn" type="button">
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <circle cx="12" cy="12" r="4" />
+                    <path
+                        d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"
+                    />
+                </svg>
+                <span data-i18n="coords.solar">Soleil</span>
+            </button>
+            <button
+                class="coords-close icon-btn"
+                id="close-coords"
+                type="button"
+                aria-label="Fermer"
+                data-i18n-aria-label="coords.close"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="m18 6-12 12M6 6l12 12" />
+                </svg>
+            </button>
+        </section>
 
-        <div id="zoom-indicator" style="display: none">Détail --</div>
+        <div id="zoom-indicator" hidden>Détail --</div>
 
         <nav id="nav-bar"></nav>
 
@@ -276,17 +303,33 @@
             <button
                 class="rb-btn"
                 id="rb-settings-btn"
+                type="button"
                 aria-label="Réglages de l'itinéraire"
                 data-i18n-aria-label="planning.aria.settings"
             >
-                ⚙
+                <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-2.83 2.83-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21h-4v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06-2.83-2.83.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3v-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06 2.83-2.83.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3h4v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06 2.83 2.83-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21v4h-.09A1.65 1.65 0 0 0 19.4 15Z"
+                    />
+                </svg>
             </button>
         </div>
 
         <!-- Panneau direct de gestion des points de l'itinéraire -->
         <div
             id="route-waypoints-panel"
-            class="route-waypoints-panel hidden"
+            class="route-waypoints-panel prepare-work-surface hidden"
             role="dialog"
             aria-modal="false"
             aria-labelledby="route-waypoints-title"
@@ -310,7 +353,20 @@
                     aria-label="Fermer les points"
                     data-i18n-aria-label="planning.waypoints.close"
                 >
-                    ×
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div id="rs-waypoints-list" class="rs-waypoints-list"></div>
@@ -363,74 +419,30 @@
         <!-- Panel réglages généraux de l'itinéraire -->
         <div
             id="route-settings"
-            class="route-settings-panel hidden"
+            class="route-settings-panel prepare-work-surface hidden"
             role="dialog"
             aria-modal="false"
-            aria-label="Réglages itinéraire"
-            data-i18n-aria-label="planning.aria.settingsDialog"
+            aria-labelledby="route-settings-title"
         >
-            <!-- Profil + boucle sur la même ligne -->
-            <div class="rs-row">
-                <select id="rs-profile" class="rs-profile-select">
-                    <option
-                        value="foot-hiking"
-                        data-i18n="planning.profile.hiking"
+            <div class="route-panel-header">
+                <div>
+                    <h2
+                        id="route-settings-title"
+                        data-i18n="planning.aria.settingsDialog"
                     >
-                        Randonnée
-                    </option>
-                    <option
-                        value="foot-walking"
-                        data-i18n="planning.profile.walking"
-                    >
-                        Marche
-                    </option>
-                    <option
-                        value="cycling-regular"
-                        data-i18n="planning.profile.cycling"
-                    >
-                        Vélo
-                    </option>
-                    <option
-                        value="cycling-mountain"
-                        data-i18n="planning.profile.mountainBike"
-                    >
-                        VTT
-                    </option>
-                </select>
-                <input type="checkbox" id="rs-loop" class="rs-hidden-check" />
-                <label
-                    class="rs-loop-btn"
-                    for="rs-loop"
-                    aria-label="Créer une boucle"
-                    data-i18n-aria-label="planning.aria.loop"
-                >
-                    <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        aria-hidden="true"
-                    >
-                        <path d="M17 2l4 4-4 4" />
-                        <path d="M3 11V9a3 3 0 0 1 3-3h15" />
-                        <path d="M7 22l-4-4 4-4" />
-                        <path d="M21 13v2a3 3 0 0 1-3 3H3" />
-                    </svg>
-                </label>
+                        Réglages de l’itinéraire
+                    </h2>
+                </div>
                 <button
-                    class="rs-icon-btn"
-                    id="rb-reverse-btn"
+                    id="route-settings-close"
+                    class="route-panel-close"
                     type="button"
-                    aria-label="Inverser le départ et l'arrivée"
-                    data-i18n-aria-label="planning.aria.reverse"
+                    aria-label="Fermer"
+                    data-i18n-aria-label="common.close"
                 >
                     <svg
-                        width="22"
-                        height="22"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -439,123 +451,212 @@
                         stroke-linejoin="round"
                         aria-hidden="true"
                     >
-                        <path d="M7 7h11l-3-3" />
-                        <path d="m18 7-3 3" />
-                        <path d="M17 17H6l3 3" />
-                        <path d="m6 17 3-3" />
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
             </div>
-            <div
-                class="rs-draft-status"
-                id="rs-draft-status"
-                aria-live="polite"
-            ></div>
-            <label
-                class="rs-field-label"
-                for="rs-route-name"
-                data-i18n="preparedRoutes.editor.name"
-                >Nom de la route</label
-            >
-            <input
-                id="rs-route-name"
-                class="rs-text-input"
-                type="text"
-                maxlength="120"
-                autocomplete="off"
-            />
-            <div class="rs-search-grid">
-                <div class="rs-search-field">
-                    <label
-                        for="rs-start-search"
-                        data-i18n="preparedRoutes.editor.start"
-                        >Départ A</label
-                    >
+            <div class="route-panel-body">
+                <!-- Profil + boucle sur la même ligne -->
+                <div class="rs-row">
+                    <select id="rs-profile" class="rs-profile-select">
+                        <option
+                            value="foot-hiking"
+                            data-i18n="planning.profile.hiking"
+                        >
+                            Randonnée
+                        </option>
+                        <option
+                            value="foot-walking"
+                            data-i18n="planning.profile.walking"
+                        >
+                            Marche
+                        </option>
+                        <option
+                            value="cycling-regular"
+                            data-i18n="planning.profile.cycling"
+                        >
+                            Vélo
+                        </option>
+                        <option
+                            value="cycling-mountain"
+                            data-i18n="planning.profile.mountainBike"
+                        >
+                            VTT
+                        </option>
+                    </select>
                     <input
-                        id="rs-start-search"
-                        class="rs-text-input"
-                        type="search"
-                        autocomplete="off"
+                        type="checkbox"
+                        id="rs-loop"
+                        class="rs-hidden-check"
                     />
-                    <div
-                        id="rs-start-results"
-                        class="rs-search-results"
-                        role="listbox"
-                    ></div>
-                </div>
-                <div class="rs-search-field">
                     <label
-                        for="rs-end-search"
-                        data-i18n="preparedRoutes.editor.end"
-                        >Arrivée B</label
+                        class="rs-loop-btn"
+                        for="rs-loop"
+                        aria-label="Créer une boucle"
+                        data-i18n-aria-label="planning.aria.loop"
                     >
-                    <input
-                        id="rs-end-search"
-                        class="rs-text-input"
-                        type="search"
-                        autocomplete="off"
-                    />
-                    <div
-                        id="rs-end-results"
-                        class="rs-search-results"
-                        role="listbox"
-                    ></div>
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M17 2l4 4-4 4" />
+                            <path d="M3 11V9a3 3 0 0 1 3-3h15" />
+                            <path d="M7 22l-4-4 4-4" />
+                            <path d="M21 13v2a3 3 0 0 1-3 3H3" />
+                        </svg>
+                    </label>
+                    <button
+                        class="rs-icon-btn"
+                        id="rb-reverse-btn"
+                        type="button"
+                        aria-label="Inverser le départ et l'arrivée"
+                        data-i18n-aria-label="planning.aria.reverse"
+                    >
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M7 7h11l-3-3" />
+                            <path d="m18 7-3 3" />
+                            <path d="M17 17H6l3 3" />
+                            <path d="m6 17 3-3" />
+                        </svg>
+                    </button>
                 </div>
-            </div>
-            <div class="rs-row rs-plan-fields">
+                <div
+                    class="rs-draft-status"
+                    id="rs-draft-status"
+                    aria-live="polite"
+                ></div>
                 <label
-                    for="rs-planned-start"
-                    data-i18n="preparedRoutes.editor.plannedStart"
-                    >Départ prévu</label
-                >
-                <input id="rs-planned-start" type="datetime-local" />
-                <label for="rs-pace" data-i18n="preparedRoutes.editor.pace"
-                    >Allure km/h</label
+                    class="rs-field-label"
+                    for="rs-route-name"
+                    data-i18n="preparedRoutes.editor.name"
+                    >Nom de la route</label
                 >
                 <input
-                    id="rs-pace"
-                    type="number"
-                    min="1"
-                    max="12"
-                    step="0.1"
-                    value="4"
+                    id="rs-route-name"
+                    class="rs-text-input"
+                    type="text"
+                    maxlength="120"
+                    autocomplete="off"
                 />
-            </div>
-            <div
-                id="rs-route-summary"
-                class="rs-route-summary"
-                aria-live="polite"
-            ></div>
-            <details class="rs-route-details">
-                <summary data-i18n="preparedRoutes.editor.details">
-                    Détails
-                </summary>
-                <label
-                    for="rs-route-notes"
-                    data-i18n="preparedRoutes.editor.notes"
-                    >Notes</label
-                >
-                <textarea id="rs-route-notes" rows="2"></textarea>
-                <label
-                    for="rs-route-tags"
-                    data-i18n="preparedRoutes.editor.tags"
-                    >Tags séparés par des virgules</label
-                >
-                <input id="rs-route-tags" class="rs-text-input" type="text" />
-            </details>
-            <div class="rs-row rs-editor-actions">
-                <button id="rs-favorite-btn" type="button" aria-pressed="false">
-                    ☆
-                </button>
-                <button
-                    id="rs-save-btn"
-                    type="button"
-                    class="btn-primary"
-                    data-i18n="preparedRoutes.actions.save"
-                    disabled
-                >
-                    Sauvegarder
-                </button>
+                <div class="rs-search-grid">
+                    <div class="rs-search-field">
+                        <label
+                            for="rs-start-search"
+                            data-i18n="preparedRoutes.editor.start"
+                            >Départ A</label
+                        >
+                        <input
+                            id="rs-start-search"
+                            class="rs-text-input"
+                            type="search"
+                            autocomplete="off"
+                        />
+                        <div
+                            id="rs-start-results"
+                            class="rs-search-results"
+                            role="listbox"
+                        ></div>
+                    </div>
+                    <div class="rs-search-field">
+                        <label
+                            for="rs-end-search"
+                            data-i18n="preparedRoutes.editor.end"
+                            >Arrivée B</label
+                        >
+                        <input
+                            id="rs-end-search"
+                            class="rs-text-input"
+                            type="search"
+                            autocomplete="off"
+                        />
+                        <div
+                            id="rs-end-results"
+                            class="rs-search-results"
+                            role="listbox"
+                        ></div>
+                    </div>
+                </div>
+                <div class="rs-row rs-plan-fields">
+                    <label
+                        for="rs-planned-start"
+                        data-i18n="preparedRoutes.editor.plannedStart"
+                        >Départ prévu</label
+                    >
+                    <input id="rs-planned-start" type="datetime-local" />
+                    <label for="rs-pace" data-i18n="preparedRoutes.editor.pace"
+                        >Allure km/h</label
+                    >
+                    <input
+                        id="rs-pace"
+                        type="number"
+                        min="1"
+                        max="12"
+                        step="0.1"
+                        value="4"
+                    />
+                </div>
+                <div
+                    id="rs-route-summary"
+                    class="rs-route-summary"
+                    aria-live="polite"
+                ></div>
+                <details class="rs-route-details">
+                    <summary data-i18n="preparedRoutes.editor.details">
+                        Détails
+                    </summary>
+                    <label
+                        for="rs-route-notes"
+                        data-i18n="preparedRoutes.editor.notes"
+                        >Notes</label
+                    >
+                    <textarea id="rs-route-notes" rows="2"></textarea>
+                    <label
+                        for="rs-route-tags"
+                        data-i18n="preparedRoutes.editor.tags"
+                        >Tags séparés par des virgules</label
+                    >
+                    <input
+                        id="rs-route-tags"
+                        class="rs-text-input"
+                        type="text"
+                    />
+                </details>
+                <div class="rs-row rs-editor-actions">
+                    <button
+                        id="rs-favorite-btn"
+                        type="button"
+                        aria-pressed="false"
+                    >
+                        ☆
+                    </button>
+                    <button
+                        id="rs-save-btn"
+                        type="button"
+                        class="btn-primary"
+                        data-i18n="preparedRoutes.actions.save"
+                        disabled
+                    >
+                        Sauvegarder
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -689,7 +790,6 @@
                 aria-label="Basculer 2D/3D"
                 data-i18n-aria-label="a11y.toggle2d3d"
                 aria-pressed="false"
-                style="flex-direction: column; gap: 1px; padding: 2px"
             >
                 <svg
                     class="mode-icon mode-icon-3d"
@@ -697,7 +797,6 @@
                     height="18"
                     viewBox="0 0 24 24"
                     fill="none"
-                    style="flex-shrink: 0"
                 >
                     <path
                         d="M12 3L20 7.5L12 12L4 7.5L12 3Z"
@@ -738,7 +837,6 @@
                     height="18"
                     viewBox="0 0 24 24"
                     fill="none"
-                    style="flex-shrink: 0"
                 >
                     <rect
                         x="4"
@@ -786,16 +884,7 @@
                         opacity="0.35"
                     />
                 </svg>
-                <span
-                    class="nav-mode-label"
-                    style="
-                        font-size: 9px;
-                        font-weight: 600;
-                        line-height: 1;
-                        margin-top: 1px;
-                    "
-                    >3D</span
-                >
+                <span class="nav-mode-label">3D</span>
             </button>
 
             <!-- TIMELINE SOLAIRE — disponible uniquement lorsque la carte est en 3D -->

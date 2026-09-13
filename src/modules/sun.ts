@@ -30,19 +30,21 @@ const _sunVector = new THREE.Vector3();
 function applySolarPhaseLabel(altDeg: number): void {
     const phaseSpan = document.getElementById('sun-phase');
     if (!phaseSpan) return;
+    let phase: 'day' | 'golden' | 'twilight' | 'night';
     if (altDeg > 6) {
-        phaseSpan.textContent = i18n.t('solar.phase.day');
-        phaseSpan.style.color = '#FFD700';
+        phase = 'day';
     } else if (altDeg > -4) {
-        phaseSpan.textContent = i18n.t('solar.phase.golden');
-        phaseSpan.style.color = '#FF8C00';
+        phase = 'golden';
     } else if (altDeg > -12) {
-        phaseSpan.textContent = i18n.t('solar.phase.twilight');
-        phaseSpan.style.color = '#ADFF2F';
+        phase = 'twilight';
     } else {
-        phaseSpan.textContent = i18n.t('solar.phase.night');
-        phaseSpan.style.color = '#87CEEB';
+        phase = 'night';
     }
+
+    phaseSpan.textContent = i18n.t(`solar.phase.${phase}`);
+    phaseSpan.dataset.phase = phase;
+    const timeline = document.getElementById('bottom-bar');
+    if (timeline) timeline.dataset.solarPhase = phase;
 }
 
 // Re-translate the solar phase label whenever the locale changes

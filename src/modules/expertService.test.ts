@@ -62,12 +62,42 @@ describe('ExpertService (v5.29.37)', () => {
         expect(report).toContain('3200 m');
     });
 
+    it('conserve les données astronomiques sans inventer un ensoleillement sans relief', () => {
+        const time = new Date('2026-06-21T06:00:00');
+        const report = expertService.generateSolarReport({
+            terrainAvailable: false,
+            gps: { lat: 46.5, lon: 7.5 },
+            totalSunlightMinutes: 900,
+            firstSunTime: time,
+            sunrise: time,
+            solarNoon: new Date('2026-06-21T12:30:00'),
+            sunset: new Date('2026-06-21T21:00:00'),
+            dayDurationMinutes: 900,
+            goldenHourMorningStart: time,
+            goldenHourMorningEnd: time,
+            goldenHourEveningStart: time,
+            goldenHourEveningEnd: time,
+            currentAzimuthDeg: 180,
+            currentElevationDeg: 60,
+            moonPhase: 0.5,
+            moonPhaseName: 'full',
+            maxElevationDeg: 65,
+            elevationCurve: [],
+            timeline: [],
+        });
+
+        expect(report).toContain('solar.status.noTerrain');
+        expect(report).toContain('solar.stat.sunrise');
+        expect(report).toContain('solar.stat.sunset');
+        expect(report).not.toContain('solar.stat.sunlight');
+    });
+
     it('doit générer un message SOS correct avec localisation utilisateur', async () => {
         state.userLocation = { lat: 46, lon: 7, alt: 2500 };
 
         const msg = await expertService.generateSOSMessage(0.85); // 85% batterie
 
-        expect(msg).toContain('🆘 SOS SUNTRAIL');
+        expect(msg).toContain('SOS SUNTRAIL');
         expect(msg).toContain('46.00000,7.00000');
         expect(msg).toContain('ALT:2500m');
         expect(msg).toContain('BAT:85%');

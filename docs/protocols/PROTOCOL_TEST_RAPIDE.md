@@ -1,4 +1,4 @@
-# SunTrail 3D — Protocole de test rapide (v5.89.1)
+# SunTrail 3D — Protocole de test rapide (v5.90.0)
 
 > Durée indicative : 25 à 35 minutes. Ce contrôle ne remplace pas un essai terrain long.
 > Préserver les parcours, zones et packs déjà présents ; ne vider aucun stockage pour ce test.
@@ -6,7 +6,8 @@
 ## 1. Premier écran et navigation
 
 - [ ] Installer ou mettre à jour l'application sans effacer ses données.
-- [ ] Au premier lancement uniquement, vérifier les trois écrans d'onboarding.
+- [ ] Au premier lancement uniquement, vérifier les deux étapes sur la carte réelle : gestes,
+      puis lecture du détail ou accès 2D/3D.
 - [ ] Vérifier les cinq destinations : Explorer, Préparer, Sortie, Bibliothèque et Plus.
 - [ ] Passer de 2D à 3D, déplacer, zoomer, tourner et incliner la carte.
 - [ ] Vérifier que la carte finit de se compléter après un déplacement rapide.

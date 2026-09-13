@@ -7,8 +7,6 @@ import { expertService } from '../../expertService';
 import templateHTML from '../templates/sos.html?raw';
 
 export class SOSSheet extends BaseComponent {
-    private attachSosBtnTimer: any = null;
-
     constructor() {
         super('template-sos', 'sheet-container', templateHTML);
     }
@@ -16,28 +14,29 @@ export class SOSSheet extends BaseComponent {
     public render(): void {
         if (!this.element) return;
 
-        const sosCopyBtn = document.getElementById('sos-copy-btn');
+        const sosCopyBtn = this.element.querySelector('#sos-copy-btn');
         sosCopyBtn?.setAttribute('aria-label', i18n.t('sos.copy'));
         sosCopyBtn?.addEventListener('click', () => {
-            const txt =
-                document.getElementById('sos-text-container')?.textContent;
+            const txt = this.element?.querySelector(
+                '#sos-text-container'
+            )?.textContent;
             if (txt) {
                 navigator.clipboard.writeText(txt);
-                showToast('🆘 Message copié');
+                showToast(i18n.t('sos.copied'));
             }
         });
 
-        const sosSmsBtn = document.getElementById('sos-sms-btn');
+        const sosSmsBtn = this.element.querySelector('#sos-sms-btn');
         sosSmsBtn?.setAttribute('aria-label', i18n.t('sos.sms'));
 
-        const sosCloseBtn = document.getElementById('sos-close-btn');
-        sosCloseBtn?.setAttribute('aria-label', i18n.t('sos.close'));
-        sosCloseBtn?.addEventListener('click', () => {
-            sheetManager.close();
-        });
+        const closeButton = this.element.querySelector('#sos-header-close-btn');
+        closeButton?.setAttribute('aria-label', i18n.t('sos.close'));
+        closeButton?.addEventListener('click', () => sheetManager.back());
 
         // ARIA: SOS text container is a live region
-        const sosTextContainer = document.getElementById('sos-text-container');
+        const sosTextContainer = this.element.querySelector(
+            '#sos-text-container'
+        );
         sosTextContainer?.setAttribute('aria-live', 'polite');
 
         // Résolution GPS déclenchée sur l'événement sheetOpened
@@ -46,41 +45,26 @@ export class SOSSheet extends BaseComponent {
         };
         eventBus.on('sheetOpened', onSheetOpened);
         this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
-
-        // Bouton pill (widget coords) — ouvre simplement le sheet
-        const attachSosBtn = () => {
-            const sosBtn = document.getElementById('sos-btn-pill');
-            if (sosBtn) {
-                sosBtn.setAttribute('aria-label', 'Appel SOS urgence');
-                sosBtn.onclick = () => sheetManager.open('sos');
-            } else {
-                this.attachSosBtnTimer = setTimeout(attachSosBtn, 500);
-            }
-        };
-        attachSosBtn();
-    }
-
-    public override dispose(): void {
-        if (this.attachSosBtnTimer) {
-            clearTimeout(this.attachSosBtnTimer);
-            this.attachSosBtnTimer = null;
-        }
-        super.dispose();
     }
 
     private async resolveAndDisplay(): Promise<void> {
-        const textContainer = document.getElementById('sos-text-container');
+        const textContainer = this.element?.querySelector(
+            '#sos-text-container'
+        );
         if (!textContainer) return;
 
-        textContainer.textContent = '⌛ Localisation en cours...';
+        const smsBtn =
+            this.element?.querySelector<HTMLButtonElement>('#sos-sms-btn');
+        if (smsBtn) {
+            smsBtn.disabled = true;
+            smsBtn.onclick = null;
+        }
+        textContainer.textContent = i18n.t('sos.locating');
 
         try {
             const message = await expertService.generateSOSMessage();
             textContainer.textContent = message;
 
-            const smsBtn = document.getElementById(
-                'sos-sms-btn'
-            ) as HTMLButtonElement | null;
             if (smsBtn) {
                 smsBtn.disabled = false;
                 smsBtn.onclick = () => {
@@ -88,8 +72,7 @@ export class SOSSheet extends BaseComponent {
                 };
             }
         } catch (e) {
-            textContainer.textContent =
-                'Erreur lors de la génération du message SOS';
+            textContainer.textContent = i18n.t('sos.error');
             console.error('[SOS] Failed to generate message:', e);
         }
     }

@@ -16,6 +16,7 @@ export function confirmDialog(
     }
 ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
+        const previouslyFocused = document.activeElement as HTMLElement | null;
         const overlay = document.createElement('div');
         overlay.id = 'confirm-dialog-overlay';
         overlay.className = 'confirm-dialog-overlay';
@@ -42,6 +43,7 @@ export function confirmDialog(
             overlay.removeEventListener('click', onClick);
             document.removeEventListener('keydown', onKeyDown);
             overlay.remove();
+            previouslyFocused?.focus();
             resolve(result);
         };
 
@@ -57,9 +59,25 @@ export function confirmDialog(
             if (e.key === 'Escape') {
                 e.preventDefault();
                 cleanup(false);
-            } else if (e.key === 'Enter') {
+            } else if (e.key === 'Tab') {
+                const buttons = Array.from(
+                    overlay.querySelectorAll<HTMLButtonElement>(
+                        'button:not(:disabled)'
+                    )
+                );
+                if (buttons.length === 0) return;
+                const currentIndex = buttons.indexOf(
+                    document.activeElement as HTMLButtonElement
+                );
+                const nextIndex = e.shiftKey
+                    ? currentIndex <= 0
+                        ? buttons.length - 1
+                        : currentIndex - 1
+                    : currentIndex === buttons.length - 1
+                      ? 0
+                      : currentIndex + 1;
                 e.preventDefault();
-                cleanup(true);
+                buttons[nextIndex].focus();
             }
         };
 

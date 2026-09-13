@@ -51,8 +51,8 @@ vi.mock('./solarRoute', () => ({
     invalidateRouteCache: vi.fn(),
 }));
 
-vi.mock('./toast', () => ({
-    showToast: vi.fn(),
+vi.mock('./contextualHelp', () => ({
+    showPlanningContextHint: vi.fn().mockResolvedValue('primary'),
 }));
 
 import { state } from './state';
@@ -61,7 +61,7 @@ import {
     clearRouteWaypoints,
     reverseWaypoints,
 } from './routingService';
-import { showToast } from './toast';
+import { showPlanningContextHint } from './contextualHelp';
 import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
 import { eventBus } from './eventBus';
@@ -82,7 +82,9 @@ const mockClearRouteWaypoints = clearRouteWaypoints as ReturnType<typeof vi.fn>;
 const mockI18nT = i18n.t as ReturnType<typeof vi.fn>;
 const mockGetPlaceName = getPlaceName as ReturnType<typeof vi.fn>;
 const mockReverseWaypoints = reverseWaypoints as ReturnType<typeof vi.fn>;
-const mockShowToast = showToast as ReturnType<typeof vi.fn>;
+const mockShowPlanningContextHint = showPlanningContextHint as ReturnType<
+    typeof vi.fn
+>;
 
 describe('routeManager', () => {
     beforeEach(() => {
@@ -177,15 +179,12 @@ describe('routeManager', () => {
             );
         });
 
-        it('announces the long-press shortcut once without blocking', () => {
+        it('asks for contextual planning help when entering Prepare', () => {
             setRoutePlanningMode(true);
             setRoutePlanningMode(false);
             setRoutePlanningMode(true);
 
-            expect(mockShowToast).toHaveBeenCalledTimes(1);
-            expect(
-                localStorage.getItem('suntrail_planning_long_press_hint_v1')
-            ).toBe('1');
+            expect(mockShowPlanningContextHint).toHaveBeenCalledTimes(2);
         });
 
         it('masque puis restaure les commandes sans quitter le mode Préparer', () => {
@@ -404,6 +403,29 @@ describe('routeManager', () => {
                 '2h'
             );
             expect(document.getElementById('rph-stats')?.hidden).toBe(false);
+        });
+
+        it('affiche un nom de fichier lisible sans modifier le nom de route stocké', () => {
+            state.routeWaypoints = [
+                { lat: 46.0, lon: 7.0 },
+                { lat: 46.1, lon: 7.1 },
+            ];
+            state.activePreparedRouteId = 'route-1';
+            state.routeDraftName = 'Tour_du_lac_2026';
+            state.routeComputation = {
+                name: 'Tour_du_lac_2026',
+                distance: 8.01,
+                ascent: 29,
+                descent: 33,
+                duration: 120,
+            } as any;
+
+            initRouteManager();
+
+            expect(document.getElementById('rph-context')?.textContent).toBe(
+                'preparedRoutes.source.savedRoute · Tour du lac 2026'
+            );
+            expect(state.routeDraftName).toBe('Tour_du_lac_2026');
         });
 
         it('garde une instruction complète en haut tant que la route ne possède pas de statistiques', () => {

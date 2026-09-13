@@ -28,6 +28,7 @@ describe('autoHide', () => {
         vi.useFakeTimers();
         mockState.hasLastClicked = false;
         vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(null);
+        document.body.innerHTML = '';
         document.body.classList.remove('ui-hidden');
     });
 
@@ -55,6 +56,14 @@ describe('autoHide', () => {
 
         it('does not add ui-hidden when hasLastClicked is true', () => {
             mockState.hasLastClicked = true;
+            initAutoHide();
+            vi.advanceTimersByTime(10000);
+            expect(document.body.classList.contains('ui-hidden')).toBe(false);
+        });
+
+        it('keeps the bars visible while a Prepare work surface is open', () => {
+            document.body.innerHTML =
+                '<div id="route-settings" class="route-settings-panel"></div>';
             initAutoHide();
             vi.advanceTimersByTime(10000);
             expect(document.body.classList.contains('ui-hidden')).toBe(false);

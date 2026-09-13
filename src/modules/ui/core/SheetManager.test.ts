@@ -63,15 +63,75 @@ describe('SheetManager', () => {
         expect(sheet1.classList.contains('is-open')).toBe(false);
         expect(sheet2.classList.contains('is-open')).toBe(true);
         expect(sheetManager.getActiveSheetId()).toBe('sheet-2');
+        expect(document.body.classList.contains('sheet-sheet-1-open')).toBe(
+            false
+        );
+    });
+
+    it('openChild() conserve le parent et back() le restaure', () => {
+        const parent = createSheet('parent-sheet');
+        const child = createSheet('child-sheet');
+        parent.scrollTop = 120;
+
+        sheetManager.open('parent-sheet');
+        sheetManager.openChild('child-sheet');
+
+        expect(parent.classList.contains('is-open')).toBe(false);
+        expect(child.classList.contains('is-open')).toBe(true);
+        expect(child.classList.contains('has-sheet-parent')).toBe(true);
+        expect(sheetManager.canGoBack()).toBe(true);
+        expect(sheetManager.getRootSheetId()).toBe('parent-sheet');
+
+        sheetManager.back();
+
+        expect(parent.classList.contains('is-open')).toBe(true);
+        expect(parent.classList.contains('has-sheet-parent')).toBe(false);
+        expect(child.classList.contains('is-open')).toBe(false);
+        expect(sheetManager.getActiveSheetId()).toBe('parent-sheet');
+        expect(sheetManager.canGoBack()).toBe(false);
+        expect(sheetManager.getRootSheetId()).toBe('parent-sheet');
+    });
+
+    it('laisse une sous-page interne consommer Retour avant de fermer', () => {
+        const sheet = createSheet('internal-sheet');
+        const handler = vi.fn(() => true);
+        const unregister = sheetManager.registerBackHandler(
+            'internal-sheet',
+            handler
+        );
+        sheetManager.open('internal-sheet');
+
+        sheetManager.back();
+
+        expect(handler).toHaveBeenCalledOnce();
+        expect(sheet.classList.contains('is-open')).toBe(true);
+        unregister();
+    });
+
+    it('close() depuis un enfant ferme tout le flux', () => {
+        createSheet('parent-sheet');
+        createSheet('child-sheet');
+        sheetManager.open('parent-sheet');
+        sheetManager.openChild('child-sheet');
+
+        sheetManager.close();
+
+        expect(sheetManager.getActiveSheetId()).toBeNull();
+        expect(sheetManager.canGoBack()).toBe(false);
+        expect(document.body.classList.contains('sheet-open')).toBe(false);
     });
 
     it("ARIA : role=dialog et aria-modal=true posés à l'ouverture", () => {
         const sheet = createSheet('aria-sheet');
+        sheet.inert = true;
+        sheet.setAttribute('aria-hidden', 'true');
         sheetManager.open('aria-sheet');
 
         expect(sheet.getAttribute('role')).toBe('dialog');
         expect(sheet.getAttribute('aria-modal')).toBe('true');
         expect(sheet.getAttribute('tabindex')).toBe('-1');
+        expect(sheet.inert).toBe(false);
+        expect(sheet.hasAttribute('aria-hidden')).toBe(false);
     });
 
     it('ARIA : aria-labelledby pointe vers le .sheet-title', () => {
@@ -91,6 +151,8 @@ describe('SheetManager', () => {
         expect(sheet.getAttribute('role')).toBeNull();
         expect(sheet.getAttribute('aria-modal')).toBeNull();
         expect(sheet.getAttribute('aria-labelledby')).toBeNull();
+        expect(sheet.inert).toBe(true);
+        expect(sheet.getAttribute('aria-hidden')).toBe('true');
     });
 
     it('émet sheetOpened / sheetClosed via eventBus', () => {
@@ -149,5 +211,18 @@ describe('SheetManager', () => {
         document.dispatchEvent(event);
 
         expect(sheetManager.getActiveSheetId()).toBeNull();
+    });
+
+    it('Escape revient au parent avant de fermer le flux', () => {
+        createSheet('escape-parent');
+        createSheet('escape-child');
+        sheetManager.open('escape-parent');
+        sheetManager.openChild('escape-child');
+
+        document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        );
+
+        expect(sheetManager.getActiveSheetId()).toBe('escape-parent');
     });
 });

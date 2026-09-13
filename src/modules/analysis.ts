@@ -180,6 +180,7 @@ export function runSolarProbe(
     resetAnalysisTerrainCounter();
     const gps = worldToLngLat(worldX, worldZ, state.originTile);
     const steps = 48;
+    const terrainDataAvailable = hasTerrainData();
 
     let totalSunlightMinutes = 0;
     let firstSunTime: Date | null = null;
@@ -195,7 +196,9 @@ export function runSolarProbe(
             sunPos.azimuth + Math.PI
         );
 
-        const inShadow = isAtShadow(worldX, worldZ, altitude, sunPosVector);
+        const inShadow = terrainDataAvailable
+            ? isAtShadow(worldX, worldZ, altitude, sunPosVector)
+            : false;
         const hasSun = sunPos.altitude > 0 && !inShadow;
 
         if (hasSun) {
@@ -269,7 +272,7 @@ export function runSolarProbe(
         moonPhaseName,
         elevationCurve,
         maxElevationDeg,
-        terrainAvailable: getAnalysisTerrainHits() > 0,
+        terrainAvailable: terrainDataAvailable && getAnalysisTerrainHits() > 0,
     };
 }
 

@@ -26,38 +26,31 @@
         class="prepared-routes-section"
         hidden
     >
-        <p
-            id="track-library-scope"
-            class="track-library-scope"
-            data-i18n="preparedRoutes.library.scope"
-        >
-            Vos itinéraires à suivre et vos activités enregistrées, réunis au
-            même endroit.
-        </p>
         <div class="prepared-library-header">
-            <h3 data-i18n="preparedRoutes.library.title">Mes parcours</h3>
-            <div class="prepared-library-actions">
-                <button
-                    id="import-gpx-sheet"
-                    type="button"
-                    data-i18n="track.btn.import"
-                >
-                    Importer GPX
-                </button>
+            <div
+                class="prepared-library-actions"
+                role="group"
+                data-i18n-aria-label="preparedRoutes.library.title"
+                aria-label="Mes parcours"
+            >
                 <button
                     id="prepared-create-btn"
                     type="button"
+                    class="prepared-library-action-primary"
                     data-i18n="preparedRoutes.actions.create"
                 >
                     Créer un itinéraire
                 </button>
+                <button
+                    id="import-gpx-sheet"
+                    type="button"
+                    class="prepared-library-action-secondary"
+                    data-i18n="track.btn.import"
+                >
+                    Importer GPX
+                </button>
             </div>
-            <input
-                type="file"
-                id="gpx-upload"
-                accept=".gpx"
-                style="display: none"
-            />
+            <input type="file" id="gpx-upload" accept=".gpx" hidden />
         </div>
         <div
             id="prepared-storage-error"
@@ -71,8 +64,8 @@
                 >Aucun parcours</strong
             >
             <span data-i18n="preparedRoutes.library.emptyBody"
-                >Importez un GPX, créez un itinéraire ou enregistrez une
-                sortie.</span
+                >Vos itinéraires préparés et vos sorties enregistrées
+                apparaîtront ici.</span
             >
         </div>
         <div id="legacy-tracks-anchor"></div>
@@ -120,21 +113,16 @@
                 data-i18n-aria-label="track.outing.route.previewAria"
             ></canvas>
             <p id="outing-route-stats" class="outing-card-meta">—</p>
-            <div class="outing-inline-actions">
-                <button id="outing-route-guidance" type="button" hidden>
-                    <span data-i18n="guidance.actions.start"
-                        >Démarrer le suivi</span
-                    >
-                </button>
-                <button id="outing-route-profile" type="button">
-                    <span data-i18n="track.imported.showProfile"
-                        >Voir le profil</span
-                    >
-                </button>
-                <button id="outing-route-library" type="button">
-                    <span data-i18n="nav.tab.library">Bibliothèque</span>
-                </button>
-            </div>
+            <button
+                id="outing-route-guidance"
+                class="outing-route-primary-action"
+                type="button"
+                hidden
+            >
+                <span data-i18n="guidance.actions.start"
+                    >Démarrer le suivi</span
+                >
+            </button>
         </article>
 
         <article id="outing-guidance-card" class="outing-state-card" hidden>
@@ -167,10 +155,14 @@
 
         <article id="outing-rec-card" class="outing-state-card" hidden>
             <div class="outing-card-heading">
-                <span data-i18n="track.outing.recording.eyebrow"
+                <span
+                    id="outing-rec-eyebrow"
+                    data-i18n="track.outing.recording.eyebrow"
                     >REC en cours</span
                 >
-                <strong data-i18n="track.outing.recording.live"
+                <strong
+                    id="outing-rec-status"
+                    data-i18n="track.outing.recording.live"
                     >Activité en direct</strong
                 >
             </div>
@@ -262,6 +254,12 @@
     </section>
 
     <div class="track-actions track-outing-only">
+        <button class="track-btn pause" id="rec-pause-btn" hidden>
+            <span class="rec-pause-icon" aria-hidden="true">Ⅱ</span>
+            <span class="rec-pause-label" data-i18n="track.btn.pause"
+                >Pause</span
+            >
+        </button>
         <button class="track-btn rec" id="rec-btn-sheet">
             <span class="trk-rec-icon rec-icon-idle">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

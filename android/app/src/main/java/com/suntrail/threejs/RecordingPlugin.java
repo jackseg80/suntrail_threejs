@@ -127,6 +127,9 @@ public class RecordingPlugin extends Plugin {
                     data.put("mode", intent.getStringExtra("mode"));
                     data.put("recording", intent.getBooleanExtra("recording", false));
                     data.put("guidance", intent.getBooleanExtra("guidance", false));
+                    data.put("recordingPaused", intent.getBooleanExtra("recordingPaused", false));
+                    data.put("recordingPausedAt", intent.getLongExtra("recordingPausedAt", 0L));
+                    data.put("recordingPausedDurationMs", intent.getLongExtra("recordingPausedDurationMs", 0L));
                     putNullable(data, "issue", intent.getStringExtra("issue"));
                     notifyListeners("onSessionChanged", data);
                 } else if (RecordingService.ACTION_SERVICE_STOPPED.equals(action)) {
@@ -172,6 +175,8 @@ public class RecordingPlugin extends Plugin {
         currentCourseId = null;
         call.resolve();
     }
+    @PluginMethod public void pauseRecording(PluginCall call) { sendServiceAction(RecordingService.ACTION_PAUSE_RECORDING); call.resolve(); }
+    @PluginMethod public void resumeRecording(PluginCall call) { sendServiceAction(RecordingService.ACTION_RESUME_RECORDING); call.resolve(); }
 
     /**
      * Publie un GPX dans Téléchargements via MediaStore. Android 10+ autorise
@@ -339,6 +344,10 @@ public class RecordingPlugin extends Plugin {
         result.put("courseId", courseId);
         result.put("isRunning", running);
         android.content.SharedPreferences prefs = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
+        result.put("startTime", prefs.getLong("startTime", 0L));
+        result.put("recordingPaused", prefs.getBoolean("recordingPaused", false));
+        result.put("recordingPausedAt", prefs.getLong("recordingPausedAt", 0L));
+        result.put("recordingPausedDurationMs", prefs.getLong("recordingPausedDurationMs", 0L));
         if (prefs.contains("originTileX")) {
             JSObject tile = new JSObject();
             tile.put("x", prefs.getInt("originTileX", 0)); tile.put("y", prefs.getInt("originTileY", 0)); tile.put("z", prefs.getInt("originTileZ", 0));
@@ -351,12 +360,16 @@ public class RecordingPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("courseId", prefs.getString("pendingStoppedCourseId", ""));
         result.put("startTime", prefs.getLong("pendingStoppedStartTime", 0L));
+        result.put("stoppedAt", prefs.getLong("pendingStoppedAt", 0L));
+        result.put("recordingPausedDurationMs", prefs.getLong("pendingStoppedPausedDurationMs", 0L));
         call.resolve(result);
     }
     @PluginMethod public void acknowledgePendingStoppedCourse(PluginCall call) {
         getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE).edit()
             .remove("pendingStoppedCourseId")
             .remove("pendingStoppedStartTime")
+            .remove("pendingStoppedAt")
+            .remove("pendingStoppedPausedDurationMs")
             .apply();
         call.resolve();
     }
@@ -409,12 +422,18 @@ public class RecordingPlugin extends Plugin {
 
     private JSObject sessionResult(GuidanceSession session) throws Exception {
         JSObject result = new JSObject();
+        android.content.SharedPreferences timing = getContext().getSharedPreferences("RecordingPrefs", Context.MODE_PRIVATE);
         if (session == null) {
-            result.put("active", false); result.put("mode", "none"); result.put("recording", false); result.put("guidance", false); result.put("snapshot", JSONObject.NULL); return result;
+            result.put("active", false); result.put("mode", "none"); result.put("recording", false); result.put("guidance", false);
+            result.put("recordingPaused", false); result.put("recordingPausedAt", 0L); result.put("recordingPausedDurationMs", 0L);
+            result.put("snapshot", JSONObject.NULL); return result;
         }
         boolean recording = "recording".equals(session.mode) || "both".equals(session.mode);
         boolean guidance = "guidance".equals(session.mode) || "both".equals(session.mode);
         result.put("active", recording || guidance); result.put("mode", session.mode); result.put("recording", recording); result.put("guidance", guidance);
+        result.put("recordingPaused", recording && timing.getBoolean("recordingPaused", false));
+        result.put("recordingPausedAt", recording ? timing.getLong("recordingPausedAt", 0L) : 0L);
+        result.put("recordingPausedDurationMs", recording ? timing.getLong("recordingPausedDurationMs", 0L) : 0L);
         putNullable(result, "routeId", session.routeId); putNullable(result, "courseId", session.recordingCourseId); putNullable(result, "issue", session.issue);
         result.put("snapshot", guidance && session.routeId != null ? snapshotFromSession(session) : JSONObject.NULL);
         return result;

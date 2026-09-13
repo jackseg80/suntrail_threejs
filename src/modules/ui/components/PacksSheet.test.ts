@@ -10,6 +10,12 @@ vi.mock('../../iapService', () => ({
 
 vi.mock('../../toast', () => ({ showToast: vi.fn() }));
 vi.mock('../../haptics', () => ({ haptic: { light: vi.fn() } }));
+vi.mock('../core/SheetManager', () => ({
+    sheetManager: {
+        back: vi.fn(),
+        canGoBack: vi.fn(() => false),
+    },
+}));
 vi.mock('../../packCatalog', () => ({
     getAvailablePacks: vi.fn(() => [
         {
@@ -47,6 +53,7 @@ vi.mock('../../packManager', () => ({
 }));
 
 import { PacksSheet } from './PacksSheet';
+import { sheetManager } from '../core/SheetManager';
 
 describe('PacksSheet', () => {
     beforeEach(() => {
@@ -71,6 +78,17 @@ describe('PacksSheet', () => {
         const sheet = new PacksSheet();
         (sheet as any).element = document.getElementById('template-packs');
         sheet.render();
+        sheet.dispose();
+    });
+
+    it('le contrôle de navigation ferme ou revient via SheetManager.back', () => {
+        const sheet = new PacksSheet();
+        (sheet as any).element = document.getElementById('template-packs');
+        sheet.render();
+
+        document.getElementById('close-packs')?.click();
+
+        expect(sheetManager.back).toHaveBeenCalled();
         sheet.dispose();
     });
 

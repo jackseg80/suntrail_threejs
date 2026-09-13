@@ -51,6 +51,10 @@ export abstract class BaseComponent {
         this.element = clone.firstElementChild as HTMLElement;
 
         if (this.element) {
+            if (this.element.classList.contains('bottom-sheet')) {
+                this.element.inert = true;
+                this.element.setAttribute('aria-hidden', 'true');
+            }
             // Apply i18n translations to all [data-i18n] elements in this template
             i18n.applyToDOM(clone);
             container.appendChild(clone);

@@ -17,7 +17,15 @@ export function initMobileUI(): void {
         const activeSheetId = sheetManager.getActiveSheetId();
 
         if (activeSheetId) {
-            sheetManager.close();
+            sheetManager.back();
+        } else if (
+            document.body.classList.contains('route-waypoint-moving') ||
+            !!document.querySelector(
+                '#route-settings:not(.hidden), #route-waypoints-panel:not(.hidden), #elevation-profile.is-open'
+            ) ||
+            state.isRoutePlanningMode
+        ) {
+            eventBus.emit('routeWorkBackRequested');
         } else if (!data.canGoBack) {
             App.exitApp();
         } else {

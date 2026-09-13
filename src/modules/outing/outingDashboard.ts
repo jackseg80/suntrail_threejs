@@ -29,6 +29,8 @@ export interface OutingDashboardInput {
     now: number;
     isRecording: boolean;
     recordingStartTime: number | null;
+    recordingPausedAt?: number | null;
+    recordingPausedDurationMs?: number;
     recordedPoints: LocationPoint[];
     activeRoute: OutingRouteSummary | null;
     guidanceSnapshot: GuidanceSnapshot | null;
@@ -51,6 +53,8 @@ export function buildRecordingSummary(
         name?: string;
         now: number;
         recordingStartTime: number | null;
+        recordingPausedAt?: number | null;
+        recordingPausedDurationMs?: number;
         userAltitudeMeters: number | null;
         gpsAccuracyMeters: number | null;
     }
@@ -58,9 +62,13 @@ export function buildRecordingSummary(
     const stats = calculateTrackStats(points);
     const firstTimestamp = points[0]?.timestamp ?? options.now;
     const startedAt = options.recordingStartTime ?? firstTimestamp;
-    const durationSeconds = Math.max(
-        0,
-        Math.floor((options.now - startedAt) / 1000)
+    const durationSeconds = Math.floor(
+        getRecordingElapsedMs({
+            now: options.now,
+            startedAt,
+            pausedAt: options.recordingPausedAt,
+            pausedDurationMs: options.recordingPausedDurationMs,
+        }) / 1000
     );
     const averagePaceSecondsPerKm =
         stats.distance > 0 && durationSeconds > 0
@@ -92,6 +100,8 @@ export function buildOutingDashboard(
         ? buildRecordingSummary(input.recordedPoints, {
               now: input.now,
               recordingStartTime: input.recordingStartTime,
+              recordingPausedAt: input.recordingPausedAt,
+              recordingPausedDurationMs: input.recordingPausedDurationMs,
               userAltitudeMeters: input.userAltitudeMeters,
               gpsAccuracyMeters: input.gpsAccuracyMeters,
           })
@@ -112,4 +122,19 @@ export function buildOutingDashboard(
         recording,
         completedRecording: input.completedRecording,
     };
+}
+
+export function getRecordingElapsedMs(options: {
+    now: number;
+    startedAt: number;
+    pausedAt?: number | null;
+    pausedDurationMs?: number;
+}): number {
+    const effectiveNow = options.pausedAt ?? options.now;
+    return Math.max(
+        0,
+        effectiveNow -
+            options.startedAt -
+            Math.max(0, options.pausedDurationMs ?? 0)
+    );
 }

@@ -45,7 +45,12 @@ vi.mock('../core/SheetManager', () => ({
 vi.mock('../tooltip', () => ({
     createTooltip: vi.fn(() => ({ dispose: vi.fn() })),
 }));
-vi.mock('../icons', () => ({ ICON_LOCK: '🔒' }));
+vi.mock('../icons', () => ({
+    ICON_ALERT_TRIANGLE: '<svg data-icon="alert"></svg>',
+    ICON_COPY: '<svg data-icon="copy"></svg>',
+    ICON_INFO: '<svg data-icon="info"></svg>',
+    ICON_LOCK: '<svg data-icon="lock"></svg>',
+}));
 vi.mock('./solarprobe/SolarTimeline', () => ({
     buildTimeline: vi.fn(),
 }));
@@ -76,6 +81,7 @@ vi.mock('../templates/solar-probe.html?raw', () => ({
 
 import { SolarProbeSheet } from './SolarProbeSheet';
 import { sheetManager } from '../core/SheetManager';
+import { eventBus } from '../../eventBus';
 
 describe('SolarProbeSheet', () => {
     let container: HTMLElement;
@@ -122,6 +128,40 @@ describe('SolarProbeSheet', () => {
         sheet.hydrate();
         const content = document.getElementById('probe-content')!;
         expect(content.getAttribute('aria-live')).toBe('polite');
+    });
+
+    it('hides the profile while its solar subview is open, then restores it', () => {
+        const profile = document.createElement('div');
+        profile.id = 'elevation-profile';
+        profile.classList.add('is-open');
+        document.body.appendChild(profile);
+        const sheet = new SolarProbeSheet();
+        sheet.hydrate();
+
+        window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
+
+        expect(sheetManager.open).toHaveBeenCalledWith('solar-probe');
+        expect(profile.classList.contains('is-suspended')).toBe(true);
+        expect(profile.getAttribute('aria-hidden')).toBe('true');
+        expect(document.body.classList).toContain(
+            'route-solar-profile-context'
+        );
+        expect(
+            document.getElementById('close-probe')?.getAttribute('aria-label')
+        ).toBe('profile.backFromAnalysis');
+
+        const closedHandler = vi
+            .mocked(eventBus.on)
+            .mock.calls.find(([event]) => event === 'sheetClosed')?.[1] as
+            ((payload: { id: string | null }) => void) | undefined;
+        closedHandler?.({ id: 'solar-probe' });
+
+        expect(profile.classList.contains('is-suspended')).toBe(false);
+        expect(profile.hasAttribute('aria-hidden')).toBe(false);
+        expect(document.body.classList).not.toContain(
+            'route-solar-profile-context'
+        );
+        sheet.dispose();
     });
 
     it('subscribes to simDate for real-time updates', () => {
@@ -193,10 +233,33 @@ describe('SolarProbeSheet', () => {
         expect(
             document.querySelector('svg.solar-elevation-chart-v2')
         ).not.toBeNull();
-        const copy = document.querySelector('.btn-go') as HTMLButtonElement;
+        const copy = document.querySelector(
+            '.solar-copy-button'
+        ) as HTMLButtonElement;
+        expect(copy.querySelector('[data-icon="copy"]')).not.toBeNull();
         copy.click();
         expect(writeText).toHaveBeenCalledWith('rapport');
         expect(showToast).toHaveBeenCalledWith('solar.toast.copied');
+        sheet.dispose();
+    });
+
+    it('keeps astronomical data available when terrain relief is missing', async () => {
+        const { isProActive } = await import('../../state');
+        const { buildTimeline } = await import('./solarprobe/SolarTimeline');
+        vi.mocked(isProActive).mockReturnValue(true);
+
+        const sheet = new SolarProbeSheet();
+        sheet.hydrate();
+        (sheet as any).updateUI(makeResult({ terrainAvailable: false }));
+
+        expect(document.querySelector('.solar-alert--info')).not.toBeNull();
+        expect(document.body.textContent).toContain('solar.stat.sunrise');
+        expect(document.body.textContent).toContain('solar.stat.sunset');
+        expect(
+            document.querySelector('svg.solar-elevation-chart-v2')
+        ).not.toBeNull();
+        expect(buildTimeline).not.toHaveBeenCalled();
+        expect(document.querySelector('.solar-copy-button')).not.toBeNull();
         sheet.dispose();
     });
 });

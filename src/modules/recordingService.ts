@@ -34,6 +34,7 @@ import type { NativeGPSPoint } from './nativeGPSService';
 
 export class RecordingService {
     private _isSaving = false;
+    private _isChangingPause = false;
     private _lastStopOutcome: 'saved' | 'discarded' | 'too-short' | 'failed' =
         'too-short';
 
@@ -52,6 +53,19 @@ export class RecordingService {
         } else {
             const name = await this.stopRecording();
             return !!name;
+        }
+    }
+
+    /** Suspend ou reprend le REC actif, quel que soit l'écran qui porte la commande. */
+    async toggleRecordingPause(): Promise<boolean> {
+        if (!state.isRecording || this._isChangingPause) return false;
+        this._isChangingPause = true;
+        try {
+            if (state.isPaused) await nativeGPSService.resumeRecording();
+            else await nativeGPSService.pauseRecording();
+            return true;
+        } finally {
+            this._isChangingPause = false;
         }
     }
 
@@ -133,8 +147,10 @@ export class RecordingService {
         try {
             const completedCourseId = state.currentCourseId || '';
             let rawNativePoints: NativeGPSPoint[] = [];
-            const completedAt = Date.now();
+            const completedAt = state.recordingStoppedAt ?? Date.now();
             const recordingStartTime = state.recordingStartTime;
+            const recordingPausedAt = state.recordingPausedAt;
+            const recordingPausedDurationMs = state.recordingPausedDurationMs;
             const userAltitudeMeters = state.userLocation?.alt ?? null;
             const gpsAccuracyMeters = state.userLocationAccuracy;
             // The UI must stop looking active immediately. Native STOP from
@@ -174,6 +190,8 @@ export class RecordingService {
                     name: suggestedName,
                     now: completedAt,
                     recordingStartTime,
+                    recordingPausedAt,
+                    recordingPausedDurationMs,
                     userAltitudeMeters,
                     gpsAccuracyMeters,
                 });
@@ -211,6 +229,8 @@ export class RecordingService {
                         name: nameToUse,
                         now: completedAt,
                         recordingStartTime,
+                        recordingPausedAt,
+                        recordingPausedDurationMs,
                         userAltitudeMeters,
                         gpsAccuracyMeters,
                     })

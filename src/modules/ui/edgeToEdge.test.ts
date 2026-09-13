@@ -26,7 +26,31 @@ describe('Android edge-to-edge contract', () => {
         expect(styles).toContain('padding-left: var(--safe-left);');
         expect(styles).toContain('bottom: calc(76px + var(--safe-bottom));');
         expect(styles).toContain('right: calc(16px + var(--safe-right));');
-        expect(styles).toContain('left: calc(16px + var(--safe-left));');
+        expect(styles).toContain(
+            'left: calc(var(--space-3) + var(--safe-left));'
+        );
+        expect(styles).toContain('right: calc(80px + var(--safe-right));');
+    });
+
+    it('keeps every side control on the same shared footprint', () => {
+        expect(styles).toMatch(
+            /\.fab-btn\s*\{[^}]*width:\s*var\(--control-size\);[^}]*height:\s*var\(--control-size\);/s
+        );
+
+        for (const selector of [
+            '#compass-fab',
+            '#gps-main-btn',
+            '.nav-mode-toggle',
+        ]) {
+            const escapedSelector = selector.replace(
+                /[.*+?^${}()|[\]\\]/g,
+                '\\$&'
+            );
+            const rule = styles.match(
+                new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`)
+            );
+            expect(rule?.[1]).not.toMatch(/(?:width|height):\s*52px/);
+        }
     });
 
     it('preserves status-only immersive mode without an edge-to-edge opt-out', () => {

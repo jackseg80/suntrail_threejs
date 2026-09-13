@@ -44,6 +44,14 @@ export default defineConfig({
             },
             output: {
                 manualChunks(id) {
+                    // Les catalogues sont volumineux mais changent
+                    // indépendamment du moteur i18n. Les isoler évite qu'un
+                    // seul chunk applicatif dépasse le budget de 300 Kio et
+                    // permet au navigateur de les mettre en cache séparément.
+                    const locale = id.match(
+                        /src\/i18n\/locales\/(fr|de|it|en)\.json$/
+                    )?.[1];
+                    if (locale) return `locale-${locale}`;
                     if (id.includes('node_modules/three')) return 'three';
                     // Capacitor is needed by the app at startup. Keep it out of
                     // the much larger RevenueCat chunk so the purchase SDK can

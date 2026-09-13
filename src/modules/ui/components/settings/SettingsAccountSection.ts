@@ -2,16 +2,16 @@ import { i18n } from '../../../../i18n/I18nService';
 import { authService } from '../../../authService';
 import { showToast } from '../../../toast';
 import { confirmDialog } from '../../confirmDialog';
-import { ICON_CHECK, ICON_LOG_OUT, ICON_USER } from '../../icons';
+import { ICON_CHECK, ICON_LOG_OUT } from '../../icons';
 
 /**
- * Owns the optional-account/RGPD presentation while authentication entry
- * points remain unavailable. The existing DOM IDs are intentionally kept as
- * the compatibility contract for native and smoke tests.
+ * Owns the optional-account/RGPD presentation. The section stays out of the
+ * way until an account exists, while the existing DOM IDs remain available
+ * for native and smoke tests.
  */
 export function bindSettingsAccountSection(root: HTMLElement): void {
     const sectionLabel = root.querySelector(
-        '[data-i18n="settings.section.account"]'
+        '.settings-account-heading'
     ) as HTMLElement | null;
     const accountSection = root.querySelector(
         '#account-section'
@@ -33,28 +33,21 @@ export function bindSettingsAccountSection(root: HTMLElement): void {
 
     if (!statusEl || !emailEl || !actionBtn || !accountSection) return;
 
-    accountSection.style.display = 'block';
-    if (sectionLabel) sectionLabel.style.display = 'block';
-    if (linkGoogleBtn) linkGoogleBtn.style.display = 'none';
+    if (linkGoogleBtn) linkGoogleBtn.hidden = true;
 
     if (!authService.isAuthenticated) {
-        if (avatarEl) avatarEl.innerHTML = ICON_USER;
-        statusEl.textContent =
-            i18n.t('settings.account.unavailable') || 'Connexion indisponible';
-        emailEl.textContent =
-            i18n.t('settings.account.unavailableHint') ||
-            'La connexion sera disponible prochainement';
-        actionBtn.style.display = 'none';
+        accountSection.hidden = true;
+        if (sectionLabel) sectionLabel.hidden = true;
+        actionBtn.hidden = true;
         actionBtn.onclick = null;
-        if (deleteBtn) deleteBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.hidden = true;
         return;
     }
 
+    accountSection.hidden = false;
+    if (sectionLabel) sectionLabel.hidden = false;
     if (avatarEl) avatarEl.innerHTML = ICON_CHECK;
-    actionBtn.style.background = 'var(--surface-subtle)';
-    actionBtn.style.color = 'var(--text-2)';
-    actionBtn.style.borderTop = '1px solid var(--border)';
-    actionBtn.style.display = 'flex';
+    actionBtn.hidden = false;
     statusEl.textContent = i18n.t('settings.account.loggedInAs') || 'Connecté';
     emailEl.textContent = authService.user?.email || '';
     actionBtn.innerHTML = `${ICON_LOG_OUT}<span>${i18n.t('settings.account.logout') || 'Se déconnecter'}</span>`;
@@ -64,7 +57,7 @@ export function bindSettingsAccountSection(root: HTMLElement): void {
     };
 
     if (!deleteBtn) return;
-    deleteBtn.style.display = 'block';
+    deleteBtn.hidden = false;
     deleteBtn.textContent =
         i18n.t('settings.account.deleteAccount') || 'Supprimer mon compte';
     deleteBtn.onclick = async () => {

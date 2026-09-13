@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state';
 import type { GPXLayer } from './state';
-import { attachDraggablePanel } from './ui/draggablePanel';
 import { calculateHysteresis } from './geoStats';
 import { getAltitudeAt, GPX_SURFACE_OFFSET } from './analysis';
 import type { RouteSolarAnalysis } from './solarRoute';
@@ -54,14 +53,14 @@ export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
     ) as HTMLButtonElement | null;
     if (btn) {
         btn.textContent = i18n.t('profile.analysis');
-        btn.style.display = analysis ? 'inline-flex' : 'none';
+        btn.hidden = !analysis;
         btn.onclick = () =>
             window.dispatchEvent(new CustomEvent('openSolarProbeSheet'));
     }
     // Légende solaire
     const solarLegend = document.getElementById('solar-legend');
     if (solarLegend) {
-        solarLegend.style.display = analysis ? '' : 'none';
+        solarLegend.hidden = !analysis;
     }
 }
 
@@ -192,6 +191,7 @@ export function updateElevationProfile(
             // Rebuild de tuiles : ne pas rouvrir si l'utilisateur a fermé le panel
             return;
         }
+        resetProfilePanelPosition(profileEl);
         profileEl.classList.remove('is-open');
         void profileEl.offsetWidth;
         profileEl.classList.add('is-open');
@@ -199,7 +199,7 @@ export function updateElevationProfile(
             'guidance-profile-open',
             document.body.classList.contains('guidance-active')
         );
-        setupSwipeGesture(profileEl);
+        setupProfileCloseControl(profileEl);
         setupExpandToggle();
     }
 }
@@ -224,11 +224,11 @@ function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
         const trackDminus = document.getElementById('track-dminus');
 
         if (trackDist)
-            trackDist.innerHTML = `${dist.toFixed(2)} <span style="font-size:13px;color:var(--text-2)">km</span>`;
+            trackDist.innerHTML = `${dist.toFixed(2)} <span class="stat-card-unit stat-card-unit--distance">km</span>`;
         if (trackDplus)
-            trackDplus.innerHTML = `+${Math.round(dPlus)} <span style="font-size:12px">m</span>`;
+            trackDplus.innerHTML = `+${Math.round(dPlus)} <span class="stat-card-unit">m</span>`;
         if (trackDminus)
-            trackDminus.innerHTML = `−${Math.round(dMinus)} <span style="font-size:12px">m</span>`;
+            trackDminus.innerHTML = `−${Math.round(dMinus)} <span class="stat-card-unit">m</span>`;
     }
 }
 
@@ -474,7 +474,7 @@ function setupProfileInteractions(): void {
             }
         }
 
-        cursor.style.display = 'block';
+        cursor.hidden = false;
         cursor.style.left = `${(point.dist / maxDist) * 100}%`;
 
         let timeStr = '';
@@ -555,7 +555,7 @@ function setupProfileInteractions(): void {
     ];
 
     container.onmouseleave = () => {
-        cursor.style.display = 'none';
+        cursor.hidden = true;
         if (state.profileMarker) state.profileMarker.visible = false;
         const maxDist =
             profileData.length > 0
@@ -609,9 +609,10 @@ export function closeElevationProfile(): void {
     if (profileEl) {
         profileEl.classList.remove('is-open');
         profileEl.classList.remove('is-expanded');
+        resetProfilePanelPosition(profileEl);
     }
     const legend = document.getElementById('profile-legend');
-    if (legend) legend.style.display = 'none';
+    if (legend) legend.hidden = true;
     const expandBtn = document.getElementById('profile-expand-btn');
     if (expandBtn) {
         if (_expandToggleHandler) {
@@ -644,8 +645,16 @@ export function closeElevationProfile(): void {
         }
         _profileListeners = null;
     }
+    if (_profileChartTransitionHandler) {
+        document
+            .getElementById('profile-chart-container')
+            ?.removeEventListener(
+                'transitionend',
+                _profileChartTransitionHandler
+            );
+        _profileChartTransitionHandler = null;
+    }
     profileInteractionsAttached = false;
-    swipeAttached = false;
     expandToggleAttached = false;
 }
 
@@ -660,11 +669,21 @@ function setupExpandToggle(): void {
 
     btn.innerHTML = profileExpanded ? ICON_COLLAPSE : ICON_EXPAND;
 
+    const chart = document.getElementById('profile-chart-container');
+    if (chart && !_profileChartTransitionHandler) {
+        _profileChartTransitionHandler = (event: TransitionEvent) => {
+            if (event.target === chart && event.propertyName === 'height') {
+                drawProfileSVG();
+            }
+        };
+        chart.addEventListener('transitionend', _profileChartTransitionHandler);
+    }
+
     if (profileExpanded) {
         const profileEl = document.getElementById('elevation-profile');
         profileEl?.classList.add('is-expanded');
         const legend = document.getElementById('profile-legend');
-        if (legend) legend.style.display = 'flex';
+        if (legend) legend.hidden = false;
     }
 
     _expandToggleHandler = () => {
@@ -675,11 +694,11 @@ function setupExpandToggle(): void {
         if (profileExpanded) {
             profileEl?.classList.add('is-expanded');
             btn.innerHTML = ICON_COLLAPSE;
-            if (legend) legend.style.display = 'flex';
+            if (legend) legend.hidden = false;
         } else {
             profileEl?.classList.remove('is-expanded');
             btn.innerHTML = ICON_EXPAND;
-            if (legend) legend.style.display = 'none';
+            if (legend) legend.hidden = true;
         }
 
         requestAnimationFrame(() => {
@@ -690,30 +709,34 @@ function setupExpandToggle(): void {
     btn.addEventListener('click', _expandToggleHandler);
 }
 
-let swipeAttached = false;
 let profileInteractionsAttached = false;
 let expandToggleAttached = false;
 let _expandToggleHandler: (() => void) | null = null;
+let _profileChartTransitionHandler: ((event: TransitionEvent) => void) | null =
+    null;
+let _profileCloseButton: HTMLElement | null = null;
+const _profileCloseHandler = (): void => closeElevationProfile();
 let _profileListeners: Array<{
     el: EventTarget;
     type: string;
     fn: (e: Event) => void;
 }> | null = null;
 
-function setupSwipeGesture(profileEl: HTMLElement): void {
-    if (swipeAttached) return;
-    swipeAttached = true;
+function resetProfilePanelPosition(profileEl: HTMLElement): void {
+    profileEl.classList.remove('panel-custom-pos');
+    profileEl.style.removeProperty('left');
+    profileEl.style.removeProperty('top');
+    profileEl.style.removeProperty('right');
+    profileEl.style.removeProperty('bottom');
+    profileEl.style.removeProperty('transform');
+    profileEl.style.removeProperty('transition');
+}
 
+function setupProfileCloseControl(profileEl: HTMLElement): void {
+    resetProfilePanelPosition(profileEl);
     const closeBtn = profileEl.querySelector<HTMLElement>('#close-profile');
-    closeBtn?.addEventListener('click', () => closeElevationProfile());
-
-    const handle = profileEl.querySelector<HTMLElement>('.profile-drag-handle');
-    if (!handle) return;
-
-    attachDraggablePanel({
-        panel: profileEl,
-        handle,
-        customPosClass: 'panel-custom-pos',
-        onDismiss: () => closeElevationProfile(),
-    });
+    if (_profileCloseButton === closeBtn) return;
+    _profileCloseButton?.removeEventListener('click', _profileCloseHandler);
+    _profileCloseButton = closeBtn;
+    _profileCloseButton?.addEventListener('click', _profileCloseHandler);
 }

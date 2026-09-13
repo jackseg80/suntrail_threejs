@@ -1,26 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const { mockT, mockHaptic } = vi.hoisted(() => {
-    const mockT = vi.fn((key: string) => {
-        const defaults: Record<string, string> = {
-            'onboarding.slide1.title': 'Bienvenue',
-            'onboarding.slide1.desc': 'SunTrail est votre compagnon.',
-            'onboarding.slide2.title': 'Préparer',
-            'onboarding.slide2.desc': 'Posez vos points.',
-            'onboarding.slide3.title': 'Confiance',
-            'onboarding.slide3.desc': 'Vérifiez les conditions.',
-            'onboarding.skip': 'Passer',
-            'onboarding.next': 'Suivant',
-            'onboarding.start': 'Commencer',
-            'onboarding.explore': 'Explorer',
-            'onboarding.prepareRoute': 'Planifier un itinéraire',
-            'onboarding.importGpx': 'Importer',
-            'onboarding.searchPeak': 'Chercher',
-        };
-        return defaults[key] || key;
-    });
-    const mockHaptic = vi.fn();
-    return { mockT, mockHaptic };
+    const mockT = vi.fn(
+        (key: string, vars?: Record<string, string>): string => {
+            const defaults: Record<string, string> = {
+                'onboarding.skip': 'Passer',
+                'onboarding.next': 'Suivant',
+                'onboarding.finish': 'Terminer',
+                'onboarding.step': `Prise en main ${vars?.current}/${vars?.total}`,
+                'onboarding.map.title': 'La carte est votre point de départ',
+                'onboarding.map.desc': 'La carte reste active.',
+                'onboarding.map.drag': 'Faites glisser',
+                'onboarding.map.zoom': 'Pincez',
+                'onboarding.map.tilt': 'Inclinez',
+                'onboarding.relief.title': 'Comparez la carte et le relief',
+                'onboarding.relief.desc': 'Touchez le bouton 2D/3D.',
+            };
+            return defaults[key] || key;
+        }
+    );
+    return { mockT, mockHaptic: vi.fn() };
 });
 
 vi.mock('../i18n/I18nService', () => ({
@@ -33,230 +32,124 @@ vi.mock('./haptics', () => ({
 
 import { requestOnboarding, showOnboarding } from './onboardingTutorial';
 
-describe('onboardingTutorial', () => {
-    const ONBOARDING_KEY = 'suntrail_onboarding_v2';
+describe('onboardingTutorial — live map tour', () => {
+    const ONBOARDING_KEY = 'suntrail_onboarding_v3';
 
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
-        document.body.innerHTML = '';
+        document.body.innerHTML = `
+            <main><div id="canvas-container"></div></main>
+            <button id="top-pill-lod">Détail 6</button>
+            <button id="nav-2d-toggle">2D</button>
+        `;
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         document.body.innerHTML = '';
     });
 
-    describe('requestOnboarding', () => {
-        it('should resolve immediately if onboarding already completed', async () => {
-            localStorage.setItem(ONBOARDING_KEY, '1');
-            const result = await requestOnboarding();
-            expect(result).toBeUndefined();
-            expect(document.getElementById('onboarding-overlay')).toBeNull();
-        });
-
-        it('should show overlay when not yet completed', async () => {
-            void requestOnboarding();
-            await vi.waitFor(() => {
-                expect(
-                    document.getElementById('onboarding-overlay')
-                ).not.toBeNull();
-            });
-        });
-
-        it('should persist the flag after completion via skip', async () => {
-            vi.useFakeTimers();
-            const promise = requestOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-skip')).not.toBeNull();
-            });
-
-            const skipBtn = document.getElementById('ob-skip')!;
-            skipBtn.click();
-
-            // v6.0 uses 400ms transition
-            vi.advanceTimersByTime(500);
-
-            await promise;
-            expect(localStorage.getItem(ONBOARDING_KEY)).toBe('1');
-            expect(document.getElementById('onboarding-overlay')).toBeNull();
-            vi.useRealTimers();
-        });
-
-        it('should persist the flag after completion via finishing all slides', async () => {
-            vi.useFakeTimers();
-            const promise = requestOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-next')).not.toBeNull();
-            });
-
-            const nextBtn = document.getElementById('ob-next')!;
-            // v5.82.0 has 3 slides (2 "Next" clicks)
-            for (let i = 0; i < 2; i++) {
-                nextBtn.click();
-            }
-
-            // Last click should close (button should say "Commencer")
-            nextBtn.click();
-            vi.advanceTimersByTime(500);
-
-            await promise;
-            expect(localStorage.getItem(ONBOARDING_KEY)).toBe('1');
-            expect(document.getElementById('onboarding-overlay')).toBeNull();
-            vi.useRealTimers();
-        });
+    it('does not show again after the v3 tour was completed', async () => {
+        localStorage.setItem(ONBOARDING_KEY, '1');
+        await requestOnboarding();
+        expect(document.getElementById('onboarding-overlay')).toBeNull();
     });
 
-    describe('showOnboarding', () => {
-        it('should always show overlay regardless of localStorage flag', async () => {
-            localStorage.setItem(ONBOARDING_KEY, '1');
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(
-                    document.getElementById('onboarding-overlay')
-                ).not.toBeNull();
-            });
-        });
+    it('offers the redesigned tour to users who only completed v2', () => {
+        localStorage.setItem('suntrail_onboarding_v2', '1');
+        void requestOnboarding();
+        expect(document.getElementById('onboarding-overlay')).not.toBeNull();
+    });
 
-        it('should render first slide content', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-title')).not.toBeNull();
-            });
+    it('persists v3 when the visit is skipped', async () => {
+        vi.useFakeTimers();
+        const promise = requestOnboarding();
+        document.getElementById('ob-skip')?.click();
+        vi.advanceTimersByTime(300);
+        await promise;
+        expect(localStorage.getItem(ONBOARDING_KEY)).toBe('1');
+        expect(document.getElementById('onboarding-overlay')).toBeNull();
+    });
 
-            const title = document.getElementById('ob-title')!;
-            expect(title.textContent).toBe('Bienvenue');
-        });
+    it('starts on the real map with its three gestures', () => {
+        void showOnboarding();
+        expect(document.getElementById('ob-title')?.textContent).toBe(
+            'La carte est votre point de départ'
+        );
+        expect(document.querySelectorAll('.ob-gestures li')).toHaveLength(3);
+        expect(
+            document
+                .getElementById('canvas-container')
+                ?.classList.contains('onboarding-live-target')
+        ).toBe(true);
+        expect(document.querySelector('.ob-menu-item')).toBeNull();
+        expect(document.querySelector('.ob-dot')).toBeNull();
+    });
 
-        it('should render 3 dot indicators', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-dots')).not.toBeNull();
-            });
+    it('is a non-modal dialog so the real map stays usable', () => {
+        void showOnboarding();
+        const overlay = document.getElementById('onboarding-overlay')!;
+        expect(overlay.getAttribute('role')).toBe('dialog');
+        expect(overlay.hasAttribute('aria-modal')).toBe(false);
+        expect(overlay.querySelector('style')).toBeNull();
+    });
 
-            const dots = document.querySelectorAll('.ob-dot');
-            expect(dots.length).toBe(3);
-        });
+    it('moves the highlight to the real 2D/3D control', () => {
+        void showOnboarding();
+        document.getElementById('ob-next')?.click();
 
-        it('should highlight first dot as active', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-dots')).not.toBeNull();
-            });
+        expect(document.getElementById('ob-title')?.textContent).toBe(
+            'Comparez la carte et le relief'
+        );
+        expect(
+            document
+                .getElementById('nav-2d-toggle')
+                ?.classList.contains('onboarding-live-target')
+        ).toBe(true);
+        expect(document.getElementById('ob-next')?.textContent).toBe(
+            'Terminer'
+        );
+    });
 
-            const dots = document.querySelectorAll('.ob-dot');
-            expect(dots[0].classList.contains('ob-dot--active')).toBe(true);
-            expect(dots[1].classList.contains('ob-dot--active')).toBe(false);
-        });
+    it('finishes when the highlighted 2D/3D control is tried', async () => {
+        vi.useFakeTimers();
+        const promise = showOnboarding();
+        document.getElementById('ob-next')?.click();
+        document.getElementById('nav-2d-toggle')?.click();
+        vi.advanceTimersByTime(300);
+        await promise;
+        expect(document.getElementById('onboarding-overlay')).toBeNull();
+    });
 
-        it('should navigate to next slide on button click', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-next')).not.toBeNull();
-            });
+    it('explains zoom level instead of asking for unavailable 3D', () => {
+        const modeToggle = document.getElementById(
+            'nav-2d-toggle'
+        ) as HTMLButtonElement;
+        modeToggle.disabled = true;
 
-            const nextBtn = document.getElementById('ob-next')!;
-            nextBtn.click();
+        void showOnboarding();
+        document.getElementById('ob-next')?.click();
 
-            await vi.waitFor(() => {
-                const dots = document.querySelectorAll('.ob-dot');
-                expect(dots[1].classList.contains('ob-dot--active')).toBe(true);
-            });
-        });
+        expect(mockT).toHaveBeenCalledWith('onboarding.detail.title');
+        expect(
+            document
+                .getElementById('top-pill-lod')
+                ?.classList.contains('onboarding-live-target')
+        ).toBe(true);
+        expect(modeToggle.classList.contains('onboarding-live-target')).toBe(
+            false
+        );
+    });
 
-        it('should show "Start" button text on last slide', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-next')).not.toBeNull();
-            });
-
-            const nextBtn = document.getElementById('ob-next')!;
-            // Navigate to slide 3 (0-indexed, last is 2)
-            for (let i = 0; i < 2; i++) {
-                nextBtn.click();
-            }
-
-            expect(nextBtn.textContent).toContain('Commencer');
-        });
-
-        it('should render final menu on last slide', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(document.getElementById('ob-next')).not.toBeNull();
-            });
-
-            const nextBtn = document.getElementById('ob-next')!;
-            for (let i = 0; i < 2; i++) {
-                nextBtn.click();
-            }
-
-            const menuItems = document.querySelectorAll('.ob-menu-item');
-            expect(menuItems.length).toBe(3);
-            expect(menuItems[0].textContent).toContain('Explorer');
-            expect(menuItems[1].textContent).toContain(
-                'Planifier un itinéraire'
-            );
-            menuItems.forEach((item) => expect(item.tagName).toBe('BUTTON'));
-        });
-
-        it('uses an accessible modal dialog and supports Escape', async () => {
-            vi.useFakeTimers();
-            const promise = showOnboarding();
-            const overlay = document.getElementById('onboarding-overlay')!;
-            expect(overlay.getAttribute('role')).toBe('dialog');
-            expect(overlay.getAttribute('aria-modal')).toBe('true');
-            expect(overlay.getAttribute('aria-labelledby')).toBe('ob-title');
-
-            overlay.dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
-            );
-            await promise;
-            vi.advanceTimersByTime(500);
-            expect(document.getElementById('onboarding-overlay')).toBeNull();
-            vi.useRealTimers();
-        });
-
-        it('disables decorative animations when reduced motion is requested', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(
-                    document.getElementById('onboarding-overlay')
-                ).not.toBeNull();
-            });
-            const style = document.querySelector('#onboarding-overlay style')!;
-            expect(style.textContent).toContain(
-                '@media (prefers-reduced-motion: reduce)'
-            );
-        });
-
-        it('should have safe area padding in footer style', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(
-                    document.getElementById('onboarding-overlay')
-                ).not.toBeNull();
-            });
-
-            const overlay = document.getElementById('onboarding-overlay')!;
-            const style = overlay.querySelector('style')!;
-            expect(style.textContent).toContain(
-                'padding: 24px 24px calc(24px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)))'
-            );
-        });
-
-        it('should have extra bottom padding on mobile to avoid system nav bar', async () => {
-            void showOnboarding();
-            await vi.waitFor(() => {
-                expect(
-                    document.getElementById('onboarding-overlay')
-                ).not.toBeNull();
-            });
-
-            const overlay = document.getElementById('onboarding-overlay')!;
-            const style = overlay.querySelector('style')!;
-            expect(style.textContent).toContain('@media (max-width: 600px)');
-            expect(style.textContent).toContain(
-                'padding-bottom: calc(24px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 72px)'
-            );
-        });
+    it('supports Escape without trapping the rest of the product', async () => {
+        vi.useFakeTimers();
+        const promise = showOnboarding();
+        document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        );
+        vi.advanceTimersByTime(300);
+        await promise;
+        expect(document.getElementById('onboarding-overlay')).toBeNull();
     });
 });

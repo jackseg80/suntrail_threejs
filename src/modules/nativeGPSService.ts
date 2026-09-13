@@ -42,6 +42,9 @@ export interface NativeSession {
     mode: NativeSessionMode;
     recording: boolean;
     guidance: boolean;
+    recordingPaused: boolean;
+    recordingPausedAt: number;
+    recordingPausedDurationMs: number;
     routeId?: string | null;
     courseId?: string | null;
     issue?: string | null;
@@ -60,6 +63,8 @@ interface RecordingPlugin {
         originTile?: { x: number; y: number; z: number };
     }): Promise<{ courseId: string }>;
     stopCourse(): Promise<void>;
+    pauseRecording(): Promise<void>;
+    resumeRecording(): Promise<void>;
     startGuidance(options: {
         routeId: string;
         geometry: PreparedRouteV1['geometry'];
@@ -84,11 +89,17 @@ interface RecordingPlugin {
     getCurrentCourse(): Promise<{
         courseId: string;
         isRunning: boolean;
+        startTime: number;
+        recordingPaused: boolean;
+        recordingPausedAt: number;
+        recordingPausedDurationMs: number;
         originTile?: { x: number; y: number; z: number };
     }>;
     getPendingStoppedCourse(): Promise<{
         courseId: string;
         startTime: number;
+        stoppedAt: number;
+        recordingPausedDurationMs: number;
     }>;
     acknowledgePendingStoppedCourse(): Promise<void>;
     clearRecordedPoints(options: { courseId: string }): Promise<void>;
@@ -147,6 +158,7 @@ class NativeGPSService {
             const nativeSession = await this.getActiveSession();
             if (nativeSession?.active) {
                 state.isRecording = nativeSession.recording;
+                this.applyRecordingTiming(nativeSession);
                 this.setupListeners();
             }
             // 1. Tenter de récupérer la course native encore active
@@ -160,16 +172,19 @@ class NativeGPSService {
                 this.currentCourseId = nativeCourse.courseId;
                 state.currentCourseId = nativeCourse.courseId;
                 state.isRecording = true;
+                this.applyRecordingTiming(nativeCourse);
 
                 // v5.29.1 : Restaurer le temps de départ
-                const savedStartTime = await Preferences.get({
-                    key: STORAGE_KEY_START_TIME,
-                });
-                if (savedStartTime.value) {
-                    state.recordingStartTime = parseInt(
-                        savedStartTime.value,
-                        10
-                    );
+                if (!state.recordingStartTime) {
+                    const savedStartTime = await Preferences.get({
+                        key: STORAGE_KEY_START_TIME,
+                    });
+                    if (savedStartTime.value) {
+                        state.recordingStartTime = parseInt(
+                            savedStartTime.value,
+                            10
+                        );
+                    }
                 }
 
                 if (nativeCourse.originTile) {
@@ -196,6 +211,12 @@ class NativeGPSService {
                     state.isRecording = false;
                     state.recordingStartTime =
                         pendingStoppedCourse.startTime || null;
+                    state.recordingPausedDurationMs =
+                        pendingStoppedCourse.recordingPausedDurationMs || 0;
+                    state.recordingStoppedAt =
+                        pendingStoppedCourse.stoppedAt || null;
+                    state.recordingPausedAt = null;
+                    state.isPaused = false;
                     if (nativeCourse?.originTile) {
                         state.originTile = nativeCourse.originTile;
                     }
@@ -305,6 +326,9 @@ class NativeGPSService {
         this.currentCourseId = result.courseId;
         state.isPaused = false;
         state.isRecording = true;
+        state.recordingPausedAt = null;
+        state.recordingPausedDurationMs = 0;
+        state.recordingStoppedAt = null;
 
         // v5.29.1 : Persister le temps de départ
         const startTime = Date.now();
@@ -370,6 +394,9 @@ class NativeGPSService {
         state.isPaused = false;
         state.isRecording = false;
         state.recordingStartTime = null; // Reset
+        state.recordingPausedAt = null;
+        state.recordingPausedDurationMs = 0;
+        state.recordingStoppedAt = null;
 
         // v5.29.1 : Nettoyage
         await Preferences.remove({ key: STORAGE_KEY_START_TIME });
@@ -416,12 +443,26 @@ class NativeGPSService {
         await RecordingNative?.stopGuidance();
     }
 
-    async pauseGuidance(): Promise<void> {
-        await RecordingNative?.pauseGuidance();
+    async pauseRecording(): Promise<void> {
+        if (!RecordingNative || !state.isRecording || state.isPaused) return;
+        const pausedAt = Date.now();
+        state.isPaused = true;
+        state.recordingPausedAt = pausedAt;
+        await RecordingNative.pauseRecording();
     }
 
-    async resumeGuidance(): Promise<void> {
-        await RecordingNative?.resumeGuidance();
+    async resumeRecording(): Promise<void> {
+        if (!RecordingNative || !state.isRecording || !state.isPaused) return;
+        const now = Date.now();
+        if (state.recordingPausedAt) {
+            state.recordingPausedDurationMs += Math.max(
+                0,
+                now - state.recordingPausedAt
+            );
+        }
+        state.isPaused = false;
+        state.recordingPausedAt = null;
+        await RecordingNative.resumeRecording();
     }
 
     async stopAll(): Promise<void> {
@@ -559,6 +600,10 @@ class NativeGPSService {
     async getCurrentCourse(): Promise<{
         courseId: string;
         isRunning: boolean;
+        startTime?: number;
+        recordingPaused?: boolean;
+        recordingPausedAt?: number;
+        recordingPausedDurationMs?: number;
         originTile?: { x: number; y: number; z: number };
     } | null> {
         if (!RecordingNative) return null;
@@ -671,6 +716,7 @@ class NativeGPSService {
                     active: event.recording || event.guidance,
                 };
                 state.isRecording = event.recording;
+                this.applyRecordingTiming(event);
                 for (const listener of this.sessionListeners) listener(session);
             }
         ).then((h) => this._listenerHandles.push(h));
@@ -796,6 +842,16 @@ class NativeGPSService {
         // Android has already removed the foreground notification, but Room
         // may contain a final batch that the sleeping WebView has not seen.
         this.stopStatsUpdates();
+        const pending = await RecordingNative?.getPendingStoppedCourse();
+        if (pending?.courseId) {
+            state.recordingStartTime =
+                pending.startTime || state.recordingStartTime;
+            state.recordingStoppedAt = pending.stoppedAt || Date.now();
+            state.recordingPausedDurationMs =
+                pending.recordingPausedDurationMs || 0;
+            state.recordingPausedAt = null;
+            state.isPaused = false;
+        }
         await this.syncPoints();
         if (state.isRecording || state.recordedPoints.length > 0) {
             await stopRecordingWithFeedback({ nativeAlreadyStopped: true });
@@ -818,6 +874,9 @@ class NativeGPSService {
         state.isPaused = false;
         state.isRecording = false;
         state.recordingStartTime = null;
+        state.recordingPausedAt = null;
+        state.recordingPausedDurationMs = 0;
+        state.recordingStoppedAt = null;
         await Preferences.remove({ key: STORAGE_KEY_START_TIME });
         await Preferences.remove({ key: STORAGE_KEY_COURSE_ID });
         await Preferences.remove({ key: STORAGE_KEY_POINTS });
@@ -843,6 +902,23 @@ class NativeGPSService {
             this.statsUpdateInterval = null;
         }
         this.lastStatsPointCount = 0;
+    }
+
+    private applyRecordingTiming(source: {
+        recordingPaused?: boolean;
+        recordingPausedAt?: number;
+        recordingPausedDurationMs?: number;
+        startTime?: number;
+    }): void {
+        state.isPaused = source.recordingPaused === true;
+        state.recordingPausedAt = source.recordingPausedAt
+            ? source.recordingPausedAt
+            : null;
+        state.recordingPausedDurationMs = Math.max(
+            0,
+            source.recordingPausedDurationMs ?? 0
+        );
+        if (source.startTime) state.recordingStartTime = source.startTime;
     }
 }
 

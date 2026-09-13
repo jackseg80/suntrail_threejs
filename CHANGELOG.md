@@ -1,3 +1,39 @@
+## [5.90.0] - 2026-09-13 — Refonte UI et prise en main concrète
+
+### Amélioré
+
+- Unifier le langage visuel des commandes de carte, feuilles, dialogues, réglages, Bibliothèque,
+  Sortie, guidage, météo, analyse solaire et Timeline ; les cinq commandes latérales possèdent
+  désormais la même empreinte tactile, y compris sur les écrans étroits.
+- Remplacer le diaporama d'accueil par deux étapes sur la carte réelle : gestes essentiels, puis
+  lecture du détail ou accès 2D/3D. Les aides métier apparaissent ensuite au point d'usage pour
+  Préparer, REC et le premier accès à une fonction Pro.
+- Rendre les réglages dépendants d'un profil explicitement « Personnalisé » après une modification
+  manuelle, sans confondre ce statut avec les réglages sans rapport avec les performances.
+- Clarifier le statut Free/Pro : la première action verrouillée explique la limite et propose de
+  voir SunTrail Pro ou de continuer plus tard ; les actions suivantes ouvrent directement l'offre.
+
+### Corrigé
+
+- Rechercher les tuiles nouvellement visibles après une rotation portrait/paysage, sans toucher au
+  throttle ni au repos du moteur après stabilisation : les bandes blanches latérales disparaissent
+  sans nécessiter un geste sur la carte.
+- Rendre les fiches fermées inertes dans le parcours d'accessibilité et conserver le focus sur la
+  fiche active ; corriger les noms accessibles des options de réglages.
+- Séparer les catalogues de langues du moteur de traduction afin de respecter le budget bundle sans
+  retirer de locale ni relever les limites.
+
+### Validation
+
+- Contrôles TypeScript, formatage et lint, audit des quatre langues, 158 fichiers et 1 830 tests
+  Web/TypeScript, build Web, budget bundle, synchronisation Capacitor et assemblage Android.
+- Parcours contrôlé sur Galaxy S23 SM-S911B et Galaxy A53 SM-A536B, en Free ; A53 vérifié aux
+  tailles 100, 110 et 130 %, avec les profils Endurance, Équilibré, Fluide et Maximum. La matrice
+  Web couvre 320 à 1280 px et un zoom à 200 % ; les contrôles d'accessibilité automatisés passent.
+- Métadonnées `5.90.0` / Android `911`. La release GitHub `v5.90.0` produit un AAB signé par la CI.
+  Aucun téléversement Google Play n'est inclus ; vérifier le maximum `versionCode` dans Play Console
+  avant tout envoi.
+
 ## [5.89.1] - 2026-09-10 — Simplification de l'interface terrain
 
 ### Amélioré

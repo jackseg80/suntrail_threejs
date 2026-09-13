@@ -1,4 +1,4 @@
-# SunTrail — Protocole de performance mobile (v5.89.1)
+# SunTrail — Protocole de performance mobile (v5.90.0)
 
 > Cibles de référence : Galaxy A53 en Équilibré et Galaxy S23 en Performance. Une impression de
 > fluidité ne remplace pas une mesure, et une fenêtre courte ne prouve pas l'autonomie.

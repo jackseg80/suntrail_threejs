@@ -15,6 +15,8 @@ const { mockPreferences, mockRecordingNative } = vi.hoisted(() => ({
         getActiveSession: vi.fn(),
         startCourse: vi.fn(),
         stopCourse: vi.fn(),
+        pauseRecording: vi.fn(),
+        resumeRecording: vi.fn(),
         getPoints: vi.fn(),
         requestBatteryOptimizationExemption: vi.fn(),
         updateNotificationStats: vi.fn(),
@@ -45,6 +47,9 @@ describe('NativeGPSService (v5.29.38)', () => {
         vi.clearAllTimers();
         state.recordedPoints = [];
         state.isRecording = false;
+        state.isPaused = false;
+        state.recordingPausedAt = null;
+        state.recordingPausedDurationMs = 0;
         mockPreferences.get.mockResolvedValue({ value: null });
         mockRecordingNative.getCurrentCourse.mockResolvedValue({
             isRunning: false,
@@ -155,6 +160,25 @@ describe('NativeGPSService (v5.29.38)', () => {
         expect(state.currentCourseId).toBe('');
         expect(state.isRecording).toBe(false);
         clearIntervalSpy.mockRestore();
+    });
+
+    it('met le REC en pause puis reprend sans compter le temps suspendu', async () => {
+        vi.spyOn(Date, 'now')
+            .mockReturnValueOnce(10_000)
+            .mockReturnValueOnce(16_000);
+        state.isRecording = true;
+
+        await nativeGPSService.pauseRecording();
+        expect(state.isPaused).toBe(true);
+        expect(state.recordingPausedAt).toBe(10_000);
+        expect(mockRecordingNative.pauseRecording).toHaveBeenCalledTimes(1);
+
+        await nativeGPSService.resumeRecording();
+        expect(state.isPaused).toBe(false);
+        expect(state.recordingPausedAt).toBeNull();
+        expect(state.recordingPausedDurationMs).toBe(6_000);
+        expect(mockRecordingNative.resumeRecording).toHaveBeenCalledTimes(1);
+        vi.restoreAllMocks();
     });
 
     it('should filter points with sudden altitude jumps', () => {

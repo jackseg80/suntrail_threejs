@@ -82,7 +82,7 @@ async function openGuidanceApp(page: Page): Promise<void> {
     await page.addInitScript((appVersion: string) => {
         localStorage.clear();
         localStorage.setItem('suntrail_acceptance_v1', '1');
-        localStorage.setItem('suntrail_onboarding_v2', '1');
+        localStorage.setItem('suntrail_onboarding_v3', '1');
         localStorage.setItem('suntrail_gps_disclosure_v1', '1');
         localStorage.setItem('suntrail_app_version', appVersion);
     }, packageJSON.version);

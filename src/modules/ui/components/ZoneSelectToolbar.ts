@@ -30,6 +30,7 @@ export class ZoneSelectToolbar extends BaseComponent {
     private maxLod = 14;
     private viewportOverlay: HTMLElement | null = null;
     private resizeHandler: (() => void) | null = null;
+    private toolbarResizeObserver: ResizeObserver | null = null;
     private downloadAbort: AbortController | null = null;
 
     constructor() {
@@ -39,19 +40,52 @@ export class ZoneSelectToolbar extends BaseComponent {
     private createViewportOverlay(): HTMLElement {
         const el = document.createElement('div');
         el.id = 'zone-select-viewport';
-        el.style.cssText =
-            'position:fixed;top:6%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:20000;' +
-            'border:3px solid rgba(255,160,0,0.85);border-radius:8px;background:rgba(255,160,0,0.2);' +
-            'box-shadow:0 0 0 1px rgba(0,0,0,0.25);';
-        this.updateViewportOverlaySize(el);
         return el;
     }
 
     private updateViewportOverlaySize(el?: HTMLElement): void {
         const target = el || this.viewportOverlay;
         if (!target) return;
+
+        const toolbar = this.element as HTMLElement | null;
+        const toolbarRect = toolbar?.getBoundingClientRect();
+        const gap = 12;
+        const landscape = window.innerWidth > window.innerHeight;
+
+        target.classList.toggle('zone-select-viewport-landscape', landscape);
+        target.style.top = `calc(var(--safe-top) + ${gap}px)`;
+
+        if (landscape && toolbarRect) {
+            target.style.removeProperty('left');
+            target.style.removeProperty('transform');
+            target.style.removeProperty('width');
+            target.style.removeProperty('height');
+            target.style.removeProperty('right');
+            target.style.removeProperty('bottom');
+            target.style.setProperty(
+                '--zone-toolbar-width',
+                `${Math.ceil(toolbarRect.width)}px`
+            );
+            target.style.removeProperty('--zone-toolbar-height');
+            return;
+        }
+
+        target.style.left = '50%';
+        target.style.transform = 'translateX(-50%)';
+        target.style.removeProperty('right');
         target.style.width = `${Math.floor(window.innerWidth * 0.85)}px`;
-        target.style.height = `${Math.floor(window.innerHeight * 0.55)}px`;
+        if (toolbarRect) {
+            target.style.removeProperty('height');
+            target.style.removeProperty('bottom');
+            target.style.setProperty(
+                '--zone-toolbar-height',
+                `${Math.ceil(toolbarRect.height)}px`
+            );
+            target.style.removeProperty('--zone-toolbar-width');
+        } else {
+            target.style.removeProperty('bottom');
+            target.style.height = `${Math.floor(window.innerHeight * 0.5)}px`;
+        }
     }
 
     setOverlay(overlay: import('../../ZoneOverlay').ZoneOverlay): void {
@@ -127,32 +161,28 @@ export class ZoneSelectToolbar extends BaseComponent {
 
         const freeBadge = toolbar.querySelector(
             '#zst-free-badge'
-        ) as HTMLElement;
+        ) as HTMLButtonElement;
         if (freeBadge) {
-            freeBadge.style.display = isProActive() ? 'none' : 'block';
+            freeBadge.hidden = isProActive();
         }
 
         if (!isProActive()) {
-            const rangeWrap = toolbar.querySelector(
-                '.zone-select-range-wrap'
-            ) as HTMLElement;
             const clickHandler = () => showUpgradePrompt('offline_zones');
-            if (rangeWrap) {
-                rangeWrap.style.cursor = 'pointer';
-                rangeWrap.addEventListener('click', clickHandler);
-            }
-            if (freeBadge) {
-                freeBadge.style.cursor = 'pointer';
-                freeBadge.addEventListener('click', clickHandler);
-            }
+            freeBadge?.addEventListener('click', clickHandler);
         }
 
-        // v5.57.2 : Overlay viewport fixe (écran) pour sélection visible sur mobile portrait
+        // Guide d'écran invisible : sa géométrie réserve la zone utile et sert au raycasting.
+        // La seule emprise visible est le ZoneOverlay géographique rendu sur la carte.
         this.viewportOverlay = this.createViewportOverlay();
         document.body.appendChild(this.viewportOverlay);
+        this.updateViewportOverlaySize();
         this.resizeHandler = () => this.updateViewportOverlaySize();
         window.addEventListener('resize', this.resizeHandler);
         window.addEventListener('orientationchange', this.resizeHandler);
+        if (typeof ResizeObserver !== 'undefined') {
+            this.toolbarResizeObserver = new ResizeObserver(this.resizeHandler);
+            this.toolbarResizeObserver.observe(toolbar);
+        }
 
         this.recomputeFromVisibleTiles();
 
@@ -164,11 +194,11 @@ export class ZoneSelectToolbar extends BaseComponent {
             state.subscribe('ZOOM', () => this.onZoomChanged())
         );
 
-        // En 3D la projection perspective déforme la zone → utiliser le ZoneOverlay 3D plutôt que le cadre CSS
+        // Recalculer l'emprise géographique quand la projection 2D/3D change.
         this.addSubscription(
-            state.subscribe('IS_2D_MODE', (is2D: boolean) => {
-                if (!this.viewportOverlay) return;
-                this.viewportOverlay.style.display = is2D ? 'block' : 'none';
+            state.subscribe('IS_2D_MODE', () => {
+                this.updateViewportOverlaySize();
+                this.recomputeFromVisibleTiles();
             })
         );
     }
@@ -232,7 +262,7 @@ export class ZoneSelectToolbar extends BaseComponent {
         if (tileCountEl) {
             tileCountEl.textContent =
                 visibleCount > 0
-                    ? `📦 ${visibleCount} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${estimateZoneSizeMB(visibleCount)} (LOD ${currentLOD})`
+                    ? `${visibleCount} ${i18n.t('connectivity.label.tiles') || 'tuiles'} · ${estimateZoneSizeMB(visibleCount)} (LOD ${currentLOD})`
                     : i18n.t('connectivity.btn.downloadZone');
         }
 
@@ -282,6 +312,9 @@ export class ZoneSelectToolbar extends BaseComponent {
     }
 
     private async download(btn: HTMLButtonElement): Promise<void> {
+        // Reprendre l'emprise affichée au moment exact du clic. La caméra peut
+        // avoir bougé depuis la dernière mise à jour des compteurs du panneau.
+        this.recomputeFromVisibleTiles();
         if (!this.currentSelection || this.currentSelection.totalTiles === 0)
             return;
 
@@ -316,7 +349,7 @@ export class ZoneSelectToolbar extends BaseComponent {
         const tileCountEl = this.element?.querySelector('#zst-tile-count');
         const totalInfoEl = this.element?.querySelector('#zst-total-info');
 
-        this.zoneOverlay?.setMode('downloading');
+        this.zoneOverlay?.setMode('downloading', capturedBbox);
 
         this.downloadAbort = new AbortController();
 
@@ -327,7 +360,7 @@ export class ZoneSelectToolbar extends BaseComponent {
                     if (tileCountEl) {
                         const pct =
                             total > 0 ? Math.round((done / total) * 100) : 0;
-                        tileCountEl.textContent = `⏬ ${lodLabel}: ${pct}%…`;
+                        tileCountEl.textContent = `${lodLabel}: ${pct}%…`;
                     }
                     if (totalInfoEl) {
                         totalInfoEl.textContent = `${done}/${total}`;
@@ -424,6 +457,8 @@ export class ZoneSelectToolbar extends BaseComponent {
             window.removeEventListener('orientationchange', this.resizeHandler);
             this.resizeHandler = null;
         }
+        this.toolbarResizeObserver?.disconnect();
+        this.toolbarResizeObserver = null;
         this.dispose();
     }
 }

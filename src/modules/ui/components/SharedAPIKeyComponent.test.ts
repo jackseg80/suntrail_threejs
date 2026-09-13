@@ -39,7 +39,7 @@ vi.mock('../templates/api-key-form.html?raw', () => ({
         <div class="api-key-section">
             <form class="api-key-form">
                 <div class="api-key-input-row">
-                    <input type="text" class="api-key-input" />
+                    <input type="password" class="api-key-input" />
                     <button type="submit" class="api-key-submit-btn">OK</button>
                 </div>
             </form>
@@ -88,6 +88,15 @@ describe('SharedAPIKeyComponent', () => {
             '.api-key-input'
         ) as HTMLInputElement;
         expect(input.getAttribute('aria-label')).toBe('Clé API MapTiler');
+    });
+
+    it('masks the stored key by default', () => {
+        const comp = new SharedAPIKeyComponent('test-api-container');
+        comp.hydrate();
+        const input = container.querySelector(
+            '.api-key-input'
+        ) as HTMLInputElement;
+        expect(input.type).toBe('password');
     });
 
     it('saves key on form submit', () => {

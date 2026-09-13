@@ -1,6 +1,12 @@
 import { eventBus } from '../../eventBus';
 import { haptic } from '../../haptics';
 
+interface SheetHistoryEntry {
+    id: string;
+    scrollTop: number;
+    focusedElement: HTMLElement | null;
+}
+
 /**
  * SheetManager
  * Singleton controller for managing bottom sheets.
@@ -10,6 +16,8 @@ class SheetManager {
     private static instance: SheetManager;
     private activeSheetId: string | null = null;
     private overlay: HTMLElement | null = null;
+    private history: SheetHistoryEntry[] = [];
+    private backHandlers = new Map<string, () => boolean>();
 
     // Accessibility: focus management
     private triggerElement: HTMLElement | null = null;
@@ -50,23 +58,74 @@ class SheetManager {
     public open(id: string): void {
         if (this.activeSheetId === id) return;
 
+        if (!document.getElementById(id)) {
+            console.warn(`SheetManager: Sheet with id '${id}' not found.`);
+            return;
+        }
+
+        this.history = [];
+        this.openSheet(id);
+    }
+
+    /**
+     * Opens a sheet as a child of the current one. Back/Escape restores the
+     * parent at the same scroll position instead of dropping the context.
+     */
+    public openChild(id: string): void {
+        if (this.activeSheetId === id) return;
+
+        const child = document.getElementById(id);
+        if (!child) {
+            console.warn(`SheetManager: Sheet with id '${id}' not found.`);
+            return;
+        }
+
+        if (!this.activeSheetId) {
+            this.open(id);
+            return;
+        }
+
+        const parent = document.getElementById(this.activeSheetId);
+        this.history.push({
+            id: this.activeSheetId,
+            scrollTop: parent?.scrollTop ?? 0,
+            focusedElement:
+                document.activeElement instanceof HTMLElement
+                    ? document.activeElement
+                    : null,
+        });
+        this.openSheet(id);
+    }
+
+    private openSheet(
+        id: string,
+        restored?: Pick<SheetHistoryEntry, 'scrollTop' | 'focusedElement'>
+    ): void {
         const sheet = document.getElementById(id);
         if (!sheet) {
             console.warn(`SheetManager: Sheet with id '${id}' not found.`);
             return;
         }
 
-        // Store the trigger element for focus restoration
-        this.triggerElement = document.activeElement as HTMLElement;
+        // Store only the element which opened the root sheet. A child keeps
+        // this reference so closing the whole flow returns to the map control.
+        if (!this.activeSheetId) {
+            this.triggerElement = document.activeElement as HTMLElement;
+        }
 
         // If another sheet is open, close it first (without restoring focus)
         if (this.activeSheetId && this.activeSheetId !== id) {
             this.releaseFocus();
-            this.detachEscapeHandler();
+            this.detachSwipeGesture();
+            const previousId = this.activeSheetId;
+            document.body.classList.remove(`sheet-${previousId}-open`);
             this.closeActiveSheet();
+            eventBus.emit('sheetClosed', { id: previousId });
         }
 
         // ARIA: mark as dialog
+        sheet.inert = false;
+        sheet.removeAttribute('aria-hidden');
         sheet.setAttribute('role', 'dialog');
         sheet.setAttribute('aria-modal', 'true');
         sheet.setAttribute('tabindex', '-1');
@@ -84,6 +143,7 @@ class SheetManager {
 
         // Open the new sheet
         sheet.classList.add('is-open');
+        sheet.classList.toggle('has-sheet-parent', this.history.length > 0);
         document.body.classList.add('sheet-open');
         document.body.classList.add(`sheet-${id}-open`);
         this.activeSheetId = id;
@@ -106,12 +166,15 @@ class SheetManager {
         // Emit event
         eventBus.emit('sheetOpened', { id });
 
-        // Toujours afficher depuis le haut.
+        // Toujours afficher depuis le haut, sauf au retour vers un parent.
         // trapFocus() focus le premier élément focusable à +50ms → le navigateur
         // scroll automatiquement vers cet élément, annulant tout reset antérieur.
         // On contre-carre à +55ms pour garantir scroll=0 après le focus.
         setTimeout(() => {
-            sheet.scrollTop = 0;
+            sheet.scrollTop = restored?.scrollTop ?? 0;
+            if (restored?.focusedElement?.isConnected) {
+                restored.focusedElement.focus({ preventScroll: true });
+            }
         }, 55);
     }
 
@@ -139,7 +202,42 @@ class SheetManager {
 
             // Emit event
             eventBus.emit('sheetClosed', { id: previousId });
+
+            this.history = [];
+            const trigger = this.triggerElement;
+            this.triggerElement = null;
+            if (trigger?.isConnected) trigger.focus();
         }
+    }
+
+    /**
+     * Returns to the parent sheet when there is one, otherwise closes the flow.
+     */
+    public back(): void {
+        const handler = this.activeSheetId
+            ? this.backHandlers.get(this.activeSheetId)
+            : undefined;
+        if (handler?.()) return;
+
+        const parent = this.history.pop();
+        if (!parent) {
+            this.close();
+            return;
+        }
+        this.openSheet(parent.id, parent);
+    }
+
+    /**
+     * Lets a sheet consume Back/Escape for an internal sub-page before the
+     * manager returns to a parent sheet or closes the flow.
+     */
+    public registerBackHandler(id: string, handler: () => boolean): () => void {
+        this.backHandlers.set(id, handler);
+        return () => {
+            if (this.backHandlers.get(id) === handler) {
+                this.backHandlers.delete(id);
+            }
+        };
     }
 
     /**
@@ -161,6 +259,18 @@ class SheetManager {
     }
 
     /**
+     * Returns the root of the current sheet flow. This lets navigation keep
+     * the owning destination highlighted while a child sheet is visible.
+     */
+    public getRootSheetId(): string | null {
+        return this.history[0]?.id ?? this.activeSheetId;
+    }
+
+    public canGoBack(): boolean {
+        return this.history.length > 0;
+    }
+
+    /**
      * Internal helper to close the active sheet without affecting the overlay.
      */
     private closeActiveSheet(): void {
@@ -168,6 +278,9 @@ class SheetManager {
             const sheet = document.getElementById(this.activeSheetId);
             if (sheet) {
                 sheet.classList.remove('is-open');
+                sheet.classList.remove('has-sheet-parent');
+                sheet.inert = true;
+                sheet.setAttribute('aria-hidden', 'true');
                 // Clean up ARIA attributes
                 sheet.removeAttribute('role');
                 sheet.removeAttribute('aria-modal');
@@ -219,7 +332,7 @@ class SheetManager {
 
             if (delta > 60 || velocity > 0.3) {
                 void haptic('medium');
-                this.close();
+                this.back();
             }
         };
 
@@ -295,8 +408,6 @@ class SheetManager {
             document.removeEventListener('keydown', this.focusTrapHandler);
             this.focusTrapHandler = null;
         }
-        this.triggerElement?.focus();
-        this.triggerElement = null;
     }
 
     // ─── Accessibility: Escape Key ──────────────────────────────
@@ -305,7 +416,7 @@ class SheetManager {
         this.escapeHandler = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && this.activeSheetId) {
                 e.preventDefault();
-                this.close();
+                this.back();
             }
         };
         document.addEventListener('keydown', this.escapeHandler);

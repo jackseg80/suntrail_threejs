@@ -1,18 +1,19 @@
-# SunTrail — Guide IA (version source 5.89.1)
+# SunTrail — Guide IA (version source 5.90.0)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-10 après la clôture GitHub
-> de la simplification terrain 5.89.1.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-13 après la clôture locale
+> de la refonte UI 5.90.
 
 ## État vérifié
 
-- Version npm : `5.89.1`.
-- Android : `versionName 5.89.1`, `versionCode 910`, minSdk 24, compile/target SDK 36. Le code 910
-  reste une attribution locale à revalider dans la Play Console avant tout upload.
+- Version npm : `5.90.0`.
+- Android : `versionName 5.90.0`, `versionCode 911`, minSdk 24, compile/target SDK 36. Le code 911
+  est supérieur au dernier code local connu ; le maximum effectif dans Play Console reste à vérifier
+  avant tout upload.
 - Branche de travail habituelle : `main`. Toujours vérifier le worktree et le commit courant.
-- La release GitHub `v5.89.1` est clôturée avec son AAB signé produit par la CI. L'APK diagnostic
-  a été validé le 2026-09-10 sur Galaxy S23 SM-S911B / Android 16 et Galaxy A53 SM-A536B avec une
-  police à 110 %. Aucun upload Google Play de 910 n'est établi par le dépôt ; vérifier le maximum
-  global de la Play Console avant tout envoi.
+- La release GitHub `v5.90.0` est préparée depuis cette révision et son tag produit l'AAB signé par
+  la CI. La qualification couvre le Galaxy S23 et l'A53, avec polices Android jusqu'à 130 %, quatre
+  profils, matrice Web et contrôles d'accessibilité automatisés. Aucun upload Google Play de 911
+  n'est établi par le dépôt ; vérifier le maximum global de la Play Console avant tout envoi.
 - 5.86.0/904 est importée dans Play, 5.86.1/905 y est visible et le propriétaire a indiqué un
   envoi de 5.86.2/906 en test. 5.87.0/907 est publiée sur GitHub sans upload Play revendiqué.
 - Le contrôle long de 30 minutes en faible réseau reste un suivi post-release, pas une fonction

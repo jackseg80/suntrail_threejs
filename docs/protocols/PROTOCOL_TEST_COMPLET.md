@@ -1,4 +1,4 @@
-# SunTrail 3D — Protocole de test complet (v5.89.1)
+# SunTrail 3D — Protocole de test complet (v5.90.0)
 
 > Durée indicative : 1 h 30 à 2 h hors marche terrain. Ce protocole couvre les fonctions actuelles
 > sans supprimer les données existantes. Les achats et actions de publication ne font pas partie du
@@ -17,7 +17,8 @@
 ## 1. Installation, reprise et onboarding
 
 - [ ] Mettre à jour sans désinstaller et vérifier que routes, traces, zones et packs restent présents.
-- [ ] Sur un profil neuf seulement, parcourir les trois écrans d'onboarding et tester Passer/Échap.
+- [ ] Sur un profil neuf seulement, parcourir les deux étapes d'onboarding sur la carte réelle et
+      tester Passer/Échap.
 - [ ] Vérifier la récupération sûre après mise en arrière-plan, rotation et retour au premier plan.
 
 ## 2. Navigation 2D/3D

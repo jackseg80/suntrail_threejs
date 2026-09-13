@@ -2,39 +2,45 @@
  * toast.ts — Système de notifications temporaires (Toast)
  */
 
-export function showToast(message: string, duration: number = 3000) {
+export function showToast(
+    message: string,
+    duration: number = 3000,
+    replaceKey?: string
+) {
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
         container.id = 'toast-container';
-        container.style.position = 'fixed';
-        container.style.bottom = '100px';
-        container.style.left = '50%';
-        container.style.transform = 'translateX(-50%)';
-        container.style.zIndex = '10000';
-        container.style.display = 'flex';
-        container.style.flexDirection = 'column';
-        container.style.alignItems = 'center';
-        container.style.gap = '10px';
-        container.style.pointerEvents = 'none';
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'false');
         document.body.appendChild(container);
+    }
+
+    if (replaceKey) {
+        Array.from(container.children)
+            .find(
+                (candidate) =>
+                    (candidate as HTMLElement).dataset.toastKey === replaceKey
+            )
+            ?.remove();
     }
 
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.style.opacity = '0';
-    toast.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-    toast.style.transform = 'translateY(20px)';
     toast.textContent = message;
+    if (replaceKey) toast.dataset.toastKey = replaceKey;
 
     container.appendChild(toast);
     void toast.offsetHeight;
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateY(0)';
+    toast.classList.add('is-visible');
 
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-20px)';
-        setTimeout(() => toast.remove(), 300);
+        toast.classList.remove('is-visible');
+        toast.classList.add('is-exiting');
+        setTimeout(() => {
+            toast.remove();
+            if (!container?.childElementCount) container?.remove();
+        }, 180);
     }, duration);
 }

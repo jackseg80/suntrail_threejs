@@ -17,6 +17,7 @@ import { buildRecordingSummary } from '../outing/outingDashboard';
 import { STORAGE_KEYS } from '../../constants/storage';
 import { releaseFlags } from '../releaseFlags';
 import { state } from '../state';
+import { formatTrackDisplayName } from '../tracks/trackDisplayName';
 import {
     nativeGPSService,
     type NativeGuidanceUpdate,
@@ -65,6 +66,7 @@ export class GuidanceForegroundService {
     private snapshot: GuidanceSnapshot | null = null;
     private unsubscribeLocation: (() => void) | null = null;
     private unsubscribeRecording: (() => void) | null = null;
+    private unsubscribeRecordingPause: (() => void) | null = null;
     private tickTimer: number | null = null;
     private alertTimer: number | null = null;
     private element: HTMLElement | null = null;
@@ -121,9 +123,7 @@ export class GuidanceForegroundService {
                     this.applyNativeUpdate(update)
                 );
             this.subscribeNativeSession();
-            this.unsubscribeRecording = state.subscribe('isRecording', () =>
-                this.render()
-            );
+            this.subscribeRecordingState();
             this.tickTimer = window.setInterval(() => this.render(), 1_000);
             await nativeGPSService.startGuidance(route, plan);
             const snapshot = await nativeGPSService.getGuidanceSnapshot();
@@ -163,9 +163,7 @@ export class GuidanceForegroundService {
                 );
             }
         );
-        this.unsubscribeRecording = state.subscribe('isRecording', () =>
-            this.render()
-        );
+        this.subscribeRecordingState();
         this.tickTimer = window.setInterval(() => {
             if (this.engine) this.applyUpdate(this.engine.tick());
         }, 1000);
@@ -182,16 +180,6 @@ export class GuidanceForegroundService {
         return true;
     }
 
-    public pause(): void {
-        if (this.nativeActive) void nativeGPSService.pauseGuidance();
-        else if (this.engine) this.applyUpdate(this.engine.pause());
-    }
-
-    public resume(): void {
-        if (this.nativeActive) void nativeGPSService.resumeGuidance();
-        else if (this.engine) this.applyUpdate(this.engine.resume());
-    }
-
     public stop(announce = true): void {
         if (this.nativeActive) void nativeGPSService.stopGuidance();
         else if (this.engine) this.applyUpdate(this.engine.stop());
@@ -202,6 +190,8 @@ export class GuidanceForegroundService {
         this.unsubscribeLocation = null;
         this.unsubscribeRecording?.();
         this.unsubscribeRecording = null;
+        this.unsubscribeRecordingPause?.();
+        this.unsubscribeRecordingPause = null;
         this.unsubscribeNativeGuidance?.();
         this.unsubscribeNativeGuidance = null;
         this.unsubscribeNativeSession?.();
@@ -265,9 +255,7 @@ export class GuidanceForegroundService {
             (update) => this.applyNativeUpdate(update)
         );
         this.subscribeNativeSession();
-        this.unsubscribeRecording = state.subscribe('isRecording', () =>
-            this.render()
-        );
+        this.subscribeRecordingState();
         this.applyUpdate({
             snapshot: session.snapshot,
             events:
@@ -290,6 +278,17 @@ export class GuidanceForegroundService {
                     this.stop(false);
                 }
             }
+        );
+    }
+
+    private subscribeRecordingState(): void {
+        this.unsubscribeRecording?.();
+        this.unsubscribeRecordingPause?.();
+        this.unsubscribeRecording = state.subscribe('isRecording', () =>
+            this.render()
+        );
+        this.unsubscribeRecordingPause = state.subscribe('isPaused', () =>
+            this.render()
         );
     }
 
@@ -318,9 +317,9 @@ export class GuidanceForegroundService {
         element.setAttribute('aria-label', i18n.t('guidance.title'));
         element.innerHTML = `
             <div class="guidance-alert" id="guidance-alert" role="alert" hidden></div>
-            <div class="guidance-panel-handle" role="separator" aria-label="${i18n.t('guidance.actions.resize')}" tabindex="0">
-                <span aria-hidden="true"></span>
-                <small>${i18n.t('guidance.actions.drag')}</small>
+            <div class="guidance-panel-controls">
+                <button type="button" class="guidance-panel-minimize" data-guidance-action="minimize">${i18n.t('guidance.actions.minimize')}</button>
+                <button type="button" class="guidance-panel-toggle" data-guidance-action="toggle-details" aria-expanded="false">${i18n.t('guidance.actions.details')}</button>
             </div>
             <div class="guidance-heading">
                 <div>
@@ -332,8 +331,13 @@ export class GuidanceForegroundService {
                     <strong id="guidance-route-name"></strong>
                 </div>
                 <div class="guidance-heading-tools">
+                    <span id="guidance-rec-badge" class="guidance-rec-badge" role="status" hidden>
+                        <span class="guidance-rec-dot" aria-hidden="true"></span>
+                        <span class="guidance-rec-label">REC</span>
+                        <strong id="guidance-rec-badge-duration">0:00</strong>
+                    </span>
                     <span id="guidance-status" class="guidance-status" role="status"></span>
-                    <span class="guidance-peek-open" aria-hidden="true">⌄</span>
+                    <button type="button" class="guidance-peek-open" data-guidance-action="open">${i18n.t('guidance.actions.open')}</button>
                 </div>
             </div>
             <div class="guidance-cue" aria-live="polite">
@@ -347,6 +351,7 @@ export class GuidanceForegroundService {
                 <strong id="guidance-cue-label"></strong>
                 <span id="guidance-cue-confidence" class="guidance-cue-confidence"></span>
             </div>
+            <div id="guidance-inclinometer-slot" class="guidance-inclinometer-slot"></div>
             <div class="guidance-metrics">
                 <div><span>${i18n.t('guidance.remaining')}</span><strong id="guidance-remaining">—</strong></div>
                 <div><span>${i18n.t('guidance.eta')}</span><strong id="guidance-eta">—</strong></div>
@@ -364,10 +369,10 @@ export class GuidanceForegroundService {
                 <span id="guidance-bearing">—</span>
             </div>
             <div class="guidance-actions">
-                <button type="button" data-guidance-action="pause">${i18n.t('guidance.actions.pause')}</button>
                 <button type="button" data-guidance-action="profile" aria-pressed="false">${i18n.t('guidance.actions.profile')}</button>
-                <button type="button" data-guidance-action="record">REC</button>
-                <button type="button" data-guidance-action="stop" class="guidance-stop">${i18n.t('guidance.actions.stop')}</button>
+                <button type="button" data-guidance-action="pause-rec" hidden>${i18n.t('track.btn.pause')}</button>
+                <button type="button" data-guidance-action="record">${i18n.t('guidance.actions.record')}</button>
+                <button type="button" data-guidance-action="stop" class="guidance-stop">${i18n.t('guidance.actions.stopGuidance')}</button>
             </div>
             <div class="guidance-secondary-actions">
                 <button type="button" data-guidance-action="stop-rec-only">${i18n.t('guidance.actions.stopRecOnly')}</button>
@@ -381,73 +386,28 @@ export class GuidanceForegroundService {
             const action = (event.target as HTMLElement).closest<HTMLElement>(
                 '[data-guidance-action]'
             )?.dataset.guidanceAction;
-            if (
-                !action &&
-                this.panelMode === 'peek' &&
-                (event.target as HTMLElement).closest('.guidance-heading')
-            ) {
+            if (action === 'open') {
                 this.setPanelMode('compact');
-                return;
-            }
-            if (action === 'pause') {
-                if (this.snapshot?.status === 'paused') this.resume();
-                else this.pause();
+            } else if (action === 'minimize') {
+                this.setPanelMode('peek');
             } else if (action === 'profile') {
                 this.toggleProfile();
+            } else if (action === 'toggle-details') {
+                this.setPanelMode(
+                    this.panelMode === 'details' ? 'compact' : 'details'
+                );
             } else if (action === 'record') {
                 void this.toggleRecording();
+            } else if (action === 'pause-rec') {
+                void this.toggleRecordingPause();
             } else if (action === 'stop-rec-only') {
                 void this.stopRecordingOnly();
             } else if (action === 'stop') {
                 this.stop();
             }
         });
-        element.addEventListener('keydown', (event) => {
-            if (
-                this.panelMode === 'peek' &&
-                (event.key === 'Enter' || event.key === ' ') &&
-                event.target ===
-                    element.querySelector<HTMLElement>('.guidance-heading')
-            ) {
-                event.preventDefault();
-                this.setPanelMode('compact');
-            }
-        });
-        const handle = element.querySelector<HTMLElement>(
-            '.guidance-panel-handle'
-        );
-        let dragStartY: number | null = null;
-        handle?.addEventListener('pointerdown', (event) => {
-            dragStartY = event.clientY;
-            handle.setPointerCapture?.(event.pointerId);
-        });
-        handle?.addEventListener('pointerup', (event) => {
-            if (dragStartY === null) return;
-            const delta = event.clientY - dragStartY;
-            dragStartY = null;
-            if (Math.abs(delta) < 28) return;
-            this.stepPanelMode(delta < 0 ? 1 : -1);
-        });
-        handle?.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowUp') this.stepPanelMode(1);
-            else if (event.key === 'ArrowDown') this.stepPanelMode(-1);
-            else return;
-            event.preventDefault();
-        });
         document.body.appendChild(element);
         this.element = element;
-    }
-
-    private stepPanelMode(direction: 1 | -1): void {
-        const modes: Array<'peek' | 'compact' | 'details'> = [
-            'peek',
-            'compact',
-            'details',
-        ];
-        const index = modes.indexOf(this.panelMode);
-        this.setPanelMode(
-            modes[Math.max(0, Math.min(modes.length - 1, index + direction))]
-        );
     }
 
     private setPanelMode(mode: 'peek' | 'compact' | 'details'): void {
@@ -502,6 +462,18 @@ export class GuidanceForegroundService {
         this.render();
         try {
             await stopRecordingWithFeedback();
+        } finally {
+            this.recordingActionPending = false;
+            this.render();
+        }
+    }
+
+    private async toggleRecordingPause(): Promise<void> {
+        if (this.recordingActionPending || !state.isRecording) return;
+        this.recordingActionPending = true;
+        this.render();
+        try {
+            await recordingService.toggleRecordingPause();
         } finally {
             this.recordingActionPending = false;
             this.render();
@@ -581,7 +553,7 @@ export class GuidanceForegroundService {
             const target = this.element?.querySelector<HTMLElement>(selector);
             if (target) target.textContent = value;
         };
-        set('#guidance-route-name', this.route.name);
+        set('#guidance-route-name', formatTrackDisplayName(this.route.name));
         set('#guidance-status', i18n.t(`guidance.status.${snapshot.status}`));
         set(
             '#guidance-cue-distance',
@@ -632,31 +604,17 @@ export class GuidanceForegroundService {
                 ? i18n.t('guidance.orientation.northUp')
                 : `${Math.round(snapshot.bearing)}° · ${state.userHeading === null ? i18n.t('guidance.orientation.northUp') : i18n.t('guidance.orientation.headingUp')}`
         );
-        const pause = this.element.querySelector<HTMLButtonElement>(
-            '[data-guidance-action="pause"]'
+        const panelToggle = this.element.querySelector<HTMLButtonElement>(
+            '[data-guidance-action="toggle-details"]'
         );
-        if (pause) {
-            pause.textContent = i18n.t(
-                snapshot.status === 'paused'
-                    ? 'guidance.actions.resume'
-                    : 'guidance.actions.pause'
+        if (panelToggle) {
+            const expanded = this.panelMode === 'details';
+            panelToggle.textContent = i18n.t(
+                expanded
+                    ? 'guidance.actions.compact'
+                    : 'guidance.actions.details'
             );
-        }
-        const heading =
-            this.element.querySelector<HTMLElement>('.guidance-heading');
-        if (heading) {
-            if (this.panelMode === 'peek') {
-                heading.setAttribute('role', 'button');
-                heading.setAttribute('tabindex', '0');
-                heading.setAttribute(
-                    'aria-label',
-                    i18n.t('guidance.actions.open')
-                );
-            } else {
-                heading.removeAttribute('role');
-                heading.removeAttribute('tabindex');
-                heading.removeAttribute('aria-label');
-            }
+            panelToggle.setAttribute('aria-expanded', String(expanded));
         }
         const record = this.element.querySelector<HTMLButtonElement>(
             '[data-guidance-action="record"]'
@@ -664,7 +622,7 @@ export class GuidanceForegroundService {
         if (record) {
             record.textContent = state.isRecording
                 ? i18n.t('guidance.actions.finishOuting')
-                : 'REC';
+                : i18n.t('guidance.actions.record');
             record.dataset.recording = String(state.isRecording);
             record.disabled = this.recordingActionPending;
             record.setAttribute(
@@ -672,6 +630,33 @@ export class GuidanceForegroundService {
                 String(this.recordingActionPending)
             );
         }
+        const pauseRecording = this.element.querySelector<HTMLButtonElement>(
+            '[data-guidance-action="pause-rec"]'
+        );
+        if (pauseRecording) {
+            pauseRecording.hidden = !state.isRecording;
+            pauseRecording.textContent = i18n.t(
+                state.isPaused ? 'track.btn.resume' : 'track.btn.pause'
+            );
+            pauseRecording.setAttribute(
+                'aria-label',
+                i18n.t(
+                    state.isPaused ? 'track.aria.resume' : 'track.aria.pause'
+                )
+            );
+            pauseRecording.setAttribute('aria-pressed', String(state.isPaused));
+            pauseRecording.dataset.recordingPaused = String(state.isPaused);
+            pauseRecording.disabled = this.recordingActionPending;
+            pauseRecording.setAttribute(
+                'aria-busy',
+                String(this.recordingActionPending)
+            );
+        }
+        this.element.dataset.recording = String(state.isRecording);
+        const recBadge = this.element.querySelector<HTMLElement>(
+            '#guidance-rec-badge'
+        );
+        if (recBadge) recBadge.hidden = !state.isRecording;
         const recSummary = this.element.querySelector<HTMLElement>(
             '#guidance-rec-summary'
         );
@@ -681,6 +666,8 @@ export class GuidanceForegroundService {
                 const summary = buildRecordingSummary(state.recordedPoints, {
                     now: Date.now(),
                     recordingStartTime: state.recordingStartTime,
+                    recordingPausedAt: state.recordingPausedAt,
+                    recordingPausedDurationMs: state.recordingPausedDurationMs,
                     userAltitudeMeters: state.userLocation?.alt ?? null,
                     gpsAccuracyMeters: state.userLocationAccuracy,
                 });
@@ -690,11 +677,15 @@ export class GuidanceForegroundService {
                 const h = Math.floor(seconds / 3_600);
                 const m = Math.floor((seconds % 3_600) / 60);
                 const s = seconds % 60;
-                set(
-                    '#guidance-rec-duration',
+                const duration =
                     h > 0
                         ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-                        : `${m}:${String(s).padStart(2, '0')}`
+                        : `${m}:${String(s).padStart(2, '0')}`;
+                set('#guidance-rec-duration', duration);
+                set('#guidance-rec-badge-duration', duration);
+                recBadge?.setAttribute(
+                    'aria-label',
+                    `${i18n.t('topbar.aria.recording')} · ${duration}`
                 );
                 set(
                     '#guidance-rec-distance',
@@ -730,6 +721,10 @@ export class GuidanceForegroundService {
             '[data-guidance-action="stop-rec-only"]'
         );
         if (stopRecOnly) stopRecOnly.hidden = !state.isRecording;
+        const secondaryActions = this.element.querySelector<HTMLElement>(
+            '.guidance-secondary-actions'
+        );
+        if (secondaryActions) secondaryActions.hidden = !state.isRecording;
         const profileClose = document.getElementById('close-profile');
         if (profileClose) {
             const profileOpen = document.body.classList.contains(
@@ -741,7 +736,7 @@ export class GuidanceForegroundService {
             profileClose.setAttribute(
                 'aria-label',
                 profileOpen
-                    ? i18n.t('guidance.actions.back')
+                    ? i18n.t('guidance.actions.backAria')
                     : i18n.t('common.close')
             );
         }

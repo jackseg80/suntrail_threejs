@@ -49,33 +49,55 @@ describe('SettingsCategoryNavigation', () => {
         );
         expect(nav.querySelectorAll('button')).toHaveLength(3);
         expect(nav.textContent).toContain('settings.category.essentials');
+        expect(
+            nav
+                .querySelector('[data-settings-category="essentials"]')
+                ?.getAttribute('aria-current')
+        ).toBe('location');
         expect(mockOn).toHaveBeenCalledWith(
             'localeChanged',
             expect.any(Function)
         );
     });
 
-    it('opens and focuses the developer lab while syncing selection', () => {
-        const navigation = new SettingsCategoryNavigation(root);
+    it('opens the dedicated advanced page without scrolling the main page', () => {
+        const openAdvancedPage = vi.fn();
+        const navigation = new SettingsCategoryNavigation(
+            root,
+            openAdvancedPage
+        );
         navigation.hydrate();
         const developerButton = root.querySelector<HTMLButtonElement>(
             '[data-settings-category="developer"]'
         )!;
-        const lab = document.getElementById(
-            'settings-developer-lab'
-        ) as HTMLDetailsElement;
-        const focusSpy = vi.spyOn(lab, 'focus');
 
         developerButton.click();
-        vi.advanceTimersByTime(250);
 
-        expect(lab.open).toBe(true);
-        expect(lab.scrollIntoView).toHaveBeenCalledWith({
-            block: 'start',
-            behavior: 'smooth',
-        });
-        expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
-        expect(developerButton.getAttribute('aria-selected')).toBe('true');
+        expect(openAdvancedPage).toHaveBeenCalledOnce();
+        expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('follows manual scrolling through the long settings sheet', () => {
+        const navigation = new SettingsCategoryNavigation(root);
+        navigation.hydrate();
+        const nav = document.getElementById('settings-category-nav')!;
+        const hiking = document.getElementById('settings-hiking-group')!;
+        Object.defineProperty(nav, 'offsetHeight', { value: 60 });
+        Object.defineProperty(hiking, 'offsetTop', { value: 400 });
+
+        root.scrollTop = 420;
+        root.dispatchEvent(new Event('scroll'));
+
+        expect(
+            root
+                .querySelector('[data-settings-category="hiking"]')
+                ?.getAttribute('aria-current')
+        ).toBe('location');
+        expect(
+            root
+                .querySelector('[data-settings-category="developer"]')
+                ?.hasAttribute('aria-current')
+        ).toBe(false);
     });
 
     it('removes its navigation and locale listener on dispose', () => {

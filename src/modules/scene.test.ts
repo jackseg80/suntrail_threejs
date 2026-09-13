@@ -361,12 +361,15 @@ describe('scene.ts', () => {
 
             await initScene();
             const renderer = MockWebGLRenderer.instances.at(-1)!;
+            const { updateVisibleTiles } = await import('./terrain');
+            vi.mocked(updateVisibleTiles).mockClear();
             const loopsBeforeResize =
                 renderer.setAnimationLoop.mock.calls.length;
 
             window.dispatchEvent(new Event('resize'));
 
             expect(renderer.setSize).toHaveBeenCalledTimes(3);
+            expect(updateVisibleTiles).toHaveBeenCalledOnce();
             expect(renderer.setAnimationLoop).toHaveBeenCalledTimes(
                 loopsBeforeResize + 1
             );

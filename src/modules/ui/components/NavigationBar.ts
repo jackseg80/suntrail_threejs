@@ -13,6 +13,7 @@ import { forceImmediateLODUpdate } from '../../scene';
 import { updateUserMarker } from '../../location';
 import { getAltitudeAt, hasTerrainData } from '../../analysis';
 import { showToast } from '../../toast';
+import { closeElevationProfile } from '../../profile';
 import {
     setRoutePlanningMode,
     toggleRoutePlannerChrome,
@@ -73,6 +74,7 @@ export class NavigationBar extends BaseComponent {
                     this.setActiveTab(null);
                 } else {
                     setRoutePlanningMode(false);
+                    closeElevationProfile();
                     sheetManager.open(sheetId);
                     this.setActiveTab(tabId);
                     if (sheetId === 'track') {
@@ -287,6 +289,10 @@ export class NavigationBar extends BaseComponent {
             this.setActiveTab(destination === 'library' ? 'library' : 'track');
             return;
         }
+        if (sheetManager.getRootSheetId() === 'settings') {
+            this.setActiveTab('settings');
+            return;
+        }
         if (!activeId && state.isRoutePlanningMode) {
             this.setActiveTab('prepare');
             return;
@@ -317,13 +323,11 @@ export class NavigationBar extends BaseComponent {
             if (libraryScope) {
                 libraryScope.hidden = destination !== 'library';
             }
-            if (destination === 'library') {
-                document
-                    .getElementById('prepared-routes-section')
-                    ?.scrollIntoView({ block: 'start' });
-            } else {
-                track.scrollTop = 0;
-            }
+            // La feuille possède un en-tête sticky. scrollIntoView() plaçait
+            // la première rangée de Bibliothèque sous cet en-tête à grande
+            // police. Revenir au sommet conserve le titre et les actions dans
+            // leur ordre naturel.
+            track.scrollTop = 0;
         }, 80);
     }
 

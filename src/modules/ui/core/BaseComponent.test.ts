@@ -32,6 +32,20 @@ describe('BaseComponent', () => {
         expect(component.renderCalled).toBe(true);
     });
 
+    it('keeps a closed bottom sheet out of the accessibility tree', () => {
+        const component = new TestComponent(
+            'unused-template',
+            'test-container',
+            '<section class="bottom-sheet">Sheet</section>'
+        );
+
+        component.hydrate();
+
+        const sheet = document.querySelector<HTMLElement>('.bottom-sheet')!;
+        expect(sheet.inert).toBe(true);
+        expect(sheet.getAttribute('aria-hidden')).toBe('true');
+    });
+
     it('should call cleanup functions and remove element on dispose', () => {
         const component = new TestComponent('test-template', 'test-container');
         component.hydrate();

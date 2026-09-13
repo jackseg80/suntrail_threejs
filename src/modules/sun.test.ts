@@ -15,6 +15,7 @@ describe('sun.ts', () => {
             <div id="alt-val"></div>
             <div id="sun-needle"></div>
             <span id="sun-phase"></span>
+            <section id="bottom-bar"></section>
             <div id="day-duration"></div>
             <div id="sunrise-disp"></div>
             <div id="sunset-disp"></div>
@@ -46,13 +47,21 @@ describe('sun.ts', () => {
     it('should update sun phase to "Plein jour" at noon', () => {
         updateSunPosition(720); // 12h00
         const phaseSpan = document.getElementById('sun-phase');
-        expect(phaseSpan?.textContent).toBe('☀️ Plein jour');
+        expect(phaseSpan?.textContent).toBe('Plein jour');
+        expect(phaseSpan?.dataset.phase).toBe('day');
+        expect(document.getElementById('bottom-bar')?.dataset.solarPhase).toBe(
+            'day'
+        );
     });
 
     it('should update sun phase to "Nuit" at midnight', () => {
         updateSunPosition(0); // 00h00
         const phaseSpan = document.getElementById('sun-phase');
-        expect(phaseSpan?.textContent).toBe('🌙 Nuit');
+        expect(phaseSpan?.textContent).toBe('Nuit');
+        expect(phaseSpan?.dataset.phase).toBe('night');
+        expect(document.getElementById('bottom-bar')?.dataset.solarPhase).toBe(
+            'night'
+        );
     });
 
     it('should update sunLight intensity based on time', () => {

@@ -9,6 +9,7 @@ import { showToast } from './toast';
 import { saveProStatus, state } from './state';
 export { isProActive } from './state';
 import { sheetManager } from './ui/core/SheetManager';
+import { hasSeenProContextHint, showProContextHint } from './contextualHelp';
 
 // Messages par feature (sera remplacé par i18n quand les clés seront ajoutées)
 const FEATURE_LABELS: Record<string, string> = {
@@ -32,7 +33,29 @@ const FEATURE_LABELS: Record<string, string> = {
 export function showUpgradePrompt(feature: string): void {
     const label = FEATURE_LABELS[feature] ?? feature;
     showToast(`🔒 ${label} — fonctionnalité Pro`);
-    sheetManager.open('upgrade-sheet');
+
+    const openUpgrade = () => {
+        if (sheetManager.getActiveSheetId()) {
+            sheetManager.openChild('upgrade-sheet');
+        } else {
+            sheetManager.open('upgrade-sheet');
+        }
+    };
+
+    if (hasSeenProContextHint()) {
+        openUpgrade();
+        return;
+    }
+
+    void showProContextHint().then((result) => {
+        if (
+            result === 'primary' ||
+            result === 'seen' ||
+            result === 'unavailable'
+        ) {
+            openUpgrade();
+        }
+    });
 }
 
 /**

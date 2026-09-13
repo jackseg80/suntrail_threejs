@@ -1,8 +1,8 @@
-# SunTrail — Roadmap produit révisée (version source v5.89.1)
+# SunTrail — Roadmap produit révisée (version source v5.90.0)
 
-> Révision produit : 2026-09-10. v5.89.1 / Android 910 est publiée sur GitHub avec son AAB signé
-> après validation A53/S23. Aucun téléversement Play de 910 n'est revendiqué ; le statut et le
-> maximum de versionCode de la Play Console restent à vérifier séparément.
+> Révision produit : 2026-09-13. v5.90.0 / Android 911 est qualifiée localement après validation
+> A53/S23. Aucun téléversement Play de 911 n'est revendiqué ; le statut et le maximum de
+> versionCode de la Play Console restent à vérifier séparément.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 
@@ -24,7 +24,7 @@ suivre → enregistrer**. Android est le produit terrain principal ; le web est 
 préparation facultatif. Le différenciateur reste le croisement relief 3D, soleil réel,
 heure de passage et conditions.
 
-## État réel au 2026-09-09
+## État réel au 2026-09-13
 
 - **v5.86.0** est publiée sur GitHub et son AAB Android **904** a déjà été importé dans Google
   Play ; ce `versionCode` est consommé.
@@ -60,28 +60,49 @@ heure de passage et conditions.
   et la fin de REC. Les gestes et tailles ont été validés sur A53/S23, y compris avec une police à
   110 %, puis la release GitHub et son AAB signé ont été publiés. La refonte globale et
   l'unification de tous les panneaux restent un lot 5.90+.
+- **v5.90.0** / Android **911** clôt la refonte UI : système commun de feuilles et dialogues,
+  tutoriel en deux étapes sur la carte réelle, aides contextuelles, surfaces Free/Pro explicites,
+  commandes latérales homogènes et correction du rechargement de tuiles après rotation paysage.
+  La qualification A53/S23, quatre profils, matrice Web et accessibilité automatisée est verte ;
+  le chantier de pente du chemin reste volontairement en 5.90.1.
 - Après comparaison Komoot/Garmin, v5.84 inclut la prochaine indication et sa distance au sein
   du moteur foreground, sans étendre la promesse aux fonctions natives/background de v5.85.
 
 ## Séquence de livraison révisée
 
-| Version | Résultat autonome | Portée principale |
-|---|---|---|
-| **v5.82.0** | Comprendre et utiliser la préparation sans geste caché | Finalisé dans le worktree, sans PreparedRoute |
-| **v5.83.0** | Planifier, évaluer et retrouver une route après redémarrage | PreparedRoute local, bibliothèque, difficulté/effort, soleil utile |
-| **v5.84.0 interne clôturée** | Valider le moteur de suivi sans promesse publique incomplète | GuidanceEngine TS, progression/ETA/écart, prochaine indication, foreground |
-| **v5.85.0 clôturée** | Guider réellement sur Android, écran éteint et après interruption | Matcher natif, route Room, notification, récupération, tests appareils |
-| **v5.85.1** | Randonner plus longtemps avec une carte fluide | Autonomie, rendu au repos, REC long, cache VRAM/tuiles et guidage efficient |
-| **v5.86.0** | Savoir si la sortie est prête et emporter son corridor | Readiness en couches, corridor Free remplaçable, offline fiable |
-| **v5.86.1** | Rester utilisable sur Android 15/16 sans sacrifier le terrain | Edge-to-edge, cutout documenté et réduction R8 ciblée |
-| **v5.86.2** | Lire l'activité en cours sans confondre Sortie et Bibliothèque | Tableau de bord contextuel, import déplacé, promesse Free/Pro honnête |
-| **v5.87.0** | Conserver des traces pleine fidélité sans apparition/disparition implicite | `TrackRepository`, migration et règles de capacité non destructives |
-| **v5.88.0** | Assainir la base avant v6 et garder le mode combiné fluide sur A53 | Audit global, dépendances, baseline mesurée et coûts croissants bornés sans perte |
-| **v5.89.0 — clôturée** | Décider de l'architecture sur preuve | Pipeline couleur d'abord, promotion 2D→3D et caches bornés ; Three.js/WebGL conservé |
-| **v5.89.1 — clôturée** | Réduire les erreurs et hésitations pendant une sortie | Préparer simplifié, GPS explicite, Guidance à trois hauteurs, fin Guidance+REC et récapitulatif |
-| **5.90+ — lot expert, ex-v6.0** | Accélérer les usages experts sans compliquer le débutant | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition |
-| **5.90+ — lot lumière, ex-v6.1** | Choisir plus facilement le bon moment | Lumière utile : soleil, ombre, azimuts et lecture des conditions, sans nouveau compte |
-| **Compte/sync — reporté, ex-v6.2** | Préparer sur PC et retrouver volontairement sur Android | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits |
+La **5.90 est consacrée à la refonte cohérente de l'interface**. Le
+[plan UX révisé après audit S23](docs/plans/V5_90_UI_REDESIGN.md) propose une migration par
+familles de panneaux, sans réécriture des moteurs. La direction a été validée le 2026-09-10 et
+le pilote Préparer est implémenté localement puis validé sur le paquet diagnostic S23 en
+Free/Fluide, avec police Android à 115 %. Le retour propriétaire a aussi été intégré et rejoué pour
+le profil fixe, l'en-tête Configuration avec clavier et les boutons Annuler/Rétablir. La première
+tranche commune unifie aussi Recherche et la navigation parent/enfant Connectivité → Packs, validée
+sur la même installation S23. Plus/Réglages dispose ensuite de catégories compactes et d'un
+aller-retour contextualisé vers l'offre Pro. Couches, Météo et SOS ont aussi été harmonisés et
+rejoués sur ce S23, avec retour Couches → Pro → Couches et sans action externe SOS. A53, compte Pro
+actif, paysage, accessibilité et sessions terrain actives restent à contrôler avant extension. Les
+lots experts/lumière ci-dessous restent des périmètres futurs à répartir,
+sans ajout implicite à la 5.90.
+
+| Version                            | Résultat autonome                                                          | Portée principale                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **v5.82.0**                        | Comprendre et utiliser la préparation sans geste caché                     | Finalisé dans le worktree, sans PreparedRoute                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **v5.83.0**                        | Planifier, évaluer et retrouver une route après redémarrage                | PreparedRoute local, bibliothèque, difficulté/effort, soleil utile                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **v5.84.0 interne clôturée**       | Valider le moteur de suivi sans promesse publique incomplète               | GuidanceEngine TS, progression/ETA/écart, prochaine indication, foreground                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **v5.85.0 clôturée**               | Guider réellement sur Android, écran éteint et après interruption          | Matcher natif, route Room, notification, récupération, tests appareils                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **v5.85.1**                        | Randonner plus longtemps avec une carte fluide                             | Autonomie, rendu au repos, REC long, cache VRAM/tuiles et guidage efficient                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **v5.86.0**                        | Savoir si la sortie est prête et emporter son corridor                     | Readiness en couches, corridor Free remplaçable, offline fiable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **v5.86.1**                        | Rester utilisable sur Android 15/16 sans sacrifier le terrain              | Edge-to-edge, cutout documenté et réduction R8 ciblée                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **v5.86.2**                        | Lire l'activité en cours sans confondre Sortie et Bibliothèque             | Tableau de bord contextuel, import déplacé, promesse Free/Pro honnête                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **v5.87.0**                        | Conserver des traces pleine fidélité sans apparition/disparition implicite | `TrackRepository`, migration et règles de capacité non destructives                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **v5.88.0**                        | Assainir la base avant v6 et garder le mode combiné fluide sur A53         | Audit global, dépendances, baseline mesurée et coûts croissants bornés sans perte                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **v5.89.0 — clôturée**             | Décider de l'architecture sur preuve                                       | Pipeline couleur d'abord, promotion 2D→3D et caches bornés ; Three.js/WebGL conservé                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **v5.89.1 — clôturée**             | Réduire les erreurs et hésitations pendant une sortie                      | Préparer simplifié, GPS explicite, Guidance à trois hauteurs, fin Guidance+REC et récapitulatif                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **v5.90.0 — clôturée**             | Simplifier et unifier l'interface existante                                | Langage commun des commandes carte, feuilles et dialogues ; tutoriel concret en deux étapes et aides contextuelles ; surfaces Free/Pro explicites ; tuiles rechargées après rotation paysage ; commandes latérales homogènes. Qualification A53/S23, quatre profils, matrice Web et accessibilité automatisée terminée. |
+| **5.90.1 — candidat pente**        | Afficher une pente de chemin crédible malgré l'imprécision GPS             | Distinguer pente terrain au viseur et pente longitudinale suivie ; rattachement à la trace en Guidance, fenêtre de calcul lissée, confiance liée à la précision GPS/DEM, valeur inconnue plutôt qu'un pic de talus. Discussion et protocole terrain séparés avant implémentation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **5.90+ — lot expert, ex-v6.0**    | Accélérer les usages experts sans compliquer le débutant                   | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **5.90+ — lot lumière, ex-v6.1**   | Choisir plus facilement le bon moment                                      | Lumière utile : soleil, ombre, azimuts et lecture des conditions, sans nouveau compte                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Compte/sync — reporté, ex-v6.2** | Préparer sur PC et retrouver volontairement sur Android                    | Compte optionnel, OAuth PKCE, Supabase/RLS, sync et conflits                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 Le compte et la synchronisation ne sont un prérequis d'aucun usage des lots experts/lumière : routes, dossiers,
 notes, favoris et analyse lumière restent locaux et utilisables sans connexion. v5.84 est un jalon
@@ -585,14 +606,14 @@ Références produit officielles :
 
 ## Séquence de livraison obsolète
 
-| Version | Nom | Résultat utilisateur | Dépend de |
-|---|---|---|---|
-| **v5.82.0** | Fondations UX & confiance | Planifier sans geste caché, comprendre l'interface | v5.81.4 |
-| **v5.83.0** | Atelier & bibliothèque locale | Créer, modifier et sauvegarder une vraie randonnée sans compte | v5.82.0 |
-| **v5.84.0** | Compte optionnel & synchronisation | Préparer sur PC et retrouver la route sur Android | v5.83.0 |
-| **v5.85.0** | Prêt à partir & corridor hors ligne | Vérifier les risques et emporter les données nécessaires | v5.84.0 |
-| **v6.0.0** | Guidage Android hors ligne | Suivre la trace, recevoir une alerte hors parcours et enregistrer | v5.85.0 |
-| **v6.1.0** | Outils experts & finition pro | Accélérer les usages avancés sans alourdir le parcours débutant | v6.0.0 |
+| Version     | Nom                                 | Résultat utilisateur                                              | Dépend de |
+| ----------- | ----------------------------------- | ----------------------------------------------------------------- | --------- |
+| **v5.82.0** | Fondations UX & confiance           | Planifier sans geste caché, comprendre l'interface                | v5.81.4   |
+| **v5.83.0** | Atelier & bibliothèque locale       | Créer, modifier et sauvegarder une vraie randonnée sans compte    | v5.82.0   |
+| **v5.84.0** | Compte optionnel & synchronisation  | Préparer sur PC et retrouver la route sur Android                 | v5.83.0   |
+| **v5.85.0** | Prêt à partir & corridor hors ligne | Vérifier les risques et emporter les données nécessaires          | v5.84.0   |
+| **v6.0.0**  | Guidage Android hors ligne          | Suivre la trace, recevoir une alerte hors parcours et enregistrer | v5.85.0   |
+| **v6.1.0**  | Outils experts & finition pro       | Accélérer les usages avancés sans alourdir le parcours débutant   | v6.0.0    |
 
 Les plans détaillés et prompts de reprise sont indexés dans
 [docs/plans/prompts/README.md](docs/plans/prompts/README.md).
@@ -761,6 +782,7 @@ Architecture data-driven : une entrée dans `COUNTRY_SOURCES` suffit, la détect
 Natural Earth est automatique.
 
 **Implémenté :**
+
 - ✅ Suisse (SwissTopo) — `wmts.geo.admin.ch`
 - ✅ France (IGN Geoplateforme) — `data.geopf.fr`
 - ✅ Autriche (basemap.at) — `mapsneu.wien.gv.at`
@@ -773,29 +795,29 @@ Natural Earth est automatique.
 Testé le 2026-05-26 depuis l'étranger. Tous nécessitent une vérification locale
 (depuis un navigateur situé dans le pays ou un VPN).
 
-| Pays | Source | Code | Cause probable |
-|------|--------|------|----------------|
-| 🇨🇿 République Tchèque | ČÚZK ZM | 404 | Endpoint ArcGIS changé |
-| 🇵🇱 Pologne | Geoportal 2 | 404 | API migrée |
-| 🇸🇰 Slovaquie | ZBGIS | 404 | Endpoint changé |
-| 🇫🇮 Finlande | MML maastokartta | 401 | Auth requise |
-| 🇸🇪 Suède | Lantmäteriet | 503 | Service down |
+| Pays                  | Source           | Code | Cause probable         |
+| --------------------- | ---------------- | ---- | ---------------------- |
+| 🇨🇿 République Tchèque | ČÚZK ZM          | 404  | Endpoint ArcGIS changé |
+| 🇵🇱 Pologne            | Geoportal 2      | 404  | API migrée             |
+| 🇸🇰 Slovaquie          | ZBGIS            | 404  | Endpoint changé        |
+| 🇫🇮 Finlande           | MML maastokartta | 401  | Auth requise           |
+| 🇸🇪 Suède              | Lantmäteriet     | 503  | Service down           |
 
 **Comment activer :** Tester l'URL depuis l'app/navigateur local → si OK, décommenter
 l'entrée dans `COUNTRY_SOURCES` et le helper dans `tileSources.ts`.
 
 ### Pays nécessitant des prérequis
 
-| Pays | Source | Prérequis |
-|------|--------|-----------|
-| 🇸🇮 Slovénie | GURS | URL WMTS à trouver (recherche docs GURS) |
-| 🇮🇹 Italie | Geoportale Nazionale | Pas de WMTS national de qualité rando |
-| 🇮🇹 Piémont | BDTRE (Région Piemonte) | EPSG:32632 uniquement (pas Web Mercator) — reprojection nécessaire |
-| 🇮🇹 Südtirol | MapProxy BZ | 60+ couches EPSG:3857 mais couverture régionale seulement |
-| 🇬🇧 Royaume-Uni | Ordnance Survey | Clé API gratuite à configurer |
-| 🇯🇵 Japon | GSI Maps | Étendre `countries.ts` à l'Asie (ingest Asia) |
-| 🇳🇿 Nouvelle-Zélande | LINZ Topo50 | Clé API gratuite à configurer |
-| 🇺🇸🇨🇦 USA/Canada | USGS/NRCan | Faible priorité rando Europe |
+| Pays                | Source                  | Prérequis                                                          |
+| ------------------- | ----------------------- | ------------------------------------------------------------------ |
+| 🇸🇮 Slovénie         | GURS                    | URL WMTS à trouver (recherche docs GURS)                           |
+| 🇮🇹 Italie           | Geoportale Nazionale    | Pas de WMTS national de qualité rando                              |
+| 🇮🇹 Piémont          | BDTRE (Région Piemonte) | EPSG:32632 uniquement (pas Web Mercator) — reprojection nécessaire |
+| 🇮🇹 Südtirol         | MapProxy BZ             | 60+ couches EPSG:3857 mais couverture régionale seulement          |
+| 🇬🇧 Royaume-Uni      | Ordnance Survey         | Clé API gratuite à configurer                                      |
+| 🇯🇵 Japon            | GSI Maps                | Étendre `countries.ts` à l'Asie (ingest Asia)                      |
+| 🇳🇿 Nouvelle-Zélande | LINZ Topo50             | Clé API gratuite à configurer                                      |
+| 🇺🇸🇨🇦 USA/Canada     | USGS/NRCan              | Faible priorité rando Europe                                       |
 
 ### URLs trouvées (prêtes dans `tileSources.ts`)
 
@@ -831,6 +853,7 @@ superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
   inaccessible (geoblock probable).
 
 **Pistes alternatives à explorer :**
+
 - Rendu HTML/CSS overlay (CSS3DRenderer) au lieu de sprites 3D — éliminerait le parallax
   mais coût perf élevé.
 - Remplacer les sources raster avec labels par des sources raster sans labels + overlay
@@ -862,17 +885,20 @@ superposés en sprites Three.js Canvas. Abandonné — problèmes non résolus :
 **Solution :** Email-based restauration sans login obligatoire.
 
 **Logique :**
+
 1. Après paiement Stripe → proposer d'entrer son email (optionnel mais recommandé)
 2. Stocker email dans `localStorage` + utiliser comme App User ID RevenueCat
 3. À chaque démarrage web → vérifier email en localStorage ; si présent, l'utiliser
 4. Ajouter bouton "Restaurer achats par email" dans UpgradeSheet pour retrouver les achats
 
 **Fichiers :**
+
 - `src/modules/iapService.ts` : post-paiement demander email, initialisation App User ID depuis email localStorage
 - `src/modules/ui/components/UpgradeSheet.ts` : bouton "Restaurer par email"
 - `src/modules/packManager.ts` : même logique pour les packs
 
 **Avantages :**
+
 - ✅ Non-invasif (pas de login obligatoire)
 - ✅ Protège immédiatement les utilisateurs qui entrent email
 - ✅ Permet restauration si cache vidé
@@ -892,23 +918,23 @@ Upgrade de Three.js de la version 0.160.1 à 0.184.0 (24 versions d'écart) en c
 
 ### Phases
 
-| Phase | Description | Durée |
-|---|---|---|
-| A | Audit des changelogs r160→r184 (12 domaines critiques) | 0.5 j |
-| B | Upgrade par 5 paliers (r165→r170→r175→r180→r184) avec gate Android à chaque palier | 2.0 j |
-| C | Vérification visuelle des 23 systèmes de rendu | 1.5 j |
-| D | Tests 7 plateformes (desktop + mobile + WebView Capacitor) | 2.5 j |
-| E | Release (version, changelog, docs, tag) | 0.5 j |
-| **Total** | | **7.0 j** |
+| Phase     | Description                                                                        | Durée     |
+| --------- | ---------------------------------------------------------------------------------- | --------- |
+| A         | Audit des changelogs r160→r184 (12 domaines critiques)                             | 0.5 j     |
+| B         | Upgrade par 5 paliers (r165→r170→r175→r180→r184) avec gate Android à chaque palier | 2.0 j     |
+| C         | Vérification visuelle des 23 systèmes de rendu                                     | 1.5 j     |
+| D         | Tests 7 plateformes (desktop + mobile + WebView Capacitor)                         | 2.5 j     |
+| E         | Release (version, changelog, docs, tag)                                            | 0.5 j     |
+| **Total** |                                                                                    | **7.0 j** |
 
 ### MR séparées (post-upgrade ✅)
 
-| MR | Package | Actuel → Cible |
-|---|---|---|
-| MR-A | `suncalc` | 1.9.0 → 2.0.0 ✅ |
-| MR-B | `typescript` | 5.9.3 → 6.0.3 ✅ |
-| MR-C | `@mapbox/vector-tile` + `pbf` | 2.0.4 → 3.0.0 / 4.0.1 → 5.1.0 ✅ |
-| MR-D | `@revenuecat/purchases-capacitor` | 12.3.0 → 13.2.0 ✅ |
+| MR   | Package                           | Actuel → Cible                   |
+| ---- | --------------------------------- | -------------------------------- |
+| MR-A | `suncalc`                         | 1.9.0 → 2.0.0 ✅                 |
+| MR-B | `typescript`                      | 5.9.3 → 6.0.3 ✅                 |
+| MR-C | `@mapbox/vector-tile` + `pbf`     | 2.0.4 → 3.0.0 / 4.0.1 → 5.1.0 ✅ |
+| MR-D | `@revenuecat/purchases-capacitor` | 12.3.0 → 13.2.0 ✅               |
 
 ### Points de vigilance
 
@@ -926,11 +952,13 @@ Upgrade de Three.js de la version 0.160.1 à 0.184.0 (24 versions d'écart) en c
 **Objectif :** Accès cross-device transparent aux achats (navigateur → navigateur, app → web, etc.).
 
 **Approches :**
+
 1. **Login Email Léger** : email + lien de confirmation (sans password)
 2. **OAuth** : Google/Apple Sign-in (transparent, UX meilleure)
 3. **WebAuthn** : biométrie/clé sécurité (futur)
 
 **Bénéfices :**
+
 - Utilisateur login → retrouve Pro/packs sur tous les appareils
 - Sync avec Android via même email RevenueCat
 - Préparation pour sync cloud (sauvegardes traces, préférences, etc.)
@@ -1046,13 +1074,13 @@ Le moteur solaire 3D existant (ombres portées, azimut, heure dorée, phase luna
 
 ### Priorités suggérées
 
-| Priorité | Feature | Effort | Impact |
-|----------|---------|--------|--------|
-| P0 | Vue "Azimut lever/coucher" dans les stats point | Faible (données existantes) | Fort |
-| P1 | Export snapshot ombres (carte ou overlay) | Moyen | Fort |
-| P2 | Calendrier lumineux saisonnier | Important | Très fort |
-| P3 | Dark Sky Map / pollution lumineuse | Moyen | Niche |
-| P4 | Milky Way tracker | Important | Niche |
+| Priorité | Feature                                         | Effort                      | Impact    |
+| -------- | ----------------------------------------------- | --------------------------- | --------- |
+| P0       | Vue "Azimut lever/coucher" dans les stats point | Faible (données existantes) | Fort      |
+| P1       | Export snapshot ombres (carte ou overlay)       | Moyen                       | Fort      |
+| P2       | Calendrier lumineux saisonnier                  | Important                   | Très fort |
+| P3       | Dark Sky Map / pollution lumineuse              | Moyen                       | Niche     |
+| P4       | Milky Way tracker                               | Important                   | Niche     |
 
 ---
 

@@ -1,8 +1,8 @@
-<div class="top-status-bar-content">
+<div class="top-status-bar-content" id="top-status-bar-content">
     <div class="top-left-widgets">
         <button
             type="button"
-            class="top-widget"
+            class="top-control top-control-pill"
             id="top-pill-weather"
             aria-label="Météo"
         >
@@ -11,9 +11,9 @@
         </button>
         <button
             type="button"
-            class="status-widget rec-indicator"
+            class="top-control top-control-pill rec-indicator"
             id="rec-status-widget"
-            style="display: none"
+            hidden
         >
             <span class="rec-dot-css"></span>
             <span class="rec-timer">REC</span>
@@ -22,7 +22,7 @@
     <div class="top-center-widgets">
         <button
             type="button"
-            class="top-widget"
+            class="top-control top-control-pill"
             id="top-pill-lod"
             aria-live="polite"
             aria-label="Carte et zoom"
@@ -33,7 +33,7 @@
     <div class="top-right-widgets">
         <button
             type="button"
-            class="icon-btn-sm"
+            class="top-control top-control-icon"
             id="net-status-icon"
             aria-label="Statut réseau et données"
         >
@@ -55,20 +55,21 @@
         </button>
         <button
             type="button"
-            class="icon-btn-sm danger"
+            class="top-control top-control-icon danger"
             id="sos-main-btn"
             aria-label="Appel de secours SOS"
         >
-            <span style="font-size: 13px; line-height: 1" aria-hidden="true"
-                >🆘</span
-            >
+            <span class="sos-mark" aria-hidden="true">SOS</span>
         </button>
     </div>
 </div>
 <button
-    class="top-collapse-toggle"
+    type="button"
+    class="top-control top-control-icon top-collapse-toggle"
     id="top-collapse-toggle"
     aria-label="Afficher/Masquer la barre supérieure"
+    aria-controls="top-status-bar-content"
+    aria-expanded="true"
 >
     <svg
         width="12"

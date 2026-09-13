@@ -11,6 +11,7 @@ vi.mock('./core/SheetManager', () => ({
     sheetManager: {
         getActiveSheetId: vi.fn(() => null),
         close: vi.fn(),
+        back: vi.fn(),
     },
 }));
 
@@ -19,6 +20,7 @@ const { mockState } = vi.hoisted(() => ({
         DEBUG_MODE: false,
         isRecording: false,
         currentCourseId: '',
+        isRoutePlanningMode: false,
     },
 }));
 
@@ -55,6 +57,9 @@ describe('initMobileUI()', () => {
         mockState.DEBUG_MODE = false;
         mockState.isRecording = false;
         mockState.currentCourseId = '';
+        mockState.isRoutePlanningMode = false;
+        document.body.innerHTML = '';
+        document.body.className = '';
     });
 
     it('registers backButton listener', () => {
@@ -82,7 +87,7 @@ describe('initMobileUI()', () => {
     });
 
     describe('backButton handler', () => {
-        it('closes sheet when a sheet is active', () => {
+        it('returns within the sheet flow when a sheet is active', () => {
             initMobileUI();
             const handler = (App.addListener as any).mock.calls.find(
                 (c: any[]) => c[0] === 'backButton'
@@ -93,7 +98,7 @@ describe('initMobileUI()', () => {
             );
             handler({ canGoBack: true });
 
-            expect(sheetManager.close).toHaveBeenCalled();
+            expect(sheetManager.back).toHaveBeenCalled();
         });
 
         it('exits app when no sheet and cannot go back', () => {
@@ -106,6 +111,23 @@ describe('initMobileUI()', () => {
             handler({ canGoBack: false });
 
             expect(App.exitApp).toHaveBeenCalled();
+        });
+
+        it('delegates Android back to the open Prepare context', () => {
+            document.body.innerHTML =
+                '<div id="route-settings" class="route-settings-panel"></div>';
+            initMobileUI();
+            const handler = (App.addListener as any).mock.calls.find(
+                (c: any[]) => c[0] === 'backButton'
+            )![1] as (data: any) => void;
+
+            vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(null);
+            handler({ canGoBack: false });
+
+            expect(eventBus.emit).toHaveBeenCalledWith(
+                'routeWorkBackRequested'
+            );
+            expect(App.exitApp).not.toHaveBeenCalled();
         });
 
         it('goes back in history when no sheet and can go back', () => {

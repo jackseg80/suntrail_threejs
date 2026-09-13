@@ -54,6 +54,8 @@ vi.mock('../../../constants/storage', () => ({
 }));
 
 import { state } from '../../state';
+import { i18n } from '../../../i18n/I18nService';
+import { applyPreset } from '../../performance';
 import { SettingsSheet } from './SettingsSheet';
 
 describe('SettingsSheet - UI Logic (v5.29.36)', () => {
@@ -61,20 +63,30 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockIap.isProActive.mockReturnValue(false);
 
         document.body.innerHTML = `
             <div id="settings-panel">
-                <button id="close-panel"></button>
+                <div class="sheet-header">
+                    <span class="sheet-title">Réglages</span>
+                    <button id="close-panel"></button>
+                </div>
+                <h2 id="settings-essentials-heading">Essentiels</h2>
+                <section id="settings-hiking-group">Carte</section>
+                <details id="settings-developer-lab"><summary>Avancé</summary></details>
                 <div id="battery-lock-banner" style="display:none"></div>
                 <button class="preset-btn" data-preset="eco">Éco</button>
                 <button class="preset-btn" data-preset="balanced">Std</button>
                 <button class="preset-btn" data-preset="performance">High</button>
                 <button class="preset-btn" data-preset="ultra">Ultra</button>
+                <p id="preset-custom-status" hidden>Personnalisé</p>
                 <input type="range" id="res-slider" min="1" max="100" value="50">
                 <span id="res-disp">50</span>
                 <input type="checkbox" id="hide-ui-on-move-toggle">
+                <input type="checkbox" id="debug-toggle">
                 <input type="checkbox" id="inclinometer-toggle">
                 <div id="row-inclinometer"></div>
+                <p class="settings-pro-description">Débloquez toutes les fonctionnalités premium avec SunTrail Pro</p>
                 <button id="btn-upgrade-pro"></button>
                 <div id="settings-maptiler-key-slot"></div>
                 <form id="settings-ors-form">
@@ -88,12 +100,113 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
                 <button id="tester-id-copy">Copier</button>
             </div>
             <div id="sheet-container"></div>
+            <div id="zoom-indicator" hidden></div>
+            <canvas id="compass-canvas" hidden></canvas>
         `;
 
         sheet = new SettingsSheet();
         (sheet as any).element = document.getElementById('settings-panel');
         state.IS_BATTERY_LOW = false;
+        state.PERFORMANCE_PRESET = 'balanced';
         sheet.render();
+    });
+
+    it('indique Personnalisé après la modification d’un réglage de profil', () => {
+        const slider = document.getElementById(
+            'res-slider'
+        ) as HTMLInputElement;
+
+        slider.value = '60';
+        slider.dispatchEvent(new Event('input'));
+        slider.dispatchEvent(new Event('change'));
+
+        expect(vi.mocked(applyPreset)).toHaveBeenCalledWith('custom');
+    });
+
+    it('ne change pas le profil pour un réglage sans lien avec les performances', () => {
+        const toggle = document.getElementById(
+            'hide-ui-on-move-toggle'
+        ) as HTMLInputElement;
+
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+
+        expect(vi.mocked(applyPreset)).not.toHaveBeenCalledWith('custom');
+    });
+
+    it('adapte le message de la carte lorsque Pro est actif', () => {
+        mockIap.isProActive.mockReturnValue(true);
+        const button = document.getElementById(
+            'btn-upgrade-pro'
+        ) as HTMLButtonElement;
+
+        (sheet as any).updateProButtonState(button);
+
+        expect(button.disabled).toBe(true);
+        expect(button.textContent).toContain(i18n.t('settings.pro.active'));
+        expect(
+            document.querySelector('.settings-pro-description')?.textContent
+        ).toBe(i18n.t('settings.pro.activeDescription'));
+    });
+
+    it('affiche les outils de diagnostic avec l’attribut hidden commun', () => {
+        const toggle = document.getElementById(
+            'debug-toggle'
+        ) as HTMLInputElement;
+        const zoom = document.getElementById('zoom-indicator')!;
+        const compass = document.getElementById('compass-canvas')!;
+
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+        expect(zoom.hidden).toBe(false);
+        expect(compass.hidden).toBe(false);
+
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
+        expect(zoom.hidden).toBe(true);
+        expect(compass.hidden).toBe(true);
+    });
+
+    it('ouvre Avancé comme sous-page puis revient aux réglages', () => {
+        const advancedButton = document.querySelector<HTMLButtonElement>(
+            '[data-settings-category="developer"]'
+        )!;
+        const root = document.getElementById('settings-panel')!;
+        const title = root.querySelector('.sheet-title')!;
+        const close = document.getElementById('close-panel')!;
+
+        advancedButton.click();
+
+        expect(root.classList).toContain('is-advanced-page');
+        expect(title.textContent).toBe(i18n.t('settings.section.advanced'));
+        expect(close.getAttribute('aria-label')).toBe(
+            i18n.t('settings.aria.back')
+        );
+
+        close.click();
+
+        expect(root.classList).not.toContain('is-advanced-page');
+        expect(title.textContent).toBe(i18n.t('settings.title'));
+    });
+
+    it('présente les langues comme des choix unifiés et indique la sélection', () => {
+        i18n.setLocale('fr');
+        const french = document.querySelector<HTMLButtonElement>(
+            '.language-btn[data-locale="fr"]'
+        )!;
+        const german = document.querySelector<HTMLButtonElement>(
+            '.language-btn[data-locale="de"]'
+        )!;
+
+        expect(french.getAttribute('aria-pressed')).toBe('true');
+        expect(german.getAttribute('aria-pressed')).toBe('false');
+
+        german.click();
+
+        expect(i18n.getLocale()).toBe('de');
+        expect(french.getAttribute('aria-pressed')).toBe('false');
+        expect(german.getAttribute('aria-pressed')).toBe('true');
+        i18n.setLocale('fr');
     });
 
     it("doit mettre à jour le state lors du changement d'un slider", () => {
@@ -185,14 +298,14 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
         expect(balanced.getAttribute('aria-disabled')).toBe('true');
         expect(eco.classList.contains('battery-locked')).toBe(false);
         expect(eco.getAttribute('aria-disabled')).toBeNull();
-        expect(banner.style.display).toBe('block');
+        expect(banner.hidden).toBe(false);
 
         state.IS_BATTERY_LOW = false;
         await Promise.resolve();
 
         expect(balanced.classList.contains('battery-locked')).toBe(false);
         expect(balanced.getAttribute('aria-disabled')).toBeNull();
-        expect(banner.style.display).toBe('none');
+        expect(banner.hidden).toBe(true);
     });
 });
 
@@ -233,7 +346,7 @@ describe('SettingsSheet - Delete Account button (RGPD)', () => {
         const deleteBtn = document.getElementById(
             'account-delete-btn'
         ) as HTMLButtonElement;
-        expect(deleteBtn.style.display).toBe('block');
+        expect(deleteBtn.hidden).toBe(false);
     });
 
     it('should hide delete button when user is not authenticated', () => {
@@ -247,7 +360,7 @@ describe('SettingsSheet - Delete Account button (RGPD)', () => {
         const deleteBtn = document.getElementById(
             'account-delete-btn'
         ) as HTMLButtonElement;
-        expect(deleteBtn.style.display).toBe('none');
+        expect(deleteBtn.hidden).toBe(true);
     });
 });
 
@@ -278,7 +391,7 @@ describe('SettingsSheet - Google buttons', () => {
         mockAuthService.isGoogleLinked.mockReturnValue(false);
     });
 
-    it('keeps the account section visible without sign-in actions when not authenticated', () => {
+    it('hides the account section when no account action is available', () => {
         mockAuthService.isAuthenticated = false;
         mockAuthService.user = null;
 
@@ -289,12 +402,12 @@ describe('SettingsSheet - Google buttons', () => {
         const accountSection = document.getElementById(
             'account-section'
         ) as HTMLElement;
-        expect(accountSection.style.display).toBe('block');
+        expect(accountSection.hidden).toBe(true);
         expect(mockAuthService.signInWithGoogle).not.toHaveBeenCalled();
         expect(
             (document.getElementById('account-action-btn') as HTMLButtonElement)
-                .style.display
-        ).toBe('none');
+                .hidden
+        ).toBe(true);
     });
 
     it('keeps the Google linking button hidden for authenticated users', () => {
@@ -309,6 +422,6 @@ describe('SettingsSheet - Google buttons', () => {
         const linkBtn = document.getElementById(
             'account-link-google-btn'
         ) as HTMLButtonElement;
-        expect(linkBtn.style.display).toBe('none');
+        expect(linkBtn.hidden).toBe(true);
     });
 });

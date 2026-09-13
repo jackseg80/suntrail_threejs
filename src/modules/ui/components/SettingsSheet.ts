@@ -10,7 +10,7 @@ import { applyPreset, getGpuInfo, detectBestPreset } from '../../performance';
 import { runBenchmark } from '../../benchmark';
 import { updateHydrologyVisibility, refreshTerrain } from '../../terrain';
 import { updateWeatherVisibility } from '../../weather';
-import { ICON_CHECK } from '../icons';
+import { ICON_CHECK, ICON_HELP, ICON_VIDEO } from '../icons';
 import { showOnboarding } from '../../onboardingTutorial';
 import type { Locale } from '../../../i18n/I18nService';
 import { i18n } from '../../../i18n/I18nService';
@@ -28,9 +28,27 @@ import { bindSettingsAccountSection } from './settings/SettingsAccountSection';
 import { SettingsCategoryNavigation } from './settings/SettingsCategoryNavigation';
 import templateHTML from '../templates/settings.html?raw';
 
+const PRESET_MANAGED_SETTINGS = new Set<keyof typeof state>([
+    'RESOLUTION',
+    'RANGE',
+    'SHADOWS',
+    'SHOW_VEGETATION',
+    'SHOW_SIGNPOSTS',
+    'SHOW_BUILDINGS',
+    'SHOW_HYDROLOGY',
+    'VEGETATION_DENSITY',
+    'SHOW_WEATHER',
+    'WEATHER_DENSITY',
+    'WEATHER_SPEED',
+    'WEATHER_RAIN_OPACITY',
+    'FOG_FAR',
+]);
+
 export class SettingsSheet extends BaseComponent {
     private settingTooltips: TooltipHandle[] = [];
     private categoryNavigation: SettingsCategoryNavigation | null = null;
+    private advancedPageActive = false;
+    private mainPageScrollTop = 0;
     constructor() {
         super('template-settings', 'sheet-container', templateHTML);
     }
@@ -40,13 +58,34 @@ export class SettingsSheet extends BaseComponent {
 
         // Account management (Web + Native — requis Play Store RGPD)
         bindSettingsAccountSection(this.element);
-        this.categoryNavigation = new SettingsCategoryNavigation(this.element);
+        this.categoryNavigation = new SettingsCategoryNavigation(
+            this.element,
+            () => this.enterAdvancedPage()
+        );
         this.categoryNavigation.hydrate();
+        this.addSubscription(
+            sheetManager.registerBackHandler('settings', () =>
+                this.exitAdvancedPage()
+            )
+        );
 
         // Close panel
         const closePanel = this.element.querySelector('#close-panel');
         closePanel?.setAttribute('aria-label', i18n.t('settings.aria.close'));
-        closePanel?.addEventListener('click', () => sheetManager.close());
+        closePanel?.addEventListener('click', () => {
+            if (!this.exitAdvancedPage()) sheetManager.close();
+        });
+
+        const onPageLocaleChanged = () => this.updatePageHeader();
+        const onSheetClosed = ({ id }: { id: string | null }) => {
+            if (id === 'settings') this.resetAdvancedPage();
+        };
+        eventBus.on('localeChanged', onPageLocaleChanged);
+        eventBus.on('sheetClosed', onSheetClosed);
+        this.addSubscription(() => {
+            eventBus.off('localeChanged', onPageLocaleChanged);
+            eventBus.off('sheetClosed', onSheetClosed);
+        });
 
         // Presets
         this.element.querySelectorAll('.preset-btn').forEach((btn) => {
@@ -62,7 +101,7 @@ export class SettingsSheet extends BaseComponent {
             const banner = this.element.querySelector(
                 '#battery-lock-banner'
             ) as HTMLElement;
-            if (banner) banner.style.display = isLow ? 'block' : 'none';
+            if (banner) banner.hidden = !isLow;
             this.element.querySelectorAll('.preset-btn').forEach((btn) => {
                 const preset = (btn as HTMLElement).dataset.preset;
                 if (preset && preset !== 'eco') {
@@ -109,8 +148,8 @@ export class SettingsSheet extends BaseComponent {
         this.bindToggle('debug-toggle', 'SHOW_DEBUG', (val: boolean) => {
             const zoomInd = document.getElementById('zoom-indicator');
             const compass = document.getElementById('compass-canvas');
-            if (zoomInd) zoomInd.style.display = val ? 'block' : 'none';
-            if (compass) compass.style.display = val ? 'block' : 'none';
+            if (zoomInd) zoomInd.hidden = !val;
+            if (compass) compass.hidden = !val;
         });
         this.bindToggle(
             'debug-normalmap-rg-compact-toggle',
@@ -214,7 +253,10 @@ export class SettingsSheet extends BaseComponent {
                     state.scene.fog.far = state.FOG_FAR;
                 }
             });
-            fogSlider.addEventListener('change', () => saveSettings());
+            fogSlider.addEventListener('change', () => {
+                this.markPerformancePresetCustom('FOG_FAR');
+                saveSettings();
+            });
         }
 
         // Trail follow
@@ -321,10 +363,7 @@ export class SettingsSheet extends BaseComponent {
         const onLocaleChanged = () => {
             if (!this.element) return;
             bindSettingsAccountSection(this.element);
-            const language = this.element.querySelector(
-                '#lang-select'
-            ) as HTMLSelectElement | null;
-            if (language) language.value = i18n.getLocale();
+            this.updateLanguageButtons();
         };
         eventBus.on('localeChanged', onLocaleChanged);
         this.addSubscription(() =>
@@ -348,6 +387,64 @@ export class SettingsSheet extends BaseComponent {
         this.updateBenchmarkResults();
 
         this.attachSettingTooltips();
+    }
+
+    private enterAdvancedPage(): void {
+        if (!this.element || this.advancedPageActive) return;
+        const advanced = this.element.querySelector<HTMLDetailsElement>(
+            '#settings-developer-lab'
+        );
+        if (!advanced) return;
+
+        this.mainPageScrollTop = this.element.scrollTop;
+        this.advancedPageActive = true;
+        advanced.open = true;
+        this.element.classList.add('is-advanced-page');
+        this.element.scrollTop = 0;
+        this.updatePageHeader();
+        window.setTimeout(() => advanced.focus({ preventScroll: true }), 50);
+    }
+
+    private exitAdvancedPage(): boolean {
+        if (!this.element || !this.advancedPageActive) return false;
+        this.advancedPageActive = false;
+        this.element.classList.remove('is-advanced-page');
+        this.updatePageHeader();
+        this.element.scrollTop = this.mainPageScrollTop;
+        this.element
+            .querySelector<HTMLButtonElement>(
+                '[data-settings-category="developer"]'
+            )
+            ?.focus({ preventScroll: true });
+        return true;
+    }
+
+    private resetAdvancedPage(): void {
+        if (!this.element) return;
+        this.advancedPageActive = false;
+        this.element.classList.remove('is-advanced-page');
+        this.updatePageHeader();
+    }
+
+    private updatePageHeader(): void {
+        if (!this.element) return;
+        const title = this.element.querySelector<HTMLElement>('.sheet-title');
+        const close = this.element.querySelector<HTMLElement>('#close-panel');
+        if (title) {
+            title.textContent = i18n.t(
+                this.advancedPageActive
+                    ? 'settings.section.advanced'
+                    : 'settings.title'
+            );
+        }
+        close?.setAttribute(
+            'aria-label',
+            i18n.t(
+                this.advancedPageActive
+                    ? 'settings.aria.back'
+                    : 'settings.aria.close'
+            )
+        );
     }
 
     private attachSettingTooltips(): void {
@@ -404,7 +501,7 @@ export class SettingsSheet extends BaseComponent {
         ) as HTMLElement;
         if (!results || !area) return;
 
-        area.style.display = 'block';
+        area.hidden = false;
         const cpu = area.querySelector('#bench-cpu');
         const gpu = area.querySelector('#bench-gpu');
         const total = area.querySelector('#bench-total');
@@ -437,6 +534,7 @@ export class SettingsSheet extends BaseComponent {
                 slider.setAttribute('aria-valuenow', slider.value);
             });
             slider.addEventListener('change', () => {
+                this.markPerformancePresetCustom(stateKey);
                 saveSettings();
                 if (onChange) onChange();
             });
@@ -459,9 +557,19 @@ export class SettingsSheet extends BaseComponent {
                 (state as any)[stateKey] = toggle.checked;
                 // ARIA: sync aria-checked
                 toggle.setAttribute('aria-checked', String(toggle.checked));
+                this.markPerformancePresetCustom(stateKey);
                 saveSettings();
                 if (onChange) onChange(toggle.checked);
             });
+        }
+    }
+
+    private markPerformancePresetCustom(stateKey: keyof typeof state): void {
+        if (
+            PRESET_MANAGED_SETTINGS.has(stateKey) &&
+            state.PERFORMANCE_PRESET !== 'custom'
+        ) {
+            applyPreset('custom');
         }
     }
 
@@ -541,6 +649,12 @@ export class SettingsSheet extends BaseComponent {
                         btn.classList.remove('active');
                     }
                 });
+                {
+                    const customStatus = this.element.querySelector(
+                        '#preset-custom-status'
+                    ) as HTMLElement | null;
+                    if (customStatus) customStatus.hidden = value !== 'custom';
+                }
                 break;
             case 'WEATHER_DENSITY':
                 this.updateSlider(
@@ -668,30 +782,40 @@ export class SettingsSheet extends BaseComponent {
         const panel = this.element.querySelector('#panel') || this.element;
 
         const section = document.createElement('div');
-        section.className = 'settings-section';
+        section.className = 'settings-section settings-language-section';
         section.innerHTML = `
-            <div class="setting-row" style="margin-top:8px;">
-                <div class="setting-label" data-i18n="settings.section.language">${i18n.t('settings.section.language')}</div>
-                <select id="lang-select" class="lang-select" aria-label="${i18n.t('settings.section.language')}">
-                    <option value="fr">Français</option>
-                    <option value="de">Deutsch</option>
-                    <option value="it">Italiano</option>
-                    <option value="en">English</option>
-                </select>
+            <div class="setting-label" data-i18n="settings.section.language">${i18n.t('settings.section.language')}</div>
+            <div class="language-grid" role="group" aria-label="${i18n.t('settings.section.language')}">
+                <button type="button" class="language-btn" data-locale="fr">Français</button>
+                <button type="button" class="language-btn" data-locale="de">Deutsch</button>
+                <button type="button" class="language-btn" data-locale="it">Italiano</button>
+                <button type="button" class="language-btn" data-locale="en">English</button>
             </div>
         `;
         panel.appendChild(section);
 
-        const langSelect = section.querySelector(
-            '#lang-select'
-        ) as HTMLSelectElement;
-        if (langSelect) {
-            langSelect.value = i18n.getLocale();
-            langSelect.addEventListener('change', () => {
-                i18n.setLocale(langSelect.value as Locale);
-                saveSettings();
+        section
+            .querySelectorAll<HTMLButtonElement>('.language-btn')
+            .forEach((button) => {
+                button.addEventListener('click', () => {
+                    i18n.setLocale(button.dataset.locale as Locale);
+                    this.updateLanguageButtons();
+                    saveSettings();
+                });
             });
-        }
+        this.updateLanguageButtons();
+    }
+
+    private updateLanguageButtons(): void {
+        if (!this.element) return;
+        const locale = i18n.getLocale();
+        this.element
+            .querySelectorAll<HTMLButtonElement>('.language-btn')
+            .forEach((button) => {
+                const active = button.dataset.locale === locale;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-pressed', String(active));
+            });
     }
 
     private bindORSKeyForm(): void {
@@ -767,37 +891,14 @@ export class SettingsSheet extends BaseComponent {
         const panel = this.element.querySelector('#panel') || this.element;
 
         const section = document.createElement('div');
-        section.className = 'settings-section';
-        section.style.display = 'flex';
-        section.style.gap = '8px';
-        section.style.marginTop = '8px';
+        section.className = 'settings-section settings-support-actions';
 
         section.innerHTML = `
-            <style>
-                .tutorial-help-btn {
-                    flex: 1;
-                    padding: 12px 10px;
-                    background: transparent;
-                    border: 1px solid var(--border, rgba(255,255,255,0.1));
-                    border-radius: var(--radius-md, 10px);
-                    color: var(--text-2, rgba(255,255,255,0.75));
-                    font-size: var(--text-xs, 0.75rem);
-                    cursor: pointer;
-                    text-align: center;
-                    transition: opacity 0.15s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    white-space: nowrap;
-                }
-                .tutorial-help-btn:hover { opacity: 0.8; }
-                .tutorial-help-btn:active { opacity: 0.7; }
-            </style>
             <button id="tutorial-btn" class="tutorial-help-btn" data-i18n="settings.tutorial.btn">
-                ${i18n.t('settings.tutorial.btn')}
+                ${ICON_HELP}<span>${i18n.t('settings.tutorial.btn')}</span>
             </button>
             <button id="youtube-btn" class="tutorial-help-btn" data-i18n="settings.tutorial.youtube">
-                ${i18n.t('settings.tutorial.youtube')}
+                ${ICON_VIDEO}<span>${i18n.t('settings.tutorial.youtube')}</span>
             </button>
         `;
         panel.appendChild(section);
@@ -929,10 +1030,6 @@ export class SettingsSheet extends BaseComponent {
             toggle.checked = isPro && !!(state as any)[stateKey];
             if (row) {
                 row.classList.toggle('pro-feature-locked', !isPro);
-                (row as HTMLElement).style.opacity = isPro ? '1' : '0.6';
-                const check = row.querySelector('.pro-check') as HTMLElement;
-                if (check)
-                    check.style.color = isPro ? '#22c55e' : 'var(--gold)';
             }
         };
 
@@ -948,6 +1045,7 @@ export class SettingsSheet extends BaseComponent {
                 return;
             }
             (state as any)[stateKey] = toggle.checked;
+            this.markPerformancePresetCustom(stateKey);
             saveSettings();
             if (onChange) onChange(toggle.checked);
         });
@@ -969,6 +1067,7 @@ export class SettingsSheet extends BaseComponent {
                 // Toggle la valeur si on est Pro
                 toggle.checked = !toggle.checked;
                 (state as any)[stateKey] = toggle.checked;
+                this.markPerformancePresetCustom(stateKey);
                 saveSettings();
                 if (onChange) onChange(toggle.checked);
             });
@@ -993,28 +1092,30 @@ export class SettingsSheet extends BaseComponent {
     private updateProButtonState(btn: HTMLButtonElement): void {
         if (!btn) return;
 
+        const description = this.element?.querySelector(
+            '.settings-pro-description'
+        );
+
         if (isProActive()) {
-            btn.innerHTML =
-                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="settings.pro.active">Pro Actif</span>';
-            btn.style.background = `linear-gradient(135deg, var(--success) 0%, ${document.documentElement.dataset.theme === 'light' ? '#15803d' : '#16a34a'} 100%)`;
-            btn.style.cursor = 'default';
+            btn.innerHTML = ICON_CHECK;
+            const label = document.createElement('span');
+            label.textContent = i18n.t('settings.pro.active');
+            btn.appendChild(label);
+            btn.classList.add('is-active');
             btn.disabled = true;
+            if (description) {
+                description.textContent = i18n.t(
+                    'settings.pro.activeDescription'
+                );
+            }
         } else {
             btn.innerHTML =
-                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg><span data-i18n="settings.pro.cta">Passer à Pro</span>';
-            btn.style.background =
-                'linear-gradient(135deg, var(--accent) 0%, var(--accent-btn) 100%)';
-            btn.style.cursor = 'pointer';
+                '<span data-i18n="settings.pro.cta">Découvrir Pro</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+            btn.classList.remove('is-active');
             btn.disabled = false;
+            if (description) {
+                description.textContent = i18n.t('settings.pro.description');
+            }
         }
-
-        // Met à jour les lignes informatives Pro (opacité + couleur check)
-        const infoRows = this.element?.querySelectorAll('.pro-info-row');
-        infoRows?.forEach((row) => {
-            (row as HTMLElement).style.opacity = isProActive() ? '1' : '0.7';
-            const check = row.querySelector('.pro-check') as HTMLElement;
-            if (check)
-                check.style.color = isProActive() ? '#22c55e' : 'var(--gold)';
-        });
     }
 }

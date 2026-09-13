@@ -14,6 +14,7 @@ public class RecordingPluginContractTest {
     public void exposesLegacyRecordingAndIndependentGuidanceMethods() throws Exception {
         String[] methods = {
             "startCourse", "startForeground", "stopCourse", "stopForeground",
+            "pauseRecording", "resumeRecording",
             "getCurrentCourse", "getPoints", "getRecordedPoints", "getPointCount",
             "getPendingStoppedCourse", "acknowledgePendingStoppedCourse",
             "clearRecordedPoints", "updateNotificationStats",

@@ -18,6 +18,8 @@ const {
         saveTextToDownloads: vi.fn(),
         acknowledgeFinalizedCourse: vi.fn(),
         getAllPoints: vi.fn(),
+        pauseRecording: vi.fn(),
+        resumeRecording: vi.fn(),
     },
     mockForegroundService: {
         startRecordingService: vi.fn(),
@@ -75,6 +77,7 @@ describe('RecordingService (v5.29.36)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         state.isRecording = false;
+        state.isPaused = false;
         state.recordedPoints = [];
         state.currentCourseId = '';
         state.isPro = true;
@@ -103,6 +106,25 @@ describe('RecordingService (v5.29.36)', () => {
         const success = await recordingService.toggleRecording();
         expect(success).toBe(true);
         expect(state.isRecording).toBe(true);
+    });
+
+    it('centralise Pause/Reprendre et ignore les demandes sans REC', async () => {
+        await expect(recordingService.toggleRecordingPause()).resolves.toBe(
+            false
+        );
+        expect(mockNativeGPSService.pauseRecording).not.toHaveBeenCalled();
+
+        state.isRecording = true;
+        await expect(recordingService.toggleRecordingPause()).resolves.toBe(
+            true
+        );
+        expect(mockNativeGPSService.pauseRecording).toHaveBeenCalledOnce();
+
+        state.isPaused = true;
+        await expect(recordingService.toggleRecordingPause()).resolves.toBe(
+            true
+        );
+        expect(mockNativeGPSService.resumeRecording).toHaveBeenCalledOnce();
     });
 
     it('doit demander les permissions si non accordées', async () => {

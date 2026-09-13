@@ -17,13 +17,13 @@ export class LayersSheet extends BaseComponent {
 
         const closeBtn = this.element.querySelector('#close-layers');
         closeBtn?.setAttribute('aria-label', i18n.t('layers.aria.close'));
-        closeBtn?.addEventListener('click', () => sheetManager.close());
+        closeBtn?.addEventListener('click', () => sheetManager.back());
 
         const layerItems = this.element.querySelectorAll('.layer-item');
         // ARIA: role="listbox" et role="option" déjà présents dans le HTML statique
 
         layerItems.forEach((item) => {
-            item.addEventListener('click', () => {
+            const activateLayer = () => {
                 const source = (item as HTMLElement).dataset.source;
                 if (source) {
                     // Gate Freemium : couche satellite réservée Pro
@@ -38,6 +38,13 @@ export class LayersSheet extends BaseComponent {
                     refreshTerrain();
                     this.updateActiveLayer();
                 }
+            };
+            item.addEventListener('click', activateLayer);
+            item.addEventListener('keydown', (event) => {
+                const key = (event as KeyboardEvent).key;
+                if (key !== 'Enter' && key !== ' ') return;
+                event.preventDefault();
+                activateLayer();
             });
         });
 
@@ -145,21 +152,15 @@ export class LayersSheet extends BaseComponent {
             const warning = this.element?.querySelector(
                 `#row-${type} .lod-warning`
             ) as HTMLElement;
-            const infoIcon = this.element?.querySelector(
-                `#row-${type} .info-icon`
-            ) as HTMLElement;
-
-            if (row && toggle && warning && infoIcon) {
+            if (row && toggle && warning) {
                 if (isAvailable) {
                     row.classList.remove('lyr-row-unavailable');
                     toggle.disabled = false;
-                    warning.style.display = 'none';
-                    infoIcon.style.display = 'none';
+                    warning.hidden = true;
                 } else {
                     row.classList.add('lyr-row-unavailable');
                     toggle.disabled = true;
-                    warning.style.display = 'block';
-                    infoIcon.style.display = 'block';
+                    warning.hidden = false;
                 }
             }
         });

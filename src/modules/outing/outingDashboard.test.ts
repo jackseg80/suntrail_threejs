@@ -133,4 +133,26 @@ describe('outingDashboard', () => {
         expect(summary.altitudeMeters).toBe(1_010);
         expect(summary.gpsAccuracyMeters).toBe(6);
     });
+
+    it('retire les pauses de la durée réelle et fige le compteur pendant une pause', () => {
+        const paused = buildRecordingSummary([], {
+            now: 91_000,
+            recordingStartTime: 1_000,
+            recordingPausedAt: 61_000,
+            recordingPausedDurationMs: 10_000,
+            userAltitudeMeters: null,
+            gpsAccuracyMeters: null,
+        });
+        const resumed = buildRecordingSummary([], {
+            now: 121_000,
+            recordingStartTime: 1_000,
+            recordingPausedAt: null,
+            recordingPausedDurationMs: 40_000,
+            userAltitudeMeters: null,
+            gpsAccuracyMeters: null,
+        });
+
+        expect(paused.durationSeconds).toBe(50);
+        expect(resumed.durationSeconds).toBe(80);
+    });
 });

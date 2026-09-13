@@ -51,7 +51,6 @@ export class ExpertService {
         const lines = [
             'SunTrail Solar Report',
             `Location: ${result.gps.lat.toFixed(5)}, ${result.gps.lon.toFixed(5)}`,
-            `${i18n.t('solar.stat.sunlight')}: ${fmtDuration(result.totalSunlightMinutes)}`,
             `${i18n.t('solar.stat.sunrise')}: ${fmtTime(result.sunrise)}`,
             `${i18n.t('solar.stat.noon')}: ${fmtTime(result.solarNoon)}`,
             `${i18n.t('solar.stat.sunset')}: ${fmtTime(result.sunset)}`,
@@ -62,6 +61,16 @@ export class ExpertService {
             `${i18n.t('solar.stat.elevation')}: ${Math.round(result.currentElevationDeg)}°`,
             `${i18n.t('solar.stat.moonPhase')}: ${this.getMoonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`,
         ];
+        if (result.terrainAvailable) {
+            lines.splice(
+                2,
+                0,
+                `${i18n.t('solar.stat.sunlight')}: ${fmtDuration(result.totalSunlightMinutes)}`,
+                `${i18n.t('solar.stat.firstRay')}: ${fmtTime(result.firstSunTime)}`
+            );
+        } else {
+            lines.splice(2, 0, i18n.t('solar.status.noTerrain'));
+        }
         return lines.join('\n');
     }
 
@@ -105,7 +114,7 @@ export class ExpertService {
         const now = new Date();
         const time = `${now.getHours()}h${now.getMinutes().toString().padStart(2, '0')}`;
 
-        return `🆘 SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
+        return `SOS SUNTRAIL: ${lat.toFixed(5)},${lon.toFixed(5)} | ALT:${Math.round(alt)}m | BAT:${bat}% | ${time}`;
     }
 
     getMoonEmoji(name: string): string {

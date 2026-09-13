@@ -7,6 +7,7 @@ import {
     checkPerformanceThrottle,
 } from './performance';
 import { refreshTerrain } from './terrain';
+import { showToast } from './toast';
 
 // Mocks des dépendances lourdes de performance.ts
 const { mockDisposeAll } = vi.hoisted(() => ({
@@ -23,7 +24,16 @@ vi.mock('./sun', () => ({ updateShadowMapResolution: vi.fn() }));
 vi.mock('./utils', () => ({ isMobileDevice: vi.fn(() => false) }));
 vi.mock('./toast', () => ({ showToast: vi.fn() }));
 // tileCache.ts (importé via trimCache) utilise aussi isMobileDevice depuis utils
-vi.mock('../i18n/I18nService', () => ({ i18n: { t: (_k: string) => _k } }));
+vi.mock('../i18n/I18nService', () => ({
+    i18n: {
+        t: (key: string, params?: { preset?: string }) => {
+            if (key === 'settings.preset.performance') return 'Fluide';
+            if (key === 'preset.applied')
+                return `Profil appliqué : ${params?.preset}`;
+            return key;
+        },
+    },
+}));
 
 vi.mock('./materialPool', () => ({
     materialPool: { disposeAll: mockDisposeAll },
@@ -57,6 +67,10 @@ const ANDROID_UA =
 
 describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
+        document.body.innerHTML =
+            '<p id="preset-custom-status" hidden>Personnalisé</p>';
+        document.body.className = '';
         state.PIXEL_RATIO_LIMIT = 1.0;
         state.SHADOW_RES = 128;
         state.PERFORMANCE_PRESET = 'balanced';
@@ -70,6 +84,29 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
     });
 
     describe('applyPreset() — Side effects', () => {
+        it('replaces the visual preset class without keeping an inherited mode', () => {
+            applyPreset('eco');
+            expect(document.body.classList).toContain('preset-eco');
+
+            applyPreset('performance');
+            expect(document.body.classList).toContain('preset-performance');
+            expect(document.body.classList).toContain('high-quality-ui');
+            expect(document.body.classList).not.toContain('preset-eco');
+
+            applyPreset('custom');
+            expect(document.body.classList).toContain('preset-custom');
+            expect(document.body.classList).not.toContain('high-quality-ui');
+            expect(document.body.classList).not.toContain('preset-performance');
+            expect(
+                document.getElementById('preset-custom-status')!.hidden
+            ).toBe(false);
+
+            applyPreset('balanced');
+            expect(
+                document.getElementById('preset-custom-status')!.hidden
+            ).toBe(true);
+        });
+
         it('should call refreshTerrain(true) to force a refresh and avoid race conditions', () => {
             state.renderer = { setPixelRatio: vi.fn() } as any;
             applyPreset('balanced');
@@ -88,6 +125,22 @@ describe('performance.ts — Optimisations Batterie Mobile (v5.11)', () => {
             mockDisposeAll.mockClear();
             applyCustomSettings({ SHADOWS: false });
             expect(mockDisposeAll).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not notify when a preset is applied automatically', () => {
+            applyPreset('performance', { notify: false });
+
+            expect(showToast).not.toHaveBeenCalled();
+        });
+
+        it('uses the translated user-facing label when notifying', () => {
+            applyPreset('performance');
+
+            expect(showToast).toHaveBeenCalledWith(
+                'Profil appliqué : Fluide',
+                3000,
+                'performance-preset'
+            );
         });
     });
 

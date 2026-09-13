@@ -660,6 +660,12 @@ export async function initScene(): Promise<void> {
     // noir après rotation portrait/paysage, sans attendre un geste utilisateur.
     sceneResizeHandler = () => {
         onWindowResize();
+        // Le nouveau frustum peut révéler des zones qui n'étaient pas visibles
+        // dans l'orientation précédente. Une rotation ne déclenche aucun
+        // événement `change` de MapControls : sans cette mise à jour, ces tuiles
+        // ne sont demandées qu'au premier geste et le fond reste blanc entre-temps.
+        // Le throttling normal et la file de chargement restent inchangés.
+        throttledUpdate();
         requestSceneRender();
     };
     window.addEventListener('resize', sceneResizeHandler);
@@ -981,7 +987,7 @@ export async function initScene(): Promise<void> {
             updateEnvironment(state.camera.position.y);
 
             if (state.zoneSelectionActive && state.zoneOverlay) {
-                // Ne pas écraser le bbox figé en mode cached (post-download)
+                // Ne pas écraser l'emprise figée pendant ou après le téléchargement.
                 const viewportBBox = getViewportBBox();
                 if (viewportBBox && !state.zoneOverlay.isLocked) {
                     state.zoneOverlay.updateFromBBox(viewportBBox);

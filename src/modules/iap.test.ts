@@ -23,16 +23,27 @@ vi.mock('./toast', () => ({
 vi.mock('./ui/core/SheetManager', () => ({
     sheetManager: {
         open: vi.fn(),
+        openChild: vi.fn(),
+        getActiveSheetId: vi.fn(() => null),
     },
+}));
+
+vi.mock('./contextualHelp', () => ({
+    hasSeenProContextHint: vi.fn(() => true),
+    showProContextHint: vi.fn().mockResolvedValue('primary'),
 }));
 
 import { showUpgradePrompt, grantProAccess, revokeProAccess } from './iap';
 import { showToast } from './toast';
 import { sheetManager } from './ui/core/SheetManager';
+import { hasSeenProContextHint, showProContextHint } from './contextualHelp';
 
 describe('showUpgradePrompt()', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(sheetManager.getActiveSheetId).mockReturnValue(null);
+        vi.mocked(hasSeenProContextHint).mockReturnValue(true);
+        vi.mocked(showProContextHint).mockResolvedValue('primary');
     });
 
     it('shows a toast with the feature label', () => {
@@ -52,6 +63,27 @@ describe('showUpgradePrompt()', () => {
     it('opens the upgrade sheet', () => {
         showUpgradePrompt('export_gpx');
         expect(sheetManager.open).toHaveBeenCalledWith('upgrade-sheet');
+    });
+
+    it('opens Pro as a child when another sheet owns the context', () => {
+        vi.mocked(sheetManager.getActiveSheetId).mockReturnValue('settings');
+
+        showUpgradePrompt('settings_pro_section');
+
+        expect(sheetManager.openChild).toHaveBeenCalledWith('upgrade-sheet');
+        expect(sheetManager.open).not.toHaveBeenCalled();
+    });
+
+    it('lets the first Pro explanation be dismissed without opening the paywall', async () => {
+        vi.mocked(hasSeenProContextHint).mockReturnValue(false);
+        vi.mocked(showProContextHint).mockResolvedValue('dismissed');
+
+        showUpgradePrompt('export_gpx');
+        await Promise.resolve();
+
+        expect(showProContextHint).toHaveBeenCalledOnce();
+        expect(sheetManager.open).not.toHaveBeenCalled();
+        expect(sheetManager.openChild).not.toHaveBeenCalled();
     });
 
     it('handles all known feature keys', () => {

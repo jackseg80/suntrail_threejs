@@ -112,7 +112,9 @@ describe('appInit.ts — Initialization Sequence', () => {
 
         // Check if ultra preset was applied via loadSettings
         const perf = await import('./performance');
-        expect(perf.applyPreset).toHaveBeenCalledWith('ultra');
+        expect(perf.applyPreset).toHaveBeenCalledWith('ultra', {
+            notify: false,
+        });
     });
 
     it('should detect system language on first launch (no saved settings)', async () => {
@@ -195,10 +197,22 @@ describe('appInit.ts — Initialization Sequence', () => {
         expect(document.getElementById('click-alt')!.textContent).toBe(
             '1200 m'
         );
+        expect(document.getElementById('coords-pill')!.inert).toBe(false);
+        expect(document.body.classList).toContain('coords-selection-visible');
+        expect(
+            document.getElementById('coords-pill')!.getAttribute('aria-hidden')
+        ).toBe('false');
 
         document.getElementById('close-coords')!.click();
         expect(state.hasLastClicked).toBe(false);
         expect(state.clickMarker).toBeNull();
+        expect(document.getElementById('coords-pill')!.inert).toBe(true);
+        expect(document.body.classList).not.toContain(
+            'coords-selection-visible'
+        );
+        expect(
+            document.getElementById('coords-pill')!.getAttribute('aria-hidden')
+        ).toBe('true');
 
         document.getElementById('layers-fab')!.click();
         expect(sheetManager.toggle).toHaveBeenCalledWith('layers-sheet');
@@ -227,6 +241,62 @@ describe('appInit.ts — Initialization Sequence', () => {
         document.getElementById('rb-clear-btn')!.click();
         expect(scheduleAutoCompute).toHaveBeenCalledTimes(2);
         expect(clearRoute).toHaveBeenCalled();
+    });
+
+    it('selects a point in 2D and keeps its terrain altitude for solar analysis', async () => {
+        document.body.innerHTML = `
+            <div id="canvas-container"></div>
+            <section id="coords-pill" class="hidden" inert aria-hidden="true">
+                <span id="click-latlon"></span><span id="click-alt"></span>
+                <span id="click-poi-name"></span><button id="close-coords"></button>
+            </section>
+            <div id="route-bar"></div><div id="nav-bar"></div><div id="top-status-bar"></div>
+            <div id="widgets-container"></div><div id="bottom-bar"></div>
+        `;
+        const { state } = await import('./state');
+        const { findTerrainIntersection, getTerrainAltitudeAt } =
+            await import('./analysis');
+        vi.mocked(getTerrainAltitudeAt).mockReturnValue(875);
+
+        const camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 100, 0);
+        camera.up.set(0, 0, -1);
+        camera.lookAt(0, 0, 0);
+        camera.updateMatrixWorld(true);
+
+        Object.assign(state, {
+            IS_2D_MODE: true,
+            isRoutePlanningMode: false,
+            renderer: {},
+            camera,
+            scene: new THREE.Scene(),
+            originTile: { x: 0, y: 0, z: 14 },
+            RELIEF_EXAGGERATION: 1,
+            clickMarker: null,
+            routeWaypoints: [],
+        });
+
+        await appInit();
+        vi.mocked(findTerrainIntersection).mockClear();
+        document.getElementById('canvas-container')!.dispatchEvent(
+            new MouseEvent('click', {
+                clientX: window.innerWidth / 2,
+                clientY: window.innerHeight / 2,
+            })
+        );
+
+        expect(findTerrainIntersection).not.toHaveBeenCalled();
+        expect(state.hasLastClicked).toBe(true);
+        expect(state.lastClickedCoords.alt).toBe(875);
+        expect(document.getElementById('click-alt')!.textContent).toBe('875 m');
+        expect(document.getElementById('coords-pill')!.inert).toBe(false);
+
+        state.IS_2D_MODE = false;
     });
 
     it('reopens the route profile and moves a selected point with a map tap', async () => {
@@ -399,8 +469,8 @@ describe('showLoadingError / resetLoadingError', () => {
             <div id="map-loading-overlay" class="visible">
                 <span class="spinner map-loading-spinner"></span>
                 <span class="map-loading-text">Chargement de la carte...</span>
-                <div id="map-loading-offline-msg" style="display:none;"></div>
-                <button id="map-loading-retry" style="display:none;">Réessayer</button>
+                <div id="map-loading-offline-msg" hidden></div>
+                <button id="map-loading-retry" hidden>Réessayer</button>
             </div>
         `;
     });
@@ -416,9 +486,9 @@ describe('showLoadingError / resetLoadingError', () => {
 
         showLoadingError(overlay);
 
-        expect(spinner.style.display).toBe('none');
+        expect(spinner.hidden).toBe(true);
         expect(text.textContent).toBe('Erreur de chargement');
-        expect(retryBtn.style.display).toBe('block');
+        expect(retryBtn.hidden).toBe(false);
         expect(typeof retryBtn.onclick).toBe('function');
         expect(overlay.dataset.loadingError).toBe('true');
     });
@@ -440,11 +510,10 @@ describe('showLoadingError / resetLoadingError', () => {
         resetLoadingError(overlay);
 
         expect(overlay.dataset.loadingError).toBeUndefined();
-        expect(spinner.style.display).toBe('');
+        expect(spinner.hidden).toBe(false);
         expect(text.textContent).toBe('Chargement de la carte...');
-        expect(text.style.color).toBe('');
         const retryBtn = document.getElementById('map-loading-retry')!;
-        expect(retryBtn.style.display).toBe('none');
+        expect(retryBtn.hidden).toBe(true);
         expect(retryBtn.onclick).toBeNull();
     });
 
@@ -510,6 +579,7 @@ vi.mock('./ui/core/SheetManager', () => ({
 vi.mock('./analysis', () => ({
     findTerrainIntersection: vi.fn(),
     getAltitudeAt: vi.fn(),
+    getTerrainAltitudeAt: vi.fn(() => 1200),
 }));
 vi.mock('./profile', () => ({
     closeElevationProfile: vi.fn(),

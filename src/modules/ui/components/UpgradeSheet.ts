@@ -4,6 +4,7 @@ import { showToast } from '../../toast';
 import { haptic } from '../../haptics';
 import { iapService } from '../../iapService';
 import { i18n } from '../../../i18n/I18nService';
+import { eventBus } from '../../eventBus';
 import templateHTML from '../templates/upgrade.html?raw';
 
 export class UpgradeSheet extends BaseComponent {
@@ -20,7 +21,29 @@ export class UpgradeSheet extends BaseComponent {
         if (!this.element) return;
 
         const closeBtn = this.element.querySelector('#close-upgrade');
-        closeBtn?.addEventListener('click', () => sheetManager.close());
+        const syncNavigationControl = () => {
+            closeBtn?.setAttribute(
+                'aria-label',
+                i18n.t(
+                    sheetManager.canGoBack()
+                        ? 'upgrade.aria.back'
+                        : 'upgrade.aria.close'
+                )
+            );
+        };
+        syncNavigationControl();
+        closeBtn?.addEventListener('click', () => sheetManager.back());
+
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'upgrade-sheet') syncNavigationControl();
+        };
+        const onLocaleChanged = () => syncNavigationControl();
+        eventBus.on('sheetOpened', onSheetOpened);
+        eventBus.on('localeChanged', onLocaleChanged);
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
+        this.addSubscription(() =>
+            eventBus.off('localeChanged', onLocaleChanged)
+        );
 
         // Charger les prix depuis RevenueCat — cache 5min, retry si échoué
         const now = Date.now();

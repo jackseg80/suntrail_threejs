@@ -65,13 +65,14 @@ test.describe('Beginner route planning', () => {
                 { x, y }
             );
         };
+        const waypointCount = page.locator('#rb-waypoints-count');
 
         // Outside Plan mode, a regular tap remains a selection and adds no waypoint.
         await page.mouse.click(x, firstY);
         await expect(page.locator('body')).not.toHaveClass(
             /route-planner-active/
         );
-        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(0);
+        await expect(waypointCount).toHaveText('0');
 
         const prepare = page.locator('.nav-tab[data-tab="prepare"]');
         await prepare.click();
@@ -84,18 +85,25 @@ test.describe('Beginner route planning', () => {
 
         // In Prepare mode, a regular terrain tap remains available for moving the map.
         await page.mouse.click(x, firstY);
-        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(0);
+        await expect(waypointCount).toHaveText('0');
 
         // A deliberate 500 ms hold is required to add each waypoint.
         await holdOnMap(firstY);
-        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(1);
+        await expect(waypointCount).toHaveText('1');
         await holdOnMap(secondY);
-        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(2);
+        await expect(waypointCount).toHaveText('2');
 
+        await page.locator('#rb-settings-btn').click();
+        await expect(page.locator('#route-settings-title')).toBeVisible();
+        await expect(page.locator('#route-settings-close')).toBeVisible();
         await page.locator('#rb-reverse-btn').click();
-        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(2);
+        await expect(waypointCount).toHaveText('2');
+        await page.locator('#route-settings-close').click();
+        await expect(page.locator('#route-settings')).toBeHidden();
+
+        await page.locator('#rb-waypoints-btn').click();
         await page.locator('#rb-clear-btn').click();
-        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(0);
+        await expect(waypointCount).toHaveText('0');
         await expect(page.locator('body')).toHaveClass(/route-planner-active/);
         await expect(page.locator('#rph-context')).toContainText(
             /départ|start|Startpunkt|partenza/i
@@ -120,7 +128,7 @@ test.describe('Beginner route planning', () => {
 
         // The expert long-press shortcut still adds a point outside Plan mode.
         await holdOnMap(firstY);
-        await expect(page.locator('#rb-dots .rb-dot')).toHaveCount(1);
+        await expect(waypointCount).toHaveText('1');
         await expect(page.locator('body')).not.toHaveClass(
             /route-planning-mode/
         );

@@ -1,111 +1,140 @@
 import { test, expect } from '@playwright/test';
 import { dismissFirstLaunch, openFreshApp, waitForSheet } from './app';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'https://placeholder.supabase.co';
+const SUPABASE_URL =
+    process.env.VITE_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const SUPABASE_PROJECT_REF = SUPABASE_URL.replace('https://', '').split('.')[0];
 const FAKE_SESSION_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
 
 const FAKE_USER = {
-  id: 'e2e-test-uid-12345',
-  email: 'e2e-test@suntrail.app',
-  role: 'authenticated',
-  aud: 'authenticated',
+    id: 'e2e-test-uid-12345',
+    email: 'e2e-test@suntrail.app',
+    role: 'authenticated',
+    aud: 'authenticated',
 };
 
 const FAKE_SESSION = {
-  access_token: 'fake-access-token-for-e2e',
-  token_type: 'bearer',
-  expires_in: 3600,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  refresh_token: 'fake-refresh-token',
-  user: FAKE_USER,
+    access_token: 'fake-access-token-for-e2e',
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: 'fake-refresh-token',
+    user: FAKE_USER,
 };
 
 async function setupApp(
-  page: import('@playwright/test').Page,
-  initialStorage: Record<string, string> = {}
+    page: import('@playwright/test').Page,
+    initialStorage: Record<string, string> = {}
 ) {
-  await openFreshApp(page, initialStorage);
-  await dismissFirstLaunch(page);
-  await waitForSheet(page, '#settings');
+    await openFreshApp(page, initialStorage);
+    await dismissFirstLaunch(page);
+    await waitForSheet(page, '#settings');
 }
 
 test.describe('Account deletion (RGPD)', () => {
+    test('delete button should NOT be visible when user is not authenticated', async ({
+        page,
+    }) => {
+        await setupApp(page);
+        await page.click('.nav-tab[data-tab="settings"]');
+        await expect(page.locator('#settings')).toHaveClass(/is-open/);
 
-  test('delete button should NOT be visible when user is not authenticated', async ({ page }) => {
-    await setupApp(page);
-    await page.click('.nav-tab[data-tab="settings"]');
-    await expect(page.locator('#settings')).toHaveClass(/is-open/);
+        const deleteBtn = page.locator('#account-delete-btn');
+        await expect(deleteBtn).toBeHidden();
+    });
 
-    const deleteBtn = page.locator('#account-delete-btn');
-    await expect(deleteBtn).toBeHidden();
-  });
+    test('account section stays hidden when no account exists @smoke', async ({
+        page,
+    }) => {
+        await setupApp(page);
+        await page.click('.nav-tab[data-tab="settings"]');
 
-  test('account section should always be visible (fix compliance native) @smoke', async ({ page }) => {
-    await setupApp(page);
-    await page.click('.nav-tab[data-tab="settings"]');
+        const accountSection = page.locator('#account-section');
+        await expect(accountSection).toBeHidden();
+        await expect(page.locator('#account-action-btn')).toBeHidden();
+        await expect(page.locator('#account-link-google-btn')).toBeHidden();
+    });
 
-    const accountSection = page.locator('#account-section');
-    await expect(accountSection).toBeVisible();
-    await expect(page.locator('#account-action-btn')).toBeHidden();
-    await expect(page.locator('#account-link-google-btn')).toBeHidden();
-  });
-
-  test('delete button should be visible when user is authenticated', async ({ page }) => {
-    // Intercept Supabase auth calls to return the fake user (avoids network call on expired token)
-    await page.route('**/auth/v1/**', async route => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ user: FAKE_USER }),
+    test('delete button should be visible when user is authenticated', async ({
+        page,
+    }) => {
+        // Intercept Supabase auth calls to return the fake user (avoids network call on expired token)
+        await page.route('**/auth/v1/**', async (route) => {
+            if (route.request().method() === 'GET') {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ user: FAKE_USER }),
+                });
+            } else {
+                await route.continue();
+            }
         });
-      } else {
-        await route.continue();
-      }
+
+        await setupApp(page, {
+            [FAKE_SESSION_KEY]: JSON.stringify(FAKE_SESSION),
+        });
+        await page.click('.nav-tab[data-tab="settings"]');
+
+        const deleteBtn = page.locator('#account-delete-btn');
+        await expect(deleteBtn).toBeVisible();
+        await expect(deleteBtn).toContainText(
+            /supprimer|delete|löschen|elimina/i
+        );
     });
 
-    await setupApp(page, { [FAKE_SESSION_KEY]: JSON.stringify(FAKE_SESSION) });
-    await page.click('.nav-tab[data-tab="settings"]');
+    test('delete flow: confirm dialog → rpc call → reload', async ({
+        page,
+    }) => {
+        await page.route('**/auth/v1/**', async (route) => {
+            if (route.request().method() === 'GET') {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ user: FAKE_USER }),
+                });
+            } else {
+                await route.continue();
+            }
+        });
 
-    const deleteBtn = page.locator('#account-delete-btn');
-    await expect(deleteBtn).toBeVisible();
-    await expect(deleteBtn).toContainText(/supprimer|delete|löschen|elimina/i);
-  });
+        // Intercept RPC delete_user_account
+        let rpcCalled = false;
+        await page.route(
+            '**/rest/v1/rpc/delete_user_account',
+            async (route) => {
+                rpcCalled = true;
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: 'null',
+                });
+            }
+        );
 
-  test('delete flow: confirm dialog → rpc call → reload', async ({ page }) => {
-    await page.route('**/auth/v1/**', async route => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user: FAKE_USER }) });
-      } else {
-        await route.continue();
-      }
+        // Intercept Supabase signOut
+        await page.route('**/auth/v1/logout', async (route) => {
+            await route.fulfill({ status: 204 });
+        });
+
+        await setupApp(page, {
+            [FAKE_SESSION_KEY]: JSON.stringify(FAKE_SESSION),
+        });
+        await page.click('.nav-tab[data-tab="settings"]');
+
+        // Confirmer via la modale HTML custom (window.confirm n'est pas fiable sur WebKit/iOS)
+        await page.locator('#account-delete-btn').click();
+        await page
+            .locator('#confirm-dialog-overlay')
+            .waitFor({ state: 'visible' });
+        await page.locator('.confirm-dialog-accept').click();
+
+        // Le flow supprime le compte (RPC intercepté) puis recharge la page.
+        // Attendre l'appel RPC avant la vérification (le dialog custom est async).
+        await expect.poll(() => rpcCalled).toBe(true);
+        await page.waitForFunction(
+            () => (window as any).suntrailReady === true,
+            { timeout: 15000 }
+        );
     });
-
-    // Intercept RPC delete_user_account
-    let rpcCalled = false;
-    await page.route('**/rest/v1/rpc/delete_user_account', async route => {
-      rpcCalled = true;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
-    });
-
-    // Intercept Supabase signOut
-    await page.route('**/auth/v1/logout', async route => {
-      await route.fulfill({ status: 204 });
-    });
-
-    await setupApp(page, { [FAKE_SESSION_KEY]: JSON.stringify(FAKE_SESSION) });
-    await page.click('.nav-tab[data-tab="settings"]');
-
-    // Confirmer via la modale HTML custom (window.confirm n'est pas fiable sur WebKit/iOS)
-    await page.locator('#account-delete-btn').click();
-    await page.locator('#confirm-dialog-overlay').waitFor({ state: 'visible' });
-    await page.locator('.confirm-dialog-accept').click();
-
-    // Le flow supprime le compte (RPC intercepté) puis recharge la page.
-    // Attendre l'appel RPC avant la vérification (le dialog custom est async).
-    await expect.poll(() => rpcCalled).toBe(true);
-    await page.waitForFunction(() => (window as any).suntrailReady === true, { timeout: 15000 });
-  });
-
 });

@@ -321,6 +321,9 @@ export interface State {
     isRecording: boolean;
     isPaused: boolean;
     recordingStartTime: number | null; // v5.29.1 : Persistance du temps de REC
+    recordingPausedAt: number | null;
+    recordingPausedDurationMs: number;
+    recordingStoppedAt: number | null;
     currentCourseId: string | null;
     recordedPoints: LocationPoint[];
     recoveredPoints: LocationPoint[] | null;
@@ -466,6 +469,9 @@ const initialState: State = {
     isRecording: false,
     isPaused: false,
     recordingStartTime: null, // Initialisation v5.29.1
+    recordingPausedAt: null,
+    recordingPausedDurationMs: 0,
+    recordingStoppedAt: null,
     currentCourseId: null,
     recordedPoints: [],
     recoveredPoints: null,

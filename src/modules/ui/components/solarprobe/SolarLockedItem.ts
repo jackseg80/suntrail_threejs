@@ -6,17 +6,21 @@ export function makeLockedItem(
     text: string,
     onClick?: () => void
 ): HTMLElement {
-    const row = document.createElement('div');
+    const row = document.createElement('button');
+    row.type = 'button';
     row.className = 'solar-locked-item';
-    row.style.cssText =
-        'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin:4px 0;border-radius:8px;background:rgba(255,255,255,0.03);cursor:pointer;';
-    row.innerHTML = `<span style="display:flex;align-items:center;gap:6px;">${ICON_LOCK} <span style="opacity:0.5;font-size:12px;">${text}</span></span>`;
+    const label = document.createElement('span');
+    label.className = 'solar-locked-label';
+    label.innerHTML = ICON_LOCK;
+    const labelText = document.createElement('span');
+    labelText.className = 'solar-locked-copy';
+    labelText.textContent = text;
+    label.appendChild(labelText);
 
     const badge = document.createElement('span');
-    badge.className = 'pro-badge';
-    badge.style.cssText =
-        'background:var(--accent);color:#fff;font-size:var(--text-xs);font-weight:bold;padding:2px 6px;border-radius:4px;';
+    badge.className = 'pro-badge solar-locked-badge';
     badge.textContent = 'PRO';
+    row.appendChild(label);
     row.appendChild(badge);
 
     row.addEventListener('click', () => {

@@ -1,17 +1,17 @@
-# Stockage des traces pleine fidélité (livré en v5.87, actif en v5.89.1)
+# Stockage des traces pleine fidélité (livré en v5.87, actif en v5.90.0)
 
-> Contrat toujours actif dans la version source 5.89.1. L'état de publication historique de 5.87
+> Contrat toujours actif dans la version source 5.90.0. L'état de publication historique de 5.87
 > est conservé dans `CHANGELOG.md` et n'affecte pas les garanties de stockage décrites ici.
 
 ## Responsabilités séparées
 
-| Donnée | Source canonique | Rôle |
-| --- | --- | --- |
-| Trace REC ou import GPX enregistré | IndexedDB `suntrail-tracks` | Géométrie ordonnée complète et métadonnées durables |
-| Route préparée | `RouteRepository` / `suntrail-prepared-routes` | Intention de planification, readiness et guidage |
-| Session REC native en cours | Room + `rec_state.json` | Tampon récupérable avant finalisation durable |
-| Historique legacy des cinq derniers GPX/REC | `localStorage` | Source de migration additive et compatibilité avec le client précédent |
-| Calque 3D actif | `state.gpxLayers` | Vue transitoire, jamais source canonique de l'archive |
+| Donnée                                      | Source canonique                               | Rôle                                                                   |
+| ------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- |
+| Trace REC ou import GPX enregistré          | IndexedDB `suntrail-tracks`                    | Géométrie ordonnée complète et métadonnées durables                    |
+| Route préparée                              | `RouteRepository` / `suntrail-prepared-routes` | Intention de planification, readiness et guidage                       |
+| Session REC native en cours                 | Room + `rec_state.json`                        | Tampon récupérable avant finalisation durable                          |
+| Historique legacy des cinq derniers GPX/REC | `localStorage`                                 | Source de migration additive et compatibilité avec le client précédent |
+| Calque 3D actif                             | `state.gpxLayers`                              | Vue transitoire, jamais source canonique de l'archive                  |
 
 Ouvrir une trace ne crée pas une route préparée. L'action explicite « Créer l'itinéraire »
 effectue cette conversion. Le catalogue utilise un adaptateur échantillonné à 200 points pour la
@@ -60,6 +60,12 @@ abandon explicite, transaction `TrackRepository`, accusé de succès, puis seule
 marqueur et des points Room. En cas de quota ou d'échec transactionnel, l'accusé n'est pas envoyé
 et la session reste récupérable. L'abandon explicite et un enregistrement trop court sont, eux,
 acquittés sans créer d'archive.
+
+Pause REC conserve l'identité Room mais bloque les nouvelles écritures de points. Le service natif
+persiste l'instant de pause et le cumul suspendu ; la reprise repart sans comparer le premier fix à
+la dernière position d'avant pause. Durée et métriques retranchent ce cumul. Un STOP depuis la
+notification conserve aussi son heure exacte afin qu'une finalisation après relance n'ajoute pas le
+temps écoulé depuis l'arrêt.
 
 Avant le choix, le dialogue montre un aperçu borné de la trace et les métriques utiles : distance,
 durée, D+, D−, allure et nombre de points. Échap et un toucher sur le fond laissent le dialogue

@@ -6,6 +6,13 @@ let _isInitialized = false;
 
 const hideUI = () => {
     if (sheetManager.getActiveSheetId() !== null) return;
+    if (
+        document.body.classList.contains('route-waypoint-moving') ||
+        document.querySelector(
+            '#route-settings:not(.hidden), #route-waypoints-panel:not(.hidden), #elevation-profile.is-open'
+        )
+    )
+        return;
     if (state.hasLastClicked) return;
     document.body.classList.add('ui-hidden');
 };

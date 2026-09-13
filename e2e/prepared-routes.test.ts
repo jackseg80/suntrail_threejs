@@ -26,7 +26,7 @@ async function openPreparedRoutesApp(
             localStorage.clear();
             sessionStorage.setItem(marker, '1');
             localStorage.setItem('suntrail_acceptance_v1', '1');
-            localStorage.setItem('suntrail_onboarding_v2', '1');
+            localStorage.setItem('suntrail_onboarding_v3', '1');
             localStorage.setItem('suntrail_app_version', appVersion);
             for (const [key, value] of Object.entries(storage)) {
                 localStorage.setItem(key, value);

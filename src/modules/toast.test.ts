@@ -14,7 +14,10 @@ describe('showToast()', () => {
 
     it('crée #toast-container si absent', () => {
         showToast('Hello');
-        expect(document.getElementById('toast-container')).not.toBeNull();
+        const container = document.getElementById('toast-container');
+        expect(container).not.toBeNull();
+        expect(container?.getAttribute('role')).toBe('status');
+        expect(container?.getAttribute('aria-live')).toBe('polite');
     });
 
     it('réutilise le container existant', () => {
@@ -25,9 +28,9 @@ describe('showToast()', () => {
 
     it('affiche le message correct', () => {
         showToast('Mon message');
-        expect(document.querySelector('.toast')?.textContent).toBe(
-            'Mon message'
-        );
+        const toast = document.querySelector('.toast');
+        expect(toast?.textContent).toBe('Mon message');
+        expect(toast?.classList.contains('is-visible')).toBe(true);
     });
 
     it('supprime le toast après la durée par défaut (3000ms)', () => {
@@ -48,6 +51,20 @@ describe('showToast()', () => {
         showToast('B');
         showToast('C');
         expect(document.querySelectorAll('.toast').length).toBe(3);
+    });
+
+    it('remplace un toast portant la même clé sans toucher aux autres', () => {
+        showToast('Profil appliqué : Endurance', 3000, 'performance-preset');
+        showToast('Réseau disponible', 3000, 'network');
+        showToast('Profil appliqué : Fluide', 3000, 'performance-preset');
+
+        const messages = Array.from(document.querySelectorAll('.toast')).map(
+            (toast) => toast.textContent
+        );
+        expect(messages).toEqual([
+            'Réseau disponible',
+            'Profil appliqué : Fluide',
+        ]);
     });
 
     it('supprime les toasts indépendamment', () => {

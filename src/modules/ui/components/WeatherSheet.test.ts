@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../../i18n/I18nService', () => ({
-    i18n: { t: (k: string) => k, applyToDOM: vi.fn() },
+    i18n: {
+        t: (k: string) => k,
+        applyToDOM: vi.fn(),
+        getLocale: vi.fn(() => 'fr'),
+    },
 }));
 
-const { mockState } = vi.hoisted(() => {
+const { mockState, mockGetSunTimes } = vi.hoisted(() => {
     const state: Record<string, any> = {
         weatherData: null,
         controls: { target: { y: 0 } },
@@ -13,9 +17,21 @@ const { mockState } = vi.hoisted(() => {
         subscribe: vi.fn(() => vi.fn()),
         isMapTilerDisabled: false,
         weatherUnavailable: false,
+        lastWeatherLat: 46,
+        lastWeatherLon: 8,
     };
-    return { mockState: state };
+    return {
+        mockState: state,
+        mockGetSunTimes: vi.fn(() => ({
+            sunrise: new Date(2026, 8, 11, 7, 10),
+            sunset: new Date(2026, 8, 11, 19, 50),
+        })),
+    };
 });
+
+vi.mock('../../suncalcCompat', () => ({
+    default: { getTimes: mockGetSunTimes },
+}));
 
 vi.mock('../../state', () => ({
     state: mockState,
@@ -29,11 +45,10 @@ vi.mock('../../weather', () => ({
 }));
 
 vi.mock('../../weatherUtils', () => ({
-    getUVCategory: vi.fn(() => ({ label: 'Moderate', color: '#FF0' })),
+    getUVCategory: vi.fn(() => 'moderate'),
     getComfortIndex: vi.fn(() => 22),
     getFreezingAlert: vi.fn(() => null),
     computeTemperatureChartData: vi.fn(() => []),
-    getComfortCategory: vi.fn(() => ({ label: 'Comfortable', color: '#0F0' })),
 }));
 
 vi.mock('../../geo', () => ({
@@ -46,7 +61,7 @@ vi.mock('../../expertService', () => ({
     expertService: { generateWeatherReport: vi.fn(() => 'Weather Report') },
 }));
 vi.mock('../core/SheetManager', () => ({
-    sheetManager: { close: vi.fn() },
+    sheetManager: { back: vi.fn() },
 }));
 vi.mock('../tooltip', () => ({
     createTooltip: vi.fn(() => ({ dispose: vi.fn() })),
@@ -78,6 +93,7 @@ import { WeatherSheet } from './WeatherSheet';
 import { sheetManager } from '../core/SheetManager';
 import { eventBus } from '../../eventBus';
 import { fetchWeather } from '../../weather';
+import { showUpgradePrompt } from '../../iap';
 
 describe('WeatherSheet', () => {
     let container: HTMLElement;
@@ -106,12 +122,12 @@ describe('WeatherSheet', () => {
         expect(() => sheet.hydrate()).not.toThrow();
     });
 
-    it('close button calls sheetManager.close', () => {
+    it('close button follows the common sheet back contract', () => {
         const sheet = new WeatherSheet();
         sheet.hydrate();
         const btn = document.getElementById('close-weather')!;
         btn.click();
-        expect(sheetManager.close).toHaveBeenCalled();
+        expect(sheetManager.back).toHaveBeenCalled();
     });
 
     it('shows loading state when no weather data', () => {
@@ -130,6 +146,12 @@ describe('WeatherSheet', () => {
         sheet.hydrate();
         const content = document.getElementById('weather-content');
         expect(content?.children.length).toBeGreaterThan(0);
+        expect(content?.textContent).toContain(
+            'weather.unavailableDescription'
+        );
+        expect(content?.textContent).not.toContain(
+            'Service météo temporairement indisponible'
+        );
     });
 
     it('shows weather dashboard when data is available', () => {
@@ -177,6 +199,60 @@ describe('WeatherSheet', () => {
         sheet.hydrate();
         const loc = document.getElementById('weather-location-name');
         expect(loc?.textContent).toBe('Chamonix');
+    });
+
+    it('uses translated labels for sunrise and sunset in the hourly forecast', () => {
+        const sheet = new WeatherSheet();
+        const hourly = [
+            { time: '07:00', temp: 10, code: 0 },
+            { time: '19:00', temp: 16, code: 0 },
+        ];
+
+        const scroll = (sheet as any).buildHourlyScroll({ hourly }, 24);
+
+        expect(scroll.textContent).toContain('solar.stat.sunrise');
+        expect(scroll.textContent).toContain('solar.stat.sunset');
+        expect(scroll.textContent).not.toContain('Sunrise');
+        expect(scroll.textContent).not.toContain('Sunset');
+    });
+
+    it('uses real buttons for the locked forecast days', () => {
+        const sheet = new WeatherSheet();
+        const preview = (sheet as any).buildDailyForecastPreview({
+            daily: [
+                {
+                    date: '2026-09-12',
+                    code: 0,
+                    tempMax: 18,
+                    tempMin: 8,
+                    precipSum: 0,
+                    windSpeedMax: 10,
+                },
+                {
+                    date: '2026-09-13',
+                    code: 0,
+                    tempMax: 19,
+                    tempMin: 9,
+                    precipSum: 0,
+                    windSpeedMax: 11,
+                },
+                {
+                    date: '2026-09-14',
+                    code: 0,
+                    tempMax: 20,
+                    tempMin: 10,
+                    precipSum: 0,
+                    windSpeedMax: 12,
+                },
+            ],
+        });
+        const lockedDays = preview.querySelectorAll(
+            'button.weather-daily-row--locked'
+        );
+        expect(lockedDays).toHaveLength(2);
+
+        (lockedDays[0] as HTMLButtonElement).click();
+        expect(showUpgradePrompt).toHaveBeenCalledWith('weather_extended');
     });
 
     it('dispose cleans up without crash', () => {

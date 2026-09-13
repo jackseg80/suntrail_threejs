@@ -1,6 +1,206 @@
-# SunTrail — TODO (v5.89.1 clôturée sur GitHub ; publication Play séparée)
+# SunTrail — TODO (v5.90.0 prête pour la release GitHub ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-10
+> Dernière mise à jour : 2026-09-13
+
+## ✅ v5.90 — refonte UI fonctionnellement clôturée
+
+Plan de référence : [audit, concepts et migration révisés](docs/plans/V5_90_UI_REDESIGN.md).
+
+- [x] Auditer les systèmes UI actifs et comparer trois concepts de refonte.
+- [x] Compléter l'audit sur S23 en Free, avec captures des barres actives et comparaison
+      Fluide/Équilibré ; consigner les limites de cette observation.
+- [x] Réviser le plan : auto-hide contextuel, effets selon preset, profil agrandi,
+      superpositions, retours et lisibilité ; définir les lots et la matrice de validation.
+- [x] Valider la direction UX recommandée avant de commencer les changements de code.
+- [x] Implémenter la première tranche du pilote Préparer : Configuration structurée, surfaces
+      lisibles selon preset, auto-hide contextuel, retour Android/Escape, profil ancré et
+      redimensionné, Analyse solaire en sous-vue.
+- [x] Installer le paquet séparé `5.89.1-diagnostic` / 910 sur Galaxy S23 et valider le pilote en
+      Free, Fluide, thème Auto, police 115 % : panneaux et barres après 10 s, Retour Android,
+      profil agrandi et navigation Profil → Analyse → Profil sur un parcours temporaire de 0,24 km.
+- [x] Intégrer le retour propriétaire du pilote S23 : supprimer tout déplacement du profil et
+      récupérer les anciennes positions hors écran, protéger le titre et la croix de Configuration
+      lorsque le clavier est ouvert, puis harmoniser Annuler/Rétablir. Rebuild, réinstallation et
+      rejeu sur le paquet diagnostic effectués sur le même S23 en Free/Fluide.
+- [x] Commencer le lot 2 commun : unifier les titres et sélections de Recherche, remplacer la
+      rupture Connectivité → Packs par un retour parent explicite, restaurer défilement/focus et
+      aligner flèche, Retour Android et Escape. Les 1 807 tests, le build Android et le rejeu S23
+      Free/Fluide passent sans téléchargement de pack.
+- [x] Simplifier Plus/Réglages à grande police : catégories Essentiels/Carte/Avancé compactes et
+      synchronisées au défilement ; offre Pro ouverte en sous-vue avec Plus actif et restauration
+      exacte de Réglages par flèche, Retour Android ou Escape. APK diagnostic rejoué sans achat.
+- [x] Sortir les paramètres avancés de la page principale : Avancé ouvre une page dédiée avec
+      titre et flèche, tandis que Retour Android/Escape restaurent le défilement et le focus de
+      Réglages. Le parcours est rejoué sur S23 à 115 %.
+- [x] Harmoniser Couches, Météo et SOS : fermeture commune, retour Couches → Pro → Couches,
+      en-tête SOS standard, états traduits et SMS désactivé pendant la localisation. Rebuild et
+      rejeu S23 Free/Fluide effectués sans SMS ni achat ; aucun pack ne reste installé.
+- [x] Simplifier Bibliothèque vide et remplie : actions côte à côte, un GPX préparé affiché comme
+      un seul parcours, bilan/options repliés et source complète conservée. Les imports sans parcours
+      restent visibles « À préparer ». Les 1 810 tests, le build et le rejeu S23 Free/Fluide passent.
+- [x] Clarifier Sortie avec une route consultée : nom de GPX lisible dans le bandeau et la carte,
+      Suivre comme seule action du parcours, REC indépendant, Profil réservé au guidage et changement
+      de parcours par l'onglet Bibliothèque. Le profil de Préparer se ferme en quittant cette
+      destination. Les 1 811 tests, le build Android et le contrôle S23 Free/Fluide passent sans
+      lancer Guidage ni REC.
+- [x] Simplifier le guidage actif : nom de trace lisible, trois hauteurs accessibles par Bandeau,
+      Détails/Réduire et Agrandir sans geste vertical, actions Enregistrer et Arrêter le guidage
+      explicites, arrêt secondaire limité aux sessions combinées, profil et retour harmonisés. Les
+      1 812 tests, le build Android et le rejeu S23 Free/Fluide passent sur une session statique ;
+      REC n'a pas été lancé.
+- [x] Retirer Pause du guidage affiché et de sa notification Android : il suspendait seulement le
+      guidage pendant que REC continuait. Réorganiser Profil sur toute la largeur et réserver une
+      éventuelle vraie pause REC au lot d'enregistrement. Rebuild et rejeu S23 effectués.
+- [x] Remplacer la languette et le glissement vertical du guidage par des commandes explicites :
+      Bandeau depuis les panneaux normal et détaillé, Agrandir depuis le bandeau minimal, et
+      Détails/Réduire entre les deux autres hauteurs. Rebuild et rejeu des trois états sur S23.
+- [x] Raccourcir le bouton du profil à Retour tout en conservant « Retour au guidage » pour les
+      lecteurs d'écran, et renommer Ouvrir en Agrandir dans le bandeau minimal.
+- [x] Valider sur S23 la vraie Pause/Reprendre du REC : durée figée, alternances pause/reprise,
+      maintien en arrière-plan, reprise sans saut signalé et STOP avec récapitulatif. Le test terrain
+      Free/Fluide du 2026-09-11 a produit 12 points sur 0,07 km et la trace diagnostic a été supprimée.
+- [x] Afficher cette même Pause/Reprendre dans le panneau Guidance uniquement lorsqu'un REC est
+      actif. Elle suspend l'enregistrement et sa durée sans suspendre le guidage ; en guidage seul,
+      aucune commande Pause n'est affichée. Les anciens libellés UI de pause du guidage sont retirés.
+      L'APK diagnostic a été installée et le fonctionnement Guidance + REC confirmé sur le S23.
+- [x] Contrôler le cœur Pro sur S23/Fluide : statut Pro Actif, options avancées, fond Satellite sans
+      paywall et météo complète sur trois jours. Corriger au passage Sunrise/Sunset avec les libellés
+      traduits ; les passages Maximum → Fluide et Clair → Auto restent lisibles et sans état résiduel.
+      Les 1 817 tests, le build Android et le rejeu diagnostic passent le 2026-09-11.
+- [x] Compléter la baseline du lot 0 : la matrice A53 Free est contrôlée en portrait, paysage,
+      polices 100/110/130 % et sur Endurance/Équilibré/Fluide/Maximum/personnalisé. Le libellé
+      « Personnalisé » apparaît désormais dès qu'un réglage piloté par le profil est modifié. La
+      couverture cartographique blanche après rotation est corrigée et validée sans geste sur l'APK
+      diagnostic. Le contrôle A53 Pro n'est pas répété : le cœur Pro est déjà qualifié sur S23 et le
+      correctif de rotation est indépendant des droits.
+- [x] Réaliser la première passe fonctionnelle des parcours couverts par les lots 2 à 5, sans
+      réécriture des moteurs. Cette validation fonctionnelle ne clôt pas leur migration visuelle.
+- [x] Terminer le lot 1, langage visuel, sur toutes les surfaces actives. Une première tranche
+      locale unifie la barre supérieure, les commandes carte, les en-têtes et fermetures de feuilles,
+      Points, Configuration et Profil. Elle retire aussi les gestes cachés de déplacement de la
+      timeline et des coordonnées, ainsi que le doublon Fermer de SOS. Les dialogues partagent le
+      même style ; Entrée suit le bouton focalisé et le focus est restauré. TypeScript, lint,
+      formatage, 157 fichiers/1 805 tests, build Web, budget bundle, synchronisation Capacitor et
+      APK Android passent. Une première inspection S23 à 420 dpi et police 115 % confirme la barre
+      supérieure, Plus et Configuration, puis révèle une collision dans Bibliothèque, des éléments
+      décoratifs hérités dans SOS/Profil et une ancienne ressource Web servie par le Service Worker.
+      La collision est corrigée, les libellés/toasts/SOS sont harmonisés et le Service Worker est
+      désormais réservé au Web/PWA. Les profils automatiques n'affichent plus de message au
+      démarrage ; un choix manuel utilise son nom traduit. L'APK corrigée est construite ; le rejeu
+      final Bibliothèque/SOS sur le S23 passe. Le défaut signalé ensuite sur le bandeau supérieur
+      replié est corrigé : les boutons invisibles deviennent inertes et la flèche reste seule
+      cliquable ; le rejeu replier/déplier n'ouvre plus Météo. Le premier bloc Réglages/Compte ne
+      tronque plus son texte et les choix Profil/Thème utilisent une casse normale. Le lot reste
+      ouvert pour les surfaces héritées suivantes. Une passe groupée supplémentaire masque le bloc
+      Compte lorsqu'il ne contient aucune action, place le profil de performance en premier et
+      réduit la promotion Pro de Réglages aux trois options réellement réglables. L'offre Pro place
+      les formules et la restauration avant le catalogue. Connexion, Packs et Couches reprennent les
+      mêmes titres, cartes, boutons, états et focus ; l'import PMTiles reste disponible dans un détail
+      technique replié et les doublons d'icônes sont retirés. Le sous-lot suivant ancre le
+      résumé de l'inclinomètre tout en conservant le déplacement utile de son viseur, désormais
+      accessible au clavier, et retire ses styles/pictogrammes hérités. Météo conserve les icônes de
+      conditions utiles, mais traduit ses états, remplace les jours Pro et aides cliquables par de
+      vrais boutons et centralise ses alertes et espacements. Le rejeu groupé S23 Free puis Pro,
+      Fluide, 115 % et 420 dpi valide Réglages, offre Pro, Connexion, Packs, Couches, inclinomètre et
+      Météo. Les feuilles deviennent presque opaques, MapTiler est masqué, l'état tactile résiduel de
+      l'inclinomètre est corrigé, le confort météo est espacé et Copier le rapport reprend le bouton
+      secondaire commun. La carte Réglages décrit désormais correctement l'état Pro actif. Le dernier
+      APK est installé ; TypeScript, lint, formatage, build Web/Capacitor, assemblage Android,
+      1 813 tests et quatre catalogues alignés sur 964 clés passent. Réglages avancés devient une
+      page interne et le tutoriel rejoint les styles et icônes communs ; ses trois écrans sont
+      contrôlés sur S23 à 115 %. Le choix de langue quitte ensuite le sélecteur natif au rendu
+      variable pour une grille 2 × 2 cohérente avec les autres réglages. Analyse solaire retire
+      ses capitales, émojis système et styles injectés, agrandit les aides et choix de mode, puis
+      aligne cartes, alertes, verrouillages, promotion Pro et copie du rapport sur les composants
+      communs. Le rendu Pro complet est contrôlé sur S23 à 115 % ; 531 suites/1 814 tests, le
+      typage, le lint, les 968 clés de chaque langue, le build, le budget bundle, Capacitor et
+      l'APK diagnostic passent.
+- [x] Reconcevoir le tutoriel dans une passe UX dédiée : la carte réelle reste visible et active,
+      la prise en main tient en deux étapes adaptatives et la sécurité redondante ainsi que le menu
+      final abstrait disparaissent. La version 3 est proposée une fois à tous les utilisateurs ;
+      Préparer, REC et le premier accès Pro disposent d'aides attachées à leurs vraies commandes.
+      L'interstitiel Pro chronométré au démarrage n'est plus déclenché. Contrôles statiques, quatre
+      langues, 100 tests ciblés, build Web et deux scénarios E2E Chromium passent. Le rejeu S23
+      Free à 420 dpi et police 115 % a déplacé l'étape 2 vers le haut pour dégager les commandes
+      latérales, puis rendu toute aide contextuelle implicitement terminée quand l'utilisateur
+      poursuit ailleurs. Après correction et réinstallation, le parcours carte → 3D, la transition
+      Préparer → aide REC et Satellite Pro → Plus tard passent sans REC, achat ni changement de
+      droit. `npm run check`, 14 tests ciblés, 158 fichiers/1 826 tests, Capacitor, Android et les
+      deux scénarios E2E repassent.
+- [x] Commencer le lot 6 : centraliser Pause/Reprendre REC pour Sortie et Guidance, retirer 25 noms
+      de sélecteurs CSS sans référence active et supprimer les anciens libellés de pause Guidance.
+      Le CSS produit passe de 107,42 à 104,61 Ko ; TypeScript sans symboles inutilisés, lint,
+      formatage, audit des quatre langues, 1 818 tests, bundle et APK diagnostic passent.
+- [x] Traiter les deux collisions révélées par la balade S23 du 2026-09-12 : pendant Guidance, le
+      contrôle de pente existant rejoint le panneau au lieu de rester caché derrière lui ; pendant
+      Guidance + REC, la pastille REC de la barre haute disparaît et le bandeau minimal affiche un
+      état REC compact avec durée. Aucun moteur GPS, REC ou Guidance n'est modifié. Les 531
+      suites/1 815 tests, le typage, le lint, le formatage, le build, le budget bundle, Capacitor et
+      l'APK diagnostic passent.
+- [x] Rejouer ce correctif sur S23 Pro à 115 % et 420 dpi : Guidance seule puis Guidance + REC dans
+      les trois hauteurs, pente activée en suivi continu et au viseur libre. Le même contrôle reste
+      dans le panneau, la pastille REC haute est masquée, le bandeau compact affiche REC et sa durée,
+      Pause/Reprendre fonctionne et la sortie restitue le contrôle de pente à la carte. Le REC court
+      créé pour la qualification a été arrêté puis écarté.
+- [x] Reconcevoir la Timeline solaire en deux niveaux lisibles : heure/phase/date puis
+      lecture/curseur/vitesse, cibles tactiles communes, icônes SVG, mesures Pro immédiates et
+      transparence adaptée au preset. L'heure reprend la phase solaire avec des couleurs distinctes
+      en thèmes clair et sombre, sans supprimer le libellé. La date complète, le crépuscule et les
+      mesures Azimut/Élévation sont contrôlés sur S23 Pro à 115 % et 420 dpi. Les 157 fichiers/1 817
+      tests, le typage, le lint, le formatage, le build Capacitor et l'APK diagnostic passent.
+- [x] Remplacer l'ancienne carte verticale de sélection par un bandeau compact : coordonnées
+      complètes, altitude en 3D, action Soleil explicite et vraie fermeture. Le doublon SOS masqué et
+      son ancien temporisateur disparaissent. Quand une sélection est visible, l'inclinomètre remonte
+      automatiquement et conserve un espace lisible avec le bandeau ; la colonne de commandes à
+      droite reste libre. Le rendu S23 Pro à 115 % et 420 dpi est contrôlé, les interactions sont
+      couvertes par les tests et les 157 fichiers/1 816 tests passent.
+- [x] Dissocier l'analyse solaire astronomique de la simulation du relief : un toucher 2D sélectionne
+      maintenant un vrai point et ouvre Soleil. Lever, coucher, midi solaire, durée du jour, azimut,
+      élévation et graphique restent calculés sans relief ; ombre, premier rayon, ensoleillement et
+      frise d'exposition ne sont affichés que lorsque les altitudes existent. Le message devient une
+      information non bloquante et aucun résultat de relief plat n'est présenté comme réel. Le
+      parcours est rejoué par toucher réel sur S23 Pro à 115 % ; 531 suites/1 819 tests, contrôles
+      statiques, quatre langues, bundle, Capacitor et APK diagnostic passent.
+- [x] Nettoyer les dernières commandes cartographiques ponctuelles : remplacer la roue dentée texte
+      de Préparer par l'icône SVG commune, retirer les styles HTML du bouton 2D/3D et faire utiliser
+      aux outils de diagnostic l'état masqué natif. La nouvelle APK diagnostic est installée sur le
+      S23 ; 531 suites/1 820 tests, contrôles statiques, bundle et Capacitor passent.
+- [x] Clore la passe principale S23 des dernières surfaces actives : chargement, reprise hors ligne,
+      recherche, import GPX, REC et unités de statistiques utilisent les états masqués et styles
+      communs. Le sélecteur de zone hors ligne adopte les composants du système, remplace l'action
+      Free par un vrai bouton avec icône SVG et masque les commandes carte concurrentes pendant la
+      sélection. Son message Free reste au-dessus du panneau et ne recouvre plus Annuler ou
+      Télécharger. Le rendu final est contrôlé sur S23 Free à 115 % et 420 dpi en portrait/paysage,
+      ainsi que dans Réglages en thèmes clair et sombre avant retour à Auto ; le parcours Pro avait
+      été rejoué sur la version immédiatement précédente et le contrat Free/Pro reste couvert par
+      les tests. Une seule emprise géographique est désormais visible : orange avant validation,
+      verte pendant le téléchargement puis bleue lorsqu'elle est disponible. L'emprise est
+      recalculée au toucher de Télécharger et reste ensuite figée, même si la carte est orientée.
+      L'APK diagnostic finale est installée ; 157 fichiers/1 825 tests, contrôles
+      statiques, build Web, budget bundle, Capacitor et assemblage Android passent.
+- [ ] Candidat 5.90.1 — fiabiliser la pente du chemin en suivi. Séparer explicitement la pente locale
+      du terrain au viseur et la pente longitudinale du parcours ; rattacher la position à la trace
+      quand Guidance est active, lisser sur une distance pertinente, tenir compte de la précision GPS
+      et afficher un état incertain plutôt qu'une valeur extrême non fiable. Traiter ce chantier dans
+      une discussion fonctionnelle dédiée avec cas terrain reproductibles.
+- [x] Terminer la qualification groupée du lot 6 : la matrice Web 320/360/390/412/899/900/1280 px
+      et zoom 200 %, l'A53 Free et l'arbre d'accessibilité Android passent. L'essai TalkBack réel a
+      été interrompu car il rendait le téléphone trop difficile à utiliser ; il n'est pas bloquant
+      pour ce lot. La rotation recharge maintenant son nouveau champ visible sans attendre un geste,
+      tout en conservant le repos du moteur après stabilisation. Les catalogues de langue sont
+      séparés et le budget bundle repasse au vert.
+- [x] Rejouer après la refonte du tutoriel le sélecteur hors ligne sur S23 Free avec une carte
+      orientée. À environ 61°, l'unique contour orange suit le déplacement de la carte, le panneau
+      conserve ses deux actions dégagées et le message Free reste au-dessus. Le contrôle a été
+      annulé sans téléchargement ; le compteur de zones reste à 0.
+
+### Clôture fonctionnelle
+
+Le périmètre produit et la qualification de la refonte 5.90 sont terminés localement. La pente du
+chemin reste volontairement dans le candidat 5.90.1 et sa discussion fonctionnelle dédiée ; elle ne
+bloque pas cette clôture. Les actions GitHub de livraison (commit, tag, push et release) sont
+autorisées le 2026-09-13. L'upload Play reste séparé et impose de vérifier le maximum réel de
+`versionCode` dans la console.
 
 ## v5.89.1 — simplification terrain
 
@@ -11,13 +211,14 @@
 - [x] Distinguer visuellement et pour les lecteurs d'écran les états GPS localiser, position et
       suivi continu.
 - [x] Ajouter les modes bandeau supérieur, compact et détails au panneau Guidance, pilotés par
-      une seule languette, sans boutons redondants, avec retour explicite depuis Profil.
+      une seule languette, sans boutons redondants, avec retour explicite depuis Profil. Cette
+      interaction historique est remplacée en 5.90 par trois commandes textuelles explicites.
 - [x] Terminer Guidance et REC ensemble depuis l'action principale combinée, y compris dans la
       notification Android, sans supprimer les commandes indépendantes.
 - [x] Enrichir le choix de fin de REC avec aperçu de trace et métriques ; rendre l'abandon
       obligatoirement explicite.
 - [x] Rafraîchir immédiatement la trace et ses couleurs solaires après toute modification des
-      points, puis borner Guidance sous la barre haute avec une languette toujours accessible.
+      points, puis borner Guidance sous la barre haute avec une commande toujours accessible.
 - [x] Rendre visible le plafond souple Free au-delà du détail 14 par un indicateur HD Pro
       persistant et explicatif, sans bloquer le zoom cartographique.
 - [x] Construire, installer et démarrer `5.89.1-diagnostic` / 910 sur Galaxy S23 SM-S911B sous

@@ -95,18 +95,30 @@ export function detectBestPreset(): PresetType {
 /**
  * Applique un preset de performance
  */
-export function applyPreset(preset: PresetType): void {
+export function applyPreset(
+    preset: PresetType,
+    options: { notify?: boolean } = {}
+): void {
+    const { notify = true } = options;
+
     if (preset === 'custom') {
         state.PERFORMANCE_PRESET = 'custom';
         updatePerformanceUI('custom');
         document.body.classList.remove('high-quality-ui');
+        document.body.classList.remove(
+            'preset-eco',
+            'preset-balanced',
+            'preset-performance',
+            'preset-ultra'
+        );
+        document.body.classList.add('preset-custom');
         saveSettings();
         return;
     }
 
     // Batterie < 20% : seuls les profils légers sont autorisés (v5.86)
     if (state.IS_BATTERY_LOW && preset !== 'eco') {
-        showToast(i18n.t('preset.batteryTooLow'), 4000);
+        if (notify) showToast(i18n.t('preset.batteryTooLow'), 4000);
         return;
     }
 
@@ -160,7 +172,14 @@ export function applyPreset(preset: PresetType): void {
     }
 
     document.body.classList.toggle('mode-2d', state.IS_2D_MODE);
-    document.body.classList.toggle('preset-eco', preset === 'eco');
+    document.body.classList.remove(
+        'preset-eco',
+        'preset-balanced',
+        'preset-performance',
+        'preset-ultra',
+        'preset-custom'
+    );
+    document.body.classList.add(`preset-${preset}`);
     document.body.classList.toggle(
         'high-quality-ui',
         preset === 'performance' || preset === 'ultra'
@@ -184,7 +203,14 @@ export function applyPreset(preset: PresetType): void {
     }
 
     saveSettings();
-    showToast(i18n.t('preset.applied', { preset: preset.toUpperCase() }));
+    if (notify) {
+        const presetLabel = i18n.t(`settings.preset.${preset}`);
+        showToast(
+            i18n.t('preset.applied', { preset: presetLabel }),
+            3000,
+            'performance-preset'
+        );
+    }
 }
 
 /**
@@ -210,6 +236,13 @@ export function applyCustomSettings(settings: any): void {
 
     updatePerformanceUI('custom');
     document.body.classList.remove('high-quality-ui');
+    document.body.classList.remove(
+        'preset-eco',
+        'preset-balanced',
+        'preset-performance',
+        'preset-ultra'
+    );
+    document.body.classList.add('preset-custom');
 
     if (state.sunLight) {
         state.sunLight.castShadow = state.SHADOWS;
@@ -293,7 +326,7 @@ export function initBatteryManager(): void {
                         if (state.PERFORMANCE_PRESET !== 'eco') {
                             _presetBeforeBatteryEco = state.PERFORMANCE_PRESET;
                             showToast(i18n.t('preset.lowBattery'), 6000);
-                            applyPreset('eco');
+                            applyPreset('eco', { notify: false });
                         }
                     } else if (!isLow && state.IS_BATTERY_LOW) {
                         state.IS_BATTERY_LOW = false;
@@ -304,7 +337,7 @@ export function initBatteryManager(): void {
                         ) {
                             const presetToRestore = _presetBeforeBatteryEco;
                             _presetBeforeBatteryEco = null;
-                            applyPreset(presetToRestore);
+                            applyPreset(presetToRestore, { notify: false });
                             showToast(i18n.t('preset.batteryRestored'), 4000);
                         }
                         _presetBeforeBatteryEco = null;
@@ -393,6 +426,9 @@ export function updatePerformanceUI(preset: PresetType): void {
             btn.classList.remove('active');
         }
     });
+
+    const customStatus = document.getElementById('preset-custom-status');
+    if (customStatus) customStatus.hidden = preset !== 'custom';
 }
 
 /**

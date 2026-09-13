@@ -44,26 +44,25 @@ describe('buildTimeline()', () => {
         expect(bars).toHaveLength(3);
     });
 
-    it('sets gold background for sunlit bars', () => {
+    it('marks sunlit bars', () => {
         buildTimeline(
             parent,
             makeResult([{ isNight: false, inShadow: false }])
         );
         const bar = parent.querySelector('.exp-timeline-bar') as HTMLElement;
-        expect(bar.style.background).toBe('var(--gold)');
+        expect(bar.dataset.phase).toBe('sun');
     });
 
-    it('sets red background for shadow bars', () => {
+    it('marks shadow bars', () => {
         buildTimeline(parent, makeResult([{ isNight: false, inShadow: true }]));
         const bar = parent.querySelector('.exp-timeline-bar') as HTMLElement;
-        const bg = bar.style.background.replace(/\s+/g, '');
-        expect(bg).toBe('rgba(255,80,80,0.3)');
+        expect(bar.dataset.phase).toBe('shadow');
     });
 
-    it('sets black background for night bars', () => {
+    it('marks night bars', () => {
         buildTimeline(parent, makeResult([{ isNight: true, inShadow: false }]));
         const bar = parent.querySelector('.exp-timeline-bar') as HTMLElement;
-        expect(bar.style.background).toBe('#000');
+        expect(bar.dataset.phase).toBe('night');
     });
 
     it('handles empty timeline array gracefully', () => {

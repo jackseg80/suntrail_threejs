@@ -1,206 +1,4 @@
 <div id="upgrade-sheet" class="bottom-sheet">
-    <style>
-        .upgrade-content {
-            padding: 0 var(--space-4) var(--space-4);
-        }
-        .upgrade-content * {
-            box-sizing: border-box;
-        }
-
-        .up-hero {
-            position: relative;
-            overflow: hidden;
-            border-radius: var(--radius-xl);
-            padding: 20px 16px 16px;
-            margin-bottom: var(--space-4);
-            background: linear-gradient(
-                145deg,
-                rgba(74, 142, 248, 0.08) 0%,
-                rgba(74, 142, 248, 0.04) 60%,
-                rgba(99, 155, 255, 0.02) 100%
-            );
-            border: 1px solid rgba(74, 142, 248, 0.14);
-        }
-        .up-hero-svg {
-            display: block;
-            width: 100%;
-            max-width: 260px;
-            height: auto;
-            margin: 0 auto 12px;
-        }
-        .up-hero-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text);
-            text-align: center;
-            margin-bottom: 4px;
-            letter-spacing: -0.1px;
-        }
-        .up-hero-sub {
-            font-size: 10.5px;
-            color: var(--text-2);
-            text-align: center;
-            line-height: 1.5;
-            max-width: 280px;
-            margin: 0 auto;
-        }
-
-        .up-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px 10px;
-            margin-bottom: var(--space-4);
-        }
-        @media (max-width: 340px) {
-            .up-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .up-feat {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 8px 10px;
-            border-radius: var(--radius-md);
-            background: var(--surface-subtle);
-            border: 1px solid transparent;
-        }
-        .up-feat svg {
-            flex-shrink: 0;
-            width: 20px;
-            height: 20px;
-        }
-        .up-feat-label {
-            font-size: 11px;
-            color: var(--text);
-            font-weight: 500;
-            line-height: 1.3;
-        }
-
-        .up-plans {
-            display: flex;
-            gap: 8px;
-            margin: var(--space-4) 0;
-            align-items: stretch;
-        }
-        @media (max-width: 340px) {
-            .up-plans {
-                flex-direction: column;
-            }
-        }
-        .up-plan {
-            flex: 1 1 0;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            padding: 14px 6px;
-            background: var(--surface-subtle);
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            position: relative;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .up-plan:active {
-            transform: scale(0.97);
-            background: var(--surface-hover);
-        }
-        .up-plan--best {
-            border-color: var(--accent);
-            background: rgba(74, 142, 248, 0.08);
-        }
-        .up-plan--best .up-plan-price {
-            color: var(--accent);
-        }
-        .up-plan-badge {
-            position: absolute;
-            top: -11px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--accent);
-            color: #fff;
-            font-size: 9px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 20px;
-            white-space: nowrap;
-            letter-spacing: 0.2px;
-        }
-        .up-plan-period {
-            font-size: 11px;
-            color: var(--text-2);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            margin-top: 2px;
-        }
-        .up-plan-price {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-            line-height: 1.2;
-        }
-        @media (max-width: 380px) {
-            .up-plan-price {
-                font-size: 15px;
-            }
-            .up-plan {
-                padding: 12px 3px;
-            }
-        }
-        @media (max-width: 340px) {
-            .up-plan-price {
-                font-size: 17px;
-            }
-            .up-plans {
-                flex-direction: column;
-            }
-        }
-        .up-plan-sub {
-            font-size: 9px;
-            color: var(--text-3);
-            text-align: center;
-        }
-
-        .up-restore {
-            display: block;
-            width: 100%;
-            padding: 10px 0;
-            background: none;
-            border: none;
-            color: var(--text-3);
-            font-size: 11px;
-            cursor: pointer;
-            text-align: center;
-            margin-bottom: var(--space-2);
-            min-height: 44px;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .up-restore:active {
-            color: var(--text-2);
-        }
-
-        .up-legal {
-            font-size: 10px;
-            color: var(--text-3);
-            text-align: center;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        .btn-loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-    </style>
-
     <div class="sheet-drag-handle" aria-hidden="true">
         <div class="sheet-drag-indicator"></div>
     </div>
@@ -208,8 +6,24 @@
         <span class="sheet-title" data-i18n="upgrade.title">Passer à Pro</span>
         <button type="button" class="sheet-close" id="close-upgrade">
             <svg
-                width="16"
-                height="16"
+                class="sheet-back-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <path d="M19 12H5" />
+                <path d="m12 19-7-7 7-7" />
+            </svg>
+            <svg
+                class="sheet-close-icon"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -309,6 +123,69 @@
             </div>
         </div>
 
+        <div class="up-section-title" data-i18n="upgrade.plan.heading">
+            Choisissez votre formule
+        </div>
+        <div class="up-plans">
+            <button type="button" class="up-plan" id="upgrade-monthly-btn">
+                <div class="up-plan-period" data-i18n="upgrade.plan.monthly">
+                    Mensuel
+                </div>
+                <div class="up-plan-price" id="upgrade-monthly-price">—</div>
+                <div class="up-plan-sub" data-i18n="upgrade.plan.perMonth">
+                    par mois
+                </div>
+            </button>
+            <button
+                type="button"
+                class="up-plan up-plan--best"
+                id="upgrade-cta-btn"
+            >
+                <div class="up-plan-badge" data-i18n="upgrade.plan.badge">
+                    7 jours gratuits
+                </div>
+                <div class="up-plan-period" data-i18n="upgrade.plan.yearly">
+                    Annuel
+                </div>
+                <div class="up-plan-price" id="upgrade-yearly-price">—</div>
+                <div
+                    class="up-plan-sub"
+                    id="upgrade-yearly-sub"
+                    data-i18n="upgrade.plan.perYear"
+                >
+                    par an
+                </div>
+            </button>
+            <button type="button" class="up-plan" id="upgrade-lifetime-btn">
+                <div class="up-plan-period" data-i18n="upgrade.plan.lifetime">
+                    À vie
+                </div>
+                <div class="up-plan-price" id="upgrade-lifetime-price">—</div>
+                <div class="up-plan-sub" data-i18n="upgrade.plan.oneTime">
+                    paiement unique
+                </div>
+            </button>
+        </div>
+
+        <button
+            type="button"
+            class="up-restore"
+            id="upgrade-restore-btn"
+            data-i18n="upgrade.restore"
+        >
+            Restaurer un achat
+        </button>
+        <p class="up-legal" data-i18n="upgrade.legal">
+            Abonnement auto-renouvelable · Résiliable à tout moment dans le Play
+            Store.
+        </p>
+
+        <div
+            class="up-section-title up-section-title--features"
+            data-i18n="upgrade.feature.heading"
+        >
+            Tout Pro, sans limite
+        </div>
         <!-- Feature Grid -->
         <div class="up-grid">
             <div class="up-feat">
@@ -581,67 +458,12 @@
                 >
             </div>
         </div>
-
-        <!-- Pricing Plans -->
-        <div class="up-plans">
-            <button class="up-plan" id="upgrade-monthly-btn">
-                <div class="up-plan-period" data-i18n="upgrade.plan.monthly">
-                    Mensuel
-                </div>
-                <div class="up-plan-price" id="upgrade-monthly-price">—</div>
-                <div class="up-plan-sub" data-i18n="upgrade.plan.perMonth">
-                    par mois
-                </div>
-            </button>
-            <button class="up-plan up-plan--best" id="upgrade-cta-btn">
-                <div class="up-plan-badge" data-i18n="upgrade.plan.badge">
-                    7 jours gratuits
-                </div>
-                <div class="up-plan-period" data-i18n="upgrade.plan.yearly">
-                    Annuel
-                </div>
-                <div class="up-plan-price" id="upgrade-yearly-price">—</div>
-                <div
-                    class="up-plan-sub"
-                    id="upgrade-yearly-sub"
-                    data-i18n="upgrade.plan.perYear"
-                >
-                    par an
-                </div>
-            </button>
-            <button class="up-plan" id="upgrade-lifetime-btn">
-                <div class="up-plan-period" data-i18n="upgrade.plan.lifetime">
-                    À vie
-                </div>
-                <div class="up-plan-price" id="upgrade-lifetime-price">—</div>
-                <div class="up-plan-sub" data-i18n="upgrade.plan.oneTime">
-                    paiement unique
-                </div>
-            </button>
-        </div>
-
-        <button
-            class="up-restore"
-            id="upgrade-restore-btn"
-            data-i18n="upgrade.restore"
-        >
-            Restaurer un achat
-        </button>
-        <p class="up-legal" data-i18n="upgrade.legal">
-            Abonnement auto-renouvelable · Résiliable à tout moment dans le Play
-            Store.
-        </p>
-        <div style="text-align: center; margin-top: 12px">
+        <div class="up-store-link-wrap">
             <a
+                class="up-store-link"
                 href="https://play.google.com/store/apps/details?id=com.suntrail.threejs"
                 target="_blank"
                 rel="noopener"
-                style="
-                    font-size: 10px;
-                    color: var(--accent);
-                    text-decoration: none;
-                    font-weight: 600;
-                "
             >
                 Installer la version Android →
             </a>

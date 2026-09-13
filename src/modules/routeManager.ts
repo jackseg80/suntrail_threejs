@@ -10,9 +10,8 @@ import { lngLatToWorld } from './geo';
 import { i18n } from '../i18n/I18nService';
 import { getPlaceName } from './geocodingService';
 import { scheduleRouteSolarAnalysis, invalidateRouteCache } from './solarRoute';
-import { showToast } from './toast';
 import { eventBus } from './eventBus';
-import { STORAGE_KEYS } from '../constants/storage';
+import { showPlanningContextHint } from './contextualHelp';
 import {
     getRouteDraftHistoryState,
     mutateRouteWaypoints,
@@ -20,6 +19,7 @@ import {
     undoRouteWaypoints,
 } from './preparedRoutes/routeDraftHistory';
 import type { RouteWaypoint } from './preparedRoutes/preparedRoute';
+import { formatTrackDisplayName } from './tracks/trackDisplayName';
 
 const waypointGroup = new THREE.Group();
 let autoComputeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -319,20 +319,7 @@ export function setRoutePlanningMode(
     }
     state.isRoutePlanningMode = active;
     if (!active || options.announceHint === false) return;
-
-    try {
-        if (localStorage.getItem(STORAGE_KEYS.PLANNING_LONG_PRESS_HINT) === '1')
-            return;
-        localStorage.setItem(STORAGE_KEYS.PLANNING_LONG_PRESS_HINT, '1');
-    } catch {
-        // Storage can be unavailable in private WebViews; the hint remains non-blocking.
-    }
-
-    showToast(
-        i18n.t('planning.hint.longPress') ||
-            'Astuce : hors du mode Planifier, un appui long ajoute aussi un point.',
-        5000
-    );
+    void showPlanningContextHint();
 }
 
 export function toggleRoutePlanningMode(): void {
@@ -417,7 +404,7 @@ function getRouteBarContext(): string {
         state.routeComputation?.name ||
         ''
     ).trim();
-    return name ? `${source} · ${name}` : source;
+    return name ? `${source} · ${formatTrackDisplayName(name)}` : source;
 }
 
 function renderBar(): void {

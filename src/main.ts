@@ -10,6 +10,23 @@ import { state } from './modules/state';
 import { eventBus } from './modules/eventBus';
 import { sheetManager } from './modules/ui/core/SheetManager';
 import { guidanceForegroundService } from './modules/guidance/GuidanceForegroundService';
+import { Capacitor } from '@capacitor/core';
+
+const isNativePlatform = Capacitor.isNativePlatform();
+
+// Le paquet Android contient déjà tous ses fichiers. Un Service Worker natif
+// peut conserver une ancienne feuille/CSS entre deux installations et fausser
+// l'interface réellement livrée par l'APK. Il reste utile uniquement sur le Web.
+if (isNativePlatform && 'serviceWorker' in navigator) {
+    void navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) =>
+            Promise.all(
+                registrations.map((registration) => registration.unregister())
+            )
+        )
+        .catch(() => undefined);
+}
 
 // Détection de changement de version → nettoyage des caches SW (précaches uniquement)
 try {
@@ -38,25 +55,25 @@ try {
 // v5.80.2 : Timestamp défini AVANT registerSW pour le cooldown onNeedRefresh
 const _bootStartTime = Date.now();
 
-// Enregistrement du Service Worker pour le mode Hors-ligne (PWA)
-registerSW({
-    onNeedRefresh() {
-        // v5.80.2 : Cooldown 5s pour éviter un reload fantôme au 1er lancement
-        // (le version check + réinscription peut déclencher un faux onNeedRefresh
-        // après que la carte soit déjà affichée, surtout sur Android/Capacitor)
-        if (Date.now() - _bootStartTime < 5000) {
-            console.log(
-                '[SW] Nouvelle version différée — applied au prochain lancement.'
-            );
-            return;
-        }
-        console.log('[SW] Nouvelle version détectée — rechargement…');
-        window.location.reload();
-    },
-    onOfflineReady() {
-        console.log('[SW] SunTrail est prêt à fonctionner hors-ligne.');
-    },
-});
+// Enregistrement du Service Worker pour le mode hors-ligne Web/PWA seulement.
+if (!isNativePlatform) {
+    registerSW({
+        onNeedRefresh() {
+            // v5.80.2 : Cooldown 5s pour éviter un reload fantôme au 1er lancement.
+            if (Date.now() - _bootStartTime < 5000) {
+                console.log(
+                    '[SW] Nouvelle version différée — appliquée au prochain lancement.'
+                );
+                return;
+            }
+            console.log('[SW] Nouvelle version détectée — rechargement…');
+            window.location.reload();
+        },
+        onOfflineReady() {
+            console.log('[SW] SunTrail est prêt à fonctionner hors-ligne.');
+        },
+    });
+}
 
 // Lancement de l'initialisation globale de l'interface (v5.29.28)
 let _bootStarted = false;
@@ -110,11 +127,6 @@ window.addEventListener(
             }
         } catch (e) {
             console.error('[Main] Recovery failure:', e);
-        } finally {
-            // Tente d'afficher l'interstitiel Pro ( Google Play Trial )
-            const { UpsellModal } =
-                await import('./modules/ui/components/UpsellModal');
-            UpsellModal.tryShow();
         }
     },
     { once: true }

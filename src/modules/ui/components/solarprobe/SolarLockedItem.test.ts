@@ -25,6 +25,8 @@ describe('makeLockedItem()', () => {
     it('creates a row element with class solar-locked-item', () => {
         const row = makeLockedItem(parent, 'Feature Pro');
         expect(row.className).toBe('solar-locked-item');
+        expect(row.tagName).toBe('BUTTON');
+        expect(row.getAttribute('style')).toBeNull();
         expect(parent.contains(row)).toBe(true);
     });
 

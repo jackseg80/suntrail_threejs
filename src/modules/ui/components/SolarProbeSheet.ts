@@ -19,11 +19,12 @@ import {
     findStrongExposureSegments,
     type RouteSolarAnalysis,
 } from '../../solarRoute';
-import { ICON_LOCK } from '../icons';
+import { ICON_ALERT_TRIANGLE, ICON_COPY, ICON_INFO, ICON_LOCK } from '../icons';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/solar-probe.html?raw';
 import { buildTimeline } from './solarprobe/SolarTimeline';
 import { makeLockedItem } from './solarprobe/SolarLockedItem';
+import { eventBus } from '../../eventBus';
 
 export class SolarProbeSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
@@ -38,6 +39,28 @@ export class SolarProbeSheet extends BaseComponent {
     private routeSolarSectionEl: HTMLElement | null = null;
     // Empêche le rebuild de la section pendant le drag du slider temps
     private _sliderDragging = false;
+    private returnToProfile = false;
+
+    private setProfileSubview(active: boolean): void {
+        const profile = document.getElementById('elevation-profile');
+        const closeProbe = document.getElementById('close-probe');
+        this.returnToProfile = active && !!profile;
+        document.body.classList.toggle(
+            'route-solar-profile-context',
+            this.returnToProfile
+        );
+        profile?.classList.toggle('is-suspended', this.returnToProfile);
+        if (this.returnToProfile) profile?.setAttribute('aria-hidden', 'true');
+        else profile?.removeAttribute('aria-hidden');
+        closeProbe?.setAttribute(
+            'aria-label',
+            i18n.t(
+                this.returnToProfile
+                    ? 'profile.backFromAnalysis'
+                    : 'solar.aria.close'
+            )
+        );
+    }
 
     constructor() {
         super('template-solar-probe', 'sheet-container', templateHTML);
@@ -71,15 +94,36 @@ export class SolarProbeSheet extends BaseComponent {
             window.removeEventListener('solarRouteUpdated', onSolarRouteUpdated)
         );
 
-        // Bouton "☀️ Soleil" dans le panel profil → ouvrir le panel solaire
+        // Bouton Soleil dans le panneau profil → ouvrir le panneau solaire
         const onOpenSolarProbe = () => {
             if (!this.currentResult) this.renderRouteOnlyMode();
+            this.setProfileSubview(
+                !!document
+                    .getElementById('elevation-profile')
+                    ?.classList.contains('is-open')
+            );
             sheetManager.open('solar-probe');
         };
         window.addEventListener('openSolarProbeSheet', onOpenSolarProbe);
         this.addSubscription(() =>
             window.removeEventListener('openSolarProbeSheet', onOpenSolarProbe)
         );
+
+        const onSheetClosed = ({ id }: { id: string | null }) => {
+            if (id === 'solar-probe' && this.returnToProfile) {
+                this.setProfileSubview(false);
+            }
+        };
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id !== 'solar-probe' && this.returnToProfile) {
+                this.setProfileSubview(false);
+            }
+        };
+        eventBus.on('sheetClosed', onSheetClosed);
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.addSubscription(() => eventBus.off('sheetClosed', onSheetClosed));
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
+        this.addSubscription(() => this.setProfileSubview(false));
 
         // Re-render when Pro status changes
         this.addSubscription(
@@ -92,6 +136,7 @@ export class SolarProbeSheet extends BaseComponent {
             const probeBtn = document.getElementById('probe-btn');
             if (probeBtn) {
                 probeBtn.onclick = async () => {
+                    this.setProfileSubview(false);
                     if (state.hasLastClicked) {
                         const result = runSolarProbe(
                             state.lastClickedCoords.x,
@@ -158,57 +203,49 @@ export class SolarProbeSheet extends BaseComponent {
         this.realtimeCompassEl = null;
         this.svgCurrentLineEl = null;
 
-        const addStat = (
-            parent: HTMLElement,
-            label: string,
-            value: string,
-            icon?: string
-        ) => {
-            const iconPart = icon
-                ? `<span style="font-size:14px;margin-right:4px;">${icon}</span>`
-                : '';
+        const addStat = (parent: HTMLElement, label: string, value: string) => {
             const div = document.createElement('div');
             div.classList.add('exp-probe-card');
-            div.innerHTML = `${iconPart}<div class="exp-probe-label">${label}</div><div class="exp-probe-value">${value}</div>`;
+            const labelEl = document.createElement('div');
+            labelEl.className = 'exp-probe-label';
+            labelEl.textContent = label;
+            const valueEl = document.createElement('div');
+            valueEl.className = 'exp-probe-value';
+            valueEl.textContent = value;
+            div.append(labelEl, valueEl);
             parent.appendChild(div);
-            return div.querySelector('.exp-probe-value') as HTMLElement;
+            return valueEl;
         };
 
         // ── Header (Location) ────────────────────────────────────────────────
         const locHeader = document.createElement('h3');
         locHeader.id = 'solar-location-title';
         locHeader.className = 'exp-location-title';
-        locHeader.style.cssText =
-            'margin:0 0 var(--space-4); font-size:14px; color:var(--text-2); text-align:center;';
-        locHeader.textContent = 'Analyse en cours...';
+        locHeader.textContent = i18n.t('solar.status.loading');
         locHeader.classList.add('loading-shimmer');
         this.contentEl.appendChild(locHeader);
 
         if (!result.terrainAvailable) {
             const warnSection = document.createElement('div');
-            warnSection.style.cssText =
-                'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:var(--space-4); margin-bottom:var(--space-3); text-align:center;';
+            warnSection.className = 'solar-alert solar-alert--info';
             const warnIcon = document.createElement('div');
-            warnIcon.style.cssText =
-                'font-size:28px; margin-bottom:var(--space-2);';
-            warnIcon.textContent = '⚠️';
+            warnIcon.className = 'solar-alert-icon';
+            warnIcon.innerHTML = ICON_ALERT_TRIANGLE;
             const warnText = document.createElement('div');
-            warnText.style.cssText =
-                'font-size:13px; color:var(--text-2); margin-bottom:var(--space-1);';
+            warnText.className = 'solar-alert-title';
             warnText.textContent = i18n.t('solar.status.noTerrain');
             const warnHint = document.createElement('div');
-            warnHint.style.cssText = 'font-size:11px; color:var(--text-3);';
+            warnHint.className = 'solar-alert-copy';
             warnHint.textContent = i18n.t('solar.status.noTerrainHint');
             warnSection.appendChild(warnIcon);
             warnSection.appendChild(warnText);
             warnSection.appendChild(warnHint);
             this.contentEl.appendChild(warnSection);
-            return;
         }
 
         // ── Status ───────────────────────────────────────────────────────────
         const statusEl = document.createElement('div');
-        statusEl.classList.add('exp-probe-status');
+        statusEl.classList.add('exp-probe-status', 'sr-only');
         statusEl.textContent = i18n.t('solar.status.done');
         this.contentEl.appendChild(statusEl);
 
@@ -216,21 +253,34 @@ export class SolarProbeSheet extends BaseComponent {
             // ── FREE version ──────────────────────────────────────────────────
             const grid = document.createElement('div');
             grid.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
-            addStat(
-                grid,
-                i18n.t('solar.stat.sunlight'),
-                fmtDuration(result.totalSunlightMinutes),
-                '☀️'
-            );
-            addStat(
-                grid,
-                i18n.t('solar.stat.firstRay'),
-                fmtTime(result.firstSunTime),
-                '🌅'
-            );
+            if (result.terrainAvailable) {
+                addStat(
+                    grid,
+                    i18n.t('solar.stat.sunlight'),
+                    fmtDuration(result.totalSunlightMinutes)
+                );
+                addStat(
+                    grid,
+                    i18n.t('solar.stat.firstRay'),
+                    fmtTime(result.firstSunTime)
+                );
+            } else {
+                addStat(
+                    grid,
+                    i18n.t('solar.stat.sunrise'),
+                    fmtTime(result.sunrise)
+                );
+                addStat(
+                    grid,
+                    i18n.t('solar.stat.sunset'),
+                    fmtTime(result.sunset)
+                );
+            }
             this.contentEl.appendChild(grid);
 
-            buildTimeline(this.contentEl, result);
+            if (result.terrainAvailable) {
+                buildTimeline(this.contentEl, result);
+            }
 
             // Section route solar (Free)
             this.routeSolarSectionEl = document.createElement('div');
@@ -240,11 +290,14 @@ export class SolarProbeSheet extends BaseComponent {
             // Upsell banner
             const upsell = document.createElement('div');
             upsell.classList.add('solar-upsell-banner');
-            upsell.innerHTML = `<span>${i18n.t('solar.upsell.solar')}</span>`;
+            const upsellCopy = document.createElement('span');
+            upsellCopy.textContent = i18n.t('solar.upsell.solar');
             const upsellBtn = document.createElement('button');
+            upsellBtn.type = 'button';
             upsellBtn.className = 'btn-go solar-upsell-btn';
             upsellBtn.textContent = 'Pro ↗';
             upsellBtn.onclick = () => showUpgradePrompt('solar_full');
+            upsell.appendChild(upsellCopy);
             upsell.appendChild(upsellBtn);
             this.contentEl.appendChild(upsell);
         } else {
@@ -252,7 +305,7 @@ export class SolarProbeSheet extends BaseComponent {
 
             // 1. Graphique d'élévation 24h (Prominent at top)
             const chartSection = document.createElement('div');
-            chartSection.style.marginBottom = 'var(--space-4)';
+            chartSection.className = 'solar-chart-section';
             chartSection.appendChild(this.buildElevationChart(result));
             this.contentEl.appendChild(chartSection);
 
@@ -314,16 +367,19 @@ export class SolarProbeSheet extends BaseComponent {
             const rtAz = document.createElement('div');
             rtAz.className = 'solar-rt-stat-item';
             const rtAzLabel = document.createElement('span');
-            rtAzLabel.className = 'exp-probe-label';
-            rtAzLabel.style.cssText =
-                'display:flex;align-items:center;gap:3px;';
-            rtAzLabel.innerHTML = `${i18n.t('solar.stat.azimuth')} <span class="touch-hit-target"><span style="font-size:var(--text-xs);opacity:0.45;cursor:pointer;" role="button" tabindex="0" aria-label="${i18n.t('ui.aria.info') || 'Info'}">ⓘ</span></span>`;
+            rtAzLabel.className = 'exp-probe-label solar-info-label';
+            rtAzLabel.textContent = i18n.t('solar.stat.azimuth');
+            const azIcon = document.createElement('button');
+            azIcon.type = 'button';
+            azIcon.className = 'solar-info-button';
+            azIcon.setAttribute('aria-label', i18n.t('ui.aria.info') || 'Info');
+            azIcon.innerHTML = ICON_INFO;
+            rtAzLabel.appendChild(azIcon);
             rtAz.appendChild(rtAzLabel);
             const rtAzVal = document.createElement('div');
             rtAzVal.className = 'exp-probe-value';
             this.realtimeAzimuthEl = rtAzVal;
             rtAz.appendChild(rtAzVal);
-            const azIcon = rtAzLabel.querySelector('.touch-hit-target span')!;
             const azContent = document.createElement('div');
             azContent.innerHTML = i18n.t('solar.stat.tooltipAzimuth');
             this.statTooltips.push(
@@ -335,16 +391,19 @@ export class SolarProbeSheet extends BaseComponent {
             const rtEl = document.createElement('div');
             rtEl.className = 'solar-rt-stat-item';
             const rtElLabel = document.createElement('span');
-            rtElLabel.className = 'exp-probe-label';
-            rtElLabel.style.cssText =
-                'display:flex;align-items:center;gap:3px;';
-            rtElLabel.innerHTML = `${i18n.t('solar.stat.elevation')} <span class="touch-hit-target"><span style="font-size:var(--text-xs);opacity:0.45;cursor:pointer;" role="button" tabindex="0" aria-label="${i18n.t('ui.aria.info') || 'Info'}">ⓘ</span></span>`;
+            rtElLabel.className = 'exp-probe-label solar-info-label';
+            rtElLabel.textContent = i18n.t('solar.stat.elevation');
+            const elIcon = document.createElement('button');
+            elIcon.type = 'button';
+            elIcon.className = 'solar-info-button';
+            elIcon.setAttribute('aria-label', i18n.t('ui.aria.info') || 'Info');
+            elIcon.innerHTML = ICON_INFO;
+            rtElLabel.appendChild(elIcon);
             rtEl.appendChild(rtElLabel);
             const rtElVal = document.createElement('div');
             rtElVal.className = 'exp-probe-value';
             this.realtimeElevationEl = rtElVal;
             rtEl.appendChild(rtElVal);
-            const elIcon = rtElLabel.querySelector('.touch-hit-target span')!;
             const elContent = document.createElement('div');
             elContent.innerHTML = i18n.t('solar.stat.tooltipElevation');
             this.statTooltips.push(
@@ -357,17 +416,17 @@ export class SolarProbeSheet extends BaseComponent {
             rtMoon.className = 'solar-rt-stat-item';
             rtMoon.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.moonPhase')}</span>`;
             const rtMoonVal = document.createElement('div');
-            rtMoonVal.className = 'exp-probe-value';
-            rtMoonVal.style.fontSize = 'var(--text-md)';
-            rtMoonVal.textContent = `${expertService.getMoonEmoji(result.moonPhaseName)} ${Math.round(result.moonPhase * 100)}%`;
+            rtMoonVal.className =
+                'exp-probe-value solar-instrument-secondary-value';
+            rtMoonVal.textContent = `${Math.round(result.moonPhase * 100)}%`;
             rtMoon.appendChild(rtMoonVal);
 
             const rtMaxEl = document.createElement('div');
             rtMaxEl.className = 'solar-rt-stat-item';
             rtMaxEl.innerHTML = `<span class="exp-probe-label">${i18n.t('solar.stat.maxElevation')}</span>`;
             const rtMaxElVal = document.createElement('div');
-            rtMaxElVal.className = 'exp-probe-value';
-            rtMaxElVal.style.fontSize = 'var(--text-md)';
+            rtMaxElVal.className =
+                'exp-probe-value solar-instrument-secondary-value';
             rtMaxElVal.textContent = `${Math.round(result.maxElevationDeg)}°`;
             rtMaxEl.appendChild(rtMaxElVal);
 
@@ -384,36 +443,57 @@ export class SolarProbeSheet extends BaseComponent {
             const grid1 = document.createElement('div');
             grid1.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
 
-            addStat(
-                grid1,
-                i18n.t('solar.stat.dayDuration'),
-                fmtDuration(result.dayDurationMinutes),
-                '⏱️'
-            );
-            addStat(
-                grid1,
-                i18n.t('solar.stat.sunlight'),
-                fmtDuration(result.totalSunlightMinutes),
-                '☀️'
-            );
+            if (result.terrainAvailable) {
+                addStat(
+                    grid1,
+                    i18n.t('solar.stat.dayDuration'),
+                    fmtDuration(result.dayDurationMinutes)
+                );
+                addStat(
+                    grid1,
+                    i18n.t('solar.stat.sunlight'),
+                    fmtDuration(result.totalSunlightMinutes)
+                );
+            } else {
+                addStat(
+                    grid1,
+                    i18n.t('solar.stat.sunrise'),
+                    fmtTime(result.sunrise)
+                );
+                addStat(
+                    grid1,
+                    i18n.t('solar.stat.sunset'),
+                    fmtTime(result.sunset)
+                );
+                addStat(
+                    grid1,
+                    i18n.t('solar.stat.noon'),
+                    fmtTime(result.solarNoon)
+                );
+                addStat(
+                    grid1,
+                    i18n.t('solar.stat.dayDuration'),
+                    fmtDuration(result.dayDurationMinutes)
+                );
+            }
 
             addStat(
                 grid1,
-                'H. Dorée Matin',
-                `${fmtTime(result.goldenHourMorningStart)} — ${fmtTime(result.goldenHourMorningEnd)}`,
-                '🌅'
+                i18n.t('solar.stat.goldenMorning'),
+                `${fmtTime(result.goldenHourMorningStart)} — ${fmtTime(result.goldenHourMorningEnd)}`
             );
             addStat(
                 grid1,
-                'H. Dorée Soir',
-                `${fmtTime(result.goldenHourEveningStart)} — ${fmtTime(result.goldenHourEveningEnd)}`,
-                '🌇'
+                i18n.t('solar.stat.goldenEvening'),
+                `${fmtTime(result.goldenHourEveningStart)} — ${fmtTime(result.goldenHourEveningEnd)}`
             );
 
             this.contentEl.appendChild(grid1);
 
             // 4. Timeline (Evolution détaillée)
-            buildTimeline(this.contentEl, result);
+            if (result.terrainAvailable) {
+                buildTimeline(this.contentEl, result);
+            }
 
             // 5. Section route solar (Pro)
             this.routeSolarSectionEl = document.createElement('div');
@@ -422,10 +502,13 @@ export class SolarProbeSheet extends BaseComponent {
 
             // 6. Rapport exportable
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'btn-go';
-            copyBtn.style.marginTop = 'var(--space-2)';
+            copyBtn.type = 'button';
+            copyBtn.className = 'btn-go solar-copy-button';
             copyBtn.setAttribute('aria-label', i18n.t('solar.btn.copy'));
-            copyBtn.textContent = i18n.t('solar.btn.copy');
+            copyBtn.innerHTML = ICON_COPY;
+            const copyLabel = document.createElement('span');
+            copyLabel.textContent = i18n.t('solar.btn.copy');
+            copyBtn.appendChild(copyLabel);
             copyBtn.onclick = () => this.copyReport(result);
             this.contentEl.appendChild(copyBtn);
 
@@ -452,11 +535,6 @@ export class SolarProbeSheet extends BaseComponent {
         svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         svg.classList.add('solar-elevation-chart-v2');
-        svg.style.width = '100%';
-        svg.style.height = 'auto';
-        svg.style.background = 'var(--surface-subtle)';
-        svg.style.borderRadius = 'var(--radius-md)';
-        svg.style.border = '1px solid var(--border)';
 
         // 1. Defined Gradients
         const defs = document.createElementNS(
@@ -684,9 +762,7 @@ export class SolarProbeSheet extends BaseComponent {
         const routeData = getCurrentRouteSolarAnalysis();
         if (!routeData || routeData.totalKm < 0.1) {
             const empty = document.createElement('div');
-            empty.className = 'solar-route-rec-item';
-            empty.style.textAlign = 'center';
-            empty.style.color = 'var(--text-3)';
+            empty.className = 'solar-route-empty';
             empty.textContent = i18n.t('solarRoute.status.noRoute');
             this.contentEl.appendChild(empty);
             return;
@@ -722,12 +798,17 @@ export class SolarProbeSheet extends BaseComponent {
         if (isProActive()) {
             const currentMode = getSolarRouteMode();
             const modeBtn = document.createElement('button');
+            modeBtn.type = 'button';
             modeBtn.className = 'solar-route-mode-btn';
-            modeBtn.textContent = currentMode === 'snapshot' ? '📍' : '🥾';
-            modeBtn.title =
+            modeBtn.textContent = i18n.t(
                 currentMode === 'snapshot'
-                    ? 'Mode Instantané (même heure partout) — cliquer pour Timeline'
-                    : "Mode Timeline (heure réelle d'arrivée) — cliquer pour Instantané";
+                    ? 'solarRoute.mode.snapshot'
+                    : 'solarRoute.mode.timeline'
+            );
+            modeBtn.setAttribute(
+                'aria-label',
+                i18n.t('solarRoute.mode.change')
+            );
             modeBtn.onclick = () => {
                 setSolarRouteMode(
                     currentMode === 'snapshot' ? 'hikerTimeline' : 'snapshot'
@@ -740,10 +821,10 @@ export class SolarProbeSheet extends BaseComponent {
         // ── Warning : pas de données terrain ────────────────────────────────
         if (!routeData.terrainAvailable) {
             const warnSection = document.createElement('div');
-            warnSection.style.cssText =
-                'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:var(--space-4); margin:var(--space-3) 0; text-align:center;';
+            warnSection.className =
+                'solar-alert solar-alert--danger solar-route-alert';
             const warnText = document.createElement('div');
-            warnText.style.cssText = 'font-size:13px; color:var(--text-2);';
+            warnText.className = 'solar-alert-copy';
             warnText.textContent = i18n.t('solarRoute.status.noTerrain');
             warnSection.appendChild(warnText);
             section.appendChild(warnSection);
@@ -813,13 +894,9 @@ export class SolarProbeSheet extends BaseComponent {
 
         const dateWrapper = document.createElement('div');
         dateWrapper.className = 'date-input-wrapper';
-        dateWrapper.style.cssText =
-            'display:inline-flex; align-items:center; position:relative;';
 
         const lockIcon = document.createElement('div');
         lockIcon.className = 'date-input-lock';
-        lockIcon.style.cssText =
-            'position:absolute; right:8px; pointer-events:none; display:flex; align-items:center; opacity:0.6;';
         lockIcon.innerHTML = ICON_LOCK;
         const svgLock = lockIcon.querySelector('svg');
         if (svgLock) {
@@ -828,7 +905,7 @@ export class SolarProbeSheet extends BaseComponent {
         }
 
         if (isProActive()) {
-            lockIcon.style.display = 'none';
+            lockIcon.hidden = true;
         } else {
             dateInput.classList.add('date-input-locked');
         }
@@ -902,17 +979,17 @@ export class SolarProbeSheet extends BaseComponent {
         // Indicateur nuit si pertinent
         if (routeData.nightPct >= 90) {
             const nightBanner = document.createElement('div');
-            nightBanner.className = 'solar-route-rec-item';
-            nightBanner.style.cssText =
-                'background:rgba(30,30,60,0.5); border:1px solid rgba(100,100,180,0.3); border-radius:var(--radius-md); padding:var(--space-2) var(--space-3); margin-top:var(--space-2); text-align:center; font-size:13px; color:var(--text-2);';
-            nightBanner.innerHTML = `🌙 ${i18n.t('solarRoute.status.fullNight')}`;
+            nightBanner.className =
+                'solar-route-rec-item solar-route-night-alert';
+            nightBanner.textContent = i18n.t('solarRoute.status.fullNight');
             section.appendChild(nightBanner);
         } else if (routeData.nightPct >= 50) {
             const nightBanner = document.createElement('div');
-            nightBanner.className = 'solar-route-rec-item';
-            nightBanner.style.cssText =
-                'background:rgba(40,30,60,0.35); border:1px solid rgba(100,100,180,0.2); border-radius:var(--radius-md); padding:var(--space-2) var(--space-3); margin-top:var(--space-2); text-align:center; font-size:13px; color:var(--text-2);';
-            nightBanner.innerHTML = `🌙 ${i18n.t('solarRoute.status.partialNight', { pct: String(routeData.nightPct) })}`;
+            nightBanner.className =
+                'solar-route-rec-item solar-route-night-alert solar-route-night-alert--partial';
+            nightBanner.textContent = i18n.t('solarRoute.status.partialNight', {
+                pct: String(routeData.nightPct),
+            });
             section.appendChild(nightBanner);
         }
 
@@ -920,9 +997,10 @@ export class SolarProbeSheet extends BaseComponent {
         if (routeData.nightPct > 0) {
             const headlampRec = document.createElement('div');
             headlampRec.className = 'solar-route-rec-item solar-route-rec-gear';
-            headlampRec.style.cssText =
-                'background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:var(--radius-md); padding:var(--space-2) var(--space-3); margin-top:var(--space-2); font-size:13px; color:var(--text-2);';
-            headlampRec.innerHTML = `🔦 ${i18n.t('solarRoute.rec.headlamp', { pct: String(routeData.nightPct), km: routeData.nightKm.toFixed(1) })}`;
+            headlampRec.textContent = i18n.t('solarRoute.rec.headlamp', {
+                pct: String(routeData.nightPct),
+                km: routeData.nightKm.toFixed(1),
+            });
             section.appendChild(headlampRec);
         }
 
@@ -1007,9 +1085,14 @@ export class SolarProbeSheet extends BaseComponent {
             speedRow.appendChild(speedLabel);
             [3, 4, 6].forEach((speed) => {
                 const btn = document.createElement('button');
+                btn.type = 'button';
                 btn.className =
                     'solar-route-speed-btn' +
                     (speed === currentSpeed ? ' active' : '');
+                btn.setAttribute(
+                    'aria-pressed',
+                    String(speed === currentSpeed)
+                );
                 btn.textContent = `${speed} ${i18n.t('solarRoute.speed.unit')}`;
                 btn.onclick = () => {
                     setSolarRouteMode('hikerTimeline');
@@ -1121,6 +1204,7 @@ export class SolarProbeSheet extends BaseComponent {
             const teaserSpan = document.createElement('span');
             teaserSpan.textContent = i18n.t('solarRoute.upsell.pro');
             const teaserBtn = document.createElement('button');
+            teaserBtn.type = 'button';
             teaserBtn.className = 'btn-go solar-upsell-btn';
             teaserBtn.textContent = i18n.t('solarRoute.upsell.btn');
             teaserBtn.onclick = () => showUpgradePrompt('solar_route_analysis');
