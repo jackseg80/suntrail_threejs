@@ -1,6 +1,6 @@
 # Fonctionnalités actuelles de SunTrail 3D
 
-> Référence canonique de la version source 5.90.0, mise à jour le 2026-09-13.
+> Référence canonique de la version source 5.90.1, mise à jour le 2026-09-15.
 > Ce document décrit le code activé par défaut. Les plans futurs et anciens documents archivés ne
 > constituent pas des fonctionnalités livrées.
 

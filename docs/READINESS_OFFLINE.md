@@ -1,6 +1,6 @@
-# Readiness et corridor hors ligne (livré en v5.86, actif en v5.90.0)
+# Readiness et corridor hors ligne (livré en v5.86, actif en v5.90.1)
 
-> Contrat actif dans la version source 5.90.0. Readiness local, planification/mesure,
+> Contrat actif dans la version source 5.90.1. Readiness local, planification/mesure,
 > téléchargement et registre persistant des corridors sont disponibles dans la Bibliothèque. Les
 > enrichissements réseau/appareil restent optionnels et inconnus sans preuve fraîche.
 

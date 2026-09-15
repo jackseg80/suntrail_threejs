@@ -1,6 +1,12 @@
-# SunTrail — TODO (v5.90.0 prête pour la release GitHub ; publication Play séparée)
+# SunTrail — TODO (v5.90.1 ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-13
+> Dernière mise à jour : 2026-09-15
+
+## ✅ v5.90.1 — luminosité 3D en heure dorée
+
+Correctif de sensibilité : la scène reste proche du plein jour quand le soleil est bas mais encore
+levé, sans surbrillance au zénith, et le réglage est identique au lever et au coucher. APK
+diagnostic `5.90.1` (code 912) installé sur S23. Aucune release GitHub ni upload Play revendiqué.
 
 ## ✅ v5.90 — refonte UI fonctionnellement clôturée
 

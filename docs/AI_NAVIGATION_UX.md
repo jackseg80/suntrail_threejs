@@ -1,4 +1,4 @@
-# SunTrail — Navigation & modules fonctionnels (v5.90.0)
+# SunTrail — Navigation & modules fonctionnels (v5.90.1)
 
 > Contrat UX actuel. Point d'entrée : [CLAUDE.md](../CLAUDE.md). Inventaire utilisateur :
 > [FEATURES.md](FEATURES.md).

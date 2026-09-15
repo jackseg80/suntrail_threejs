@@ -1,4 +1,4 @@
-# SunTrail 3D — Stratégie de monétisation (v5.90.0)
+# SunTrail 3D — Stratégie de monétisation (v5.90.1)
 
 > Objectif : offrir une valeur terrain gratuite indispensable tout en réservant à Pro les
 > fonctions d'analyse, d'export et de confort. [FEATURES.md](FEATURES.md) fait foi pour la présence

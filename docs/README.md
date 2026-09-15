@@ -6,7 +6,7 @@ encore applicables, les plans futurs et les archives historiques.
 ## Commencer ici
 
 1. [README du projet](../README.md) : présentation, plateformes, installation et limites.
-2. [Fonctionnalités actuelles](FEATURES.md) : inventaire canonique de la version 5.90.0.
+2. [Fonctionnalités actuelles](FEATURES.md) : inventaire canonique de la version 5.90.1.
 3. [Guide IA et état de release](../CLAUDE.md) : règles de travail, version et garde-fous.
 4. [Architecture](AI_ARCHITECTURE.md) : services, événements, état et stockages.
 5. [Navigation et UX](AI_NAVIGATION_UX.md) : Explorer, Préparer, Sortie, Bibliothèque et Plus.

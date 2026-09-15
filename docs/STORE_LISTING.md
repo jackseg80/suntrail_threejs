@@ -1,4 +1,4 @@
-# SunTrail 3D — Play Store Listing (version source 5.90.0)
+# SunTrail 3D — Play Store Listing (version source 5.90.1)
 
 > Texte de travail aligné sur les fonctions actives. Vérifier les limites de caractères et la
 > fiche réellement publiée dans Play Console avant chaque mise à jour.

@@ -1,4 +1,4 @@
-# AI Architecture Guide (v5.90.0)
+# AI Architecture Guide (v5.90.1)
 
 > Référence de l'architecture active, incluant les lots 5.83 à 5.88. Inventaire fonctionnel :
 > [FEATURES.md](FEATURES.md).

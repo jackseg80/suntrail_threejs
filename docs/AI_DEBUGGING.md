@@ -1,4 +1,4 @@
-# SunTrail — Guide de débogage (v5.90.0)
+# SunTrail — Guide de débogage (v5.90.1)
 
 > Référence détaillée pour agents IA. Point d'entrée : [CLAUDE.md](../CLAUDE.md)
 > Consulter ce fichier quand un bug est signalé ou qu'un symptôme visuel est observé.

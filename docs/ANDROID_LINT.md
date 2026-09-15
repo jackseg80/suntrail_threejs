@@ -1,4 +1,4 @@
-# Android 15/16, R8 et avertissements lint (actif en v5.90.0)
+# Android 15/16, R8 et avertissements lint (actif en v5.90.1)
 
 Le lint de l'application ne masque que des faux positifs liés à Capacitor/Cordova :
 

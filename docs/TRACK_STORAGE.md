@@ -1,6 +1,6 @@
-# Stockage des traces pleine fidélité (livré en v5.87, actif en v5.90.0)
+# Stockage des traces pleine fidélité (livré en v5.87, actif en v5.90.1)
 
-> Contrat toujours actif dans la version source 5.90.0. L'état de publication historique de 5.87
+> Contrat toujours actif dans la version source 5.90.1. L'état de publication historique de 5.87
 > est conservé dans `CHANGELOG.md` et n'affecte pas les garanties de stockage décrites ici.
 
 ## Responsabilités séparées

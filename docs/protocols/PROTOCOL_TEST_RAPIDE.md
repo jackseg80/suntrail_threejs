@@ -1,4 +1,4 @@
-# SunTrail 3D — Protocole de test rapide (v5.90.0)
+# SunTrail 3D — Protocole de test rapide (v5.90.1)
 
 > Durée indicative : 25 à 35 minutes. Ce contrôle ne remplace pas un essai terrain long.
 > Préserver les parcours, zones et packs déjà présents ; ne vider aucun stockage pour ce test.

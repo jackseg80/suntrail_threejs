@@ -1,7 +1,7 @@
 # Research : intégrations externes et import de traces (état vérifié 2026-09-15)
 
 > Remplace la première ébauche (« Strava, Suunto, Wikiloc »). Les affirmations ci-dessous ont
-> été vérifiées contre le code de SunTrail 5.90.0 et, pour Strava, contre la documentation
+> été vérifiées contre le code de SunTrail 5.90.1 et, pour Strava, contre la documentation
 > officielle. Toute intégration reste hors du produit courant tant qu'un lot dédié ne l'active pas.
 
 ## Ce que SunTrail sait déjà faire
