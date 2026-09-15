@@ -4,22 +4,47 @@
     </div>
     <div class="sheet-header">
         <span class="sheet-title" data-i18n="track.title">Parcours</span>
-        <button type="button" class="sheet-close" id="close-track">
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
+        <span class="sheet-header-actions">
+            <button
+                type="button"
+                class="btn-icon-mini"
+                id="track-help-btn"
+                data-i18n-aria-label="track.help.trigger"
+                aria-label="Aide"
             >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-        </button>
+                <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" />
+                </svg>
+            </button>
+            <button type="button" class="sheet-close" id="close-track">
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+        </span>
     </div>
     <section
         id="prepared-routes-section"

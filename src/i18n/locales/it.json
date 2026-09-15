@@ -34,6 +34,29 @@
             "import": "Importa GPX",
             "export": "Esporta"
         },
+        "help": {
+            "trigger": "Aiuto percorsi",
+            "title": "Aiuto — Percorsi",
+            "tabRecord": "Registra",
+            "tabPrepare": "Prepara",
+            "tabImport": "Importa",
+            "tabGuidance": "Segui",
+            "recordStep1": "Tocca REC per iniziare a registrare l'uscita.",
+            "recordStep2": "Pausa sospende la registrazione; STOP la termina e ti fa nominare la traccia.",
+            "recordStep3": "Su Android la registrazione continua in background a schermo spento.",
+            "prepareStep1": "Tocca “Crea un percorso” e posiziona i punti sulla mappa (pressione lunga).",
+            "prepareStep2": "Scegli profilo e velocità, poi avvia il calcolo.",
+            "prepareStep3": "Salva la bozza per ritrovarla in Libreria, oppure passa subito alla navigazione.",
+            "importStep1": "File: tocca “Importa GPX” e scegli un file .gpx.",
+            "importStep2": "File ricevuto: aprilo con SunTrail (“Apri con”) o condividilo da un'altra app.",
+            "importStep3": "Suggerimento: quando Android chiede l'app, scegli SunTrail e poi “Sempre”.",
+            "importStep4": "Garmin, Komoot, Wikiloc: esporta il GPX dal loro sito web, poi aprilo con SunTrail.",
+            "guidanceStep1": "Apri un percorso e tocca “Segui questo percorso” per avviare la navigazione.",
+            "guidanceStep2": "Segui la prossima indicazione e la distanza residua; la navigazione resta attiva in background (Android).",
+            "guidanceStep3": "Tocca STOP per terminare la navigazione; la traccia resta in Libreria.",
+            "settings": "Impostazioni Android",
+            "close": "Chiudi"
+        },
         "toast": {
             "recStarted": "🔴 Registrazione avviata",
             "recStopped": "⏹️ Registrazione fermata",
@@ -472,7 +495,10 @@
         "alreadyImported": "Questa traccia è già stata importata",
         "limitPro": "Limite di 10 tracce raggiunto",
         "importError": "Errore durante l'importazione GPX",
-        "imported": "Percorso importato"
+        "imported": "Percorso importato",
+        "shareNotGpx": "Il file condiviso non è un GPX valido",
+        "shareReadFailed": "Impossibile leggere il file condiviso",
+        "shareTooLarge": "Il file GPX condiviso è troppo grande"
     },
     "settings": {
         "title": "Impostazioni",

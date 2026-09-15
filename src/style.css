@@ -6637,6 +6637,12 @@ body.profile-interacting #bottom-bar {
     font-size: var(--text-xs);
 }
 
+.route-panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .route-panel-close {
     width: var(--control-size);
     height: var(--control-size);
@@ -8978,6 +8984,53 @@ body.preset-eco .confirm-dialog-overlay {
     color: var(--text-2);
     line-height: 1.5;
     margin: 0 0 20px;
+}
+.track-help-card {
+    max-width: 460px;
+}
+.track-help-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    margin: 0 0 16px;
+    background: var(--surface-subtle);
+    border-radius: var(--control-radius);
+}
+.track-help-tab {
+    flex: 1 1 0;
+    min-height: 36px;
+    padding: 6px 8px;
+    border: none;
+    border-radius: calc(var(--control-radius) - 2px);
+    background: transparent;
+    color: var(--text-2);
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+.track-help-tab.is-active {
+    background: var(--surface-solid);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.track-help-body {
+    max-height: min(58vh, 400px);
+    overflow-y: auto;
+    margin: 0 0 20px;
+}
+.track-help-panel {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.83rem;
+    color: var(--text-2);
+    line-height: 1.45;
+}
+.track-help-panel[hidden] {
+    display: none;
 }
 .confirm-dialog-actions {
     display: flex;

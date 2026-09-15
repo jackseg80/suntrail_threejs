@@ -185,6 +185,10 @@ vi.mock('../tooltip', () => ({
 }));
 vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: vi.fn(() => false) },
+    registerPlugin: vi.fn(() => ({
+        addListener: vi.fn(),
+        openAppAssociationSettings: vi.fn(),
+    })),
 }));
 import { TrackSheet } from './TrackSheet';
 import { promptRecordingName } from '../../recordingStopFlow';

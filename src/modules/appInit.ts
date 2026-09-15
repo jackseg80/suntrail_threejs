@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Geolocation } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
 import { state, loadSettings, loadProStatus, loadGpxHistory } from './state';
 import { iapService } from './iapService';
 import { requestGPSDisclosure } from './gpsDisclosure';
@@ -208,6 +209,17 @@ export async function appInit(): Promise<void> {
     void initSecondaryUI().then(() => {
         if (state.DEBUG_MODE) console.log('[UI] Secondary UI Hydrated');
     });
+
+    // Réception des GPX partagés / « Ouvrir avec » (Android uniquement).
+    // Le natif retient l'événement jusqu'à l'enregistrement de l'écouteur,
+    // ce qui couvre le démarrage à froid.
+    if (Capacitor.isNativePlatform()) {
+        void import('./gpxImportIntake')
+            .then((module) => module.initGpxImportIntake())
+            .catch(() => {
+                // L'import OS est optionnel ; l'app reste pleinement utilisable.
+            });
+    }
 
     // Premier lancement : benchmark micro différé (+15s) quand le système est stable
     if (firstLaunch && !isTestMode) {
@@ -1295,6 +1307,14 @@ function setupRouteBar(): void {
         ?.addEventListener('click', () =>
             setRoutePanelOpen('route-settings', 'rb-settings-btn', false)
         );
+
+    document
+        .getElementById('route-settings-help')
+        ?.addEventListener('click', () => {
+            void import('./ui/trackHelpDialog').then((module) =>
+                module.showTrackHelpDialog({ tabs: ['guidance'] })
+            );
+        });
 
     document
         .getElementById('route-waypoint-move-cancel')

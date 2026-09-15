@@ -34,6 +34,29 @@
             "import": "Importer GPX",
             "export": "Exporter"
         },
+        "help": {
+            "trigger": "Aide parcours",
+            "title": "Aide — Parcours",
+            "tabRecord": "Enregistrer",
+            "tabPrepare": "Préparer",
+            "tabImport": "Importer",
+            "tabGuidance": "Suivre",
+            "recordStep1": "Touchez REC pour démarrer l'enregistrement de votre sortie.",
+            "recordStep2": "Pause suspend l'enregistrement ; STOP l'arrête et propose de nommer la trace.",
+            "recordStep3": "Sur Android, l'enregistrement continue en arrière-plan, écran éteint.",
+            "prepareStep1": "Touchez « Créer un itinéraire », puis placez vos points sur la carte (appui long).",
+            "prepareStep2": "Choisissez le profil et la vitesse, puis lancez le calcul.",
+            "prepareStep3": "Enregistrez le brouillon pour le retrouver dans Bibliothèque, ou passez au suivi.",
+            "importStep1": "Fichier : touchez « Importer GPX » et choisissez un fichier .gpx.",
+            "importStep2": "Fichier reçu : ouvrez-le avec SunTrail (« Ouvrir avec ») ou partagez-le depuis une autre app.",
+            "importStep3": "Astuce : quand Android demande l'application, choisissez SunTrail puis « Toujours ».",
+            "importStep4": "Garmin, Komoot, Wikiloc : exportez le GPX depuis leur site web, puis ouvrez-le avec SunTrail.",
+            "guidanceStep1": "Ouvrez un parcours puis touchez « Suivre cet itinéraire » pour lancer le guidage.",
+            "guidanceStep2": "Suivez la prochaine indication et la distance restante ; le guidage reste actif en arrière-plan (Android).",
+            "guidanceStep3": "Touchez STOP pour arrêter le guidage ; la trace reste dans Bibliothèque.",
+            "settings": "Réglages Android",
+            "close": "Fermer"
+        },
         "toast": {
             "recStarted": "🔴 Enregistrement démarré",
             "recStopped": "⏹️ Enregistrement stoppé",
@@ -472,7 +495,10 @@
         "alreadyImported": "Ce tracé est déjà importé",
         "limitPro": "Maximum 10 tracés atteint",
         "importError": "Erreur lors de l'import GPX",
-        "imported": "Parcours importé"
+        "imported": "Parcours importé",
+        "shareNotGpx": "Ce fichier partagé n'est pas un GPX valide",
+        "shareReadFailed": "Impossible de lire le fichier partagé",
+        "shareTooLarge": "Fichier GPX partagé trop volumineux"
     },
     "settings": {
         "title": "Réglages",

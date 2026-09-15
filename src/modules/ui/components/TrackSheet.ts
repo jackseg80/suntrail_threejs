@@ -37,6 +37,8 @@ import {
 } from '../../recordingStopFlow';
 import { gpxService } from '../../gpxService';
 import { fmtDuration } from '../../utils';
+import { importGpxTrack, setGpxDraftGuard } from '../../gpxImportFlow';
+import { showTrackHelpDialog, type TrackHelpTab } from '../trackHelpDialog';
 import { type GPXHistoryEntry } from '../../gpxHistoryService';
 import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
 import { getPlaceName } from '../../geocodingService';
@@ -196,6 +198,11 @@ export class TrackSheet extends BaseComponent {
     >();
     constructor() {
         super('template-track', 'sheet-container', templateHTML);
+        // L'import OS (partage / « Ouvrir avec ») protège le brouillon courant
+        // via le même dialogue que l'import manuel.
+        setGpxDraftGuard((incomingName) =>
+            this.protectCurrentDraft(incomingName)
+        );
     }
 
     private disposeStatTooltips(): void {
@@ -355,6 +362,16 @@ export class TrackSheet extends BaseComponent {
             gpxUpload?.click();
         });
 
+        const trackHelpBtn = document.getElementById('track-help-btn');
+        trackHelpBtn?.setAttribute('aria-label', i18n.t('track.help.trigger'));
+        trackHelpBtn?.addEventListener('click', () => {
+            const tabs: TrackHelpTab[] =
+                document.body.dataset.trackDestination === 'library'
+                    ? ['prepare', 'import']
+                    : ['record'];
+            void showTrackHelpDialog({ tabs });
+        });
+
         document
             .getElementById('prepared-create-btn')
             ?.addEventListener('click', () => {
@@ -414,31 +431,15 @@ export class TrackSheet extends BaseComponent {
                         const reader = new FileReader();
                         reader.onload = async (ev) => {
                             try {
-                                const layer = await gpxService.handleGPXImport(
+                                const outcome = await importGpxTrack(
                                     ev.target!.result as string,
-                                    file.name
-                                );
-                                if (layer) {
-                                    // The full imported geometry is durable
-                                    // before any PreparedRoute is derived.
-                                    await trackService.archiveImport(layer);
-                                    const canOpen =
-                                        await this.protectCurrentDraft(
-                                            layer.name
-                                        );
-                                    const route =
-                                        await preparedRouteService.importGPXLayer(
-                                            layer
-                                        );
-                                    removeGPXLayer(layer.id);
-                                    if (canOpen) {
-                                        preparedRouteService.restoreSavedRoute(
-                                            route
-                                        );
-                                        setRoutePlanningMode(true, {
-                                            announceHint: false,
-                                        });
+                                    file.name,
+                                    {
+                                        protectDraft: (name) =>
+                                            this.protectCurrentDraft(name),
                                     }
+                                );
+                                if (outcome.status === 'imported') {
                                     showToast(
                                         i18n.t(
                                             'preparedRoutes.toast.gpxPrepared'

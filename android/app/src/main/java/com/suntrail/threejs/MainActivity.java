@@ -14,6 +14,8 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         // Enregistrer le plugin Foreground Service avant super.onCreate()
         registerPlugin(RecordingPlugin.class);
+        // Réception des GPX partagés / « Ouvrir avec »
+        registerPlugin(GpxImportPlugin.class);
         super.onCreate(savedInstanceState);
         handleRecordingNotificationAction(getIntent());
         hideStatusBar();

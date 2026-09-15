@@ -34,6 +34,29 @@
             "import": "Import GPX",
             "export": "Export"
         },
+        "help": {
+            "trigger": "Route help",
+            "title": "Help — Routes",
+            "tabRecord": "Record",
+            "tabPrepare": "Prepare",
+            "tabImport": "Import",
+            "tabGuidance": "Follow",
+            "recordStep1": "Tap REC to start recording your outing.",
+            "recordStep2": "Pause suspends recording; STOP ends it and lets you name the track.",
+            "recordStep3": "On Android, recording keeps running in the background with the screen off.",
+            "prepareStep1": "Tap “Create a route”, then place your points on the map (long press).",
+            "prepareStep2": "Choose the profile and pace, then start the calculation.",
+            "prepareStep3": "Save the draft to find it in Library, or go straight to guidance.",
+            "importStep1": "File: tap “Import GPX” and choose a .gpx file.",
+            "importStep2": "Received file: open it with SunTrail (“Open with”) or share it from another app.",
+            "importStep3": "Tip: when Android asks which app to use, pick SunTrail then “Always”.",
+            "importStep4": "Garmin, Komoot, Wikiloc: export the GPX from their website, then open it with SunTrail.",
+            "guidanceStep1": "Open a route then tap “Follow this route” to start guidance.",
+            "guidanceStep2": "Follow the next cue and remaining distance; guidance keeps running in the background (Android).",
+            "guidanceStep3": "Tap STOP to end guidance; the track stays in Library.",
+            "settings": "Android settings",
+            "close": "Close"
+        },
         "toast": {
             "recStarted": "🔴 Recording started",
             "recStopped": "⏹️ Recording stopped",
@@ -472,7 +495,10 @@
         "alreadyImported": "This track is already imported",
         "limitPro": "Maximum 10 tracks reached",
         "importError": "Error importing GPX",
-        "imported": "Track imported"
+        "imported": "Track imported",
+        "shareNotGpx": "The shared file is not a valid GPX",
+        "shareReadFailed": "Could not read the shared file",
+        "shareTooLarge": "The shared GPX file is too large"
     },
     "settings": {
         "title": "Settings",

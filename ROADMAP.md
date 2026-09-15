@@ -970,7 +970,9 @@ Upgrade de Three.js de la version 0.160.1 à 0.184.0 (24 versions d'écart) en c
 
 ### Autres Features Payantes
 
-- **Intégration Strava/Komoot** : auto-import traces (Pro)
+- **Réception OS des GPX** : partage / « Ouvrir avec » depuis n'importe quelle app (Free, v5.91) —
+  [docs/plans/V5_91_GPX_SHARE_IMPORT.md](docs/plans/V5_91_GPX_SHARE_IMPORT.md)
+- **Intégration Strava/Wahoo** : OAuth via back-end, auto-import traces (Pro, après `accountSync`)
 - **Cloud Sync** : sauvegardes traces/marque-pages (Pro)
 - **API Publique** : accès données via webhook (Professionnel/B2B)
 - **Marque-pages Collaboratifs** : partage itinéraires entre randonneurs (Pro)

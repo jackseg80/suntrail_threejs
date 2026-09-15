@@ -34,6 +34,29 @@
             "import": "GPX importieren",
             "export": "Exportieren"
         },
+        "help": {
+            "trigger": "Routen-Hilfe",
+            "title": "Hilfe — Routen",
+            "tabRecord": "Aufnehmen",
+            "tabPrepare": "Planen",
+            "tabImport": "Importieren",
+            "tabGuidance": "Folgen",
+            "recordStep1": "Tippe auf REC, um deine Tour aufzunehmen.",
+            "recordStep2": "Pause unterbricht die Aufnahme; STOP beendet sie und du kannst den Track benennen.",
+            "recordStep3": "Unter Android läuft die Aufnahme bei ausgeschaltetem Bildschirm im Hintergrund weiter.",
+            "prepareStep1": "Tippe auf „Route erstellen“ und setze deine Punkte auf der Karte (langes Drücken).",
+            "prepareStep2": "Wähle Profil und Tempo und starte die Berechnung.",
+            "prepareStep3": "Speichere den Entwurf, um ihn in der Bibliothek zu finden, oder starte direkt die Navigation.",
+            "importStep1": "Datei: tippe auf „GPX importieren“ und wähle eine .gpx-Datei.",
+            "importStep2": "Erhaltene Datei: mit SunTrail öffnen („Öffnen mit“) oder aus einer anderen App teilen.",
+            "importStep3": "Tipp: Wenn Android nach der App fragt, wähle SunTrail und dann „Immer“.",
+            "importStep4": "Garmin, Komoot, Wikiloc: exportiere die GPX auf deren Website und öffne sie dann mit SunTrail.",
+            "guidanceStep1": "Öffne eine Route und tippe auf „Diese Route folgen“, um die Navigation zu starten.",
+            "guidanceStep2": "Folge dem nächsten Hinweis und der Restdistanz; die Navigation läuft im Hintergrund weiter (Android).",
+            "guidanceStep3": "Tippe auf STOP, um die Navigation zu beenden; der Track bleibt in der Bibliothek.",
+            "settings": "Android-Einstellungen",
+            "close": "Schließen"
+        },
         "toast": {
             "recStarted": "🔴 Aufnahme gestartet",
             "recStopped": "⏹️ Aufnahme gestoppt",
@@ -472,7 +495,10 @@
         "alreadyImported": "Dieser Track wurde bereits importiert",
         "limitPro": "Maximum von 10 Tracks erreicht",
         "importError": "Fehler beim GPX-Import",
-        "imported": "Tour importiert"
+        "imported": "Tour importiert",
+        "shareNotGpx": "Die geteilte Datei ist keine gültige GPX-Datei",
+        "shareReadFailed": "Die geteilte Datei konnte nicht gelesen werden",
+        "shareTooLarge": "Die geteilte GPX-Datei ist zu groß"
     },
     "settings": {
         "title": "Einstellungen",

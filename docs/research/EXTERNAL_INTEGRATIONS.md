@@ -1,36 +1,77 @@
-# Research: External Integrations (Strava, Suunto, Wikiloc)
+# Research : intégrations externes et import de traces (état vérifié 2026-09-15)
 
-This document summarizes the technical feasibility and requirements for integrating third-party trail/activity platforms into SunTrail.
+> Remplace la première ébauche (« Strava, Suunto, Wikiloc »). Les affirmations ci-dessous ont
+> été vérifiées contre le code de SunTrail 5.90.0 et, pour Strava, contre la documentation
+> officielle. Toute intégration reste hors du produit courant tant qu'un lot dédié ne l'active pas.
 
-## 1. Strava (Priority: High)
-*   **Status**: Highly Feasible.
-*   **Method**: Strava V3 API via OAuth2.
-*   **Capabilities**:
-    *   List user activities (history) and reconstruct GPX from data streams.
-    *   List and direct export of "Routes" (planned itineraries) as GPX.
-*   **Requirement**: Register SunTrail as a developer application at [strava.com/settings/api](https://www.strava.com/settings/api).
+## Ce que SunTrail sait déjà faire
 
-## 2. Suunto (Priority: Medium)
-*   **Status**: Feasible.
-*   **Method**: Suunto Cloud API.
-*   **Capabilities**:
-    *   Import workouts as `.FIT` files.
-    *   Import/Export routes as `.GPX`.
-*   **Technical Note**: Requires a `.FIT` to `.GPX` converter on the backend or using a library like `fit-parse`.
-*   **Requirement**: Apply for partnership at [Suunto API Zone](https://apizone.suunto.com/).
+- Import GPX manuel par sélecteur de fichiers Android : `#gpx-upload`
+  (`src/modules/ui/templates/track.html`) → `gpxService.handleGPXImport`
+  (`src/modules/gpxService.ts:41`).
+- Pipeline partagé `importGpxTrack` (`src/modules/gpxImportFlow.ts`) : archivage pleine fidélité
+  `StoredTrackV1` (origine `gpx-import`) **avant** conversion en `PreparedRouteV1`, puis ouverture.
+- Dédoublonnage par empreinte de géométrie : un réimport identique remplace la même archive.
+- Réception OS Android (« Ouvrir avec » / partage) : `GpxImportPlugin` + `gpxImportIntake`
+  (voir `docs/plans/V5_91_GPX_SHARE_IMPORT.md`).
+- PWA (vite-plugin-pwa) pour le Web ; **aucune cible iOS** dans le dépôt.
+- Supabase installé mais `accountSync` désactivé ; deep link OAuth
+  `com.suntrail.threejs://auth-callback` déjà en place.
 
-## 3. Wikiloc (Priority: Medium)
-*   **Status**: Feasible via Partnership.
-*   **Method**: Wikiloc Partner API.
-*   **Usage**: Access to millions of community-sourced hiking trails.
-*   **Requirement**: Contact Wikiloc for partner access.
+Contrainte structurante : tous les canaux d'entrée convergent vers `importGpxTrack`. Ajouter un
+canal ne doit jamais dupliquer l'archivage ni la conversion.
 
-## 4. Other Platforms
-*   **Garmin Connect**: Difficult for small developers (official API is enterprise-focused). Requires using unofficial scraper libraries or requesting manual GPX exports from users.
-*   **Komoot**: Closed ecosystem. No public API for third-party apps. Manual GPX import remains the official route.
-*   **AllTrails**: Closed ecosystem. No public API.
-*   **Decathlon Outdoor**: Open developer portal available. Good candidate for European coverage.
+## Niveaux d'intégration (corrigés)
 
-## 5. Unified Aggregator Alternative
-*   **Terra API**: Unified connector for Strava, Garmin, Suunto, etc.
-*   **Cost**: High ($499/mo). Not recommended for initial phase.
+| Niveau | Méthode & plateformes | Difficulté | Faisabilité SunTrail | Limite |
+| --- | --- | --- | --- | --- |
+| **1. OS (partage / « Ouvrir avec »)** | Komoot, AllTrails, Wikiloc, Garmin, navigateurs, gestionnaires de fichiers | Faible (1–2 j) | **Fait (v5.91)** : intent-filters + plugin natif + intake JS. Aucun compte, aucune API. | L'app source doit proposer un export/partage GPX. |
+| **2. Cloud générique** | Google Drive, Dropbox, iCloud | Moyenne | Reporté : le sélecteur Android couvre déjà le besoin manuel ; un SDK cloud = OAuth + dépendance. | Dépôt manuel préalable. |
+| **3. API ouvertes** | Strava, Wahoo | Moyenne à élevée | Strava : OAuth2 mais `client_secret` obligatoire → back-end (Edge Function Supabase) ; revue des API Terms. Wahoo : cloud API publique OAuth. | Quotas, attribution, back-end. |
+| **4. Partenaires matériel** | Garmin Connect, Suunto, Polar, COROS | Élevée (semaines) | Programme développeur / partenariat à valider. Suunto **n'est pas** une API ouverte. | Délais d'approbation ; FIT à convertir. |
+| **5. Fermé / B2B** | AllTrails, Komoot | — | AllTrails : aucune API publique → Niveau 1. Komoot : portail développeur encadré (`developer.komoot.de`), usage restreint → traiter comme partenaire. | Contrat commercial. |
+
+### Corrections par rapport à l'ébauche initiale
+
+- **Suunto** était classé « API ouverte directe » : en réalité accès **partenaire**
+  (Suunto API Zone), donc Niveau 4.
+- **Komoot** était décrit « aucune API publique » : il existe un portail développeur encadré, mais
+  pas de programme d'export grand public. À traiter comme partenaire, pas comme bloqué absolu.
+- **Wahoo** manquait : cloud API publique OAuth, bon candidat Niveau 3.
+- **Strava** : la documentation officielle impose `client_id` **et** `client_secret` lors de
+  l'échange de code (pas de PKCE) ; le secret ne peut pas être embarqué dans l'app.
+- **iOS** : hors sujet pour l'instant, le dépôt ne contient aucune plateforme iOS.
+- Le **FIT** (Garmin/Suunto/Wahoo) n'est pas lisible par `gpxparser` ; prévoir un parseur dédié si
+  un lot partenaire l'exige.
+
+## Constats terrain (2026-09-15, Android)
+
+- **Partage d'un vrai fichier `.gpx`** : fonctionne via « Ouvrir avec » / partage (canal P0), à partir
+  d'un gestionnaire de fichiers. Confirmé sur Galaxy S23.
+- **Komoot / Wikiloc** : le partage natif envoie une **URL de page web**, pas un GPX. L'export GPX
+  est lié au compte/achat de région. Aucun chemin propre et simple.
+- **Garmin Connect mobile** : pas d'export GPX ; l'export n'existe que sur le **site web**.
+- **Strava** : la *création/enregistrement d'itinéraires* est réservée à l'abonnement ; le partage
+  produit une **image**. En revanche, la **lecture de ses propres activités reste gratuite via
+  l'API** (`activity:read`), et Strava reçoit automatiquement Garmin/Suunto/Wahoo/Polar/COROS.
+- Conséquence : une intégration **Strava « activités »** couvrirait indirectement la plupart des
+  montres, y compris Garmin, sans le programme partenaire Garmin. C'est le seul candidat sérieux,
+  mais il exige un back-end (secret OAuth) donc un effort moyen.
+
+## Feuille de route recommandée
+
+1. **P0 — Réception OS + aide intégrée (fait, gratuit, sans compte)** :
+   `docs/plans/V5_91_GPX_SHARE_IMPORT.md`.
+2. **P1 — Web** : glisser-déposer sur la carte, `share_target` PWA (optionnel).
+3. **P2 — Strava « activités » (Pro, pour les utilisateurs qui en ont)** : OAuth via Edge Function
+   Supabase, derrière `accountSync` ; revue des API Terms préalable. Ne jamais promettre la création
+   d'itinéraires (payante).
+4. **P3 — Wahoo**, puis partenaires Komoot/Wikiloc/Garmin/Suunto/Polar/COROS.
+5. **Agrégateur** (ex. Terra) seulement si le nombre de fournisseurs le justifie ; coût élevé.
+
+## Conséquences techniques
+
+- Un nouveau canal doit appeler `importGpxTrack(xml, name)` et rien d'autre.
+- Le secret Strava et les refresh tokens doivent vivre côté serveur, jamais dans le client.
+- Toute intégration à compte/refresh token dépend de `accountSync` (actuellement désactivé).
+- Nouveau texte visible → 4 locales + `npm run audit:i18n`.
