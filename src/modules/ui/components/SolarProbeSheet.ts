@@ -25,6 +25,7 @@ import templateHTML from '../templates/solar-probe.html?raw';
 import { buildTimeline } from './solarprobe/SolarTimeline';
 import { makeLockedItem } from './solarprobe/SolarLockedItem';
 import { eventBus } from '../../eventBus';
+import { getSolarPhase, SOLAR_PHASE_LABEL_KEYS } from '../../solarPhases';
 
 export class SolarProbeSheet extends BaseComponent {
     private contentEl: HTMLElement | null = null;
@@ -306,10 +307,15 @@ export class SolarProbeSheet extends BaseComponent {
             // 1. Graphique d'élévation 24h (Prominent at top)
             const chartSection = document.createElement('div');
             chartSection.className = 'solar-chart-section';
-            chartSection.appendChild(this.buildElevationChart(result));
+            this.buildElevationChartSection(chartSection, result);
             this.contentEl.appendChild(chartSection);
 
-            // 2. Temps réel & Boussole
+            // 2. Frise « Évolution sur 24h », juste sous le graphique
+            if (result.terrainAvailable) {
+                buildTimeline(this.contentEl, result);
+            }
+
+            // 3. Temps réel & Boussole
             const rtContainer = document.createElement('div');
             rtContainer.classList.add('solar-realtime-instrument');
 
@@ -439,7 +445,7 @@ export class SolarProbeSheet extends BaseComponent {
             rtContainer.appendChild(rtStats);
             this.contentEl.appendChild(rtContainer);
 
-            // 3. Bloc Données du jour (Simplified Grid)
+            // 4. Bloc Données du jour (Simplified Grid)
             const grid1 = document.createElement('div');
             grid1.classList.add('exp-stat-grid', 'exp-probe-grid-mb');
 
@@ -490,11 +496,6 @@ export class SolarProbeSheet extends BaseComponent {
 
             this.contentEl.appendChild(grid1);
 
-            // 4. Timeline (Evolution détaillée)
-            if (result.terrainAvailable) {
-                buildTimeline(this.contentEl, result);
-            }
-
             // 5. Section route solar (Pro)
             this.routeSolarSectionEl = document.createElement('div');
             this.contentEl.appendChild(this.routeSolarSectionEl);
@@ -519,6 +520,108 @@ export class SolarProbeSheet extends BaseComponent {
         // Toujours afficher depuis le haut après reconstruction du contenu
         requestAnimationFrame(() => {
             if (this.element) this.element.scrollTop = 0;
+        });
+    }
+
+    /**
+     * Enveloppe le graphique d'une zone glissable : un repère suit le doigt et
+     * affiche l'heure, l'altitude solaire, l'azimut et la phase (ou l'ombre).
+     */
+    private buildElevationChartSection(
+        container: HTMLElement,
+        result: SolarAnalysisResult
+    ): void {
+        container.classList.add('solar-chart-container');
+        const svg = this.buildElevationChart(result);
+        container.appendChild(svg);
+
+        const W = 320;
+        const CHART_H = 100;
+        const scrubDate = new Date(state.simDate);
+        const scrubLine = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'line'
+        );
+        scrubLine.classList.add('solar-chart-scrub-line');
+        scrubLine.setAttribute('y1', '0');
+        scrubLine.setAttribute('y2', String(CHART_H));
+        scrubLine.setAttribute('visibility', 'hidden');
+        svg.appendChild(scrubLine);
+
+        const info = document.createElement('div');
+        info.classList.add('solar-chart-scrub');
+        info.hidden = true;
+        container.appendChild(info);
+
+        const timeAt = (clientX: number): number => {
+            const ctm = svg.getScreenCTM();
+            if (!ctm) return 0;
+            const point = svg.createSVGPoint();
+            point.x = clientX;
+            point.y = 0;
+            const local = point.matrixTransform(ctm.inverse());
+            return Math.max(0, Math.min(1439, (local.x / W) * 1440));
+        };
+
+        const update = (clientX: number) => {
+            const mins = timeAt(clientX);
+            const x = (mins / 1440) * W;
+            scrubLine.setAttribute('x1', String(x));
+            scrubLine.setAttribute('x2', String(x));
+            scrubLine.removeAttribute('visibility');
+
+            const elevIdx = Math.min(
+                result.elevationCurve.length - 1,
+                Math.round(mins / 10)
+            );
+            const elev = result.elevationCurve[elevIdx] ?? 0;
+            const step =
+                result.timeline[
+                    Math.min(result.timeline.length - 1, Math.floor(mins / 30))
+                ];
+
+            scrubDate.setHours(Math.floor(mins / 60), Math.floor(mins % 60));
+            const pos = SunCalc.getPosition(
+                scrubDate,
+                result.gps.lat,
+                result.gps.lon
+            );
+            const azDeg =
+                Math.round((pos.azimuth * 180) / Math.PI + 180 + 360) % 360;
+
+            let labelKey: string;
+            if (step?.isNight) labelKey = 'profile.night';
+            else if (step?.inShadow) labelKey = 'profile.shade';
+            else labelKey = SOLAR_PHASE_LABEL_KEYS[getSolarPhase(elev)];
+
+            const hh = String(Math.floor(mins / 60)).padStart(2, '0');
+            const mm = String(Math.floor(mins % 60)).padStart(2, '0');
+            info.textContent = `${hh}:${mm} · ${Math.round(elev)}° · ${azDeg}° · ${i18n.t(labelKey)}`;
+            info.hidden = false;
+        };
+
+        const stop = () => {
+            scrubLine.setAttribute('visibility', 'hidden');
+            info.hidden = true;
+        };
+
+        let scrubbing = false;
+        container.addEventListener('pointerdown', (e: PointerEvent) => {
+            scrubbing = true;
+            container.setPointerCapture?.(e.pointerId);
+            update(e.clientX);
+        });
+        container.addEventListener('pointermove', (e: PointerEvent) => {
+            if (scrubbing) update(e.clientX);
+        });
+        const end = () => {
+            scrubbing = false;
+            stop();
+        };
+        container.addEventListener('pointerup', end);
+        container.addEventListener('pointercancel', end);
+        container.addEventListener('pointerleave', (e: PointerEvent) => {
+            if (e.pointerType !== 'touch') end();
         });
     }
 
@@ -584,7 +687,7 @@ export class SolarProbeSheet extends BaseComponent {
                 r.setAttribute('y', '0');
                 r.setAttribute('width', String(barW));
                 r.setAttribute('height', String(CHART_H));
-                r.setAttribute('fill', 'rgba(239,68,68,0.15)');
+                r.setAttribute('fill', 'rgba(71,85,120,0.35)');
                 svg.appendChild(r);
             }
         });

@@ -4944,6 +4944,36 @@ body:has(#zone-select-toolbar.active) #toast-container {
     margin-bottom: var(--space-4);
 }
 
+.solar-chart-container {
+    position: relative;
+    touch-action: pan-y;
+}
+
+.solar-chart-scrub-line {
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 2;
+    pointer-events: none;
+}
+
+.solar-chart-scrub {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    max-width: calc(100% - 16px);
+    transform: translateX(-50%);
+    overflow: hidden;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--text-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
 .solar-alert {
     display: grid;
     grid-template-columns: 24px minmax(0, 1fr);
@@ -5044,7 +5074,7 @@ body:has(#zone-select-toolbar.active) #toast-container {
     height: 30px;
     border-radius: var(--radius-sm);
     overflow: hidden;
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--space-1);
 }
 
 .exp-timeline-bar {
@@ -5057,10 +5087,53 @@ body:has(#zone-select-toolbar.active) #toast-container {
 }
 
 .exp-timeline-bar[data-phase='shadow'] {
-    background: rgba(255, 80, 80, 0.3);
+    background: rgba(71, 85, 120, 0.85);
 }
 
 .exp-timeline-bar[data-phase='night'] {
+    background: #000;
+}
+
+.exp-timeline-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+    color: var(--text-3);
+    font-size: var(--text-xs);
+}
+
+.exp-timeline-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    color: var(--text-3);
+    font-size: var(--text-xs);
+}
+
+.exp-timeline-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.exp-timeline-legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 2px;
+}
+
+.exp-timeline-legend-swatch[data-phase='sun'] {
+    background: var(--gold);
+}
+
+.exp-timeline-legend-swatch[data-phase='shadow'] {
+    background: rgba(71, 85, 120, 0.85);
+}
+
+.exp-timeline-legend-swatch[data-phase='night'] {
     background: #000;
 }
 

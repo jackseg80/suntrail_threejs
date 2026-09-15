@@ -107,8 +107,10 @@ compris sous le message Free. Le rendu est contrôlé en portrait/paysage, à 11
 clair et sombre avant retour à Auto. Le sélecteur n'affiche plus deux cadres concurrents : une seule
 emprise géographique passe de l'orange au vert puis au bleu et reste figée dès le lancement du
 téléchargement. L'APK diagnostic finale est installée et 158 fichiers/1 830
-tests passent. Le tutoriel et la qualification A53/Web ont ensuite été clôturés ; la correction de
-pente GPS demeure le seul candidat 5.90.1 séparé.
+tests passent. Le tutoriel et la qualification A53/Web ont ensuite été clôturés. La révision source
+5.90.1 relève ensuite la luminosité 3D en heure dorée et clarifie l'analyse solaire d'un point :
+frise sous le graphique, légende, couleur d'ombre bleu-gris, curseur glissant et phases solaires
+unifiées dans `solarPhases.ts`. La pente GPS reste un lot séparé, sans numéro engagé.
 
 - `plans/` contient des décisions, protocoles de version et travaux futurs. Une version dans le
   titre décrit le périmètre du plan, pas nécessairement l'état courant du produit.

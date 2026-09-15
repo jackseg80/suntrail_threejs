@@ -1,4 +1,17 @@
-## [5.90.1] - 2026-09-15 — Luminosité de l'heure dorée en 3D
+## [5.90.1] - 2026-09-15 — Heure dorée en 3D et clarté de l'analyse solaire
+
+### Amélioré
+
+- Rendre l'analyse solaire d'un point plus lisible : la frise « Évolution sur 24h » passe juste sous
+  le graphique d'élévation et gagne une légende (Soleil / Ombre / Nuit), un axe horaire, des
+  infobulles par créneau et un résumé accessible.
+- Distinguer l'ombre de l'heure dorée : les barres d'ombre de la frise et les bandes du graphique
+  passent au bleu-gris déjà employé par la bande solaire du profil et l'overlay 3D, au lieu du rouge
+  chaud qui se lit comme une lumière. L'heure dorée reste décrite dans les statistiques.
+- Ajouter un curseur glissant sur le graphique : un glissement horizontal révèle l'heure, l'altitude
+  solaire, l'azimut et la phase (ou l'ombre) sans bloquer le défilement vertical du panneau.
+- Unifier les phases solaires dans un module partagé `solarPhases.ts` (seuils et clés de libellés),
+  utilisé par le moteur solaire et le curseur ; la frise réutilise l'analyse existante du point.
 
 ### Corrigé
 
@@ -9,9 +22,10 @@
 
 ### Validation
 
-- Contrôles TypeScript, formatage et lint, 161 fichiers et 1 849 tests Web/TypeScript.
-- APK `5.90.1-diagnostic` (code 912) construit et installé sur Galaxy S23 SM-S911B / Android 16
-  pour observer l'heure dorée. Aucune release GitHub ni upload Play pour ce correctif local.
+- Contrôles TypeScript, formatage et lint, 162 fichiers et 1 859 tests Web/TypeScript.
+- APK `5.90.1-diagnostic` (code 912) construit et installé sur Galaxy S23 SM-S911B / Android 16 pour
+  l'heure dorée puis pour l'analyse solaire d'un point (frise sous le graphique, légende et couleur
+  d'ombre, curseur glissant). Aucune release GitHub ni upload Play pour ce correctif local.
 
 ## [5.90.0] - 2026-09-13 — Refonte UI et prise en main concrète
 

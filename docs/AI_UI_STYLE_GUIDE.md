@@ -69,6 +69,13 @@ options and one upgrade entry; pricing, restore and legal actions live on the de
   information non bloquante le signale et les résultats qui en dépendent ne sont pas affichés.
 - La simulation visuelle des ombres sur la carte reste propre à la 3D. Ne jamais présenter une
   hypothèse de terrain plat comme une mesure d'ombre, de premier rayon ou d'ensoleillement réel.
+- L'analyse d'un point place la frise « Évolution sur 24h » sous la courbe d'élévation. La frise
+  porte une légende (Soleil / Ombre / Nuit), un axe horaire, des infobulles par créneau et un résumé
+  accessible. L'ombre est en bleu-gris, cohérent avec la bande solaire du profil et l'overlay 3D ;
+  ne jamais réutiliser un rouge chaud, qui se lit comme l'heure dorée.
+- Le graphique d'élévation accepte un curseur glissant : un glissement horizontal affiche heure,
+  altitude, azimut et phase (ou ombre) sans bloquer le défilement vertical. Les seuils de phase
+  proviennent du module partagé `solarPhases.ts` et jamais d'une copie locale.
 
 ### Sélection cartographique
 

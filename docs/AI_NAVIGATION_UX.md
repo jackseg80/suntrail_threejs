@@ -190,6 +190,13 @@ distance. L'ordre fournisseur reste stable en cas d'égalité.
 - **Overlay 3D** : TubeGeometry coloré live (soleil or / forêt vert / ombre bleu / nuit bleu-nuit).
 - **Recommandations** : Grille 3×2 stats + alerte exposition forte + recommendation lampe frontale si nuit.
 
+### Sonde solaire d'un point (`analysis.ts`, `SolarProbeSheet.ts`)
+
+- Réutilise `runSolarProbe()` et `isAtShadow()` : la frise d'ombre et les heures dorées ne sont pas
+  recalculées pour l'analyse d'un point. Les phases passent par `solarPhases.ts`.
+- Frise « Évolution sur 24h » sous le graphique, ombre en bleu-gris, légende, axe horaire et curseur
+  glissant (heure, altitude, azimut, phase ou ombre).
+
 ### Météo (`weather.ts`)
 
 - **Particules 3D** (v5.56.4) : Système `THREE.Points` avec `ShaderMaterial`. Toggle pluie/neige via uniforme `uIsRain`.

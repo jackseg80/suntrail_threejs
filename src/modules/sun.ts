@@ -5,6 +5,7 @@ import { terrainUniforms } from './terrain';
 import { i18n } from '../i18n/I18nService';
 import { eventBus } from './eventBus';
 import { worldToLngLat } from './geo';
+import { getSolarPhase, SOLAR_PHASE_LABEL_KEYS } from './solarPhases';
 
 /**
  * SunTrail Sun Position & Lighting Engine (v5.5.12)
@@ -30,18 +31,9 @@ const _sunVector = new THREE.Vector3();
 function applySolarPhaseLabel(altDeg: number): void {
     const phaseSpan = document.getElementById('sun-phase');
     if (!phaseSpan) return;
-    let phase: 'day' | 'golden' | 'twilight' | 'night';
-    if (altDeg > 6) {
-        phase = 'day';
-    } else if (altDeg > -4) {
-        phase = 'golden';
-    } else if (altDeg > -12) {
-        phase = 'twilight';
-    } else {
-        phase = 'night';
-    }
+    const phase = getSolarPhase(altDeg);
 
-    phaseSpan.textContent = i18n.t(`solar.phase.${phase}`);
+    phaseSpan.textContent = i18n.t(SOLAR_PHASE_LABEL_KEYS[phase]);
     phaseSpan.dataset.phase = phase;
     const timeline = document.getElementById('bottom-bar');
     if (timeline) timeline.dataset.solarPhase = phase;
