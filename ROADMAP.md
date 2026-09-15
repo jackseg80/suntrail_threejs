@@ -972,7 +972,10 @@ Upgrade de Three.js de la version 0.160.1 à 0.184.0 (24 versions d'écart) en c
 
 - **Réception OS des GPX** : partage / « Ouvrir avec » depuis n'importe quelle app (Free, v5.91) —
   [docs/plans/V5_91_GPX_SHARE_IMPORT.md](docs/plans/V5_91_GPX_SHARE_IMPORT.md)
-- **Intégration Strava/Wahoo** : OAuth via back-end, auto-import traces (Pro, après `accountSync`)
+- **Intégration Strava/Wahoo** : OAuth via back-end (Edge Function Supabase **ou** Worker
+  Cloudflare), import des **activités** (Pro, pour les utilisateurs qui ont un compte). La création
+  d'itinéraires Strava est payante, donc hors périmètre. Non implémenté — voir
+  [docs/research/EXTERNAL_INTEGRATIONS.md](docs/research/EXTERNAL_INTEGRATIONS.md)
 - **Cloud Sync** : sauvegardes traces/marque-pages (Pro)
 - **API Publique** : accès données via webhook (Professionnel/B2B)
 - **Marque-pages Collaboratifs** : partage itinéraires entre randonneurs (Pro)
