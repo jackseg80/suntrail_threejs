@@ -1,14 +1,16 @@
-# SunTrail — Guide IA (version source 5.90.0)
+# SunTrail — Guide IA (version source 5.90.1)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-13 après la clôture locale
-> de la refonte UI 5.90.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-15 après le correctif de
+> luminosité 3D en heure dorée 5.90.1.
 
 ## État vérifié
 
-- Version npm : `5.90.0`.
-- Android : `versionName 5.90.0`, `versionCode 911`, minSdk 24, compile/target SDK 36. Le code 911
+- Version npm : `5.90.1`.
+- Android : `versionName 5.90.1`, `versionCode 912`, minSdk 24, compile/target SDK 36. Le code 912
   est supérieur au dernier code local connu ; le maximum effectif dans Play Console reste à vérifier
   avant tout upload.
+- Révision courante `5.90.1` (code 912) : correctif de luminosité 3D en heure dorée. Aucune release
+  ni upload Play n'est revendiqué pour ce correctif.
 - Branche de travail habituelle : `main`. Toujours vérifier le worktree et le commit courant.
 - La release GitHub `v5.90.0` est préparée depuis cette révision et son tag produit l'AAB signé par
   la CI. La qualification couvre le Galaxy S23 et l'A53, avec polices Android jusqu'à 130 %, quatre

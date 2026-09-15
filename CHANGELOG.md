@@ -1,3 +1,18 @@
+## [5.90.1] - 2026-09-15 — Luminosité de l'heure dorée en 3D
+
+### Corrigé
+
+- Relever la luminosité de la 3D en heure dorée, lorsque le soleil est encore levé mais bas : la
+  scène reste proche du plein jour et ne bascule plus trop tôt vers l'ambiance sombre du crépuscule.
+  Le réglage suit l'altitude solaire, donc il est identique au lever et au coucher, et il s'annule
+  au zénith : le maximum de mi-journée garde exactement sa luminosité.
+
+### Validation
+
+- Contrôles TypeScript, formatage et lint, 161 fichiers et 1 849 tests Web/TypeScript.
+- APK `5.90.1-diagnostic` (code 912) construit et installé sur Galaxy S23 SM-S911B / Android 16
+  pour observer l'heure dorée. Aucune release GitHub ni upload Play pour ce correctif local.
+
 ## [5.90.0] - 2026-09-13 — Refonte UI et prise en main concrète
 
 ### Amélioré

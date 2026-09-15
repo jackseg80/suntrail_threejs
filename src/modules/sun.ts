@@ -95,8 +95,12 @@ export function updateSunPosition(minutes: number): void {
     if (altDeg > 0) {
         // --- JOUR (incluant Heure Dorée) ---
         const t = Math.sin(pos.altitude);
-        sunIntensity = 1.5 + t * 3.5;
-        ambientIntensity = 0.6 + t * 0.1;
+        // v5.90.1 : relève la sensibilité de l'heure dorée (soleil bas, encore en jour).
+        // Bonus nul à l'horizon (continuité avec le crépuscule) et au-delà de ~20°,
+        // donc le midi garde exactement sa luminosité actuelle.
+        const goldenLift = Math.sin(Math.PI * Math.min(1, t / 0.35));
+        sunIntensity = 1.5 + t * 3.5 + goldenLift * 0.9;
+        ambientIntensity = 0.6 + t * 0.1 + goldenLift * 0.07;
         const colorT = Math.min(1, (altDeg + 4) / 10);
         _sunColor.lerpColors(
             _lerpA.setHex(0xff4400),
