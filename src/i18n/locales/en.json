@@ -1061,7 +1061,8 @@
         "slopes": "Slopes",
         "solar": "Solar",
         "sun": "Sun",
-        "shade": "Shade",
+        "shade": "Terrain shade",
+        "unknownShade": "Unknown shade",
         "forest": "Forest",
         "night": "Night",
         "summary": "Distance: {{distance}} km | D+: {{ascent}} m | D-: {{descent}} m",
@@ -1334,7 +1335,9 @@
         "status": {
             "analyzing": "Computing optimal departure…",
             "noRoute": "Trace a route or import a GPX to start the analysis",
-            "noTerrain": "Analysis unavailable — terrain data not loaded. Zoom in on the route.",
+            "noTerrain": "Terrain shadows unavailable: less accurate simulation (hatched sections).",
+            "partialTerrain": "Less accurate simulation: terrain missing on {{pct}}% of the route (hatched sections).",
+            "noReliefEco": "Terrain not loaded in Eco mode: switch to Balanced or higher for terrain shadows.",
             "fullNight": "100% night route — change the time to see sun exposure",
             "partialNight": "{{pct}}% of the route at night"
         },

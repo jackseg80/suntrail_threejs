@@ -278,33 +278,53 @@ export function runSolarProbe(
 
 const _rayPoint = new THREE.Vector3();
 
+/** Échantillonneur d'altitude : `null` signifie « relief inconnu à ce point ». */
+export type AltitudeSampler = (worldX: number, worldZ: number) => number | null;
+
 export function isAtShadow(
     worldX: number,
     worldZ: number,
     altitude: number,
-    sunPos: THREE.Vector3
+    sunPos: THREE.Vector3,
+    altitudeAt?: AltitudeSampler
 ): boolean {
     _rayPoint.set(worldX, altitude + 2, worldZ);
     const ray = new THREE.Ray(_rayPoint.clone(), sunPos.clone().normalize());
-    const hit = findTerrainIntersection(ray);
+    const hit = findTerrainIntersection(ray, altitudeAt);
     return hit !== null;
 }
 
-export function findTerrainIntersection(ray: THREE.Ray): THREE.Vector3 | null {
+/** Plafond d'itérations : borne le coût d'un rayon (relief inconnu, soleil rasant). */
+const MAX_RAY_STEPS = 3000;
+
+export function findTerrainIntersection(
+    ray: THREE.Ray,
+    altitudeAt?: AltitudeSampler
+): THREE.Vector3 | null {
+    const sample: AltitudeSampler =
+        altitudeAt ?? ((x, z) => getTerrainAltitudeAt(x, z));
     const maxDist = 500000;
-    const hintTile: any = null;
     let dist = 100;
-    while (dist < maxDist) {
+    let steps = 0;
+    while (dist < maxDist && steps < MAX_RAY_STEPS) {
+        steps++;
         ray.at(dist, _hitPoint);
-        const groundH = getAltitudeAt(_hitPoint.x, _hitPoint.z, hintTile);
+        const groundH = sample(_hitPoint.x, _hitPoint.z);
+        if (groundH === null) {
+            // Relief inconnu ici : on ne conclut pas et on avance vite.
+            // Un petit pas ferait des milliers d'itérations sur un long trajet.
+            dist += 500;
+            continue;
+        }
         if (_hitPoint.y < groundH) {
-            return ray.at(dist - (dist > 1000 ? 50 : 25), _hitPoint).clone();
+            // Raffinement plus fin au contact du relief
+            return ray.at(dist - (dist > 1000 ? 25 : 15), _hitPoint).clone();
         }
         // Step adaptatif : grand pas en altitude, petit pas proche du terrain
         const gap = _hitPoint.y - groundH;
         if (gap > 5000) dist += 500;
         else if (gap > 1000) dist += 200;
-        else dist += 100;
+        else dist += 50;
     }
     return null;
 }

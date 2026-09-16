@@ -286,6 +286,11 @@ export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
     if (solarLegend) {
         solarLegend.hidden = !analysis;
     }
+    // Case « ombre inconnue » affichée uniquement si le relief est incomplet
+    const unknownLegend = document.getElementById('solar-legend-unknown');
+    if (unknownLegend) {
+        unknownLegend.hidden = !analysis || analysis.terrainCoverage >= 1;
+    }
 }
 
 /**
@@ -550,6 +555,7 @@ function buildSolarBandSVG(
 
     const bgRect = `<rect x="0" y="${BAND_Y}" width="${width}" height="${BAND_H}" fill="rgba(0,0,0,0.35)" rx="2"/>`;
     let segments = '';
+    let hasUnknown = false;
 
     for (let i = 0; i < analysis.points.length - 1; i++) {
         const p = analysis.points[i];
@@ -558,16 +564,29 @@ function buildSolarBandSVG(
         const x2 = (pNext.distKm / totalKm) * width;
         const segW = Math.max(1, x2 - x1);
 
-        const fill = p.isNight
-            ? 'rgba(10,15,30,0.6)'
-            : p.inShadow
-              ? 'rgba(71,85,120,0.8)'
-              : p.inForest
-                ? 'rgba(30,100,50,0.8)'
-                : 'rgba(245,166,35,0.85)';
+        // Relief manquant : ombre indéterminée, on ne fait pas croire au soleil
+        const shadeUnknown =
+            !p.isNight &&
+            !p.inShadow &&
+            !p.inForest &&
+            p.terrainKnown === false;
+        if (shadeUnknown) hasUnknown = true;
+
+        const fill = shadeUnknown
+            ? 'url(#solarShadeUnknown)'
+            : p.isNight
+              ? 'rgba(10,15,30,0.6)'
+              : p.inShadow
+                ? 'rgba(71,85,120,0.8)'
+                : p.inForest
+                  ? 'rgba(30,100,50,0.8)'
+                  : 'rgba(245,166,35,0.85)';
         segments += `<rect x="${x1.toFixed(1)}" y="${BAND_Y}" width="${segW.toFixed(1)}" height="${BAND_H}" fill="${fill}"/>`;
     }
-    return bgRect + segments;
+    const defs = hasUnknown
+        ? '<defs><pattern id="solarShadeUnknown" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="rgba(148,163,184,0.22)"/><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(148,163,184,0.85)" stroke-width="1.5"/></pattern></defs>'
+        : '';
+    return defs + bgRect + segments;
 }
 
 // v5.40.28: Redessiner lors du redimensionnement (rotation écran)

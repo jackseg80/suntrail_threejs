@@ -1055,7 +1055,8 @@
         "slopes": "Neigungen",
         "solar": "Sonne",
         "sun": "Sonnig",
-        "shade": "Schatten",
+        "shade": "Reliefschatten",
+        "unknownShade": "Unbekannter Schatten",
         "forest": "Wald",
         "night": "Nacht",
         "summary": "Distanz: {{distance}} km | H+: {{ascent}} m | H-: {{descent}} m",
@@ -1334,7 +1335,9 @@
         "status": {
             "analyzing": "Optimalen Start berechnen…",
             "noRoute": "Route eingeben oder GPX importieren",
-            "noTerrain": "Analyse nicht möglich — Geländedaten nicht geladen. Auf die Route zoomen.",
+            "noTerrain": "Geländeschatten nicht verfügbar: weniger genaue Simulation (schraffierte Abschnitte).",
+            "partialTerrain": "Weniger genaue Simulation: Gelände fehlt auf {{pct}} % der Route (schraffierte Abschnitte).",
+            "noReliefEco": "Gelände im Eco-Modus nicht geladen: Für Geländeschatten auf Ausgewogen oder höher wechseln.",
             "fullNight": "100% Nachtroute — Zeit ändern für Sonnenexposition",
             "partialNight": "{{pct}}% der Route bei Nacht"
         },

@@ -4281,6 +4281,14 @@ body.sheet-layers-sheet-open #sheet-overlay {
     background: rgba(71, 85, 120, 0.8);
 }
 
+.legend-swatch--unknown {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(148, 163, 184, 0.9) 0 1.5px,
+        rgba(148, 163, 184, 0.18) 1.5px 4px
+    );
+}
+
 .legend-swatch--forest {
     background: rgba(30, 100, 50, 0.8);
 }

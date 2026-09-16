@@ -1061,7 +1061,8 @@
         "slopes": "Pentes",
         "solar": "Solaire",
         "sun": "Soleil",
-        "shade": "Ombre",
+        "shade": "Ombre relief",
+        "unknownShade": "Ombre inconnue",
         "forest": "Forêt",
         "night": "Nuit",
         "summary": "Distance : {{distance}} km | D+ : {{ascent}} m | D- : {{descent}} m",
@@ -1334,7 +1335,9 @@
         "status": {
             "analyzing": "Calcul du départ optimal…",
             "noRoute": "Tracez un itinéraire ou importez un GPX pour démarrer l'analyse",
-            "noTerrain": "Analyse impossible — données de relief non chargées. Zoomez sur le parcours.",
+            "noTerrain": "Ombres du relief indisponibles : simulation moins précise (tronçons hachurés).",
+            "partialTerrain": "Simulation moins précise : relief manquant sur {{pct}} % du tracé (tronçons hachurés).",
+            "noReliefEco": "Relief non chargé en mode Économie : passez au preset Équilibré ou supérieur pour les ombres du relief.",
             "fullNight": "Parcours 100% nocturne — changez l'heure pour voir l'exposition au soleil",
             "partialNight": "{{pct}}% du parcours de nuit"
         },

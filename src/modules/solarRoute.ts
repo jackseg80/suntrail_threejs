@@ -4,12 +4,16 @@ import { state, isProActive } from './state';
 import {
     isAtShadow,
     drapeToTerrain,
-    getAltitudeAt,
+    getTerrainAltitudeAt,
     GPX_SURFACE_OFFSET,
     hasTerrainData,
     resetAnalysisTerrainCounter,
     getAnalysisTerrainHits,
 } from './analysis';
+import {
+    prefetchRouteTerrain,
+    isRouteTerrainPrefetchEnabled,
+} from './routeTerrain';
 import { worldToLngLat, haversineDistance } from './geo';
 import { isLatLonInForest, prefetchLandcoverForPoints } from './landcover';
 import { getSunDirection } from './sun';
@@ -27,6 +31,8 @@ export interface RouteSolarPoint {
     inShadow: boolean;
     isNight: boolean;
     inForest: boolean;
+    /** Relief connu à ce point (sinon l'ombre est indéterminée). */
+    terrainKnown?: boolean;
 }
 
 export interface RouteSolarAnalysis {
@@ -48,6 +54,8 @@ export interface RouteSolarAnalysis {
         altitudeM: number;
     };
     terrainAvailable: boolean;
+    /** Part des points du tracé où le relief était chargé (0–1). */
+    terrainCoverage: number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -59,8 +67,9 @@ const DEFAULT_SPEED_KMH = 4;
 // Tant que le relief n'est pas chargé, l'analyse est rejouée dans une fenêtre
 // bornée : les tuiles 3D peuvent arriver après le flyTo ou au passage 2D → 3D.
 const TERRAIN_RETRY_DELAY_MS = 1500;
-const TERRAIN_RETRY_WINDOW_MS = 15000;
+const TERRAIN_RETRY_WINDOW_MS = 8000;
 const TERRAIN_READY_DEBOUNCE_MS = 250;
+const TERRAIN_RETRY_MAX = 3;
 
 // ─── Module state ─────────────────────────────────────────────────────────────
 
@@ -79,7 +88,9 @@ let _overlayTexture: THREE.DataTexture | null = null;
 let _analysisTimer: ReturnType<typeof setTimeout> | null = null;
 let _abortController: AbortController | null = null;
 let _terrainRetryUntil = 0;
+let _terrainRetryCount = 0;
 let _terrainReadyTimer: ReturnType<typeof setTimeout> | null = null;
+let _optimalComputing = false;
 
 let _cacheKey = '';
 let _cachedAnalysis: RouteSolarAnalysis | null = null;
@@ -242,6 +253,12 @@ async function analyzeRouteSolar(
     const gpsPts = samples.map((pt) => worldToLngLat(pt.x, pt.z, originTile));
     await prefetchLandcoverForPoints(gpsPts);
 
+    // Relief dédié au tracé : rend l'analyse indépendante de la vue (2D / LOD ≤ 10)
+    const terrainSampler = await prefetchRouteTerrain(samples, signal);
+    const routeAltitudeAt = terrainSampler
+        ? (x: number, z: number) => terrainSampler.altitudeAt(x, z)
+        : undefined;
+
     const CHUNK = 10;
     for (let i = 0; i < samples.length; i += CHUNK) {
         if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -284,11 +301,17 @@ async function analyzeRouteSolar(
             // Position solaire au GPS local du point (plus précis que midGps pour les longs tracés)
             const sunPos = SunCalc.getPosition(evalDate, ptGps.lat, ptGps.lon);
             const isNight = sunPos.altitude <= 0;
-            const terrainY = getAltitudeAt(pt.x, pt.z);
+            const terrainY = terrainSampler
+                ? terrainSampler.altitudeAt(pt.x, pt.z)
+                : getTerrainAltitudeAt(pt.x, pt.z);
+            const terrainKnown = terrainY !== null;
             const altForShadow =
-                terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
+                terrainKnown && terrainY > 0
+                    ? terrainY + GPX_SURFACE_OFFSET
+                    : pt.y;
             const inShadow =
-                !isNight && isAtShadow(pt.x, pt.z, altForShadow, sunVec);
+                !isNight &&
+                isAtShadow(pt.x, pt.z, altForShadow, sunVec, routeAltitudeAt);
             const inForest =
                 !isNight && !inShadow && isLatLonInForest(ptGps.lat, ptGps.lon);
 
@@ -299,13 +322,18 @@ async function analyzeRouteSolar(
                 inShadow,
                 isNight,
                 inForest,
+                terrainKnown,
             });
         }
 
         await new Promise<void>((res) => setTimeout(res, 0));
     }
 
-    return buildAnalysis(results, mode, getAnalysisTerrainHits() > 0);
+    return buildAnalysis(
+        results,
+        mode,
+        getAnalysisTerrainHits() > 0 || results.some((r) => r.terrainKnown)
+    );
 }
 
 export function buildAnalysis(
@@ -367,6 +395,11 @@ export function buildAnalysis(
     const sunPct = totalKm > 0 ? Math.round((sunExposedKm / totalKm) * 100) : 0;
     const nightPct = totalKm > 0 ? Math.round((nightKm / totalKm) * 100) : 0;
 
+    // Couverture relief : part des points effectivement comparés au relief
+    const evaluated = points.filter((p) => p.terrainKnown !== undefined);
+    const known = evaluated.filter((p) => p.terrainKnown).length;
+    const terrainCoverage = evaluated.length > 0 ? known / evaluated.length : 0;
+
     return {
         mode,
         points,
@@ -378,13 +411,28 @@ export function buildAnalysis(
         nightPct,
         totalKm,
         shadowSegments,
-        terrainAvailable,
+        terrainAvailable: terrainAvailable || known > 0,
+        terrainCoverage,
     };
 }
 
 // ─── PRO : départ optimal (deux passes) ──────────────────────────────────────
 
 async function analyzeOptimalDeparture(
+    points: THREE.Vector3[],
+    signal: AbortSignal
+): Promise<void> {
+    _optimalComputing = true;
+    notifySolarRouteUpdate();
+    try {
+        await runOptimalDeparture(points, signal);
+    } finally {
+        _optimalComputing = false;
+        notifySolarRouteUpdate();
+    }
+}
+
+async function runOptimalDeparture(
     points: THREE.Vector3[],
     signal: AbortSignal
 ): Promise<void> {
@@ -395,6 +443,16 @@ async function analyzeOptimalDeparture(
     if (!originTile) return;
     const midGps = worldToLngLat(midPt.x, midPt.z, originTile);
     const summitPt = samples.reduce((a, b) => (b.y > a.y ? b : a), samples[0]);
+
+    // Relief du tracé (cache partagé avec l'analyse principale)
+    const terrainSampler = await prefetchRouteTerrain(samples, signal);
+    const sampleShadow = terrainSampler
+        ? (x: number, z: number) => terrainSampler.altitudeAt(x, z)
+        : undefined;
+    const sampleTerrain = (x: number, z: number): number | null =>
+        terrainSampler
+            ? terrainSampler.altitudeAt(x, z)
+            : getTerrainAltitudeAt(x, z);
 
     let totalDistKm = 0;
     for (let i = 1; i < samples.length; i++) {
@@ -430,10 +488,13 @@ async function analyzeOptimalDeparture(
                     (ci / coarseSamples.length) * totalDurationMs
             );
             const pSunVec = getSunDirection(ptDate, midGps.lat, midGps.lon);
-            const terrainY = getAltitudeAt(pt.x, pt.z);
+            const terrainY = sampleTerrain(pt.x, pt.z);
             const altForShadow =
-                terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
-            if (!isAtShadow(pt.x, pt.z, altForShadow, pSunVec)) sunCount++;
+                terrainY !== null && terrainY > 0
+                    ? terrainY + GPX_SURFACE_OFFSET
+                    : pt.y;
+            if (!isAtShadow(pt.x, pt.z, altForShadow, pSunVec, sampleShadow))
+                sunCount++;
         }
         slotScores.push({
             minutes,
@@ -467,12 +528,14 @@ async function analyzeOptimalDeparture(
                 midGps.lat,
                 midGps.lon
             );
-            const terrainY = getAltitudeAt(pt.x, pt.z);
+            const terrainY = sampleTerrain(pt.x, pt.z);
             const altForShadow =
-                terrainY > 0 ? terrainY + GPX_SURFACE_OFFSET : pt.y;
+                terrainY !== null && terrainY > 0
+                    ? terrainY + GPX_SURFACE_OFFSET
+                    : pt.y;
             if (
                 pSunPos.altitude > 0 &&
-                !isAtShadow(pt.x, pt.z, altForShadow, pSunVec)
+                !isAtShadow(pt.x, pt.z, altForShadow, pSunVec, sampleShadow)
             )
                 sunCount++;
         }
@@ -657,6 +720,7 @@ function notifySolarRouteUpdate(): void {
 export function scheduleRouteSolarAnalysis(delay = 1200): void {
     if (_analysisTimer) clearTimeout(_analysisTimer);
     _terrainRetryUntil = Date.now() + TERRAIN_RETRY_WINDOW_MS;
+    _terrainRetryCount = 0;
     _analysisTimer = setTimeout(() => {
         _analysisTimer = null;
         void runRouteSolarAnalysis();
@@ -664,6 +728,8 @@ export function scheduleRouteSolarAnalysis(delay = 1200): void {
 }
 
 function scheduleTerrainRetry(): void {
+    if (_terrainRetryCount >= TERRAIN_RETRY_MAX) return;
+    _terrainRetryCount++;
     if (_analysisTimer) clearTimeout(_analysisTimer);
     _analysisTimer = setTimeout(() => {
         _analysisTimer = null;
@@ -672,19 +738,26 @@ function scheduleTerrainRetry(): void {
     }, TERRAIN_RETRY_DELAY_MS);
 }
 
+export function isOptimalComputing(): boolean {
+    return _optimalComputing;
+}
+
 // Une tuile de relief vient d'être chargée : si l'analyse courante a été
 // calculée sans relief, on la rejoue (couvre le passage 2D → 3D et les tuiles
 // qui arrivent après le flyTo).
 eventBus.on('terrainReady', () => {
+    // En eco (préchargement désactivé) on ne réagit pas : le relief reste
+    // inconnu et relancer l'analyse à chaque tuile ne changerait rien.
+    if (!isRouteTerrainPrefetchEnabled()) return;
     if (_terrainReadyTimer) clearTimeout(_terrainReadyTimer);
     _terrainReadyTimer = setTimeout(() => {
         _terrainReadyTimer = null;
         const current = _currentAnalysis;
         const cached = _cachedAnalysis;
-        const missingTerrain =
-            (current && !current.terrainAvailable) ||
-            (cached && !cached.terrainAvailable);
-        if (missingTerrain) {
+        const incompleteTerrain =
+            (current && current.terrainCoverage < 1) ||
+            (cached && cached.terrainCoverage < 1);
+        if (incompleteTerrain) {
             invalidateRouteCache();
             scheduleRouteSolarAnalysis(150);
         }
@@ -705,9 +778,12 @@ async function runRouteSolarAnalysis(): Promise<void> {
 
     // Cache hit : juste mettre à jour la texture, pas de raymarching
     if (cacheKey === _cacheKey && _cachedAnalysis) {
-        // Si le cache date d'un moment où le terrain n'était pas dispo,
-        // et qu'il l'est maintenant → re-analyser
-        if (!_cachedAnalysis.terrainAvailable && hasTerrainData()) {
+        // Re-analyser si la couverture relief est incomplète et qu'on peut
+        // encore la compléter (préchargement disponible ou relief visible).
+        const incomplete =
+            _cachedAnalysis.terrainCoverage < 1 &&
+            (isRouteTerrainPrefetchEnabled() || hasTerrainData());
+        if (incomplete) {
             invalidateRouteCache();
         } else {
             _currentAnalysis = _cachedAnalysis;
@@ -736,9 +812,13 @@ async function runRouteSolarAnalysis(): Promise<void> {
         _cacheKey = cacheKey;
         _cachedAnalysis = analysis;
 
-        if (!analysis.terrainAvailable && Date.now() < _terrainRetryUntil) {
-            // Rejouer tant que le relief n'est pas là (retry borné, sans
-            // dépendre de hasTerrainData() à un instant précis)
+        if (
+            analysis.terrainCoverage < 1 &&
+            isRouteTerrainPrefetchEnabled() &&
+            Date.now() < _terrainRetryUntil
+        ) {
+            // Rejouer tant que la couverture relief est incomplète (retry borné,
+            // sans dépendre de hasTerrainData() à un instant précis)
             scheduleTerrainRetry();
         }
         _currentAnalysis = analysis;

@@ -17,8 +17,10 @@ import {
     setAvgSpeedKmh,
     getAvgSpeedKmh as _getAvgSpeedKmh,
     findStrongExposureSegments,
+    isOptimalComputing,
     type RouteSolarAnalysis,
 } from '../../solarRoute';
+import { isRouteTerrainPrefetchEnabled } from '../../routeTerrain';
 import { ICON_ALERT_TRIANGLE, ICON_COPY, ICON_INFO, ICON_LOCK } from '../icons';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import templateHTML from '../templates/solar-probe.html?raw';
@@ -921,18 +923,31 @@ export class SolarProbeSheet extends BaseComponent {
         }
         section.appendChild(titleRow);
 
-        // ── Warning : pas de données terrain ────────────────────────────────
-        if (!routeData.terrainAvailable) {
+        // ── Information : simulation moins précise sans relief ──────────────
+        // Non bloquant : on affiche l'analyse disponible (identique à la bande
+        // du profil) et on signale seulement les ombres de relief incomplètes.
+        if (routeData.terrainCoverage < 1) {
             const warnSection = document.createElement('div');
             warnSection.className =
-                'solar-alert solar-alert--danger solar-route-alert';
+                'solar-alert solar-alert--info solar-route-alert';
             const warnText = document.createElement('div');
             warnText.className = 'solar-alert-copy';
-            warnText.textContent = i18n.t('solarRoute.status.noTerrain');
+            if (!isRouteTerrainPrefetchEnabled()) {
+                warnText.textContent = i18n.t('solarRoute.status.noReliefEco');
+            } else if (routeData.terrainCoverage <= 0) {
+                warnText.textContent = i18n.t('solarRoute.status.noTerrain');
+            } else {
+                warnText.textContent = i18n.t(
+                    'solarRoute.status.partialTerrain',
+                    {
+                        pct: String(
+                            Math.round((1 - routeData.terrainCoverage) * 100)
+                        ),
+                    }
+                );
+            }
             warnSection.appendChild(warnText);
             section.appendChild(warnSection);
-            parent.appendChild(section);
-            return;
         }
 
         // ── Contrôle heure/date autonome ─────────────────────────────────────
@@ -1269,7 +1284,10 @@ export class SolarProbeSheet extends BaseComponent {
                     });
                     recs.appendChild(ghRec);
                 }
-            } else if (getSolarRouteMode() === 'hikerTimeline') {
+            } else if (
+                getSolarRouteMode() === 'hikerTimeline' &&
+                isOptimalComputing()
+            ) {
                 const computing = document.createElement('div');
                 computing.className =
                     'solar-route-rec-item solar-route-rec-computing';

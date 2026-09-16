@@ -38,6 +38,7 @@ vi.mock('../../solarRoute', () => ({
     setAvgSpeedKmh: vi.fn(),
     getAvgSpeedKmh: vi.fn(() => 4),
     findStrongExposureSegments: vi.fn(() => []),
+    isOptimalComputing: vi.fn(() => false),
 }));
 vi.mock('../core/SheetManager', () => ({
     sheetManager: { open: vi.fn(), close: vi.fn() },
@@ -260,6 +261,57 @@ describe('SolarProbeSheet', () => {
         ).not.toBeNull();
         expect(buildTimeline).not.toHaveBeenCalled();
         expect(document.querySelector('.solar-copy-button')).not.toBeNull();
+        sheet.dispose();
+    });
+
+    it('affiche la section parcours avec un bandeau info quand le relief manque', async () => {
+        const { getCurrentRouteSolarAnalysis } =
+            await import('../../solarRoute');
+        vi.mocked(getCurrentRouteSolarAnalysis).mockReturnValue({
+            mode: 'hikerTimeline',
+            totalKm: 5,
+            terrainAvailable: false,
+            terrainCoverage: 0.5,
+            sunExposedKm: 2,
+            shadowKm: 1,
+            forestKm: 0,
+            nightKm: 1,
+            sunPct: 40,
+            nightPct: 20,
+            shadowSegments: [],
+            points: [
+                {
+                    distKm: 0,
+                    evalDate: new Date('2025-06-01T12:00:00'),
+                    worldPos: { x: 0, y: 0, z: 0 },
+                    inShadow: false,
+                    isNight: false,
+                    inForest: false,
+                    terrainKnown: true,
+                },
+                {
+                    distKm: 5,
+                    evalDate: new Date('2025-06-01T13:00:00'),
+                    worldPos: { x: 500, y: 0, z: 0 },
+                    inShadow: false,
+                    isNight: false,
+                    inForest: false,
+                    terrainKnown: false,
+                },
+            ],
+        } as any);
+
+        const sheet = new SolarProbeSheet();
+        sheet.hydrate();
+        const container = document.createElement('div');
+        (sheet as any).buildRouteSolarSection(container);
+
+        // Non bloquant : les stats sont rendues et le message est informatif
+        expect(container.querySelector('.solar-route-grid')).not.toBeNull();
+        expect(container.querySelector('.solar-alert--info')).not.toBeNull();
+        expect(container.querySelector('.solar-alert--danger')).toBeNull();
+
+        vi.mocked(getCurrentRouteSolarAnalysis).mockReturnValue(null);
         sheet.dispose();
     });
 });

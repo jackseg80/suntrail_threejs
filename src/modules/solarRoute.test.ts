@@ -32,10 +32,16 @@ vi.mock('./analysis', () => ({
         )
     ),
     getAltitudeAt: vi.fn(() => 500),
+    getTerrainAltitudeAt: vi.fn(() => 500),
     GPX_SURFACE_OFFSET: 12,
     hasTerrainData: vi.fn(() => true),
     resetAnalysisTerrainCounter: vi.fn(),
     getAnalysisTerrainHits: vi.fn(() => 1),
+}));
+
+vi.mock('./routeTerrain', () => ({
+    prefetchRouteTerrain: vi.fn(async () => null),
+    isRouteTerrainPrefetchEnabled: vi.fn(() => true),
 }));
 
 vi.mock('./geo', () => ({
@@ -299,6 +305,27 @@ describe('buildAnalysis', () => {
         expect(result.nightPct).toBe(0);
         expect(result.shadowSegments).toEqual([]);
         expect(result.terrainAvailable).toBe(false);
+        expect(result.terrainCoverage).toBe(0);
+    });
+
+    it('calcule la couverture relief par point', () => {
+        const base = {
+            worldPos: new THREE.Vector3(),
+            evalDate: new Date(),
+            inShadow: false,
+            isNight: false,
+            inForest: false,
+        };
+        const result = buildAnalysis(
+            [
+                { ...base, distKm: 0, terrainKnown: true } as any,
+                { ...base, distKm: 1, terrainKnown: false } as any,
+            ],
+            'snapshot',
+            false
+        );
+        expect(result.terrainCoverage).toBeCloseTo(0.5, 5);
+        expect(result.terrainAvailable).toBe(true);
     });
 
     it('counts sun-exposed km correctly', () => {
@@ -769,17 +796,23 @@ describe('relance après chargement du relief', () => {
         state.activeGPXLayerId = 'layer-terrain';
         state.gpxLayers = [{ id: 'layer-terrain', points, mesh: null } as any];
 
+        vi.mocked(analysis.getTerrainAltitudeAt).mockReturnValue(null);
         vi.mocked(analysis.getAnalysisTerrainHits).mockReturnValue(0);
         scheduleRouteSolarAnalysis(10);
         await vi.advanceTimersByTimeAsync(50);
 
-        expect(getCurrentRouteSolarAnalysis()?.terrainAvailable).toBe(false);
+        const first = getCurrentRouteSolarAnalysis();
+        expect(first?.terrainAvailable).toBe(false);
+        expect(first?.terrainCoverage).toBe(0);
 
         // Le relief finit par se charger → l'analyse doit être rejouée
+        vi.mocked(analysis.getTerrainAltitudeAt).mockReturnValue(500);
         vi.mocked(analysis.getAnalysisTerrainHits).mockReturnValue(7);
         eventBus.emit('terrainReady');
         await vi.advanceTimersByTimeAsync(600);
 
-        expect(getCurrentRouteSolarAnalysis()?.terrainAvailable).toBe(true);
+        const second = getCurrentRouteSolarAnalysis();
+        expect(second?.terrainAvailable).toBe(true);
+        expect(second?.terrainCoverage).toBe(1);
     });
 });

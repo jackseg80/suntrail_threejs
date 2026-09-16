@@ -6,6 +6,7 @@ import {
     getSlopeCategory,
     buildSlopeSegments,
     getSlopeSegmentFill,
+    setSolarBandData,
 } from './profile';
 import type { ProfilePoint, SlopeSegment } from './profile';
 import { haversineDistance } from './geo';
@@ -755,6 +756,77 @@ describe("Profil d'altitude (Module Profile)", () => {
             const slopePaths =
                 svg?.innerHTML.match(/fill-opacity="0.[0-9]+"/g) || [];
             expect(slopePaths).toHaveLength(1);
+        });
+    });
+
+    describe('Bande solaire — ombre inconnue', () => {
+        function setupLayerAndBand(terrainKnown: boolean) {
+            const layer: GPXLayer = {
+                id: 'test-band',
+                name: 'Test Band',
+                color: '#3b7ef8',
+                visible: true,
+                rawData: {
+                    tracks: [
+                        {
+                            points: [
+                                { lat: 46, lon: 7, ele: 1000 },
+                                { lat: 46.01, lon: 7, ele: 1100 },
+                            ],
+                        },
+                    ],
+                },
+                points: [
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(100, 0, 0),
+                ],
+                mesh: null,
+                stats: { distance: 1, dPlus: 100, dMinus: 0, pointCount: 2 },
+            };
+            state.gpxLayers = [layer];
+            state.activeGPXLayerId = 'test-band';
+            updateElevationProfile();
+
+            setSolarBandData({
+                mode: 'snapshot',
+                totalKm: 1,
+                terrainAvailable: terrainKnown,
+                terrainCoverage: terrainKnown ? 1 : 0,
+                sunExposedKm: 1,
+                shadowKm: 0,
+                forestKm: 0,
+                nightKm: 0,
+                sunPct: 100,
+                nightPct: 0,
+                shadowSegments: [],
+                points: [
+                    {
+                        isNight: false,
+                        inShadow: false,
+                        inForest: false,
+                        terrainKnown,
+                        distKm: 0,
+                    },
+                    {
+                        isNight: false,
+                        inShadow: false,
+                        inForest: false,
+                        terrainKnown,
+                        distKm: 1,
+                    },
+                ],
+            } as any);
+            return document.getElementById('profile-svg');
+        }
+
+        it('hachure les tronçons sans relief au lieu d’afficher du soleil', () => {
+            const svg = setupLayerAndBand(false);
+            expect(svg?.innerHTML).toContain('solarShadeUnknown');
+        });
+
+        it('n’hachure pas quand le relief est connu', () => {
+            const svg = setupLayerAndBand(true);
+            expect(svg?.innerHTML).not.toContain('solarShadeUnknown');
         });
     });
 });

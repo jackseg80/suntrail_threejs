@@ -1055,7 +1055,8 @@
         "slopes": "Pendenze",
         "solar": "Solare",
         "sun": "Sole",
-        "shade": "Ombra",
+        "shade": "Ombra rilievo",
+        "unknownShade": "Ombra sconosciuta",
         "forest": "Foresta",
         "night": "Notte",
         "summary": "Distanza: {{distance}} km | D+: {{ascent}} m | D-: {{descent}} m",
@@ -1334,7 +1335,9 @@
         "status": {
             "analyzing": "Calcolo partenza ottimale…",
             "noRoute": "Traccia un percorso o importa un GPX",
-            "noTerrain": "Analisi non disponibile — dati del terreno non caricati. Ingrandisci sul percorso.",
+            "noTerrain": "Ombre del rilievo non disponibili: simulazione meno precisa (tratti tratteggiati).",
+            "partialTerrain": "Simulazione meno precisa: rilievo mancante sul {{pct}}% del percorso (tratti tratteggiati).",
+            "noReliefEco": "Rilievo non caricato in modalità Eco: passa al preset Bilanciato o superiore per le ombre del rilievo.",
             "fullNight": "Percorso 100% notturno — cambia l'ora per vedere l'esposizione",
             "partialNight": "{{pct}}% del percorso di notte"
         },

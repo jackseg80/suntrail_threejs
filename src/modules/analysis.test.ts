@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import * as THREE from 'three';
 import {
     getAltitudeAt,
     getTerrainAltitudeAt,
     drapeToTerrain,
     hasTerrainData,
+    findTerrainIntersection,
 } from './analysis';
 import { state } from './state';
 
@@ -35,6 +37,20 @@ describe('analysis.ts', () => {
         };
         expect(getTerrainAltitudeAt(0, 0, tile)).toBe(0);
         expect(getAltitudeAt(0, 0, tile)).toBe(0);
+    });
+
+    it('borne le raycast quand le relief est inconnu (pas de freeze)', () => {
+        let calls = 0;
+        const ray = new THREE.Ray(
+            new THREE.Vector3(0, 1000, 0),
+            new THREE.Vector3(0, 1, 0)
+        );
+        const hit = findTerrainIntersection(ray, () => {
+            calls++;
+            return null;
+        });
+        expect(hit).toBeNull();
+        expect(calls).toBeLessThanOrEqual(3000);
     });
 
     describe('drapeToTerrain', () => {
