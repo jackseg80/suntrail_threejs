@@ -13,6 +13,12 @@ import {
 import { state } from './state';
 import { closeElevationProfile, updateElevationProfile } from './profile';
 import { eventBus } from './eventBus';
+import {
+    buildSolarOverlay,
+    getCurrentRouteSolarAnalysis,
+    invalidateRouteCache,
+    scheduleRouteSolarAnalysis,
+} from './solarRoute';
 
 vi.mock('./profile', () => ({
     updateElevationProfile: vi.fn(),
@@ -364,6 +370,30 @@ describe('Multi-GPX Layers (v5.10)', () => {
 
         expect(renderSpy).toHaveBeenCalledWith('sceneRenderRequested');
         renderSpy.mockRestore();
+        vi.useRealTimers();
+    });
+
+    it("updateAllGPXMeshes rejoue l'analyse solaire si elle a été calculée sans relief", () => {
+        addGPXLayer(rawData, 'route-no-terrain');
+        const mockGet = vi.mocked(getCurrentRouteSolarAnalysis);
+        const mockSchedule = vi.mocked(scheduleRouteSolarAnalysis);
+        const mockInvalidate = vi.mocked(invalidateRouteCache);
+        const mockOverlay = vi.mocked(buildSolarOverlay);
+
+        mockGet.mockReturnValue({ terrainAvailable: false } as any);
+        mockSchedule.mockClear();
+        mockInvalidate.mockClear();
+        mockOverlay.mockClear();
+
+        vi.useFakeTimers();
+        updateAllGPXMeshes();
+        vi.runAllTimers();
+
+        expect(mockOverlay).not.toHaveBeenCalled();
+        expect(mockInvalidate).toHaveBeenCalled();
+        expect(mockSchedule).toHaveBeenCalled();
+
+        mockGet.mockReset();
         vi.useRealTimers();
     });
 });

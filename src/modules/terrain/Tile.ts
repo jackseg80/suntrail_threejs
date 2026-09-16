@@ -32,6 +32,7 @@ import {
     markTileTrace,
     recordTileResource,
 } from '../tileDiagnostics';
+import { eventBus } from '../eventBus';
 
 export const sharedFrustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
@@ -279,6 +280,7 @@ export class Tile {
                     overlay: this.overlayTex,
                     normal: this.normalTex,
                 });
+                if (this.pixelData) eventBus.emit('terrainReady');
                 if (!this.cacheOnly) this.buildMesh(state.RESOLUTION);
                 return;
             }
@@ -428,6 +430,7 @@ export class Tile {
             }
             if (!this.cacheOnly) markCacheKeyActive(cacheKey);
             this.status = 'loaded';
+            if (this.pixelData) eventBus.emit('terrainReady');
             if (!this.cacheOnly && (this.status as string) !== 'disposed')
                 queueBuildMesh(this);
         } catch (e) {

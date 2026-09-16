@@ -1,6 +1,24 @@
-# SunTrail — TODO (v5.90.1 ; publication Play séparée)
+# SunTrail — TODO (v5.91.0 ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-15
+> Dernière mise à jour : 2026-09-16
+
+## ✅ v5.91.0 — profil de pente lisible et cadrage des tracés
+
+- [x] Redessiner les pentes du profil en bandes de couleur façon Openrunner : échelle unique
+      montée/descente (plat discret puis rouge/brun), granularité qui suit le terrain (bandes
+      courtes quand la pente change, longues sections quand elle est régulière).
+- [x] Calculer la pente par fenêtre glissante courte avec hystérésis et pente de bande issue de la
+      moyenne des pentes réelles, pour supprimer les bandes grises parasites entre descente et
+      montée et le clignotement autour des seuils 3/6/9/12 %.
+- [x] Cadrer la caméra à l'ouverture d'un tracé selon ses dimensions réelles, le FOV, le ratio
+      d'écran et l'inclinaison caméra (module partagé `cameraFit.ts`) : plus de débordement en
+      portrait mobile.
+- [x] Relancer automatiquement l'analyse solaire du parcours dès que le relief devient disponible
+      (signal `terrainReady` émis par les tuiles, retry borné, re-analyse au passage 2D → 3D) : fin
+      du message « données de relief non chargées » bloqué.
+- [x] Contrôles statiques, 163 fichiers/1 872 tests, build Web, budget bundle, audit i18n,
+      `cap:sync`, assemblage Android et APK diagnostic `5.91.0` (code 913) installé sur S23.
+- [x] Release GitHub `v5.91.0` avec AAB signé par GitHub Actions ; aucun upload Play.
 
 ## ✅ v5.90.1 — luminosité 3D en heure dorée
 

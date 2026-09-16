@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { state } from './state';
 import { getAltitudeAt } from './analysis';
+import { FLYTO_Z_OFFSET_RATIO } from './cameraFit';
 
 export function initCamera(): THREE.PerspectiveCamera {
     const camera = new THREE.PerspectiveCamera(
@@ -148,7 +149,7 @@ export function flyTo(
             targetWorldZ
         );
 
-        const offsetZ = targetDistance * 0.8;
+        const offsetZ = targetDistance * FLYTO_Z_OFFSET_RATIO;
         const finalAlt = targetElevation + targetDistance;
         const endPos = new THREE.Vector3(
             targetWorldX,

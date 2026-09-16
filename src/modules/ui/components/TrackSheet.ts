@@ -41,6 +41,10 @@ import { importGpxTrack, setGpxDraftGuard } from '../../gpxImportFlow';
 import { showTrackHelpDialog, type TrackHelpTab } from '../trackHelpDialog';
 import { type GPXHistoryEntry } from '../../gpxHistoryService';
 import { lngLatToWorld, getCountryCode, COUNTRY_NAMES } from '../../geo';
+import {
+    computeTrackFitDistance,
+    MIN_TRACK_VIEW_DISTANCE,
+} from '../../cameraFit';
 import { getPlaceName } from '../../geocodingService';
 import { createTooltip, type TooltipHandle } from '../tooltip';
 import { confirmDialog } from '../confirmDialog';
@@ -1974,17 +1978,20 @@ export class TrackSheet extends BaseComponent {
                             e.centerLat,
                             state.originTile
                         );
-                        const span = Math.max(
-                            (e.bounds.maxLat - e.bounds.minLat) * 111320,
+                        const latSpan =
+                            (e.bounds.maxLat - e.bounds.minLat) * 111320;
+                        const lonSpan =
                             (e.bounds.maxLon - e.bounds.minLon) *
-                                111320 *
-                                Math.cos((e.centerLat * Math.PI) / 180)
-                        );
+                            111320 *
+                            Math.cos((e.centerLat * Math.PI) / 180);
                         eventBus.emit('flyTo', {
                             worldX: wpos.x,
                             worldZ: wpos.z,
                             targetElevation: 0,
-                            targetDistance: Math.max(span * 1.5, 3000),
+                            targetDistance: Math.max(
+                                computeTrackFitDistance(lonSpan, latSpan),
+                                MIN_TRACK_VIEW_DISTANCE
+                            ),
                         });
                     }
                     this.renderUnifiedTrackList();

@@ -20,6 +20,7 @@ import {
 } from './solarRoute';
 import { saveToHistory, updateHistoryEntryLocation } from './gpxHistoryService';
 import { getPlaceName } from './geocodingService';
+import { computeTrackFitDistance, MIN_TRACK_VIEW_DISTANCE } from './cameraFit';
 
 // v5.31.1 : Shared GPX track materials (1 per color × mode = 16 max instead of N per layer)
 const gpxMaterials3D = new Map<string, THREE.MeshStandardMaterial>();
@@ -346,8 +347,11 @@ export function addGPXLayer(
         eles.reduce((s: number, v: number) => s + v, 0) / eles.length;
     const size = new THREE.Vector3();
     box.getSize(size);
-    const trackSpread = Math.max(size.x, size.z);
-    const viewDistance = Math.max(trackSpread * 1.5, 3000);
+    // Cadrage adapté à la taille réelle du tracé (FOV + ratio d'écran + tilt)
+    const viewDistance = Math.max(
+        computeTrackFitDistance(size.x, size.z, size.y),
+        MIN_TRACK_VIEW_DISTANCE
+    );
     const flyCenter = lngLatToWorld(centerLon, centerLat, state.originTile!);
     const targetElevation = avgEle * state.RELIEF_EXAGGERATION;
 
@@ -563,15 +567,16 @@ function _doUpdateAllGPXMeshes(): void {
 
             if (state.scene) state.scene.add(mesh);
 
-            // Reconstruire l'overlay solar si ce layer est actif et qu'une analyse existe
+            // Reconstruire l'overlay solar si ce layer est actif et qu'une analyse
+            // exploitable existe. Une analyse calculée sans relief (2D ou tuiles
+            // pas encore chargées) doit être rejouée, pas réutilisée telle quelle.
             if (layer.id === state.activeGPXLayerId) {
                 const existing = getCurrentRouteSolarAnalysis();
-                if (existing) {
+                if (existing?.terrainAvailable) {
                     buildSolarOverlay(mesh, existing);
                 } else {
-                    // Déclencher une nouvelle analyse après le rebuild
                     invalidateRouteCache();
-                    scheduleRouteSolarAnalysis(500);
+                    scheduleRouteSolarAnalysis(existing ? 300 : 500);
                 }
             }
 

@@ -4248,24 +4248,29 @@ body.sheet-layers-sheet-open #sheet-overlay {
     flex-shrink: 0;
 }
 
-.legend-swatch--easy {
-    background: #22c55e;
+.legend-scale {
+    width: 42px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
 }
 
-.legend-swatch--moderate {
-    background: #eab308;
-}
-
-.legend-swatch--steep {
-    background: #f97316;
-}
-
-.legend-swatch--hard {
-    background: #ef4444;
-}
-
-.legend-swatch--extreme {
-    background: #991b1b;
+.legend-scale--slope {
+    background:
+        repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.55) 0 1px,
+            transparent 1px 25%
+        ),
+        linear-gradient(
+            90deg,
+            #c7d9a6 0%,
+            #e9c84a 25%,
+            #f0912e 50%,
+            #e14818 75%,
+            #8f3a1e 100%
+        );
 }
 
 .legend-swatch--sun {

@@ -8,19 +8,45 @@ import { ICON_EXPAND, ICON_COLLAPSE } from './ui/icons';
 import { i18n } from '../i18n/I18nService';
 import { eventBus } from './eventBus';
 
-interface ProfilePoint {
-    dist: number; // Distance cumulée en km
-    ele: number; // Altitude en m
+export interface ProfilePoint {
+    dist: number; // Distance cumulée en km (corrigée Mercator)
+    ele: number; // Altitude réelle en m
+    eleSmooth: number; // Altitude lissée en m (moyenne glissante)
     pos: THREE.Vector3; // Position 3D correspondante
-    slope: number; // Pente locale en %
+    slope: number; // Pente lissée sur fenêtre en %
 }
 
+export type SlopeKind = 'climb' | 'flat' | 'descent';
+
+export interface SlopeSegment {
+    startIdx: number;
+    endIdx: number;
+    startDist: number;
+    endDist: number;
+    avgSlope: number; // Pente moyenne du segment en %
+    kind: SlopeKind;
+}
+
+// Paramètres de segmentation (style Openrunner) : ajustables.
+// On colorie chaque point par sa bande de pente, puis on fusionne les points
+// consécutifs de même bande. Une pente qui change souvent donne donc beaucoup
+// de bandes courtes, une pente stable de longues sections.
+const ELE_SMOOTH_WINDOW_M = 40; // Fenêtre de lissage de l'altitude
+const GRADIENT_WINDOW_M = 80; // Fenêtre de calcul de la pente
+const FLAT_THRESHOLD_PCT = 1.0; // Seuil montée / plat / descente
+const SLOPE_HYST_PCT = 0.75; // Hystérésis pour éviter le clignotement des bandes
+const MIN_RUN_M = 40; // En dessous, la bande (1 seul point) est absorbée
+
+// Échelle unique de raideur (0–3, 3–6, 6–9, 9–12, >12 %), appliquée en
+// valeur absolue : montées et descentes partagent la même graduation.
+// Fond vert pâle et discret pour le plat, saturation/couleur croissante vers
+// le rouge puis le brun, et opacité progressive pour renforcer la raideur.
 const SLOPE_CATEGORIES = [
-    { max: 3, color: '#22c55e', label: '0–3%' },
-    { max: 6, color: '#eab308', label: '3–6%' },
-    { max: 9, color: '#f97316', label: '6–9%' },
-    { max: 12, color: '#ef4444', label: '9–12%' },
-    { max: Infinity, color: '#991b1b', label: '>12%' },
+    { max: 3, color: '#c7d9a6', opacity: 0.4 },
+    { max: 6, color: '#e9c84a', opacity: 0.5 },
+    { max: 9, color: '#f0912e', opacity: 0.6 },
+    { max: 12, color: '#e14818', opacity: 0.7 },
+    { max: Infinity, color: '#8f3a1e', opacity: 0.75 },
 ];
 
 export function getSlopeCategory(slope: number): number {
@@ -29,6 +55,204 @@ export function getSlopeCategory(slope: number): number {
         if (slope < SLOPE_CATEGORIES[i].max) return i;
     }
     return SLOPE_CATEGORIES.length - 1;
+}
+
+/**
+ * Bande de raideur avec hystérésis : on ne change de bande que si la pente
+ * dépasse franchement le seuil, pour éviter que la couleur clignote quand la
+ * pente oscille autour de 3 / 6 / 9 / 12 %.
+ */
+function applyBandHysteresis(band: number, absSlope: number): number {
+    const upper = SLOPE_CATEGORIES[band].max;
+    const lower = band > 0 ? SLOPE_CATEGORIES[band - 1].max : 0;
+    if (absSlope >= upper + SLOPE_HYST_PCT) return getSlopeCategory(absSlope);
+    if (band > 0 && absSlope <= lower - SLOPE_HYST_PCT)
+        return getSlopeCategory(absSlope);
+    return band;
+}
+
+function classifySlope(slope: number): SlopeKind {
+    if (slope > FLAT_THRESHOLD_PCT) return 'climb';
+    if (slope < -FLAT_THRESHOLD_PCT) return 'descent';
+    return 'flat';
+}
+
+/**
+ * Clé de segmentation d'un point : sens (montée/descente/plat) + bande de
+ * raideur. Deux points voisins de même clé appartiennent au même segment.
+ */
+function slopeKey(slope: number): string {
+    if (slope > FLAT_THRESHOLD_PCT) return `u${getSlopeCategory(slope)}`;
+    if (slope < -FLAT_THRESHOLD_PCT) return `d${getSlopeCategory(-slope)}`;
+    return 'f';
+}
+
+/**
+ * Style d'un segment selon sa raideur (montée et descente confondues) :
+ * couleur et opacité croissantes avec la pente.
+ */
+export function getSlopeSegmentFill(segment: SlopeSegment): {
+    color: string;
+    opacity: number;
+} {
+    const category =
+        SLOPE_CATEGORIES[getSlopeCategory(Math.abs(segment.avgSlope))];
+    return { color: category.color, opacity: category.opacity };
+}
+
+/**
+ * Moyenne glissante de l'altitude sur une fenêtre de distance.
+ * Les distances étant croissantes, l'algorithme à deux pointeurs est O(n).
+ */
+function smoothElevations(points: ProfilePoint[], windowM: number): void {
+    const n = points.length;
+    if (n === 0) return;
+    const halfKm = windowM / 2000;
+    let lo = 0;
+    let hi = 0;
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+        const d = points[i].dist;
+        while (lo < i && points[lo].dist < d - halfKm) {
+            sum -= points[lo].ele;
+            lo++;
+        }
+        while (hi < n && points[hi].dist <= d + halfKm) {
+            sum += points[hi].ele;
+            hi++;
+        }
+        points[i].eleSmooth = sum / (hi - lo);
+    }
+}
+
+/**
+ * Pente (%) calculée sur une fenêtre de distance glissante (sécante entre les
+ * bords de la fenêtre) plutôt qu'entre deux points densifiés successifs.
+ */
+function computeWindowedGradients(
+    points: ProfilePoint[],
+    windowM: number
+): void {
+    const n = points.length;
+    if (n === 0) return;
+    const halfKm = windowM / 2000;
+    let lo = 0;
+    let hi = 0;
+    for (let i = 0; i < n; i++) {
+        const d = points[i].dist;
+        while (lo < n && points[lo].dist < d - halfKm) lo++;
+        if (hi < i) hi = i;
+        while (hi + 1 < n && points[hi + 1].dist <= d + halfKm) hi++;
+        // Points trop espacés pour la fenêtre : forcer au moins un voisin
+        if (hi === lo) {
+            if (hi < n - 1) hi++;
+            else if (lo > 0) lo--;
+        }
+        const spanM = (points[hi].dist - points[lo].dist) * 1000;
+        points[i].slope =
+            spanM > 0.1
+                ? ((points[hi].eleSmooth - points[lo].eleSmooth) / spanM) * 100
+                : 0;
+    }
+}
+
+/**
+ * Pente représentative d'une plage : moyenne des pentes lissées de ses points.
+ * On ne réutilise PAS (altitude de fin − altitude de début) / distance, car
+ * cette formule s'annule sur un segment qui contient à la fois une montée et
+ * une descente (il apparaîtrait alors à tort comme plat).
+ */
+function meanSlope(
+    points: ProfilePoint[],
+    startIdx: number,
+    endIdx: number
+): number {
+    let sum = 0;
+    const count = endIdx - startIdx + 1;
+    for (let i = startIdx; i <= endIdx; i++) sum += points[i].slope;
+    return count > 0 ? sum / count : 0;
+}
+
+function createSegment(
+    points: ProfilePoint[],
+    startIdx: number,
+    endIdx: number
+): SlopeSegment {
+    const avgSlope = meanSlope(points, startIdx, endIdx);
+    return {
+        startIdx,
+        endIdx,
+        startDist: points[startIdx].dist,
+        endDist: points[endIdx].dist,
+        avgSlope,
+        kind: classifySlope(avgSlope),
+    };
+}
+
+/**
+ * Découpe le profil en bandes (façon Openrunner) : chaque bande regroupe les
+ * points consécutifs de même sens et de même raideur. Une pente qui change
+ * souvent produit donc beaucoup de bandes courtes, une pente stable de longues
+ * sections. Seules les bandes d'un seul point (bruit) sont absorbées.
+ */
+export function buildSlopeSegments(points: ProfilePoint[]): SlopeSegment[] {
+    if (points.length < 2) return [];
+
+    // 1. Regrouper les points consécutifs de même profil (sens + bande de raideur)
+    const ranges: Array<{ start: number; end: number }> = [];
+    let start = 0;
+    let sign = classifySlope(points[0].slope);
+    let band = getSlopeCategory(Math.abs(points[0].slope));
+    for (let i = 1; i <= points.length; i++) {
+        if (i === points.length) {
+            ranges.push({ start, end: i - 1 });
+            break;
+        }
+        const nextSign = classifySlope(points[i].slope);
+        const nextBand =
+            nextSign === sign
+                ? applyBandHysteresis(band, Math.abs(points[i].slope))
+                : getSlopeCategory(Math.abs(points[i].slope));
+        if (nextSign === sign && nextBand === band) continue;
+        ranges.push({ start, end: i - 1 });
+        sign = nextSign;
+        band = nextBand;
+        start = i;
+    }
+
+    // 2. Dégraisser les bandes d'un seul point (bruit) : les absorber au voisin
+    const rangeLengthM = (r: { start: number; end: number }) =>
+        (points[r.end].dist - points[r.start].dist) * 1000;
+    const cleaned: Array<{ start: number; end: number }> = [];
+    for (const r of ranges) {
+        if (cleaned.length > 0 && rangeLengthM(r) < MIN_RUN_M) {
+            const prev = cleaned[cleaned.length - 1];
+            cleaned[cleaned.length - 1] = { start: prev.start, end: r.end };
+        } else {
+            cleaned.push({ start: r.start, end: r.end });
+        }
+    }
+    if (cleaned.length > 1 && rangeLengthM(cleaned[0]) < MIN_RUN_M) {
+        cleaned[1] = { start: cleaned[0].start, end: cleaned[1].end };
+        cleaned.shift();
+    }
+
+    // 3. Construire les segments et fusionner les voisins de même profil
+    const result: SlopeSegment[] = [];
+    for (const r of cleaned) {
+        const seg = createSegment(points, r.start, r.end);
+        const last = result[result.length - 1];
+        if (last && slopeKey(last.avgSlope) === slopeKey(seg.avgSlope)) {
+            result[result.length - 1] = createSegment(
+                points,
+                last.startIdx,
+                seg.endIdx
+            );
+        } else {
+            result.push(seg);
+        }
+    }
+    return result;
 }
 
 let profileData: ProfilePoint[] = [];
@@ -116,7 +340,6 @@ export function updateElevationProfile(
 
     for (let i = 0; i < gpxPoints3D.length; i++) {
         const pos = gpxPoints3D[i];
-        let slope = 0;
 
         // Altitude : priorité au raw si élévation réelle, sinon Y monde drapé
         let ele: number;
@@ -142,35 +365,33 @@ export function updateElevationProfile(
             const prevPos = gpxPoints3D[i - 1];
             const dx = pos.x - prevPos.x;
             const dz = pos.z - prevPos.z;
-            const d2d = Math.sqrt(dx * dx + dz * dz);
-            cumulativeDist += d2d / 1000;
-
-            const prevEle = profileData[i - 1].ele;
-            const diff = ele - prevEle;
-            if (d2d > 0.1) {
-                slope = (diff / d2d) * 100;
-            }
+            cumulativeDist += Math.sqrt(dx * dx + dz * dz) / 1000;
         }
 
         profileData.push({
             dist: cumulativeDist,
             ele: ele,
+            eleSmooth: ele,
             pos: pos,
-            slope: slope,
+            slope: 0,
         });
     }
 
     // Correction de la distorsion Mercator : les coordonnées monde Three.js
     // surestiment les distances (facteur ≈ 1/cos(lat) ≈ 1.47 à 47°N).
     // On utilise la distance haversine (layer.stats.distance) comme référence.
+    // On corrige AVANT le calcul des pentes pour qu'elles soient dans l'espace réel.
     if (layer.stats?.distance && cumulativeDist > 0) {
         const scaleFactor = layer.stats.distance / cumulativeDist;
         for (const pd of profileData) {
             pd.dist *= scaleFactor;
-            pd.slope /= scaleFactor; // d2d sous-estimé → pente surestimée, corriger
         }
         cumulativeDist = layer.stats.distance;
     }
+
+    // Lissage de l'altitude puis pente sur fenêtre glissante (style Garmin)
+    smoothElevations(profileData, ELE_SMOOTH_WINDOW_M);
+    computeWindowedGradients(profileData, GRADIENT_WINDOW_M);
 
     // Calcul du dénivelé avec l'algorithme d'hystérésis standard (3m)
     const { dPlus, dMinus } = calculateHysteresis(elevations, 3);
@@ -264,7 +485,7 @@ export function drawProfileSVG(): void {
         pointsStr += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
     });
 
-    const slopeArea = buildSlopeAreaSVG(
+    const slopeArea = buildSlopeSegmentsSVG(
         width,
         height,
         padBottom,
@@ -285,7 +506,7 @@ export function drawProfileSVG(): void {
     `;
 }
 
-function buildSlopeAreaSVG(
+function buildSlopeSegmentsSVG(
     width: number,
     height: number,
     padBottom: number,
@@ -294,43 +515,25 @@ function buildSlopeAreaSVG(
     eleRange: number,
     maxDist: number
 ): string {
-    if (profileData.length < 2) return '';
-
-    const botY = height;
+    const segments = buildSlopeSegments(profileData);
     let paths = '';
 
-    let groupStart = 0;
-    let currentCat = getSlopeCategory(profileData[1].slope);
-
-    for (let i = 2; i <= profileData.length; i++) {
-        const cat =
-            i < profileData.length
-                ? getSlopeCategory(profileData[i].slope)
-                : -1;
-        if (cat !== currentCat) {
-            const groupEnd = i - 1;
-            if (groupEnd > groupStart && currentCat >= 0) {
-                let pathD = '';
-                for (let j = groupStart; j <= groupEnd; j++) {
-                    const x = (profileData[j].dist / maxDist) * width;
-                    const y =
-                        height -
-                        (padBottom +
-                            ((profileData[j].ele - minEle) / eleRange) *
-                                usableHeight);
-                    pathD += `${j === groupStart ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)} `;
-                }
-                const lastX = (profileData[groupEnd].dist / maxDist) * width;
-                const firstX = (profileData[groupStart].dist / maxDist) * width;
-                pathD += `L ${lastX.toFixed(1)} ${botY} L ${firstX.toFixed(1)} ${botY} Z`;
-
-                paths += `<path d="${pathD}" fill="${SLOPE_CATEGORIES[currentCat].color}" fill-opacity="0.55" shape-rendering="crispEdges"/>`;
-            }
-            groupStart = i - 1;
-            if (i < profileData.length) {
-                currentCat = getSlopeCategory(profileData[i].slope);
-            }
+    for (const segment of segments) {
+        let pathD = '';
+        for (let i = segment.startIdx; i <= segment.endIdx; i++) {
+            const p = profileData[i];
+            const x = (p.dist / maxDist) * width;
+            const y =
+                height -
+                (padBottom + ((p.ele - minEle) / eleRange) * usableHeight);
+            pathD += `${i === segment.startIdx ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)} `;
         }
+        const firstX = (profileData[segment.startIdx].dist / maxDist) * width;
+        const lastX = (profileData[segment.endIdx].dist / maxDist) * width;
+        pathD += `L ${lastX.toFixed(1)} ${height} L ${firstX.toFixed(1)} ${height} Z`;
+
+        const { color, opacity } = getSlopeSegmentFill(segment);
+        paths += `<path d="${pathD}" fill="${color}" fill-opacity="${opacity}" shape-rendering="crispEdges"/>`;
     }
 
     return paths;

@@ -4,7 +4,10 @@ import {
     closeElevationProfile,
     updateElevationProfile,
     getSlopeCategory,
+    buildSlopeSegments,
+    getSlopeSegmentFill,
 } from './profile';
+import type { ProfilePoint, SlopeSegment } from './profile';
 import { haversineDistance } from './geo';
 import { state } from './state';
 import type { GPXLayer } from './state';
@@ -536,6 +539,222 @@ describe("Profil d'altitude (Module Profile)", () => {
 
             const pEl = document.getElementById('gpx-dplus');
             expect(pEl?.textContent).toContain('1000 m D+');
+        });
+    });
+
+    describe('Segmentation des pentes (style Garmin)', () => {
+        function makePoints(
+            slopes: number[],
+            elevations: number[],
+            stepKm = 0.1
+        ): ProfilePoint[] {
+            return slopes.map((slope, i) => ({
+                dist: i * stepKm,
+                ele: elevations[i],
+                eleSmooth: elevations[i],
+                pos: new THREE.Vector3(),
+                slope,
+            }));
+        }
+
+        it('une montée régulière donne un seul segment de montée', () => {
+            const points = makePoints(
+                [20, 20, 20, 20, 20, 20],
+                [1000, 1020, 1040, 1060, 1080, 1100]
+            );
+
+            const segments = buildSlopeSegments(points);
+
+            expect(segments).toHaveLength(1);
+            expect(segments[0].kind).toBe('climb');
+            expect(segments[0].avgSlope).toBeCloseTo(20, 0);
+        });
+
+        it('absorbe un micro-plat au milieu d’une montée', () => {
+            // Un unique point plat (100 m) au milieu d'une montée de 500 m
+            const points = makePoints(
+                [20, 20, 20, 0.5, 20, 20],
+                [1000, 1020, 1040, 1040.5, 1060, 1080]
+            );
+
+            const segments = buildSlopeSegments(points);
+
+            expect(segments).toHaveLength(1);
+            expect(segments[0].kind).toBe('climb');
+        });
+
+        it('une descente régulière donne un seul segment de descente', () => {
+            const points = makePoints(
+                [-20, -20, -20, -20, -20],
+                [1100, 1080, 1060, 1040, 1020]
+            );
+
+            const segments = buildSlopeSegments(points);
+
+            expect(segments).toHaveLength(1);
+            expect(segments[0].kind).toBe('descent');
+            expect(segments[0].avgSlope).toBeLessThan(0);
+        });
+
+        it('sépare une forte descente d’une forte montée sans les moyenner en plat', () => {
+            const slopes: number[] = [];
+            const elevations: number[] = [];
+            let ele = 1200;
+            // 20 points à -12 % (≈190 m), un petit palier, puis 20 points à +12 %
+            for (let i = 0; i < 20; i++) {
+                slopes.push(-12);
+                elevations.push(ele);
+                ele -= 12 * 0.01 * 10; // 10 m à 12 % → 1,2 m
+            }
+            for (let i = 0; i < 3; i++) {
+                slopes.push(0);
+                elevations.push(ele);
+            }
+            for (let i = 0; i < 20; i++) {
+                slopes.push(12);
+                elevations.push(ele);
+                ele += 12 * 0.01 * 10;
+            }
+            const points = makePoints(slopes, elevations, 0.01); // pas de 10 m
+
+            const segments = buildSlopeSegments(points);
+
+            expect(segments).toHaveLength(2);
+            expect(segments[0].kind).toBe('descent');
+            expect(segments[1].kind).toBe('climb');
+            expect(segments[0].avgSlope).toBeLessThan(0);
+            expect(segments[1].avgSlope).toBeGreaterThan(0);
+        });
+
+        it('un parcours plat donne un segment plat', () => {
+            const points = makePoints(
+                [0.2, 0.2, 0.2, 0.2],
+                [1000, 1000, 1000, 1000]
+            );
+
+            const segments = buildSlopeSegments(points);
+
+            expect(segments).toHaveLength(1);
+            expect(segments[0].kind).toBe('flat');
+        });
+
+        it('découpe une montée qui se raidit en plusieurs segments colorés', () => {
+            // 2 km : 500 m à 2 %, puis 5 %, puis 8 %, puis 12 %
+            const grades = [2, 5, 8, 12];
+            const slopes: number[] = [];
+            const elevations: number[] = [];
+            let ele = 1000;
+            for (const g of grades) {
+                for (let k = 0; k < 10; k++) {
+                    slopes.push(g);
+                    elevations.push(ele);
+                    ele += g * 0.5; // 50 m à g % → +g/2 m
+                }
+            }
+            const points = makePoints(slopes, elevations, 0.05); // pas de 50 m
+
+            const segments = buildSlopeSegments(points);
+            const colors = segments.map((s) => getSlopeSegmentFill(s).color);
+
+            expect(segments.length).toBeGreaterThanOrEqual(3);
+            expect(new Set(colors).size).toBeGreaterThanOrEqual(3);
+        });
+
+        it('produit beaucoup de bandes quand la pente change souvent', () => {
+            // Dents de scie : 6 alternances de +8 % / -8 %, 270 m chacun
+            const slopes: number[] = [];
+            const elevations: number[] = [];
+            let ele = 1000;
+            for (let rep = 0; rep < 6; rep++) {
+                for (let i = 0; i < 10; i++) {
+                    slopes.push(8);
+                    elevations.push(ele);
+                    ele += 8 * 0.03 * 10; // 30 m à 8 % → 2,4 m
+                }
+                for (let i = 0; i < 10; i++) {
+                    slopes.push(-8);
+                    elevations.push(ele);
+                    ele -= 8 * 0.03 * 10;
+                }
+            }
+            const points = makePoints(slopes, elevations, 0.03);
+
+            const segments = buildSlopeSegments(points);
+
+            // Chaque montée/descente est une bande distincte (pas un seul bloc)
+            expect(segments.length).toBeGreaterThanOrEqual(8);
+        });
+
+        it('getSlopeSegmentFill applique la même graduation aux montées et descentes', () => {
+            const climb: SlopeSegment = {
+                startIdx: 0,
+                endIdx: 1,
+                startDist: 0,
+                endDist: 1,
+                avgSlope: 8,
+                kind: 'climb',
+            };
+            const flat: SlopeSegment = { ...climb, avgSlope: 0, kind: 'flat' };
+            const descent: SlopeSegment = {
+                ...climb,
+                avgSlope: -8,
+                kind: 'descent',
+            };
+
+            // Même raideur → même couleur, quel que soit le sens.
+            // L'opacité et la couleur augmentent avec la raideur.
+            expect(getSlopeSegmentFill(climb)).toEqual({
+                color: '#f0912e',
+                opacity: 0.6,
+            });
+            expect(getSlopeSegmentFill(descent)).toEqual({
+                color: '#f0912e',
+                opacity: 0.6,
+            });
+            expect(getSlopeSegmentFill(flat)).toEqual({
+                color: '#c7d9a6',
+                opacity: 0.4,
+            });
+        });
+    });
+
+    describe('Rendu SVG par segments', () => {
+        it('rend une montée régulière en un seul path de pente', () => {
+            const elevations = Array.from(
+                { length: 10 },
+                (_, i) => 1000 + i * 20
+            );
+            const layer: GPXLayer = {
+                id: 'test-segments',
+                name: 'Test Segments',
+                color: '#3b7ef8',
+                visible: true,
+                rawData: {
+                    tracks: [
+                        {
+                            points: elevations.map((ele, i) => ({
+                                lat: 46 + i * 0.001,
+                                lon: 7,
+                                ele,
+                            })),
+                        },
+                    ],
+                },
+                points: elevations.map(
+                    (_, i) => new THREE.Vector3(i * 100, 0, 0)
+                ),
+                mesh: null,
+                stats: { distance: 0.9, dPlus: 180, dMinus: 0, pointCount: 10 },
+            };
+            state.gpxLayers = [layer];
+            state.activeGPXLayerId = 'test-segments';
+
+            updateElevationProfile();
+
+            const svg = document.getElementById('profile-svg');
+            const slopePaths =
+                svg?.innerHTML.match(/fill-opacity="0.[0-9]+"/g) || [];
+            expect(slopePaths).toHaveLength(1);
         });
     });
 });

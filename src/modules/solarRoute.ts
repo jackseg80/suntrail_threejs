@@ -56,6 +56,12 @@ const MAX_POINTS = 200;
 const TEXTURE_WIDTH = 256;
 const DEFAULT_SPEED_KMH = 4;
 
+// Tant que le relief n'est pas chargé, l'analyse est rejouée dans une fenêtre
+// bornée : les tuiles 3D peuvent arriver après le flyTo ou au passage 2D → 3D.
+const TERRAIN_RETRY_DELAY_MS = 1500;
+const TERRAIN_RETRY_WINDOW_MS = 15000;
+const TERRAIN_READY_DEBOUNCE_MS = 250;
+
 // ─── Module state ─────────────────────────────────────────────────────────────
 
 let _currentAnalysis: RouteSolarAnalysis | null = null;
@@ -72,6 +78,8 @@ let _overlayTexture: THREE.DataTexture | null = null;
 
 let _analysisTimer: ReturnType<typeof setTimeout> | null = null;
 let _abortController: AbortController | null = null;
+let _terrainRetryUntil = 0;
+let _terrainReadyTimer: ReturnType<typeof setTimeout> | null = null;
 
 let _cacheKey = '';
 let _cachedAnalysis: RouteSolarAnalysis | null = null;
@@ -648,11 +656,40 @@ function notifySolarRouteUpdate(): void {
 
 export function scheduleRouteSolarAnalysis(delay = 1200): void {
     if (_analysisTimer) clearTimeout(_analysisTimer);
+    _terrainRetryUntil = Date.now() + TERRAIN_RETRY_WINDOW_MS;
     _analysisTimer = setTimeout(() => {
         _analysisTimer = null;
         void runRouteSolarAnalysis();
     }, delay);
 }
+
+function scheduleTerrainRetry(): void {
+    if (_analysisTimer) clearTimeout(_analysisTimer);
+    _analysisTimer = setTimeout(() => {
+        _analysisTimer = null;
+        invalidateRouteCache();
+        void runRouteSolarAnalysis();
+    }, TERRAIN_RETRY_DELAY_MS);
+}
+
+// Une tuile de relief vient d'être chargée : si l'analyse courante a été
+// calculée sans relief, on la rejoue (couvre le passage 2D → 3D et les tuiles
+// qui arrivent après le flyTo).
+eventBus.on('terrainReady', () => {
+    if (_terrainReadyTimer) clearTimeout(_terrainReadyTimer);
+    _terrainReadyTimer = setTimeout(() => {
+        _terrainReadyTimer = null;
+        const current = _currentAnalysis;
+        const cached = _cachedAnalysis;
+        const missingTerrain =
+            (current && !current.terrainAvailable) ||
+            (cached && !cached.terrainAvailable);
+        if (missingTerrain) {
+            invalidateRouteCache();
+            scheduleRouteSolarAnalysis(150);
+        }
+    }, TERRAIN_READY_DEBOUNCE_MS);
+});
 
 async function runRouteSolarAnalysis(): Promise<void> {
     const points = getActivePoints();
@@ -699,14 +736,10 @@ async function runRouteSolarAnalysis(): Promise<void> {
         _cacheKey = cacheKey;
         _cachedAnalysis = analysis;
 
-        if (!analysis.terrainAvailable) {
-            // Relancer l'analyse dans 3s si les données terrain arrivent
-            setTimeout(() => {
-                if (hasTerrainData() && !_abortController?.signal.aborted) {
-                    invalidateRouteCache();
-                    scheduleRouteSolarAnalysis(100);
-                }
-            }, 3000);
+        if (!analysis.terrainAvailable && Date.now() < _terrainRetryUntil) {
+            // Rejouer tant que le relief n'est pas là (retry borné, sans
+            // dépendre de hasTerrainData() à un instant précis)
+            scheduleTerrainRetry();
         }
         _currentAnalysis = analysis;
 

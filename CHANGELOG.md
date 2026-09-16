@@ -1,3 +1,34 @@
+## [5.91.0] - 2026-09-16 — Profil de pente lisible et cadrage des tracés
+
+### Amélioré
+
+- Redessiner les pentes du profil en bandes de couleur façon Openrunner : une échelle unique pour
+  les montées et les descentes (plat en vert pâle discret, puis intensification vers le rouge et
+  le brun). La granularité suit le terrain — beaucoup de bandes courtes là où la pente change
+  souvent, longues sections là où elle est régulière — au lieu de gros blocs moyennés.
+- Calculer la pente de chaque point sur une fenêtre glissante courte, avec hystérésis autour des
+  seuils 3/6/9/12 % et une pente de bande issue de la moyenne des pentes réelles : plus de bande
+  grise parasite entre une descente et une montée, ni de clignotement de couleur.
+- Cadrer la caméra à l'ouverture d'un tracé selon ses dimensions réelles (largeur, profondeur,
+  hauteur), le FOV, le ratio d'écran et l'inclinaison de la caméra : les tracés larges ne débordent
+  plus de l'écran, en particulier en portrait sur mobile.
+
+### Corrigé
+
+- Rejouer automatiquement l'analyse solaire du parcours dès que le relief devient disponible : le
+  chargement d'une tuile de relief émet un signal, une analyse calculée sans relief (ouverture en 2D,
+  tuiles pas encore arrivées après le flyTo) est détectée puis relancée dans une fenêtre bornée, et le
+  passage 2D → 3D ne réutilise plus une analyse sans relief. Le message « données de relief non
+  chargées » qui exigeait de basculer instantané/Progression ou de zoomer ne reste plus bloqué.
+
+### Validation
+
+- Contrôles TypeScript, formatage et lint, audit des quatre langues, 163 fichiers et 1 872 tests
+  Web/TypeScript, build Web, budget bundle, synchronisation Capacitor et assemblage Android.
+- APK `5.91.0-diagnostic` (code 913) construit, installé et validé sur Galaxy S23 SM-S911B /
+  Android 16. La release GitHub `v5.91.0` produit un AAB signé par GitHub Actions ; aucun upload
+  Play n'est revendiqué.
+
 ## [5.90.1] - 2026-09-15 — Heure dorée en 3D et clarté de l'analyse solaire
 
 ### Amélioré

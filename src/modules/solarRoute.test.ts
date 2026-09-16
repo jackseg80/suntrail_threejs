@@ -21,6 +21,7 @@ vi.mock('./state', () => ({
 
 vi.mock('./landcover', () => ({
     isLatLonInForest: vi.fn(() => false),
+    prefetchLandcoverForPoints: vi.fn(async () => {}),
 }));
 
 vi.mock('./analysis', () => ({
@@ -32,6 +33,9 @@ vi.mock('./analysis', () => ({
     ),
     getAltitudeAt: vi.fn(() => 500),
     GPX_SURFACE_OFFSET: 12,
+    hasTerrainData: vi.fn(() => true),
+    resetAnalysisTerrainCounter: vi.fn(),
+    getAnalysisTerrainHits: vi.fn(() => 1),
 }));
 
 vi.mock('./geo', () => ({
@@ -72,6 +76,7 @@ let getAvgSpeedKmh: typeof import('./solarRoute').getAvgSpeedKmh;
 let clearSolarRouteAnalysis: typeof import('./solarRoute').clearSolarRouteAnalysis;
 let getOptimalDepartureData: typeof import('./solarRoute').getOptimalDepartureData;
 let buildSolarOverlay: typeof import('./solarRoute').buildSolarOverlay;
+let scheduleRouteSolarAnalysis: typeof import('./solarRoute').scheduleRouteSolarAnalysis;
 
 beforeEach(async () => {
     vi.useFakeTimers();
@@ -89,6 +94,7 @@ beforeEach(async () => {
     clearSolarRouteAnalysis = mod.clearSolarRouteAnalysis;
     getOptimalDepartureData = mod.getOptimalDepartureData;
     buildSolarOverlay = mod.buildSolarOverlay;
+    scheduleRouteSolarAnalysis = mod.scheduleRouteSolarAnalysis;
     // Reset state
     invalidateRouteCache();
     clearSolarRouteAnalysis();
@@ -751,5 +757,29 @@ describe('findStrongExposureSegments', () => {
             makePoint({ distKm: 2, hour: 12 }), // dernier point, ≥ 90 min
         ];
         expect(findStrongExposureSegments(points)).toHaveLength(1);
+    });
+});
+
+// ── Tests: relance quand le relief arrive ────────────────────────────────────
+
+describe('relance après chargement du relief', () => {
+    it('rejoue l’analyse quand terrainReady arrive après une analyse sans relief', async () => {
+        const analysis = await import('./analysis');
+        const points = makePoints(6);
+        state.activeGPXLayerId = 'layer-terrain';
+        state.gpxLayers = [{ id: 'layer-terrain', points, mesh: null } as any];
+
+        vi.mocked(analysis.getAnalysisTerrainHits).mockReturnValue(0);
+        scheduleRouteSolarAnalysis(10);
+        await vi.advanceTimersByTimeAsync(50);
+
+        expect(getCurrentRouteSolarAnalysis()?.terrainAvailable).toBe(false);
+
+        // Le relief finit par se charger → l'analyse doit être rejouée
+        vi.mocked(analysis.getAnalysisTerrainHits).mockReturnValue(7);
+        eventBus.emit('terrainReady');
+        await vi.advanceTimersByTimeAsync(600);
+
+        expect(getCurrentRouteSolarAnalysis()?.terrainAvailable).toBe(true);
     });
 });
