@@ -206,9 +206,13 @@ export async function appInit(): Promise<void> {
     await Promise.all([cacheInitPromise, gistPromise, packInitPromise]);
     await launchScene();
     // Start secondary chunks only after the terrain critical path is running.
-    void initSecondaryUI().then(() => {
-        if (state.DEBUG_MODE) console.log('[UI] Secondary UI Hydrated');
-    });
+    // Hydrating every sheet competes with tile decoding and mesh building on
+    // the main thread (seconds on desktop, much more on weak Android WebViews).
+    // Defer it until the first map tile is built, then run it at idle so the
+    // map stays the priority. A hard cap guarantees the UI is hydrated even if
+    // the first tile never arrives (offline/error). Les environnements de test
+    // (E2E `mode=test`, Vitest) hydratent immédiatement pour rester déterministes.
+    scheduleSecondaryUI(isTestMode || import.meta.env.MODE === 'test');
 
     // Réception des GPX partagés / « Ouvrir avec » (Android uniquement).
     // Le natif retient l'événement jusqu'à l'enregistrement de l'écouteur,
@@ -249,6 +253,68 @@ export async function appInit(): Promise<void> {
     setupRouteBar();
 
     (window as any).sheetManager = sheetManager;
+}
+
+// L'hydratation des fiches est du travail de fond : elle ne doit pas retarder
+// ni saccader l'affichage de la carte au démarrage.
+const SECONDARY_UI_MAX_DELAY_MS = 4000;
+const SECONDARY_UI_IDLE_TIMEOUT_MS = 2000;
+let _secondaryUIStarted = false;
+
+/**
+ * Lance l'UI secondaire après la première tuile de carte, au repos.
+ * - `immediate` (E2E `mode=test`, Vitest) : hydratation immédiate pour rester
+ *   déterministe.
+ * - sinon : premier `suntrail:firstTileReady`, puis `requestIdleCallback`.
+ * - plafond de sécurité : l'UI démarre même si aucune tuile n'arrive.
+ */
+function scheduleSecondaryUI(immediate: boolean): void {
+    if (immediate) {
+        void startSecondaryUI();
+        return;
+    }
+
+    let started = false;
+    let capTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const start = () => {
+        if (started) return;
+        started = true;
+        if (capTimer) {
+            clearTimeout(capTimer);
+            capTimer = null;
+        }
+        window.removeEventListener('suntrail:firstTileReady', onFirstTile);
+        scheduleIdle(() => void startSecondaryUI());
+    };
+    const onFirstTile = () => start();
+
+    window.addEventListener('suntrail:firstTileReady', onFirstTile, {
+        once: true,
+    });
+    capTimer = setTimeout(start, SECONDARY_UI_MAX_DELAY_MS);
+}
+
+function scheduleIdle(callback: () => void): void {
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(callback, {
+            timeout: SECONDARY_UI_IDLE_TIMEOUT_MS,
+        });
+    } else {
+        setTimeout(callback, 0);
+    }
+}
+
+function startSecondaryUI(): void {
+    if (_secondaryUIStarted) return;
+    _secondaryUIStarted = true;
+    void initSecondaryUI().finally(() => {
+        // Signale aux flux qui ouvrent une fiche au démarrage (reprise REC)
+        // que les composants sont prêts, même si l'hydratation a échoué.
+        (window as any).suntrailSecondaryReady = true;
+        window.dispatchEvent(new Event('suntrail:secondaryReady'));
+        if (state.DEBUG_MODE) console.log('[UI] Secondary UI Hydrated');
+    });
 }
 
 function setupOrientationHandler() {

@@ -48,6 +48,8 @@ beforeEach(() => {
             pixelData: makePixelData(),
         } as any),
         taskId: 1,
+        usedLocalReads: false,
+        localSourcesAvailable: false,
     }));
 });
 

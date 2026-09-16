@@ -112,6 +112,17 @@ Les mesures sont bornées : le p95 du scénario de rebond A53 passe de 109,4 à 
 transitions S23 contrôlées d'environ 16–17 s à 0,9 s. Cela ne prouve ni un gain GPU universel ni une
 autonomie globale. Ne transformer aucune fenêtre courte en promesse produit.
 
+### Démarrage carte (correctif local, non publié)
+
+La lecture `CacheStorage.match` par tuile se faisait sur le thread principal et coûtait jusqu'à
+~2,9 s par tuile sur S23 (couverture > 10 s sur A53). Elle est déplacée dans le Web Worker : le
+main thread ne lit plus le cache pour chaque tuile. La priorité des sources locales est conservée
+(pack OPFS, hors ligne) ; sinon un repli local borné (8 s) rejoue une passe pack CDN/zone hors ligne
+sur un miss couleur, puis fusionne les réponses (`tileResponseMerge.ts`). L'hydratation de l'UI
+secondaire est différée après la première tuile (plafond 4 s), et la reprise REC attend
+`suntrail:secondaryReady`. Mesure S23 diagnostic : tuile de `load-started` au mesh en ~60 ms, sans
+long task. Le contrôle A53 et la publication restent à faire.
+
 ## Flags et monétisation
 
 Les flags de release et les droits Pro sont séparés.

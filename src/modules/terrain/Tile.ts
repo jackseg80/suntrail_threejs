@@ -24,6 +24,7 @@ import {
 } from '../tileCache';
 import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
+import { mergeWorkerResponses } from '../tileResponseMerge';
 import { materialPool } from '../materialPool';
 import { activeTiles } from '../terrain';
 import { removeFromLoadQueue, queueBuildMesh } from './tileQueue';
@@ -38,6 +39,9 @@ export const sharedFrustum = new THREE.Frustum();
 const projScreenMatrix = new THREE.Matrix4();
 
 const GHOST_FADE_MS = window.innerWidth <= 768 ? 800 : 2000;
+
+/** Délai maximal du repli local (packs / zones hors ligne) après un échec worker. */
+const LOCAL_FALLBACK_TIMEOUT_MS = 8000;
 
 export function shouldLoadTileAs2D(zoom: number): boolean {
     return zoom <= 10 || state.RESOLUTION <= 2 || state.IS_2D_MODE;
@@ -314,7 +318,7 @@ export class Tile {
             }
         }
         try {
-            const { promise, taskId } = await loadTileData(
+            const first = await loadTileData(
                 this.tx,
                 this.ty,
                 this.zoom,
@@ -322,11 +326,53 @@ export class Tile {
                 this.diagnosticTraceId,
                 reusedColorTexture
             );
-            this.activeTaskId = taskId;
-            const data = await promise;
+            this.activeTaskId = first.taskId;
+            let data = await first.promise;
             this.activeTaskId = -1;
 
             if ((this.status as string) === 'disposed') return;
+
+            // Repli local borné : le worker n'a pas fourni la couleur (cache et
+            // réseau). On va chercher une source locale sur le thread principal
+            // (zone hors ligne, pack local puis CDN), une seule fois.
+            const shouldFallback =
+                !first.usedLocalReads &&
+                first.localSourcesAvailable &&
+                (data === null ||
+                    (!data.colorBitmap &&
+                        !this.cacheOnly &&
+                        !reusedColorTexture &&
+                        !this.colorTex));
+            if (shouldFallback) {
+                const controller = new AbortController();
+                const timer = setTimeout(
+                    () => controller.abort(),
+                    LOCAL_FALLBACK_TIMEOUT_MS
+                );
+                try {
+                    const local = await loadTileData(
+                        this.tx,
+                        this.ty,
+                        this.zoom,
+                        fetchAs2D,
+                        this.diagnosticTraceId,
+                        reusedColorTexture,
+                        {
+                            preferLocal: true,
+                            skipNavigationCache: true,
+                            signal: controller.signal,
+                        }
+                    );
+                    this.activeTaskId = local.taskId;
+                    const localData = await local.promise;
+                    this.activeTaskId = -1;
+                    if ((this.status as string) === 'disposed') return;
+                    data = mergeWorkerResponses(data, localData);
+                } finally {
+                    clearTimeout(timer);
+                }
+            }
+
             if (!data) {
                 if (reusedColorTexture) {
                     releaseCachedTileData({

@@ -93,6 +93,27 @@ requestAnimationFrame(() => {
 // garantit que l'app démarre même si rAF reste muet.
 setTimeout(_doBoot, 800);
 
+/**
+ * Exécute `callback` quand l'UI secondaire est hydratée. L'hydratation est
+ * différée après la première tuile de carte : ouvrir la fiche Sortie trop tôt
+ * ne trouverait pas encore le composant.
+ */
+function whenSecondaryUIReady(callback: () => void): void {
+    if ((window as any).suntrailSecondaryReady) {
+        callback();
+        return;
+    }
+    window.addEventListener('suntrail:secondaryReady', callback, {
+        once: true,
+    });
+}
+
+function openTrackSheetAfterUI(): void {
+    whenSecondaryUIReady(() =>
+        setTimeout(() => sheetManager.open('track'), 300)
+    );
+}
+
 // Système unifié de recovery au démarrage (v5.28.1 - Unification native).
 window.addEventListener(
     'suntrail:uiReady',
@@ -110,7 +131,7 @@ window.addEventListener(
 
             // Cas 1 : Course native toujours active (reprise transparente)
             if (state.isRecording && state.recordedPoints.length > 0) {
-                setTimeout(() => sheetManager.open('track'), 300);
+                openTrackSheetAfterUI();
                 showToast(
                     `▶ Enregistrement repris — ${state.recordedPoints.length} points`
                 );
@@ -122,7 +143,7 @@ window.addEventListener(
             if (!state.isRecording && state.recordedPoints.length >= 2) {
                 state.recoveredPoints = [...state.recordedPoints];
                 state.recordedPoints = [];
-                setTimeout(() => sheetManager.open('track'), 300);
+                openTrackSheetAfterUI();
                 eventBus.emit('recordingRecovered');
             }
         } catch (e) {

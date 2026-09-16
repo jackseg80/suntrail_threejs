@@ -637,7 +637,10 @@ async function warmupCacheIndex(
  * Retourne null si l'entrée est absente/corrompue.
  * v5.61.4 : Cherche d'abord dans le cache offline (zones téléchargées), puis dans le cache normal.
  */
-async function getCachedBlobDetailed(url: string): Promise<{
+async function getCachedBlobDetailed(
+    url: string,
+    skipNavigationCache = false
+): Promise<{
     blob: Blob;
     source: 'offline-cache' | 'navigation-cache';
 } | null> {
@@ -660,8 +663,9 @@ async function getCachedBlobDetailed(url: string): Promise<{
         }
     }
 
-    // 2. Cache normal (navigation quotidienne)
-    if (!_workerCache) return null;
+    // 2. Cache normal (navigation quotidienne). Le repli peut l'ignorer : le
+    // worker vient déjà de le consulter pour cette tuile.
+    if (skipNavigationCache || !_workerCache) return null;
     try {
         const cached = await _workerCache.match(url);
         if (!cached) {
@@ -786,14 +790,33 @@ export async function inspectOfflineTileResources(tile: {
  * v5.57.2 : Vérifie CacheStorage sur le main thread pour les zones offline.
  * Les blobs trouvés sont passés directement au worker (bypass réseau même online lent).
  */
+export interface LoadTileDataOptions {
+    /** Force la lecture des sources locales sur le thread principal. */
+    preferLocal?: boolean;
+    /** Ignore le cache navigation (le worker vient déjà de le consulter). */
+    skipNavigationCache?: boolean;
+    /** Annule les lectures locales (ex. délai maximal du repli). */
+    signal?: AbortSignal;
+}
+
+export interface LoadTileDataResult {
+    promise: Promise<TileWorkerResponse | null>;
+    taskId: number;
+    /** Lecture locale effectuée sur le thread principal. */
+    usedLocalReads: boolean;
+    /** Une source locale (hors ligne, pack ou zone téléchargée) peut exister. */
+    localSourcesAvailable: boolean;
+}
+
 export async function loadTileData(
     tx: number,
     ty: number,
     zoom: number,
     is2D: boolean,
     diagnosticTraceId?: number | null,
-    reuseColorTexture: boolean = false
-): Promise<{ promise: Promise<TileWorkerResponse | null>; taskId: number }> {
+    reuseColorTexture: boolean = false,
+    options: LoadTileDataOptions = {}
+): Promise<LoadTileDataResult> {
     const diagnostics = isTileDiagnosticsEnabled();
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
 
@@ -809,6 +832,22 @@ export async function loadTileData(
         3
     );
     const inIT = countryCode === 'IT';
+
+    // La lecture du cache sur le thread principal est coûteuse sur mobile
+    // (`CacheStorage.match` peut prendre plusieurs secondes par tuile). Elle
+    // n'apporte quelque chose que si une source locale peut réellement fournir
+    // la tuile : hors ligne (zones téléchargées) ou pack OPFS. Sinon le worker
+    // lit le cache/réseau hors thread principal et la carte n'attend pas.
+    const useMainThreadLocal =
+        options.preferLocal ??
+        (state.IS_OFFLINE ||
+            packManager.hasLocalPackForCountry(countryCode ?? ''));
+    // Une source locale peut exister même sans pack OPFS : pack CDN ou zones
+    // hors ligne déjà téléchargées. Sert à décider d'un repli.
+    const localSourcesAvailable =
+        state.IS_OFFLINE ||
+        packManager.hasInstalledPackForCountry(countryCode ?? '') ||
+        _offlineCacheIndex.size > 0;
 
     const colorUrl = reuseColorTexture
         ? null
@@ -858,22 +897,45 @@ export async function loadTileData(
 
     // A mounted pack may use the network. Resolve cached resources first so a
     // slow pack cannot hold up a map already available on the device.
-    if (!_workerCache || !_offlineCache) await initCacheLayer();
-    const [colorCached, elevCached, overlayCached] = await Promise.all([
-        colorUrl
-            ? timedResourceRead('color', () => getCachedBlobDetailed(colorUrl))
-            : null,
-        elevUrl
-            ? timedResourceRead('elevation', () =>
-                  getCachedBlobDetailed(elevUrl)
-              )
-            : null,
-        overlayUrl
-            ? timedResourceRead('overlay', () =>
-                  getCachedBlobDetailed(overlayUrl)
-              )
-            : null,
-    ]);
+    // Un repli déjà annulé (délai dépassé) ne doit pas lancer de nouvelle task.
+    if (options.preferLocal && options.signal?.aborted) {
+        return {
+            promise: Promise.resolve(null),
+            taskId: -1,
+            usedLocalReads: false,
+            localSourcesAvailable,
+        };
+    }
+    if (useMainThreadLocal && (!_workerCache || !_offlineCache))
+        await initCacheLayer();
+    const [colorCached, elevCached, overlayCached] = useMainThreadLocal
+        ? await Promise.all([
+              colorUrl
+                  ? timedResourceRead('color', () =>
+                        getCachedBlobDetailed(
+                            colorUrl,
+                            options.skipNavigationCache
+                        )
+                    )
+                  : null,
+              elevUrl
+                  ? timedResourceRead('elevation', () =>
+                        getCachedBlobDetailed(
+                            elevUrl,
+                            options.skipNavigationCache
+                        )
+                    )
+                  : null,
+              overlayUrl
+                  ? timedResourceRead('overlay', () =>
+                        getCachedBlobDetailed(
+                            overlayUrl,
+                            options.skipNavigationCache
+                        )
+                    )
+                  : null,
+          ])
+        : [null, null, null];
     if (colorCached) {
         blobs.color = colorCached.blob;
         blobSources.color = colorCached.source;
@@ -885,6 +947,15 @@ export async function loadTileData(
     if (overlayCached) {
         blobs.overlay = overlayCached.blob;
         blobSources.overlay = overlayCached.source;
+    }
+    // Le repli a dépassé son délai pendant les lectures : on n'ira pas plus loin.
+    if (options.preferLocal && options.signal?.aborted) {
+        return {
+            promise: Promise.resolve(null),
+            taskId: -1,
+            usedLocalReads: false,
+            localSourcesAvailable,
+        };
     }
     const useLocalColor =
         !reuseColorTexture &&
@@ -909,6 +980,7 @@ export async function loadTileData(
         }
 
         if (
+            useMainThreadLocal &&
             packManager.hasMountedPacks() &&
             zoom >= packManager.getMinPackZoom()
         ) {
@@ -945,7 +1017,8 @@ export async function loadTileData(
                                     cx,
                                     cy,
                                     'color',
-                                    false
+                                    false,
+                                    options.signal
                                 );
                             return result
                                 ? {
@@ -958,7 +1031,8 @@ export async function loadTileData(
                             cz,
                             cx,
                             cy,
-                            'color'
+                            'color',
+                            options.signal
                         );
                         return blob
                             ? ({ blob, source: 'country-pack-cdn' } as const)
@@ -988,8 +1062,8 @@ export async function loadTileData(
         }
     }
 
-    // L'élévation et l'overlay du pack sont toujours utiles, même en satellite
-    if (packManager.hasMountedPacks() && zoom >= 12) {
+    // L'élévation et l'overlay du pack restent locaux (OPFS) ou hors ligne.
+    if (useMainThreadLocal && packManager.hasMountedPacks() && zoom >= 12) {
         const readPackResource = async (
             resource: 'elevation' | 'overlay'
         ): Promise<{ blob: Blob; source: WorkerBlobSource } | null> => {
@@ -999,7 +1073,8 @@ export async function loadTileData(
                     tx,
                     ty,
                     resource,
-                    false
+                    false,
+                    options.signal
                 );
                 return result
                     ? {
@@ -1012,7 +1087,8 @@ export async function loadTileData(
                 zoom,
                 tx,
                 ty,
-                resource
+                resource,
+                options.signal
             );
             return blob
                 ? ({ blob, source: 'country-pack-cdn' } as const)
@@ -1064,13 +1140,21 @@ export async function loadTileData(
               blobs,
               is2D
           );
-    if (!diagnostics) return task;
+    if (!diagnostics) {
+        return {
+            ...task,
+            usedLocalReads: useMainThreadLocal,
+            localSourcesAvailable,
+        };
+    }
 
     markTileTrace(diagnosticTraceId, 'worker-dispatched', {
         taskId: task.taskId,
     });
     return {
         taskId: task.taskId,
+        usedLocalReads: useMainThreadLocal,
+        localSourcesAvailable,
         promise: task.promise.then((data) => {
             if (data?.resourceTimings) {
                 for (const resource of [

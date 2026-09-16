@@ -434,6 +434,39 @@ describe('PackManager — P0: hasInstalledPackForCountry & getMinPackZoom', () =
         expect(packManager.hasInstalledPackForCountry('CH')).toBe(false);
     });
 
+    it('hasLocalPackForCountry distingue un pack OPFS d’un pack CDN', async () => {
+        await setupPackWithFilePresent('switzerland', 'installed', 3);
+        await packManager.initialize();
+        expect(packManager.hasLocalPackForCountry('CH')).toBe(true);
+        packManager.unmountPack('switzerland');
+
+        localStorage.clear();
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify({
+                switzerland: {
+                    id: 'switzerland',
+                    status: 'purchased',
+                    installedVersion: 0,
+                    filePath: null,
+                },
+            })
+        );
+        const noFileRoot = {
+            getDirectoryHandle: vi
+                .fn()
+                .mockRejectedValue(new Error('no packs dir')),
+        };
+        (navigator as any).storage.getDirectory = vi
+            .fn()
+            .mockResolvedValue(noFileRoot);
+        await packManager.initialize();
+
+        expect(packManager.hasInstalledPackForCountry('CH')).toBe(true);
+        expect(packManager.hasLocalPackForCountry('CH')).toBe(false);
+        packManager.unmountPack('switzerland');
+    });
+
     it('getMinPackZoom → retourne le LOD min du pack monté', async () => {
         localStorage.setItem(
             'suntrail_pack_states',

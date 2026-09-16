@@ -464,15 +464,31 @@ class PackManager {
         return false;
     }
 
+    /**
+     * Vrai si un pack **téléchargé localement (OPFS)** couvre le pays donné.
+     * Un pack uniquement CDN ne justifie pas une lecture locale bloquante sur
+     * le thread principal : le worker sait lire le cache et le réseau.
+     */
+    hasLocalPackForCountry(code: string): boolean {
+        if (!code || !this.mountedArchives.size) return false;
+        for (const [packId, mounted] of this.mountedArchives) {
+            if (mounted.source !== 'opfs') continue;
+            const meta = getPackMeta(packId);
+            if (meta?.regionCheck === code) return true;
+        }
+        return false;
+    }
+
     async getTileFromPacks(
         z: number,
         x: number,
         y: number,
-        type: 'color' | 'elevation' | 'overlay' = 'color'
+        type: 'color' | 'elevation' | 'overlay' = 'color',
+        signal?: AbortSignal
     ): Promise<Blob | null> {
         return (
-            (await this.getTileFromPacksDetailed(z, x, y, type, false))?.blob ??
-            null
+            (await this.getTileFromPacksDetailed(z, x, y, type, false, signal))
+                ?.blob ?? null
         );
     }
 
@@ -484,11 +500,12 @@ class PackManager {
         z: number,
         x: number,
         y: number,
-        type: 'color' | 'elevation' | 'overlay' = 'color'
+        type: 'color' | 'elevation' | 'overlay' = 'color',
+        signal?: AbortSignal
     ): Promise<Blob | null> {
         return (
-            (await this.getTileFromPacksDetailed(z, x, y, type, true))?.blob ??
-            null
+            (await this.getTileFromPacksDetailed(z, x, y, type, true, signal))
+                ?.blob ?? null
         );
     }
 
@@ -497,7 +514,8 @@ class PackManager {
         x: number,
         y: number,
         type: 'color' | 'elevation' | 'overlay',
-        localOnly: boolean
+        localOnly: boolean,
+        signal?: AbortSignal
     ): Promise<{
         blob: Blob;
         packId: string;
@@ -522,7 +540,12 @@ class PackManager {
 
                     // v5.28.1 : Support Multi-Layer (Couleur + Élévation + Overlay dans 1 seul PMTiles)
                     if (type === 'color') {
-                        tileData = await mounted.archive.getZxy(z, x, y);
+                        tileData = await mounted.archive.getZxy(
+                            z,
+                            x,
+                            y,
+                            signal
+                        );
                     } else {
                         // On utilise les offsets Hilbert définis dans build-country-pack.ts
                         const OFFSET_ELEV = 100_000_000_000;
@@ -534,7 +557,12 @@ class PackManager {
                         const [fz, fx, fy] = pmtiles.tileIdToZxy(
                             baseId + offset
                         );
-                        tileData = await mounted.archive.getZxy(fz, fx, fy);
+                        tileData = await mounted.archive.getZxy(
+                            fz,
+                            fx,
+                            fy,
+                            signal
+                        );
                     }
 
                     if (tileData?.data) {

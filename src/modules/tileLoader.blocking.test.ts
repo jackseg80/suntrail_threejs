@@ -42,6 +42,7 @@ vi.mock('./packManager', () => ({
         hasMountedPacks: vi.fn(),
         getTileFromPacks: vi.fn(),
         hasInstalledPackForCountry: vi.fn(),
+        hasLocalPackForCountry: vi.fn(),
         getMinPackZoom: vi.fn(),
     },
 }));
@@ -58,6 +59,7 @@ describe('TileLoader Blocking Analysis', () => {
             Promise.resolve(new Blob(['test-data']))
         );
         (packManager.hasInstalledPackForCountry as any).mockReturnValue(true);
+        (packManager.hasLocalPackForCountry as any).mockReturnValue(true);
         (packManager.getMinPackZoom as any).mockReturnValue(8);
     });
 
@@ -94,6 +96,7 @@ describe('TileLoader — P0: inPackZone data-driven', () => {
         (packManager.getTileFromPacks as any).mockReturnValue(
             Promise.resolve(new Blob(['test-data']))
         );
+        (packManager.hasLocalPackForCountry as any).mockReturnValue(true);
         (packManager.getMinPackZoom as any).mockReturnValue(8);
     });
 
@@ -150,6 +153,20 @@ describe('TileLoader — P0: inPackZone data-driven', () => {
 
         expect(packManager.getTileFromPacks).not.toHaveBeenCalled();
     });
+
+    it('en ligne + pack CDN uniquement → pas de lecture locale bloquante, le worker est appelé', async () => {
+        const { getCountryAtTile } = await import('./geo');
+        (getCountryAtTile as any).mockReturnValue('CH');
+        (packManager.hasInstalledPackForCountry as any).mockReturnValue(true);
+        (packManager.hasLocalPackForCountry as any).mockReturnValue(false);
+        mockCache.match.mockClear();
+
+        await loadTileData(4270, 2891, 14, false);
+
+        expect(mockCache.match).not.toHaveBeenCalled();
+        expect(packManager.getTileFromPacks).not.toHaveBeenCalled();
+        expect(tileWorkerManager.loadTile).toHaveBeenCalled();
+    });
 });
 
 describe('TileLoader — cached map during a slow pack request', () => {
@@ -166,6 +183,7 @@ describe('TileLoader — cached map during a slow pack request', () => {
         vi.mocked(getCountryAtTile).mockReturnValue('CH');
         vi.mocked(packManager.hasMountedPacks).mockReturnValue(true);
         vi.mocked(packManager.hasInstalledPackForCountry).mockReturnValue(true);
+        vi.mocked(packManager.hasLocalPackForCountry).mockReturnValue(true);
         vi.mocked(packManager.getMinPackZoom).mockReturnValue(8);
         // The worker populated CacheStorage after the main-thread index warmup.
         await initCacheLayer();
@@ -189,5 +207,51 @@ describe('TileLoader — cached map during a slow pack request', () => {
             vi.mocked(packManager.getTileFromPacks).mockReset();
             resetTileLoaderState();
         }
+    });
+});
+
+describe('TileLoader — repli local borné', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        state.IS_2D_MODE = false;
+        state.ZOOM = 14;
+        state.MAP_SOURCE = 'swisstopo';
+        state.IS_OFFLINE = false;
+        mockCache.match.mockReset();
+        (packManager.hasMountedPacks as any).mockReturnValue(true);
+        (packManager.hasInstalledPackForCountry as any).mockReturnValue(true);
+        (packManager.hasLocalPackForCountry as any).mockReturnValue(false);
+        (packManager.getMinPackZoom as any).mockReturnValue(8);
+        (packManager.getTileFromPacks as any).mockResolvedValue(
+            new Blob(['pack-color'])
+        );
+    });
+
+    it('preferLocal lit le pack même sans pack OPFS', async () => {
+        const { getCountryAtTile } = await import('./geo');
+        (getCountryAtTile as any).mockReturnValue('CH');
+
+        const result = await loadTileData(4270, 2891, 14, false, null, false, {
+            preferLocal: true,
+            skipNavigationCache: true,
+        });
+
+        expect(result.usedLocalReads).toBe(true);
+        expect(result.localSourcesAvailable).toBe(true);
+        expect(packManager.getTileFromPacks).toHaveBeenCalled();
+    });
+
+    it('preferLocal avec signal déjà avorté → aucune task worker', async () => {
+        const controller = new AbortController();
+        controller.abort();
+
+        const result = await loadTileData(4270, 2891, 14, false, null, false, {
+            preferLocal: true,
+            signal: controller.signal,
+        });
+
+        expect(result.taskId).toBe(-1);
+        expect(await result.promise).toBeNull();
+        expect(tileWorkerManager.loadTile).not.toHaveBeenCalled();
     });
 });

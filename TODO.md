@@ -1,6 +1,18 @@
 # SunTrail — TODO (v5.91.3 ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-16
+> Dernière mise à jour : 2026-09-17
+
+## ✅ Correctif démarrage carte (non release)
+
+- [x] Sortir la lecture `CacheStorage` du thread principal (`loadTileData`) : résolution
+      cache/réseau dans le worker, priorité pack OPFS et hors ligne conservée.
+- [x] Repli local borné à 8 s (zone hors ligne, pack OPFS puis CDN) sur un miss couleur, avec fusion
+      des réponses (`tileResponseMerge.ts`) et fermeture des `ImageBitmap` écartés.
+- [x] Différer l'hydratation de l'UI secondaire après la première tuile (plafond 4 s) ; reprise REC
+      via `suntrail:secondaryReady`.
+- [x] 166 fichiers/1 916 tests, `npm run check`, build Web, budget bundle, `cap:sync`, assemblage
+      Android et contrôle S23 diagnostic (`worker-cache`, ~60 ms tuile→mesh, aucun long task).
+- [ ] Installer le même APK sur A53 et contrôler l'ouverture à froid.
 
 ## ✅ v5.91.3 — REC lisible et inclinomètre réservé à la 3D
 

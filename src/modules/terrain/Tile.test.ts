@@ -361,6 +361,100 @@ describe('Tile', () => {
             expect(tile.usesFallbackColor).toBe(true);
             expect(addToCache).not.toHaveBeenCalled();
         });
+
+        it('rejoue une passe locale bornée quand des sources locales existent', async () => {
+            const localColor = {
+                width: 1,
+                height: 1,
+            } as unknown as ImageBitmap;
+            vi.mocked(loadTileData)
+                .mockResolvedValueOnce({
+                    taskId: 7,
+                    usedLocalReads: false,
+                    localSourcesAvailable: true,
+                    promise: Promise.resolve({
+                        elevBitmap: null,
+                        colorBitmap: null,
+                        overlayBitmap: null,
+                        normalBitmap: null,
+                        pixelData: null,
+                    }),
+                } as any)
+                .mockResolvedValueOnce({
+                    taskId: 8,
+                    usedLocalReads: true,
+                    localSourcesAvailable: true,
+                    promise: Promise.resolve({
+                        elevBitmap: null,
+                        colorBitmap: localColor,
+                        overlayBitmap: null,
+                        normalBitmap: null,
+                        pixelData: null,
+                    }),
+                } as any);
+            const tile = new Tile(0, 0, 14, '14/0/0');
+
+            await tile.load();
+
+            expect(loadTileData).toHaveBeenCalledTimes(2);
+            const secondArgs = vi.mocked(loadTileData).mock.calls[1];
+            expect(secondArgs[6]).toMatchObject({
+                preferLocal: true,
+                skipNavigationCache: true,
+            });
+            expect(tile.usesFallbackColor).toBe(false);
+            expect(tile.colorTex).not.toBeNull();
+        });
+
+        it('ne rejoue pas de passe locale quand la lecture locale a déjà été faite', async () => {
+            vi.mocked(loadTileData).mockResolvedValueOnce({
+                taskId: 7,
+                usedLocalReads: true,
+                localSourcesAvailable: true,
+                promise: Promise.resolve({
+                    elevBitmap: null,
+                    colorBitmap: null,
+                    overlayBitmap: null,
+                    normalBitmap: null,
+                    pixelData: null,
+                }),
+            } as any);
+            const tile = new Tile(0, 0, 14, '14/0/0');
+
+            await tile.load();
+
+            expect(loadTileData).toHaveBeenCalledOnce();
+            expect(tile.usesFallbackColor).toBe(true);
+        });
+
+        it('conserve la première réponse si le repli est annulé', async () => {
+            vi.mocked(loadTileData)
+                .mockResolvedValueOnce({
+                    taskId: 7,
+                    usedLocalReads: false,
+                    localSourcesAvailable: true,
+                    promise: Promise.resolve({
+                        elevBitmap: null,
+                        colorBitmap: null,
+                        overlayBitmap: null,
+                        normalBitmap: null,
+                        pixelData: null,
+                    }),
+                } as any)
+                .mockResolvedValueOnce({
+                    taskId: -1,
+                    usedLocalReads: false,
+                    localSourcesAvailable: true,
+                    promise: Promise.resolve(null),
+                } as any);
+            const tile = new Tile(0, 0, 14, '14/0/0');
+
+            await tile.load();
+
+            expect(loadTileData).toHaveBeenCalledTimes(2);
+            expect(tile.usesFallbackColor).toBe(true);
+            expect(tile.status).toBe('loaded');
+        });
     });
 
     describe('getBounds()', () => {

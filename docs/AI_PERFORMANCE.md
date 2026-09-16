@@ -177,6 +177,9 @@ est séparé ; aucune dépendance n'a été mise à jour.
 | **Non-blocking cache cleanup** | `tileLoader.ts` | Old-version cache deletion runs in the background; opening current caches remains on the critical path. |
 | **Single Gist request** | `config.ts` | Concurrent MapTiler and ORS configuration lookups share one in-flight request. |
 | **Single pack disk scan** | `packManager.ts` | Pack state restoration scans OPFS once during initialization. |
+| **Worker-first tile cache** | `tileLoader.ts`, `terrain/Tile.ts` | Cache/network resolution runs in the Web Worker; the main thread no longer calls `CacheStorage.match` per tile (measured up to ~2.9 s on S23). |
+| **Bounded local fallback** | `terrain/Tile.ts`, `tileResponseMerge.ts` | On a worker color miss, one local pass (offline zone, OPFS pack, then CDN) is replayed with an 8 s AbortController and merged. OPFS/offline stay local-first. |
+| **Deferred secondary UI** | `appInit.ts` | Sheets and route manager hydrate after the first map tile at idle (4 s cap); recording recovery waits for `suntrail:secondaryReady`. |
 
 | Constant | Value | File | Rationale |
 | :--- | :--- | :--- | :--- |

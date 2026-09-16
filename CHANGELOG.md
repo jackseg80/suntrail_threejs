@@ -1,3 +1,30 @@
+## [Unreleased]
+
+### Corrigé
+
+- **Démarrage carte** : ne plus lire le CacheStorage sur le thread principal pour chaque tuile.
+  `CacheStorage.match` était mesuré jusqu'à ~2,9 s par tuile sur S23 (couverture > 10 s sur A53) ;
+  la résolution cache/réseau se fait désormais dans le Web Worker, hors thread principal.
+- Conserver la priorité des sources locales et la robustesse : si la passe worker ne fournit pas la
+  couleur, un repli local (zone hors ligne, pack OPFS puis CDN) est rejoué **une seule fois**, puis
+  fusionné. Le repli est plafonné à 8 s et n'ajoute aucune tâche worker s'il est annulé.
+- Différer l'hydratation de l'UI secondaire (fiches, gestionnaire d'itinéraire) après la première
+  tuile et au repos, avec un plafond de 4 s. La reprise d'enregistrement attend
+  `suntrail:secondaryReady` avant d'ouvrir la fiche Sortie.
+
+### Amélioré
+
+- Pack OPFS et mode hors ligne : chemin local-first inchangé (aucun repli redondant).
+- Packs CDN et zones hors ligne : servent de secours uniquement quand le worker ne renvoie pas de
+  couleur, au lieu d'être lus systématiquement avant chaque tuile.
+
+### Validation
+
+- `npm run check`, 166 fichiers / 1 916 tests, build Web, budget bundle, `cap:sync` et assemblage
+  Android.
+- S23 diagnostic : chemin normal en `worker-cache`, tuile affichée en ~60 ms de `load-started` au
+  mesh, sans lecture CacheStorage ni long task sur le thread principal. Contrôle A53 à venir.
+
 ## [5.91.3] - 2026-09-16 — REC lisible et inclinomètre réservé à la 3D
 
 ### Amélioré
