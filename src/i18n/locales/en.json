@@ -1055,7 +1055,6 @@
     "profile": {
         "backFromAnalysis": "Back to profile",
         "title": "Elevation and slopes",
-        "info": "Distance: 0 km | Elevation: 0 m | Slope: 0%",
         "analysis": "Solar analysis",
         "expand": "Expand profile",
         "slopes": "Slopes",
@@ -1065,9 +1064,14 @@
         "unknownShade": "Unknown shade",
         "forest": "Forest",
         "night": "Night",
-        "summary": "Distance: {{distance}} km | D+: {{ascent}} m | D-: {{descent}} m",
-        "cursor": "Distance: {{distance}} km | Elevation: {{altitude}} m | Slope: {{slope}}%{{time}}",
-        "cursorIdle": "Distance: {{distance}} km | Elevation: 0 m"
+        "info": {
+            "distance": "Dist.",
+            "altitude": "Alt.",
+            "ascent": "D+",
+            "descent": "D-",
+            "slope": "Slope",
+            "time": "Time"
+        }
     },
     "timeline": {
         "title": "Solar simulation",

@@ -1,6 +1,23 @@
-# SunTrail — TODO (v5.91.0 ; publication Play séparée)
+# SunTrail — TODO (v5.91.1 ; publication Play séparée)
 
 > Dernière mise à jour : 2026-09-16
+
+## ✅ v5.91.1 — analyse solaire du parcours fiable et profil lisible
+
+- [x] Ne plus bloquer l'analyse solaire du parcours sans relief : section toujours affichée + bandeau
+      court, tronçons sans relief hachurés (« ombre inconnue ») au lieu d'un faux soleil, légende
+      « Ombre relief » distincte de la forêt.
+- [x] Précharger le relief le long du tracé (`routeTerrain.ts`) indépendamment de la vue (2D, LOD ≤ 10),
+      LOD adaptatif, concurrence limitée, cache borné ; désactivé en Économie avec message vers
+      Équilibré.
+- [x] Supprimer les freezes lors de la manipulation de l'heure : raycast borné (relief inconnu pas de
+      500 m, plafond 3 000 itérations), relances relief plafonnées, indicateur « Analyse en cours »
+      lié au vrai calcul du départ optimal.
+- [x] Informations du profil en grille courte `Dist. · Alt. · Pente · Heure` (2×2 sous 600 px) ;
+      résumé `Dist. · D+ · D-` au repos. Libellés courts fr/en/de/it.
+- [x] Contrôles statiques, 164 fichiers/1 886 tests, build Web, budget bundle, audit i18n, `cap:sync`,
+      assemblage Android et APK diagnostic `5.91.1` (code 914) validé sur S23 puis A53.
+- [x] Release GitHub `v5.91.1` avec AAB signé par GitHub Actions ; aucun upload Play.
 
 ## ✅ v5.91.0 — profil de pente lisible et cadrage des tracés
 

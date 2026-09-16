@@ -1049,7 +1049,6 @@
     "profile": {
         "backFromAnalysis": "Torna al profilo",
         "title": "📈 Profilo altimetrico & Pendii",
-        "info": "Distanza: 0 km | Altitudine: 0 m | Pendenza: 0%",
         "analysis": "Analisi solare",
         "expand": "Ingrandisci profilo",
         "slopes": "Pendenze",
@@ -1059,9 +1058,14 @@
         "unknownShade": "Ombra sconosciuta",
         "forest": "Foresta",
         "night": "Notte",
-        "summary": "Distanza: {{distance}} km | D+: {{ascent}} m | D-: {{descent}} m",
-        "cursor": "Distanza: {{distance}} km | Altitudine: {{altitude}} m | Pendenza: {{slope}}%{{time}}",
-        "cursorIdle": "Distanza: {{distance}} km | Altitudine: 0 m"
+        "info": {
+            "distance": "Dist.",
+            "altitude": "Alt.",
+            "ascent": "D+",
+            "descent": "D-",
+            "slope": "Pend.",
+            "time": "Ora"
+        }
     },
     "timeline": {
         "title": "Simulazione solare",

@@ -1,20 +1,20 @@
-# SunTrail — Guide IA (version source 5.91.0)
+# SunTrail — Guide IA (version source 5.91.1)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-16 après la refonte du
-> profil de pente et le cadrage adaptatif des tracés 5.91.0.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-16 après la fiabilisation de
+> l'analyse solaire du parcours et la grille d'infos du profil 5.91.1.
 
 ## État vérifié
 
-- Version npm : `5.91.0`.
-- Android : `versionName 5.91.0`, `versionCode 913`, minSdk 24, compile/target SDK 36. Le code 913
+- Version npm : `5.91.1`.
+- Android : `versionName 5.91.1`, `versionCode 914`, minSdk 24, compile/target SDK 36. Le code 914
   est supérieur au dernier code local connu ; le maximum effectif dans Play Console reste à vérifier
   avant tout upload.
-- Révision courante `5.91.0` (code 913) : profil de pente en bandes de couleur façon Openrunner
-  (échelle unique montée/descente), cadrage caméra adapté aux dimensions réelles du tracé et relance
-  automatique de l'analyse solaire du parcours dès que le relief devient disponible. La release
-  GitHub `v5.91.0` produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
-- Les releases GitHub `v5.90.0` (code 911) et la préparation locale `5.90.1` (code 912) précèdent
-  cette révision ; 912 n'a pas été publiée. La qualification S23/A53 reste la référence terrain.
+- Révision courante `5.91.1` (code 914) : analyse solaire du parcours non bloquante (relief préchargé
+  le long du tracé, ombres inconnues hachurées, raycast borné), et informations du profil en grille
+  courte lisible sur petit écran. La release GitHub `v5.91.1` produit l'AAB signé par la CI ;
+  aucun upload Play n'est revendiqué.
+- La release GitHub `v5.91.0` (code 913) précède cette révision ; les codes 911/912/913 restent la
+  référence locale et la qualification S23/A53 reste la référence terrain.
 - 5.86.0/904 est importée dans Play, 5.86.1/905 y est visible et le propriétaire a indiqué un
   envoi de 5.86.2/906 en test. 5.87.0/907 est publiée sur GitHub sans upload Play revendiqué.
 - Le contrôle long de 30 minutes en faible réseau reste un suivi post-release, pas une fonction

@@ -1049,7 +1049,6 @@
     "profile": {
         "backFromAnalysis": "Zurück zum Profil",
         "title": "Höhenprofil und Neigung",
-        "info": "Distanz: 0 km | Höhe: 0 m | Neigung: 0%",
         "analysis": "Sonnenanalyse",
         "expand": "Profil vergrößern",
         "slopes": "Neigungen",
@@ -1059,9 +1058,14 @@
         "unknownShade": "Unbekannter Schatten",
         "forest": "Wald",
         "night": "Nacht",
-        "summary": "Distanz: {{distance}} km | H+: {{ascent}} m | H-: {{descent}} m",
-        "cursor": "Distanz: {{distance}} km | Höhe: {{altitude}} m | Neigung: {{slope}}%{{time}}",
-        "cursorIdle": "Distanz: {{distance}} km | Höhe: 0 m"
+        "info": {
+            "distance": "Dist.",
+            "altitude": "Höhe",
+            "ascent": "H+",
+            "descent": "H-",
+            "slope": "Neig.",
+            "time": "Zeit"
+        }
     },
     "timeline": {
         "title": "Sonnensimulation",

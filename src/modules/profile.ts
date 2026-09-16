@@ -261,12 +261,43 @@ let profileExpanded = false;
 let lastProfileStats: { dist: number; dPlus: number; dMinus: number } | null =
     null;
 
-function formatProfileStats(dist: number, dPlus: number, dMinus: number) {
-    return i18n.t('profile.summary', {
-        distance: dist.toFixed(2),
-        ascent: String(Math.round(dPlus)),
-        descent: String(Math.round(dMinus)),
+interface ProfileInfoCell {
+    label: string;
+    value: string;
+}
+
+/** Remplit la grille d'infos du profil (libellé + valeur par cellule). */
+function setProfileInfoCells(cells: ProfileInfoCell[]): void {
+    const info = document.getElementById('profile-info');
+    if (!info) return;
+    const els = info.querySelectorAll<HTMLElement>('.profile-info-cell');
+    els.forEach((el, i) => {
+        const cell = cells[i];
+        el.hidden = !cell;
+        if (!cell) return;
+        const label = el.querySelector<HTMLElement>('.profile-info-label');
+        const value = el.querySelector<HTMLElement>('.profile-info-value');
+        if (label) label.textContent = cell.label;
+        if (value) value.textContent = cell.value;
     });
+}
+
+/** Résumé (hors survol) : distance, D+, D-. */
+function setSummaryInfo(dist: number, dPlus: number, dMinus: number): void {
+    setProfileInfoCells([
+        {
+            label: i18n.t('profile.info.distance'),
+            value: `${dist.toFixed(2)} km`,
+        },
+        {
+            label: i18n.t('profile.info.ascent'),
+            value: `+${Math.round(dPlus)} m`,
+        },
+        {
+            label: i18n.t('profile.info.descent'),
+            value: `−${Math.round(dMinus)} m`,
+        },
+    ]);
 }
 
 export function setSolarBandData(analysis: RouteSolarAnalysis | null): void {
@@ -434,15 +465,13 @@ function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
     const dEl = document.getElementById('gpx-dist');
     const pEl = document.getElementById('gpx-dplus');
     const mEl = document.getElementById('gpx-dminus');
-    const profileInfo = document.getElementById('profile-info');
 
     if (dEl) dEl.textContent = `${dist.toFixed(2)} km`;
     if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
     if (mEl) mEl.textContent = `${Math.round(dMinus)} m D-`;
 
     lastProfileStats = { dist, dPlus, dMinus };
-    if (profileInfo)
-        profileInfo.textContent = formatProfileStats(dist, dPlus, dMinus);
+    setSummaryInfo(dist, dPlus, dMinus);
 
     if (!state.isRecording) {
         const trackDist = document.getElementById('track-dist');
@@ -699,7 +728,7 @@ function setupProfileInteractions(): void {
         cursor.hidden = false;
         cursor.style.left = `${(point.dist / maxDist) * 100}%`;
 
-        let timeStr = '';
+        let timeValue = '—';
         if (_solarBandData && _solarBandData.points.length > 0) {
             let closest = _solarBandData.points[0];
             for (const sp of _solarBandData.points) {
@@ -712,14 +741,23 @@ function setupProfileInteractions(): void {
             }
             const h = String(closest.evalDate.getHours()).padStart(2, '0');
             const m = String(closest.evalDate.getMinutes()).padStart(2, '0');
-            timeStr = ` | ${h}h${m}`;
+            timeValue = `${h}h${m}`;
         }
-        info.textContent = i18n.t('profile.cursor', {
-            distance: point.dist.toFixed(2),
-            altitude: String(Math.round(point.ele)),
-            slope: String(Math.round(point.slope)),
-            time: timeStr,
-        });
+        setProfileInfoCells([
+            {
+                label: i18n.t('profile.info.distance'),
+                value: `${point.dist.toFixed(2)} km`,
+            },
+            {
+                label: i18n.t('profile.info.altitude'),
+                value: `${Math.round(point.ele)} m`,
+            },
+            {
+                label: i18n.t('profile.info.slope'),
+                value: `${Math.round(point.slope)}%`,
+            },
+            { label: i18n.t('profile.info.time'), value: timeValue },
+        ]);
 
         if (state.profileMarker) {
             // v5.53.6 : Échelle adaptative calquée sur computeTrackThickness
@@ -779,13 +817,13 @@ function setupProfileInteractions(): void {
     container.onmouseleave = () => {
         cursor.hidden = true;
         if (state.profileMarker) state.profileMarker.visible = false;
-        const maxDist =
-            profileData.length > 0
-                ? profileData[profileData.length - 1].dist
-                : 0;
-        info.textContent = i18n.t('profile.cursorIdle', {
-            distance: maxDist.toFixed(2),
-        });
+        if (lastProfileStats) {
+            setSummaryInfo(
+                lastProfileStats.dist,
+                lastProfileStats.dPlus,
+                lastProfileStats.dMinus
+            );
+        }
     };
 
     let _uiHideTimer: ReturnType<typeof setTimeout> | null = null;
@@ -814,14 +852,11 @@ eventBus.on('localeChanged', () => {
     const solarButton = document.getElementById('profile-solar-btn');
     if (solarButton) solarButton.textContent = i18n.t('profile.analysis');
     if (!lastProfileStats) return;
-    const info = document.getElementById('profile-info');
-    if (info) {
-        info.textContent = formatProfileStats(
-            lastProfileStats.dist,
-            lastProfileStats.dPlus,
-            lastProfileStats.dMinus
-        );
-    }
+    setSummaryInfo(
+        lastProfileStats.dist,
+        lastProfileStats.dPlus,
+        lastProfileStats.dMinus
+    );
 });
 
 export function closeElevationProfile(): void {

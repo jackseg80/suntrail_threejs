@@ -1055,7 +1055,6 @@
     "profile": {
         "backFromAnalysis": "Retour au profil",
         "title": "Profil et pentes",
-        "info": "Distance : 0 km | Altitude : 0 m | Pente : 0%",
         "analysis": "Analyse solaire",
         "expand": "Agrandir le profil",
         "slopes": "Pentes",
@@ -1065,9 +1064,14 @@
         "unknownShade": "Ombre inconnue",
         "forest": "Forêt",
         "night": "Nuit",
-        "summary": "Distance : {{distance}} km | D+ : {{ascent}} m | D- : {{descent}} m",
-        "cursor": "Distance : {{distance}} km | Altitude : {{altitude}} m | Pente : {{slope}}%{{time}}",
-        "cursorIdle": "Distance : {{distance}} km | Altitude : 0 m"
+        "info": {
+            "distance": "Dist.",
+            "altitude": "Alt.",
+            "ascent": "D+",
+            "descent": "D-",
+            "slope": "Pente",
+            "time": "Heure"
+        }
     },
     "timeline": {
         "title": "Simulation solaire",

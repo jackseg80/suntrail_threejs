@@ -1,3 +1,36 @@
+## [5.91.1] - 2026-09-16 — Analyse solaire du parcours fiable et lisible sur petit écran
+
+### Amélioré
+
+- Ne plus bloquer l'analyse solaire du parcours faute de relief : la section s'affiche désormais comme
+  la bande du profil, avec un bandeau d'information court lorsque le relief est partiel ou absent.
+- Marquer l'ombre indéterminée : les tronçons sans relief sont hachurés au lieu d'être affichés en
+  « soleil », et une case « Ombre inconnue » n'apparaît dans la légende que lorsqu'elle est utile.
+  La légende distingue explicitement « Ombre relief » de la forêt.
+- Précharger le relief le long du tracé pour l'analyse (`routeTerrain.ts`), indépendamment de la vue
+  (2D, LOD ≤ 10) : tuiles d'altitude seules, LOD adaptatif selon la longueur, concurrence limitée et
+  cache borné. Désactivé en preset Économie, avec message invitant à passer à Équilibré ou supérieur.
+- Rendre les informations du profil lisibles sur petit écran : grille de quatre valeurs à libellés
+  courts (`Dist. · Alt. · Pente · Heure`), repliée en 2×2 sous 600 px, au lieu d'une seule ligne
+  tronquée. Au repos, elle affiche `Dist. · D+ · D-`.
+
+### Corrigé
+
+- Supprimer les ralentissements et blocages lors de la manipulation de l'heure : le calcul d'ombre
+  avançait auparavant par pas de 40 m même sans relief connu (jusqu'à des milliers d'itérations par
+  rayon). Le raycast est désormais borné (pas de 500 m sur relief inconnu, plafond de 3 000 itérations,
+  pas de 50 m près du terrain) et les relances relief sont plafonnées.
+- Indicateur « Analyse en cours » : il suit maintenant un vrai calcul de départ optimal en cours et ne
+  reste plus affiché après une interruption.
+
+### Validation
+
+- Contrôles TypeScript, formatage et lint, audit des quatre langues, 164 fichiers et 1 886 tests
+  Web/TypeScript, build Web, budget bundle, synchronisation Capacitor et assemblage Android.
+- APK `5.91.1-diagnostic` (code 914) construit, installé et validé sur Galaxy S23 SM-S911B puis
+  Galaxy A53 SM-A536B (fluidité et affichage des infos de profil). La release GitHub `v5.91.1`
+  produit un AAB signé par GitHub Actions ; aucun upload Play.
+
 ## [5.91.0] - 2026-09-16 — Profil de pente lisible et cadrage des tracés
 
 ### Amélioré
