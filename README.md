@@ -1,17 +1,17 @@
 # SunTrail 3D
 
-**Version source 5.91.2 · Android 915 · MIT avec Commons Clause**
+**Version source 5.91.3 · Android 916 · MIT avec Commons Clause**
 
 SunTrail est une application de randonnée mobile-first qui combine cartographie 2D/3D,
 relief, lumière solaire, préparation d'itinéraires et suivi GPS. Android est la plateforme
 terrain principale ; la version Web permet aussi d'explorer, préparer et analyser un parcours.
 
-La version 5.91.2 rend la trace immédiatement lisible : couleur unique réglable (magenta par défaut)
-avec casing contrasté, coloration solaire de la trace devenue optionnelle, et double voie avec
-chevrons pour les allers-retours. Elle fiabilise l'analyse solaire du parcours (relief préchargé,
-ombres inconnues signalées, raycast borné), affine le profil (pente en bandes façon Openrunner,
-cadrage caméra, informations sur une ligne) et conserve les surfaces unifiées de 5.90 : commandes
-cartographiques,
+La version 5.91.3 recolore la trace d'enregistrement en vert fluo et réserve l'inclinomètre au mode
+3D (masqué en 2D), là où le relief fournit l'altitude. Elle conserve la trace à couleur unique
+réglable avec casing contrasté, la coloration solaire optionnelle et la double voie des
+allers-retours, ainsi que l'analyse solaire du parcours fiable (relief préchargé, ombres inconnues
+signalées, raycast borné) et le profil affiné (pente en bandes façon Openrunner, cadrage caméra,
+informations sur une ligne). Elle conserve les surfaces unifiées de 5.90 : commandes cartographiques,
 feuilles, dialogues, Réglages, Bibliothèque, Sortie, guidage, météo, analyse solaire et Timeline.
 La prise en main reste une visite de deux étapes sur la vraie carte, complétée par des aides
 contextuelles pour Préparer, REC et les fonctions Pro. La version conserve les fonctions livrées

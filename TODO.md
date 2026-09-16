@@ -1,6 +1,20 @@
-# SunTrail — TODO (v5.91.2 ; publication Play séparée)
+# SunTrail — TODO (v5.91.3 ; publication Play séparée)
 
 > Dernière mise à jour : 2026-09-16
+
+## ✅ v5.91.3 — REC lisible et inclinomètre réservé à la 3D
+
+- [x] Trace REC en vert fluo `#00e676`, dessinée au-dessus de son casing (`renderOrder` 10) pour
+      rester nette pendant l'enregistrement.
+- [x] Inclinomètre réservé au mode 3D (masqué en 2D, réticule compris) ; le cadenas Free n'apparaît
+      donc qu'en 3D. Abonnement à `IS_2D_MODE` pour rafraîchir l'affichage.
+- [x] Mention « (3D) » à côté du libellé « Inclinomètre » dans les réglages.
+- [x] Suppression du repli de pente basé sur le tracé (`sampleRouteTerrainAltitude`) et de son test ;
+      le préchargement du relief pour l'analyse solaire (ombres/soleil/forêt, y compris en 2D) reste
+      inchangé.
+- [x] Contrôles statiques, 165 fichiers/1 903 tests, build Web, budget bundle, audit i18n, `cap:sync`,
+      assemblage Android et APK diagnostic `5.91.3` (code 916) validé sur S23.
+- [x] Release GitHub `v5.91.3` avec AAB signé par GitHub Actions ; aucun upload Play.
 
 ## ✅ v5.91.2 — trace lisible et couleur réglable
 

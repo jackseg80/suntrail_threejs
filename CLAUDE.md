@@ -1,20 +1,20 @@
-# SunTrail — Guide IA (version source 5.91.2)
+# SunTrail — Guide IA (version source 5.91.3)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-16 après la couleur de trace
-> réglable et les ajustements de profil/réglages 5.91.2.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-16 après la trace REC en vert
+> fluo et l'inclinomètre réservé à la 3D (5.91.3).
 
 ## État vérifié
 
-- Version npm : `5.91.2`.
-- Android : `versionName 5.91.2`, `versionCode 915`, minSdk 24, compile/target SDK 36. Le code 915
+- Version npm : `5.91.3`.
+- Android : `versionName 5.91.3`, `versionCode 916`, minSdk 24, compile/target SDK 36. Le code 916
   est supérieur au dernier code local connu ; le maximum effectif dans Play Console reste à vérifier
   avant tout upload.
-- Révision courante `5.91.2` (code 915) : trace à couleur unique réglable avec casing deux tons, la
-  coloration solaire de la trace devenant une option (désactivée par défaut) ; double voie pour les
-  allers-retours ; profil et réglages affinés. La release GitHub `v5.91.2` produit l'AAB signé par la
-  CI ; aucun upload Play n'est revendiqué.
-- Les releases GitHub `v5.91.0` (913) et `v5.91.1` (914) précèdent cette révision ; la qualification
-  S23/A53 reste la référence terrain.
+- Révision courante `5.91.3` (code 916) : trace REC en vert fluo au-dessus de son casing, inclinomètre
+  réservé au mode 3D (masqué en 2D, mention « (3D) » dans les réglages), et suppression du repli de
+  pente basé sur le tracé. Le préchargement du relief pour l'analyse solaire reste en place. La
+  release GitHub `v5.91.3` produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
+- Les releases GitHub `v5.91.0` (913), `v5.91.1` (914) et `v5.91.2` (915) précèdent cette révision ;
+  la qualification S23/A53 reste la référence terrain.
 - 5.86.0/904 est importée dans Play, 5.86.1/905 y est visible et le propriétaire a indiqué un
   envoi de 5.86.2/906 en test. 5.87.0/907 est publiée sur GitHub sans upload Play revendiqué.
 - Le contrôle long de 30 minutes en faible réseau reste un suivi post-release, pas une fonction

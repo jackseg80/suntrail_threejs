@@ -360,6 +360,26 @@ describe('Multi-GPX Layers (v5.10)', () => {
         vi.useRealTimers();
     });
 
+    it('recolore la trace REC en vert fluo et la place au-dessus du casing', () => {
+        vi.useFakeTimers();
+        state.ZOOM = 15;
+        state.recordedPoints = [
+            { lat: 46.5, lon: 7.5, alt: 1000, timestamp: 1000 },
+            { lat: 46.51, lon: 7.51, alt: 1010, timestamp: 2000 },
+        ];
+        state.recordedMesh = null;
+
+        updateRecordedTrackMesh();
+        vi.runAllTimers();
+
+        const mesh = state.recordedMesh!;
+        expect(mesh).toBeTruthy();
+        expect(mesh.renderOrder).toBe(10);
+        const material = mesh.material as THREE.MeshStandardMaterial;
+        expect(`#${material.color.getHexString()}`).toBe('#00e676');
+        vi.useRealTimers();
+    });
+
     it('updateAllGPXMeshes: should adapt RDP epsilon based on performance preset', async () => {
         const utils = await import('./utils');
         const spyRDP = vi.spyOn(utils, 'simplifyRDP');

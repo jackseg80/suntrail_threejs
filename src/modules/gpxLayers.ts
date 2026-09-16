@@ -70,21 +70,24 @@ const LANE_OFFSET_FACTOR = 0.6;
 let _recMaterial3D: THREE.MeshStandardMaterial | null = null;
 let _recMaterial2D: THREE.MeshBasicMaterial | null = null;
 
+// Vert fluo : couleur forte d'enregistrement, absente de la palette de trace.
+const RECORD_COLOR = 0x00e676;
+
 function getRecordedMaterial(is2D: boolean): THREE.Material {
     if (is2D) {
         if (!_recMaterial2D) {
             _recMaterial2D = new THREE.MeshBasicMaterial({
-                color: 0xef4444,
+                color: RECORD_COLOR,
                 transparent: true,
-                opacity: 0.8,
+                opacity: 0.85,
             });
         }
         return _recMaterial2D;
     }
     if (!_recMaterial3D) {
         _recMaterial3D = new THREE.MeshStandardMaterial({
-            color: 0xef4444,
-            emissive: 0xef4444,
+            color: RECORD_COLOR,
+            emissive: RECORD_COLOR,
             emissiveIntensity: 1.2, // v5.53.3 : Increased from 0.8
             transparent: true,
             opacity: 0.9,
@@ -825,6 +828,9 @@ function _doUpdateRecordedTrackMesh(): void {
         );
         const material = getRecordedMaterial(state.IS_2D_MODE);
         newMesh = new THREE.Mesh(geometry, material);
+        // Au-dessus du casing (7/8) pour que le cœur coloré reste visible
+        newMesh.renderOrder = 10;
+        newMesh.userData = { type: 'recorded-track' };
         applyTrackOutline(
             newMesh,
             curve,

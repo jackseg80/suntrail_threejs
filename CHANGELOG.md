@@ -1,3 +1,28 @@
+## [5.91.3] - 2026-09-16 — REC lisible et inclinomètre réservé à la 3D
+
+### Amélioré
+
+- Recolorer la trace d'enregistrement en vert fluo (`#00e676`) et la dessiner au-dessus de son
+  casing : pendant un REC, la trace reste nette et se distingue clairement des itinéraires.
+- Réserver l'inclinomètre (pente au viseur / pente actuelle) au mode 3D, là où les pixels d'altitude
+  du relief sont disponibles : il est désormais masqué en 2D, réticule compris, et le cadenas Free
+  n'apparaît donc qu'en 3D.
+- Indiquer « (3D) » à côté du libellé « Inclinomètre » dans les réglages.
+
+### Corrigé
+
+- Supprimer le repli de pente basé sur le tracé préchargé : il ne fonctionnait que le long d'un
+  itinéraire analysé et pouvait renvoyer une pente nulle avec la résolution disponible. Le calcul de
+  pente reste celui des tuiles 3D, et le préchargement du relief pour l'analyse solaire (ombres,
+  soleil, forêt, y compris en 2D) est conservé.
+
+### Validation
+
+- Contrôles TypeScript, formatage et lint, audit des quatre langues, 165 fichiers et 1 903 tests
+  Web/TypeScript, build Web, budget bundle, synchronisation Capacitor et assemblage Android.
+- APK `5.91.3-diagnostic` (code 916) installé et validé sur Galaxy S23 SM-S911B. La release GitHub
+  `v5.91.3` produit un AAB signé par GitHub Actions ; aucun upload Play.
+
 ## [5.91.2] - 2026-09-16 — Trace lisible et réglable
 
 ### Amélioré

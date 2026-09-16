@@ -5,7 +5,8 @@
  * échantillonner l'altitude en 3 points autour du centre de la caméra, puis calcule
  * la pente de plus grande pente (gradient 2D).
  *
- * Affiché si l'option est active et le zoom >= 13 ; Free conserve un aperçu verrouillé.
+ * Affiché uniquement en 3D (le relief y fournit les pixels d'altitude), si l'option
+ * est active et le zoom >= 13 ; Free conserve un aperçu verrouillé.
  * Mis à jour toutes les 200ms (accumulateur, pas de surcharge GPU).
  *
  * v5.90 : résumé ancré ouvrable au toucher/clavier ; seul le viseur reste déplaçable.
@@ -127,6 +128,10 @@ export class InclinometerWidget {
         this.unsubscribers.push(
             state.subscribe('SHOW_INCLINOMETER', () => this.syncVisibility())
         );
+        // La pente du terrain n'est calculable qu'en 3D (pixels d'altitude chargés)
+        this.unsubscribers.push(
+            state.subscribe('IS_2D_MODE', () => this.syncVisibility())
+        );
         this.unsubscribers.push(
             state.subscribe('isFollowingUser', (val) => {
                 if (val) this.resetReticle(); // Recentrer si on clique sur le bouton position
@@ -169,7 +174,9 @@ export class InclinometerWidget {
 
     private syncVisibility(): void {
         const shouldShow =
-            state.ZOOM >= MIN_ZOOM_DISPLAY && state.SHOW_INCLINOMETER;
+            !state.IS_2D_MODE &&
+            state.ZOOM >= MIN_ZOOM_DISPLAY &&
+            state.SHOW_INCLINOMETER;
         if (this.el) this.el.hidden = !shouldShow;
         const guidanceSlot = document.getElementById(
             'guidance-inclinometer-slot'

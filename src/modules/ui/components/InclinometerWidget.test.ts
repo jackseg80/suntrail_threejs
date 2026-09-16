@@ -29,6 +29,7 @@ describe('InclinometerWidget', () => {
         state.ZOOM = 14;
         state.SHOW_INCLINOMETER = true;
         state.isFollowingUser = false;
+        state.IS_2D_MODE = false;
         state.camera = { position: { x: 0, y: 100, z: 0 } } as any;
         state.controls = { target: { x: 0, y: 0, z: 0 } } as any;
         state.originTile = {
@@ -157,6 +158,20 @@ describe('InclinometerWidget', () => {
         );
         expect(reticle.style.left).toBe('50%');
         expect(reticle.style.top).toBe('50%');
+    });
+
+    it('masque l’inclinomètre en 2D et l’affiche en 3D', () => {
+        const el = document.getElementById('inclinometer-widget')!;
+        const reticle = document.getElementById('inclinometer-reticle')!;
+
+        state.IS_2D_MODE = true;
+        (widget as any).syncVisibility();
+        expect(el.hidden).toBe(true);
+        expect(reticle.hidden).toBe(true);
+
+        state.IS_2D_MODE = false;
+        (widget as any).syncVisibility();
+        expect(el.hidden).toBe(false);
     });
 
     it('should display --° when no elevation data is available', () => {
