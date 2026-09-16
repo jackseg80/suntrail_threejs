@@ -111,6 +111,53 @@ describe('Multi-GPX Layers (v5.10)', () => {
         renderSpy.mockRestore();
     });
 
+    it('addGPXLayer: ajoute un casing deux tons à la trace', () => {
+        const layer = addGPXLayer(rawData, 'casing-track');
+        const children = layer.mesh!.children;
+        const halo = children.find((c) => c.userData.type === 'gpx-track-halo');
+        const casing = children.find(
+            (c) => c.userData.type === 'gpx-track-casing'
+        );
+        expect(halo).toBeTruthy();
+        expect(casing).toBeTruthy();
+        expect(halo!.renderOrder).toBeLessThan(casing!.renderOrder);
+        expect(layer.mesh!.userData.outlineHaloGeo).toBeTruthy();
+        expect(layer.mesh!.userData.outlineCasingGeo).toBeTruthy();
+    });
+
+    it('addGPXLayer: applique la couleur de trace réglée', () => {
+        const previous = state.TRACE_COLOR;
+        state.TRACE_COLOR = '#00e5ff';
+        const layer = addGPXLayer(rawData, 'trace-color');
+        const material = layer.mesh!.material as THREE.MeshStandardMaterial;
+        expect(`#${material.color.getHexString()}`).toBe('#00e5ff');
+        state.TRACE_COLOR = previous;
+    });
+
+    it('addGPXLayer: détecte un aller-retour et ajoute des chevrons de sens', () => {
+        // Zigzag non colinéaire (survit à RDP), parcouru à l'aller puis au
+        // retour jusqu'à V1 (départ ≠ arrivée pour ne pas dégénérer).
+        const vertices = Array.from({ length: 9 }, (_, i) => ({
+            lat: 46.5 + i * 0.005,
+            lon: 7.5 + (i % 2 === 0 ? 0 : 0.01),
+            ele: 1000,
+        }));
+        const outbound = vertices;
+        const back = vertices.slice(1, -1).reverse();
+        const outAndBack = {
+            tracks: [{ points: [...outbound, ...back] }],
+        };
+        // Zoom élevé : epsilon RDP petit, la trace ne se fait pas simplifier.
+        const previousZoom = state.ZOOM;
+        state.ZOOM = 14;
+        const layer = addGPXLayer(outAndBack as any, 'out-back');
+        state.ZOOM = previousZoom;
+        const chevrons = layer.mesh!.children.filter(
+            (c) => c.userData.type === 'gpx-track-chevrons'
+        );
+        expect(chevrons.length).toBeGreaterThan(0);
+    });
+
     it('showOnlyGPXLayer keeps exactly the selected loaded trace visible', () => {
         const first = addGPXLayer(rawData, 'first', { forceVisible: true });
         const second = addGPXLayer(rawData, 'second', { forceVisible: true });
@@ -373,13 +420,32 @@ describe('Multi-GPX Layers (v5.10)', () => {
         vi.useRealTimers();
     });
 
-    it("updateAllGPXMeshes rejoue l'analyse solaire si elle a été calculée sans relief", () => {
+    it('updateAllGPXMeshes ne colore pas la trace par défaut (overlay solaire désactivé)', () => {
+        addGPXLayer(rawData, 'route-default-color');
+        const mockGet = vi.mocked(getCurrentRouteSolarAnalysis);
+        const mockOverlay = vi.mocked(buildSolarOverlay);
+        mockGet.mockReturnValue({ terrainAvailable: true } as any);
+        mockOverlay.mockClear();
+
+        vi.useFakeTimers();
+        updateAllGPXMeshes();
+        vi.runAllTimers();
+
+        expect(mockOverlay).not.toHaveBeenCalled();
+
+        mockGet.mockReset();
+        vi.useRealTimers();
+    });
+
+    it("updateAllGPXMeshes rejoue l'analyse solaire si la coloration est active et sans relief", () => {
         addGPXLayer(rawData, 'route-no-terrain');
         const mockGet = vi.mocked(getCurrentRouteSolarAnalysis);
         const mockSchedule = vi.mocked(scheduleRouteSolarAnalysis);
         const mockInvalidate = vi.mocked(invalidateRouteCache);
         const mockOverlay = vi.mocked(buildSolarOverlay);
 
+        const previous = state.SHOW_SOLAR_ON_TRACE;
+        state.SHOW_SOLAR_ON_TRACE = true;
         mockGet.mockReturnValue({ terrainAvailable: false } as any);
         mockSchedule.mockClear();
         mockInvalidate.mockClear();
@@ -393,6 +459,7 @@ describe('Multi-GPX Layers (v5.10)', () => {
         expect(mockInvalidate).toHaveBeenCalled();
         expect(mockSchedule).toHaveBeenCalled();
 
+        state.SHOW_SOLAR_ON_TRACE = previous;
         mockGet.mockReset();
         vi.useRealTimers();
     });

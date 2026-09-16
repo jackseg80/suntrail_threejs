@@ -537,7 +537,8 @@
             "account": "Compte",
             "sources": "Sources de données & Légal",
             "pro": "Fonctionnalités PRO",
-            "theme": "Thème"
+            "theme": "Thème",
+            "trace": "Couleur trace"
         },
         "category": {
             "ariaLabel": "Catégories des réglages",
@@ -591,6 +592,14 @@
             "light": "Clair",
             "dark": "Sombre",
             "auto": "Auto"
+        },
+        "traceColor": {
+            "magenta": "Magenta",
+            "violet": "Violet",
+            "red": "Rouge",
+            "orange": "Orange",
+            "cyan": "Cyan",
+            "yellow": "Jaune"
         },
         "label": {
             "resolution": "Résolution (LOD)",
@@ -1311,6 +1320,9 @@
             "snapshot": "Instantané",
             "timeline": "Progression",
             "change": "Changer le mode d'analyse"
+        },
+        "trace": {
+            "toggle": "Couleur selon l'exposition"
         },
         "stat": {
             "sunPct": "Au soleil",

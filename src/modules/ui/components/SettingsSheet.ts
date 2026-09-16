@@ -357,6 +357,7 @@ export class SettingsSheet extends BaseComponent {
 
         // Theme selector
         this.bindThemeSelector();
+        this.bindTraceColorSelector();
 
         // Language selector
         this.createLanguageSelector();
@@ -769,6 +770,43 @@ export class SettingsSheet extends BaseComponent {
 
         this.addSubscription(state.subscribe('themePreference', updateActive));
         // Rafraîchir aussi à chaque ouverture de la sheet (couverture lazy-hydration)
+        const onSheetOpened = ({ id }: { id: string }) => {
+            if (id === 'settings') updateActive();
+        };
+        eventBus.on('sheetOpened', onSheetOpened);
+        this.addSubscription(() => eventBus.off('sheetOpened', onSheetOpened));
+        updateActive();
+    }
+
+    private bindTraceColorSelector(): void {
+        if (!this.element) return;
+        const selector = this.element.querySelector('#trace-color-selector');
+        if (!selector) return;
+
+        const updateActive = () => {
+            selector.querySelectorAll('.trace-color-btn').forEach((btn) => {
+                const el = btn as HTMLElement;
+                const isActive =
+                    el.dataset.color?.toLowerCase() ===
+                    state.TRACE_COLOR.toLowerCase();
+                el.classList.toggle('active', isActive);
+                el.setAttribute('aria-pressed', String(isActive));
+            });
+        };
+
+        selector.querySelectorAll('.trace-color-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const color = (btn as HTMLElement).dataset.color;
+                if (!color || color === state.TRACE_COLOR) return;
+                state.TRACE_COLOR = color;
+                saveSettings();
+                updateActive();
+                void import('../../gpxLayers').then((m) =>
+                    m.refreshTraceColors()
+                );
+            });
+        });
+
         const onSheetOpened = ({ id }: { id: string }) => {
             if (id === 'settings') updateActive();
         };

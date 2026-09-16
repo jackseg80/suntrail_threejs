@@ -18,6 +18,7 @@ import {
     getAvgSpeedKmh as _getAvgSpeedKmh,
     findStrongExposureSegments,
     isOptimalComputing,
+    setSolarOnTrace,
     type RouteSolarAnalysis,
 } from '../../solarRoute';
 import { isRouteTerrainPrefetchEnabled } from '../../routeTerrain';
@@ -921,6 +922,23 @@ export class SolarProbeSheet extends BaseComponent {
             };
             titleRow.appendChild(modeBtn);
         }
+
+        // Coloration de la trace par l'exposition (désactivée par défaut)
+        const traceToggle = document.createElement('button');
+        traceToggle.type = 'button';
+        traceToggle.className = 'solar-route-trace-toggle';
+        traceToggle.textContent = i18n.t('solarRoute.trace.toggle');
+        traceToggle.setAttribute(
+            'aria-pressed',
+            String(state.SHOW_SOLAR_ON_TRACE)
+        );
+        traceToggle.classList.toggle('active', state.SHOW_SOLAR_ON_TRACE);
+        traceToggle.onclick = () => {
+            setSolarOnTrace(!state.SHOW_SOLAR_ON_TRACE);
+            this.updateRouteSolarSection();
+        };
+        titleRow.appendChild(traceToggle);
+
         section.appendChild(titleRow);
 
         // ── Information : simulation moins précise sans relief ──────────────

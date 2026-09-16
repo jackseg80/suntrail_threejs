@@ -537,7 +537,8 @@
             "account": "Account",
             "sources": "Data Sources & Legal",
             "pro": "PRO Features",
-            "theme": "Theme"
+            "theme": "Theme",
+            "trace": "Track colour"
         },
         "category": {
             "ariaLabel": "Settings categories",
@@ -576,6 +577,14 @@
             "light": "Light",
             "dark": "Dark",
             "auto": "Auto"
+        },
+        "traceColor": {
+            "magenta": "Magenta",
+            "violet": "Violet",
+            "red": "Red",
+            "orange": "Orange",
+            "cyan": "Cyan",
+            "yellow": "Yellow"
         },
         "label": {
             "resolution": "Resolution (LOD)",
@@ -1311,6 +1320,9 @@
             "snapshot": "Snapshot",
             "timeline": "Progress",
             "change": "Change analysis mode"
+        },
+        "trace": {
+            "toggle": "Colour by exposure"
         },
         "stat": {
             "sunPct": "In sun",

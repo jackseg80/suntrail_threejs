@@ -20,19 +20,52 @@ import {
 } from './solarRoute';
 import { saveToHistory, updateHistoryEntryLocation } from './gpxHistoryService';
 import { getPlaceName } from './geocodingService';
+import {
+    detectSelfOverlap,
+    offsetPolylineForSelfOverlap,
+    buildDirectionChevrons,
+} from './trackRender';
 import { computeTrackFitDistance, MIN_TRACK_VIEW_DISTANCE } from './cameraFit';
 
 // v5.31.1 : Shared GPX track materials (1 per color × mode = 16 max instead of N per layer)
 const gpxMaterials3D = new Map<string, THREE.MeshStandardMaterial>();
 const gpxMaterials2D = new Map<string, THREE.MeshBasicMaterial>();
 
-// v5.53.3 : Shared outline material for track visibility
-const gpxOutlineMaterial = new THREE.MeshBasicMaterial({
-    color: 0x000000,
+// Casing deux tons de la trace : halo clair externe + liseré sombre interne.
+// Non éclairés (MeshBasicMaterial) → rendu identique en 2D et 3D, et contraste
+// garanti sur toutes les cartes (satellite, SwissTopo, OpenTopo, IGN).
+const gpxHaloMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.92,
     depthWrite: false,
 });
+
+const gpxCasingMaterial = new THREE.MeshBasicMaterial({
+    color: 0x0b0f1a,
+    transparent: true,
+    opacity: 0.92,
+    depthWrite: false,
+});
+
+// Chevrons de sens (aller/retour) : cœur clair + contour sombre.
+const gpxChevronLightMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+});
+
+const gpxChevronDarkMaterial = new THREE.MeshBasicMaterial({
+    color: 0x0b0f1a,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+});
+
+const HALO_SCALE = 1.8;
+const CASING_SCALE = 1.45;
+const LANE_OFFSET_FACTOR = 0.6;
 
 let _recMaterial3D: THREE.MeshStandardMaterial | null = null;
 let _recMaterial2D: THREE.MeshBasicMaterial | null = null;
@@ -95,6 +128,15 @@ function getGPXMaterial(color: string, is2D: boolean): THREE.Material {
     return mat;
 }
 
+/** Reconstruit les traces après un changement de couleur/réglage d'affichage. */
+export function refreshTraceColors(): void {
+    // Les matériaux sont mis en cache par couleur : on vide pour forcer la
+    // recréation avec la couleur courante, puis on reconstruit les maillages.
+    gpxMaterials3D.clear();
+    gpxMaterials2D.clear();
+    updateAllGPXMeshes();
+}
+
 // v5.52.7 : GPX_SURFACE_OFFSET importé de analysis.ts (source unique)
 
 function computeTrackThickness(base: number, max: number): number {
@@ -103,25 +145,98 @@ function computeTrackThickness(base: number, max: number): number {
     return Math.max(base, Math.min(max, base * Math.pow(2, exponent)));
 }
 
-/** v5.53.3 : Ajoute un contour noir translucide derrière le tracé pour améliorer le contraste */
+/**
+ * Casing deux tons : halo clair (le plus large) + liseré sombre, rendus sous le
+ * tracé. Les géométries sont conservées sur `mesh.userData` pour que l'overlay
+ * solaire puisse les réutiliser en version « toujours visible ».
+ */
 function applyTrackOutline(
     mesh: THREE.Mesh,
     curve: THREE.Curve<THREE.Vector3>,
     segments: number,
     thickness: number
 ): void {
-    const outlineThickness = thickness * 1.4;
-    const outlineGeometry = new THREE.TubeGeometry(
+    const haloGeometry = new THREE.TubeGeometry(
         curve,
         segments,
-        outlineThickness,
+        thickness * HALO_SCALE,
         4,
         false
     );
-    const outlineMesh = new THREE.Mesh(outlineGeometry, gpxOutlineMaterial);
-    outlineMesh.renderOrder = 9; // Derrière le tracé principal (10)
-    outlineMesh.userData = { type: 'gpx-track-outline' };
-    mesh.add(outlineMesh);
+    const casingGeometry = new THREE.TubeGeometry(
+        curve,
+        segments,
+        thickness * CASING_SCALE,
+        4,
+        false
+    );
+    const haloMesh = new THREE.Mesh(haloGeometry, gpxHaloMaterial);
+    haloMesh.renderOrder = 7;
+    haloMesh.userData = { type: 'gpx-track-halo' };
+    const casingMesh = new THREE.Mesh(casingGeometry, gpxCasingMaterial);
+    casingMesh.renderOrder = 8;
+    casingMesh.userData = { type: 'gpx-track-casing' };
+    mesh.add(haloMesh);
+    mesh.add(casingMesh);
+    mesh.userData.outlineHaloGeo = haloGeometry;
+    mesh.userData.outlineCasingGeo = casingGeometry;
+}
+
+// Auto-recouvrement mis en cache par signature de trace (évite de recalculer
+// aux reconstructions zoom / 2D↔3D).
+const selfOverlapCache = new Map<string, boolean>();
+
+function routeSignature(points: Array<{ lat: number; lon: number }>): string {
+    if (points.length === 0) return '0';
+    const first = points[0];
+    const last = points[points.length - 1];
+    return `${points.length}:${first.lat.toFixed(5)},${first.lon.toFixed(5)}:${last.lat.toFixed(5)},${last.lon.toFixed(5)}`;
+}
+
+function hasSelfOverlap(
+    signature: string,
+    simplifiedPoints: THREE.Vector3[]
+): boolean {
+    const cached = selfOverlapCache.get(signature);
+    if (cached !== undefined) return cached;
+    const result = detectSelfOverlap(simplifiedPoints);
+    if (selfOverlapCache.size > 200) selfOverlapCache.clear();
+    selfOverlapCache.set(signature, result);
+    return result;
+}
+
+/** Chevrons de sens, uniquement sur les traces à auto-recouvrement (aller/retour). */
+function applyDirectionChevrons(
+    mesh: THREE.Mesh,
+    renderPoints: THREE.Vector3[],
+    thickness: number
+): void {
+    const size = Math.max(4, thickness * 1.3);
+    const spacing = Math.max(80, thickness * 14);
+    const { light, dark } = buildDirectionChevrons(renderPoints, {
+        size,
+        spacing,
+        lift: thickness * 0.9,
+    });
+    if (light.length === 0) return;
+    const build = (
+        verts: number[],
+        material: THREE.Material,
+        order: number
+    ) => {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute(
+            'position',
+            new THREE.BufferAttribute(new Float32Array(verts), 3)
+        );
+        const m = new THREE.Mesh(geometry, material);
+        m.renderOrder = order;
+        m.frustumCulled = false;
+        m.userData = { type: 'gpx-track-chevrons' };
+        mesh.add(m);
+    };
+    build(dark, gpxChevronDarkMaterial, 12);
+    build(light, gpxChevronLightMaterial, 13);
 }
 
 /** Recalcule les stats (distance, D+/D-, temps) d'un layer depuis l'altitude réelle du terrain.
@@ -257,27 +372,42 @@ export function addGPXLayer(
     }
 
     simplifiedPoints.forEach((v) => box.expandByPoint(v));
-    const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
+
+    // Aller-retour : décalage en double voie (affichage uniquement)
+    const selfOverlap = hasSelfOverlap(
+        routeSignature(points),
+        simplifiedPoints
+    );
+    const renderPoints = selfOverlap
+        ? offsetPolylineForSelfOverlap(
+              simplifiedPoints,
+              thickness * LANE_OFFSET_FACTOR
+          )
+        : simplifiedPoints;
+
+    const curve = new THREE.CatmullRomCurve3(renderPoints);
     const geometry = new THREE.TubeGeometry(
         curve,
-        Math.min(simplifiedPoints.length * 2, 1500),
+        Math.min(renderPoints.length * 2, 1500),
         thickness,
         4,
         false
     );
     const is2D = state.IS_2D_MODE;
-    const material = getGPXMaterial(color, is2D);
+    // Couleur unique et contrastée pour toutes les traces (réglable)
+    const material = getGPXMaterial(state.TRACE_COLOR, is2D);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 10;
     mesh.userData = { type: 'gpx-track', layerId: id };
 
-    // v5.53.3 : Ajout du contour pour la visibilité
+    // Casing deux tons pour la visibilité sur toutes les cartes
     applyTrackOutline(
         mesh,
         curve,
         geometry.parameters.tubularSegments,
         thickness
     );
+    if (selfOverlap) applyDirectionChevrons(mesh, renderPoints, thickness);
 
     // v5.54 : Logique de visibilité Free (Teasing Multi-GPX)
     // 1. Les itinéraires manuels sont TOUJOURS visibles.
@@ -543,34 +673,50 @@ function _doUpdateAllGPXMeshes(): void {
             if (simplifiedPoints.length < 2)
                 throw new Error('Not enough simplified points');
 
-            const curve = new THREE.CatmullRomCurve3(simplifiedPoints);
+            const selfOverlap = hasSelfOverlap(
+                routeSignature(points),
+                simplifiedPoints
+            );
+            const renderPoints = selfOverlap
+                ? offsetPolylineForSelfOverlap(
+                      simplifiedPoints,
+                      thickness * LANE_OFFSET_FACTOR
+                  )
+                : simplifiedPoints;
+
+            const curve = new THREE.CatmullRomCurve3(renderPoints);
             const geometry = new THREE.TubeGeometry(
                 curve,
-                Math.min(simplifiedPoints.length * 2, 1500),
+                Math.min(renderPoints.length * 2, 1500),
                 thickness,
                 4,
                 false
             );
-            const material = getGPXMaterial(layer.color, is2D);
+            const material = getGPXMaterial(state.TRACE_COLOR, is2D);
             const mesh = new THREE.Mesh(geometry, material);
             mesh.renderOrder = 10;
             mesh.visible = layer.visible;
             mesh.userData = { type: 'gpx-track', layerId: layer.id };
 
-            // v5.53.3 : Ajout du contour pour la visibilité
+            // Casing deux tons pour la visibilité sur toutes les cartes
             applyTrackOutline(
                 mesh,
                 curve,
                 geometry.parameters.tubularSegments,
                 thickness
             );
+            if (selfOverlap)
+                applyDirectionChevrons(mesh, renderPoints, thickness);
 
             if (state.scene) state.scene.add(mesh);
 
-            // Reconstruire l'overlay solar si ce layer est actif et qu'une analyse
-            // exploitable existe. Une analyse calculée sans relief (2D ou tuiles
-            // pas encore chargées) doit être rejouée, pas réutilisée telle quelle.
-            if (layer.id === state.activeGPXLayerId) {
+            // Reconstruire l'overlay solar si ce layer est actif, que la
+            // coloration de la trace est activée et qu'une analyse exploitable
+            // existe. Sinon, l'exposition reste dans le profil.
+            if (
+                layer.id === state.activeGPXLayerId &&
+                state.SHOW_SOLAR_ON_TRACE
+            ) {
                 const existing = getCurrentRouteSolarAnalysis();
                 if (existing?.terrainAvailable) {
                     buildSolarOverlay(mesh, existing);

@@ -7,6 +7,7 @@ const { mockState } = vi.hoisted(() => ({
         hasLastClicked: false,
         lastClickedCoords: { x: 0, z: 0, alt: 0 },
         subscribe: vi.fn(() => vi.fn()),
+        SHOW_SOLAR_ON_TRACE: false,
     },
 }));
 
@@ -39,6 +40,7 @@ vi.mock('../../solarRoute', () => ({
     getAvgSpeedKmh: vi.fn(() => 4),
     findStrongExposureSegments: vi.fn(() => []),
     isOptimalComputing: vi.fn(() => false),
+    setSolarOnTrace: vi.fn(),
 }));
 vi.mock('../core/SheetManager', () => ({
     sheetManager: { open: vi.fn(), close: vi.fn() },
@@ -310,6 +312,10 @@ describe('SolarProbeSheet', () => {
         expect(container.querySelector('.solar-route-grid')).not.toBeNull();
         expect(container.querySelector('.solar-alert--info')).not.toBeNull();
         expect(container.querySelector('.solar-alert--danger')).toBeNull();
+        // L'interrupteur de coloration de la trace est présent
+        expect(
+            container.querySelector('.solar-route-trace-toggle')
+        ).not.toBeNull();
 
         vi.mocked(getCurrentRouteSolarAnalysis).mockReturnValue(null);
         sheet.dispose();

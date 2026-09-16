@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import SunCalc from './suncalcCompat';
-import { state, isProActive } from './state';
+import { state, isProActive, saveSettings } from './state';
 import {
     isAtShadow,
     drapeToTerrain,
@@ -84,6 +84,12 @@ let _currentMode: SolarRouteMode = 'hikerTimeline';
 let _overlayMesh: THREE.Mesh | null = null;
 let _overlayMaterial: THREE.MeshBasicMaterial | null = null;
 let _overlayTexture: THREE.DataTexture | null = null;
+// Casing de l'overlay : halo + liseré toujours visibles (depthTest désactivé),
+// réutilise les géométries du casing de la trace.
+let _overlayHaloMesh: THREE.Mesh | null = null;
+let _overlayCasingMesh: THREE.Mesh | null = null;
+let _overlayHaloMaterial: THREE.MeshBasicMaterial | null = null;
+let _overlayCasingMaterial: THREE.MeshBasicMaterial | null = null;
 
 let _analysisTimer: ReturnType<typeof setTimeout> | null = null;
 let _abortController: AbortController | null = null;
@@ -121,6 +127,28 @@ export function setSolarRouteMode(mode: SolarRouteMode): void {
     _currentMode = mode;
     invalidateRouteCache();
     scheduleRouteSolarAnalysis(200);
+}
+
+/**
+ * Active/désactive la coloration de la trace par l'exposition solaire.
+ * Désactivé par défaut (meilleure lisibilité et meilleure performance) :
+ * l'exposition reste disponible dans le profil et la fiche solaire.
+ */
+export function setSolarOnTrace(enabled: boolean): void {
+    state.SHOW_SOLAR_ON_TRACE = enabled;
+    saveSettings();
+    if (!enabled) {
+        disposeSolarOverlay();
+        return;
+    }
+    const analysis = _currentAnalysis;
+    const sourceMesh = getActiveSourceMesh();
+    if (analysis && sourceMesh) {
+        buildSolarOverlay(sourceMesh, analysis);
+        eventBus.emit('sceneRenderRequested');
+    } else {
+        scheduleRouteSolarAnalysis(200);
+    }
 }
 
 // ─── Source resolution ────────────────────────────────────────────────────────
@@ -664,6 +692,41 @@ export function buildSolarOverlay(
     _overlayMesh.scale.copy(sourceMesh.scale);
 
     if (state.scene) state.scene.add(_overlayMesh);
+
+    // Halo + liseré de l'overlay, toujours dessinés par-dessus la carte pour que
+    // la trace colorée reste lisible quel que soit le fond.
+    const haloGeo = sourceMesh.userData?.outlineHaloGeo as
+        THREE.BufferGeometry | undefined;
+    const casingGeo = sourceMesh.userData?.outlineCasingGeo as
+        THREE.BufferGeometry | undefined;
+    if (haloGeo && casingGeo) {
+        _overlayHaloMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.92,
+            depthTest: false,
+            depthWrite: false,
+        });
+        _overlayCasingMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0b0f1a,
+            transparent: true,
+            opacity: 0.92,
+            depthTest: false,
+            depthWrite: false,
+        });
+        _overlayHaloMesh = new THREE.Mesh(haloGeo, _overlayHaloMaterial);
+        _overlayHaloMesh.renderOrder = 9;
+        _overlayCasingMesh = new THREE.Mesh(casingGeo, _overlayCasingMaterial);
+        _overlayCasingMesh.renderOrder = 10;
+        for (const casingMesh of [_overlayHaloMesh, _overlayCasingMesh]) {
+            casingMesh.userData = { type: 'solar-route-overlay-casing' };
+            casingMesh.position.copy(sourceMesh.position);
+            casingMesh.rotation.copy(sourceMesh.rotation);
+            casingMesh.scale.copy(sourceMesh.scale);
+            casingMesh.visible = sourceMesh.visible;
+            if (state.scene) state.scene.add(casingMesh);
+        }
+    }
     // L'analyse se termine hors interaction utilisateur. La boucle de rendu
     // mobile peut alors être au repos : afficher les couleurs sans attendre
     // que l'utilisateur déplace la carte.
@@ -691,10 +754,21 @@ export function disposeSolarOverlay(): void {
         _overlayMaterial = null;
         _overlayTexture = null;
     }
+    for (const casingMesh of [_overlayHaloMesh, _overlayCasingMesh]) {
+        if (casingMesh && state.scene) state.scene.remove(casingMesh);
+    }
+    _overlayHaloMaterial?.dispose();
+    _overlayCasingMaterial?.dispose();
+    _overlayHaloMesh = null;
+    _overlayCasingMesh = null;
+    _overlayHaloMaterial = null;
+    _overlayCasingMaterial = null;
 }
 
 export function setOverlayVisible(visible: boolean): void {
     if (_overlayMesh) _overlayMesh.visible = visible;
+    if (_overlayHaloMesh) _overlayHaloMesh.visible = visible;
+    if (_overlayCasingMesh) _overlayCasingMesh.visible = visible;
 }
 
 export function updateOverlayTransform(sourceMesh: THREE.Mesh): void {
@@ -704,6 +778,13 @@ export function updateOverlayTransform(sourceMesh: THREE.Mesh): void {
     _overlayMesh.rotation.copy(sourceMesh.rotation);
     _overlayMesh.scale.copy(sourceMesh.scale);
     _overlayMesh.visible = sourceMesh.visible;
+    for (const casingMesh of [_overlayHaloMesh, _overlayCasingMesh]) {
+        if (!casingMesh) continue;
+        casingMesh.position.copy(sourceMesh.position);
+        casingMesh.rotation.copy(sourceMesh.rotation);
+        casingMesh.scale.copy(sourceMesh.scale);
+        casingMesh.visible = sourceMesh.visible;
+    }
 }
 
 // ─── Notification vers l'UI ───────────────────────────────────────────────────
@@ -787,7 +868,7 @@ async function runRouteSolarAnalysis(): Promise<void> {
             invalidateRouteCache();
         } else {
             _currentAnalysis = _cachedAnalysis;
-            updateSolarOverlay(_cachedAnalysis);
+            if (state.SHOW_SOLAR_ON_TRACE) updateSolarOverlay(_cachedAnalysis);
             notifySolarRouteUpdate();
             return;
         }
@@ -823,10 +904,14 @@ async function runRouteSolarAnalysis(): Promise<void> {
         }
         _currentAnalysis = analysis;
 
-        // Overlay 3D
-        const sourceMesh = getActiveSourceMesh();
-        if (sourceMesh) {
-            buildSolarOverlay(sourceMesh, analysis);
+        // Overlay 3D : seulement si l'utilisateur colore la trace par l'exposition
+        if (state.SHOW_SOLAR_ON_TRACE) {
+            const sourceMesh = getActiveSourceMesh();
+            if (sourceMesh) {
+                buildSolarOverlay(sourceMesh, analysis);
+            }
+        } else {
+            disposeSolarOverlay();
         }
 
         notifySolarRouteUpdate();

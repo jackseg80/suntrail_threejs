@@ -1,6 +1,22 @@
-# SunTrail — TODO (v5.91.1 ; publication Play séparée)
+# SunTrail — TODO (v5.91.2 ; publication Play séparée)
 
 > Dernière mise à jour : 2026-09-16
+
+## ✅ v5.91.2 — trace lisible et couleur réglable
+
+- [x] Trace à couleur unique à fort contraste (magenta par défaut) + casing deux tons, indépendante
+      du fond carto ; palette réglable dans Réglages → Couleur trace (persistée).
+- [x] Coloration solaire de la trace rendue optionnelle (désactivée par défaut) dans la fiche
+      Analyse solaire ; l'exposition reste dans le profil et la fiche.
+- [x] Aller-retour : détection d'auto-recouvrement (une fois, en cache) + double voie + chevrons de
+      sens ; guidage/profil/analyse inchangés.
+- [x] Profil : informations en une ligne (libellé + valeur), 2×2 sur petit écran ; bouton Analyse
+      solaire sur sa propre ligne de boutons (à gauche), icônes à droite.
+- [x] Réglages : section « Couleur trace » compacte sous Signalisation 3D, pastilles rondes de 26 px
+      (min-height des feuilles neutralisé).
+- [x] Contrôles statiques, 165 fichiers/1 901 tests, build Web, budget bundle, audit i18n, `cap:sync`,
+      assemblage Android et APK diagnostic `5.91.2` (code 915) validé sur S23.
+- [x] Release GitHub `v5.91.2` avec AAB signé par GitHub Actions ; aucun upload Play.
 
 ## ✅ v5.91.1 — analyse solaire du parcours fiable et profil lisible
 

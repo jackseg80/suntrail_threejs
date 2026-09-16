@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     saveLastView,
+    saveSettings,
     state,
     loadSettings,
     CURRENT_SETTINGS_VERSION,
@@ -50,5 +51,37 @@ describe('Audit Persistance Vue (v5.29.6)', () => {
         expect(state.TARGET_LAT).toBe(45.123);
         expect(state.TARGET_LON).toBe(6.456);
         expect(state.ZOOM).toBe(12);
+    });
+
+    it('SHOULD persist trace color and solar-on-trace setting', () => {
+        state.TRACE_COLOR = '#00e5ff';
+        state.SHOW_SOLAR_ON_TRACE = true;
+
+        saveSettings();
+        vi.advanceTimersByTime(400);
+
+        const saved = JSON.parse(
+            localStorage.getItem('suntrail_settings') || '{}'
+        );
+        expect(saved.TRACE_COLOR).toBe('#00e5ff');
+        expect(saved.SHOW_SOLAR_ON_TRACE).toBe(true);
+    });
+
+    it('SHOULD restore trace color and solar-on-trace setting', () => {
+        localStorage.setItem(
+            'suntrail_settings',
+            JSON.stringify({
+                version: CURRENT_SETTINGS_VERSION,
+                MAP_SOURCE: 'swisstopo',
+                PERFORMANCE_PRESET: 'balanced',
+                TRACE_COLOR: '#b026ff',
+                SHOW_SOLAR_ON_TRACE: true,
+            })
+        );
+
+        loadSettings();
+
+        expect(state.TRACE_COLOR).toBe('#b026ff');
+        expect(state.SHOW_SOLAR_ON_TRACE).toBe(true);
     });
 });

@@ -1,3 +1,27 @@
+## [5.91.2] - 2026-09-16 — Trace lisible et réglable
+
+### Amélioré
+
+- Rendre la trace nette sur toutes les cartes : couleur unique à fort contraste (magenta par défaut)
+  et casing à deux tons (halo clair + liseré sombre) indépendant du fond. La couleur est réglable
+  dans Réglages → Couleur trace (magenta, violet, rouge, orange, cyan, jaune) et persistée.
+- Faire de la coloration solaire de la trace une option (désactivée par défaut) dans la fiche
+  Analyse solaire : l'exposition reste disponible dans le profil et la fiche, et la carte gagne en
+  lisibilité comme en performance.
+- Distinguer un aller-retour : détection d'auto-recouvrement (calculée une fois, mise en cache),
+  rendu en double voie avec chevrons de sens. Le guidage, le profil et l'analyse continuent d'utiliser
+  les points réels.
+- Profil : informations en une ligne (libellé + valeur), en 2×2 sur petit écran ; le bouton
+  Analyse solaire occupe sa propre ligne de boutons, à gauche, les icônes restant à droite.
+- Réglages : section « Couleur trace » compacte sous Signalisation 3D, avec pastilles rondes de 26 px.
+
+### Validation
+
+- Contrôles TypeScript, formatage et lint, audit des quatre langues, 165 fichiers et 1 901 tests
+  Web/TypeScript, build Web, budget bundle, synchronisation Capacitor et assemblage Android.
+- APK `5.91.2-diagnostic` (code 915) installé et validé sur Galaxy S23 SM-S911B. La release GitHub
+  `v5.91.2` produit un AAB signé par GitHub Actions ; aucun upload Play.
+
 ## [5.91.1] - 2026-09-16 — Analyse solaire du parcours fiable et lisible sur petit écran
 
 ### Amélioré

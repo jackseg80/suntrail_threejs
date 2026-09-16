@@ -15,8 +15,10 @@ vi.mock('./state', () => ({
         gpxLayers: [] as any[],
         activeGPXLayerId: null as string | null,
         scene: null as THREE.Scene | null,
+        SHOW_SOLAR_ON_TRACE: false,
     },
     isProActive: vi.fn(() => false),
+    saveSettings: vi.fn(),
 }));
 
 vi.mock('./landcover', () => ({
@@ -83,6 +85,7 @@ let clearSolarRouteAnalysis: typeof import('./solarRoute').clearSolarRouteAnalys
 let getOptimalDepartureData: typeof import('./solarRoute').getOptimalDepartureData;
 let buildSolarOverlay: typeof import('./solarRoute').buildSolarOverlay;
 let scheduleRouteSolarAnalysis: typeof import('./solarRoute').scheduleRouteSolarAnalysis;
+let setSolarOnTrace: typeof import('./solarRoute').setSolarOnTrace;
 
 beforeEach(async () => {
     vi.useFakeTimers();
@@ -101,6 +104,7 @@ beforeEach(async () => {
     getOptimalDepartureData = mod.getOptimalDepartureData;
     buildSolarOverlay = mod.buildSolarOverlay;
     scheduleRouteSolarAnalysis = mod.scheduleRouteSolarAnalysis;
+    setSolarOnTrace = mod.setSolarOnTrace;
     // Reset state
     invalidateRouteCache();
     clearSolarRouteAnalysis();
@@ -814,5 +818,14 @@ describe('relance après chargement du relief', () => {
         const second = getCurrentRouteSolarAnalysis();
         expect(second?.terrainAvailable).toBe(true);
         expect(second?.terrainCoverage).toBe(1);
+    });
+});
+
+describe('coloration de la trace par l’exposition', () => {
+    it('setSolarOnTrace met à jour le réglage', () => {
+        setSolarOnTrace(true);
+        expect((state as any).SHOW_SOLAR_ON_TRACE).toBe(true);
+        setSolarOnTrace(false);
+        expect((state as any).SHOW_SOLAR_ON_TRACE).toBe(false);
     });
 });

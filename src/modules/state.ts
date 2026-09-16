@@ -53,6 +53,18 @@ export const GPX_COLORS = [
     '#ff0000', // Red (Vivid)
 ];
 
+/** Palette de couleurs de trace à fort contraste (rares sur les fonds carto). */
+export const TRACE_COLORS = [
+    '#ff2d95', // Magenta
+    '#b026ff', // Violet
+    '#ff0000', // Rouge
+    '#ff6600', // Orange
+    '#00e5ff', // Cyan
+    '#ffff00', // Jaune
+] as const;
+
+export const DEFAULT_TRACE_COLOR = TRACE_COLORS[0];
+
 export interface PerformanceSettings {
     RESOLUTION: number;
     RANGE: number;
@@ -216,6 +228,10 @@ export interface State {
     LOAD_DELAY_FACTOR: number;
     SHOW_TRAILS: boolean;
     SHOW_SLOPES: boolean;
+    /** Couleur unique des traces (GPX, itinéraires) sur la carte. */
+    TRACE_COLOR: string;
+    /** Colorer la trace par l'exposition solaire (désactivé par défaut). */
+    SHOW_SOLAR_ON_TRACE: boolean;
     SHOW_SIGNPOSTS: boolean;
     SHOW_BUILDINGS: boolean;
     SHOW_HYDROLOGY: boolean;
@@ -403,6 +419,8 @@ const initialState: State = {
     LOAD_DELAY_FACTOR: PRESETS.balanced.LOAD_DELAY_FACTOR,
     SHOW_TRAILS: false,
     SHOW_SLOPES: false,
+    TRACE_COLOR: DEFAULT_TRACE_COLOR,
+    SHOW_SOLAR_ON_TRACE: false,
     SHOW_SIGNPOSTS: PRESETS.balanced.SHOW_SIGNPOSTS,
     SHOW_BUILDINGS: PRESETS.balanced.SHOW_BUILDINGS,
     SHOW_HYDROLOGY: PRESETS.balanced.SHOW_HYDROLOGY,
@@ -560,6 +578,8 @@ export interface SavedSettings {
     WEATHER_DENSITY: number;
     WEATHER_SPEED: number;
     WEATHER_RAIN_OPACITY: number;
+    TRACE_COLOR?: string;
+    SHOW_SOLAR_ON_TRACE?: boolean;
     IS_2D_MODE?: boolean;
     HIDE_UI_ON_MOVE?: boolean;
     LAST_LAT?: number;
@@ -581,6 +601,8 @@ export function saveSettings(): void {
             MAP_SOURCE: state.MAP_SOURCE,
             SHOW_TRAILS: state.SHOW_TRAILS,
             SHOW_SLOPES: state.SHOW_SLOPES,
+            TRACE_COLOR: state.TRACE_COLOR,
+            SHOW_SOLAR_ON_TRACE: state.SHOW_SOLAR_ON_TRACE,
             SHOW_SIGNPOSTS: state.SHOW_SIGNPOSTS,
             SHOW_BUILDINGS: state.SHOW_BUILDINGS,
             SHOW_HYDROLOGY: state.SHOW_HYDROLOGY,
@@ -657,6 +679,9 @@ export function loadSettings(): SavedSettings | null {
         state.MAP_SOURCE = parsed.MAP_SOURCE;
         state.SHOW_TRAILS = !!parsed.SHOW_TRAILS;
         state.SHOW_SLOPES = !!parsed.SHOW_SLOPES;
+        if (parsed.TRACE_COLOR) state.TRACE_COLOR = parsed.TRACE_COLOR;
+        if (parsed.SHOW_SOLAR_ON_TRACE !== undefined)
+            state.SHOW_SOLAR_ON_TRACE = !!parsed.SHOW_SOLAR_ON_TRACE;
         if (parsed.IS_2D_MODE !== undefined)
             state.IS_2D_MODE = !!parsed.IS_2D_MODE;
         if (parsed.HIDE_UI_ON_MOVE !== undefined)
