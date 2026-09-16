@@ -319,10 +319,6 @@ export class NavigationBar extends BaseComponent {
                         : 'nav.tab.outing'
                 );
             }
-            const libraryScope = document.getElementById('track-library-scope');
-            if (libraryScope) {
-                libraryScope.hidden = destination !== 'library';
-            }
             // La feuille possède un en-tête sticky. scrollIntoView() plaçait
             // la première rangée de Bibliothèque sous cet en-tête à grande
             // police. Revenir au sommet conserve le titre et les actions dans

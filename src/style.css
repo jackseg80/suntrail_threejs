@@ -4726,22 +4726,6 @@ body:has(#zone-select-toolbar.active) #toast-container {
 }
 
 /* WIDGETS */
-#zoom-indicator {
-    position: fixed;
-    bottom: calc(var(--ui-bottom-offset) + 20px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface);
-    backdrop-filter: var(--glass);
-    color: var(--accent);
-    padding: 6px 18px;
-    border-radius: 24px;
-    font-family: monospace;
-    font-size: 11px;
-    z-index: 500;
-    border: 1px solid var(--border);
-}
-
 #compass-canvas {
     position: fixed;
     bottom: calc(var(--ui-bottom-offset) + 80px);

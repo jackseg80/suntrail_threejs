@@ -238,7 +238,6 @@ export interface State {
     SHOW_VEGETATION: boolean;
     SHOW_WEATHER: boolean;
     SHOW_WEATHER_PRO: boolean;
-    SHOW_DEBUG: boolean;
     SHOW_STATS: boolean;
     SHOW_INCLINOMETER: boolean;
     USE_WORKERS: boolean;
@@ -358,8 +357,6 @@ export interface State {
     connectionType: string;
     isMapTilerDisabled: boolean;
     isORSDisabled: boolean;
-    networkRequests: number;
-    cacheHits: number;
     uiVisible: boolean;
     isInteractingWithUI: boolean;
     isUserInteracting: boolean;
@@ -381,7 +378,6 @@ export interface State {
     purchasedPacks: string[];
     installedPacks: string[];
     DEBUG_MODE: boolean; // v5.29.6 : Contrôle des logs sensibles
-    DEBUG_NORMALMAP_RG_COMPACT: boolean; // v5.61.4 : Mode normal map compact (RG 2 canaux, Z reconstruit GPU)
     IS_BATTERY_LOW: boolean; // v5.86 : Batterie < 20% → profil Éco forcé, profils 3D verrouillés
     ORS_KEY: string;
     isRoutePlanningMode: boolean;
@@ -427,7 +423,6 @@ const initialState: State = {
     SHOW_VEGETATION: true,
     SHOW_WEATHER: PRESETS.balanced.SHOW_WEATHER,
     SHOW_WEATHER_PRO: true,
-    SHOW_DEBUG: true,
     SHOW_STATS: false,
     SHOW_INCLINOMETER: true,
     USE_WORKERS: true,
@@ -508,8 +503,6 @@ const initialState: State = {
     connectionType: 'unknown',
     isMapTilerDisabled: false,
     isORSDisabled: false,
-    networkRequests: 0,
-    cacheHits: 0,
     uiVisible: true,
     isInteractingWithUI: false,
     isUserInteracting: false,
@@ -526,7 +519,6 @@ const initialState: State = {
     purchasedPacks: [],
     installedPacks: [],
     DEBUG_MODE: false,
-    DEBUG_NORMALMAP_RG_COMPACT: true,
     IS_BATTERY_LOW: false,
     ORS_KEY: '',
     isRoutePlanningMode: false,

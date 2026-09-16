@@ -1,20 +1,23 @@
-# SunTrail — Guide IA (version source 5.91.3)
+# SunTrail — Guide IA (version source 5.91.4)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-16 après la trace REC en vert
-> fluo et l'inclinomètre réservé à la 3D (5.91.3).
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-17 après le correctif de
+> démarrage carte et le nettoyage des réglages avancés (5.91.4).
 
 ## État vérifié
 
-- Version npm : `5.91.3`.
-- Android : `versionName 5.91.3`, `versionCode 916`, minSdk 24, compile/target SDK 36. Le code 916
+- Version npm : `5.91.4`.
+- Android : `versionName 5.91.4`, `versionCode 917`, minSdk 24, compile/target SDK 36. Le code 917
   est supérieur au dernier code local connu ; le maximum effectif dans Play Console reste à vérifier
   avant tout upload.
-- Révision courante `5.91.3` (code 916) : trace REC en vert fluo au-dessus de son casing, inclinomètre
-  réservé au mode 3D (masqué en 2D, mention « (3D) » dans les réglages), et suppression du repli de
-  pente basé sur le tracé. Le préchargement du relief pour l'analyse solaire reste en place. La
-  release GitHub `v5.91.3` produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
-- Les releases GitHub `v5.91.0` (913), `v5.91.1` (914) et `v5.91.2` (915) précèdent cette révision ;
-  la qualification S23/A53 reste la référence terrain.
+- Révision courante `5.91.4` (code 917) : la lecture `CacheStorage` par tuile sort du thread
+  principal (résolution dans le worker) avec un repli local borné sur miss couleur, l'hydratation de
+  l'UI secondaire est différée après la première tuile, et deux réglages avancés historiques sont
+  retirés (debug sans cible, normalmap RG désormais toujours actif). La release GitHub `v5.91.4`
+  produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
+- Les releases GitHub `v5.91.0` (913), `v5.91.1` (914), `v5.91.2` (915) et `v5.91.3` (916) précèdent
+  cette révision ; la qualification S23/A53 reste la référence terrain.
+- Suivi ouvert : la boussole 3D (`#compass-canvas`) est inerte depuis 5.90 ; décider de restaurer
+  l'élément ou de retirer `compass.ts` (voir `ROADMAP.md`).
 - 5.86.0/904 est importée dans Play, 5.86.1/905 y est visible et le propriétaire a indiqué un
   envoi de 5.86.2/906 en test. 5.87.0/907 est publiée sur GitHub sans upload Play revendiqué.
 - Le contrôle long de 30 minutes en faible réseau reste un suivi post-release, pas une fonction
@@ -112,7 +115,7 @@ Les mesures sont bornées : le p95 du scénario de rebond A53 passe de 109,4 à 
 transitions S23 contrôlées d'environ 16–17 s à 0,9 s. Cela ne prouve ni un gain GPU universel ni une
 autonomie globale. Ne transformer aucune fenêtre courte en promesse produit.
 
-### Démarrage carte (correctif local, non publié)
+### Démarrage carte (5.91.4)
 
 La lecture `CacheStorage.match` par tuile se faisait sur le thread principal et coûtait jusqu'à
 ~2,9 s par tuile sur S23 (couverture > 10 s sur A53). Elle est déplacée dans le Web Worker : le
@@ -120,8 +123,8 @@ main thread ne lit plus le cache pour chaque tuile. La priorité des sources loc
 (pack OPFS, hors ligne) ; sinon un repli local borné (8 s) rejoue une passe pack CDN/zone hors ligne
 sur un miss couleur, puis fusionne les réponses (`tileResponseMerge.ts`). L'hydratation de l'UI
 secondaire est différée après la première tuile (plafond 4 s), et la reprise REC attend
-`suntrail:secondaryReady`. Mesure S23 diagnostic : tuile de `load-started` au mesh en ~60 ms, sans
-long task. Le contrôle A53 et la publication restent à faire.
+`suntrail:secondaryReady`. Mesures S23/A53 : tuile de `load-started` au mesh en ~60 ms (S23) et
+~1,4 s (A53), sans long task ni lecture CacheStorage sur le thread principal. Livré en 5.91.4 / 917.
 
 ## Flags et monétisation
 

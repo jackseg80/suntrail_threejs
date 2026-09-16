@@ -53,7 +53,7 @@ export const terrainUniforms = {
     uShowHydrology: { value: state.SHOW_HYDROLOGY ? 1.0 : 0.0 },
     uTime: { value: 0.0 },
     uSunPos: { value: new THREE.Vector3(0, 1, 0) },
-    uCompactNormalmap: { value: state.DEBUG_NORMALMAP_RG_COMPACT ? 1.0 : 0.0 },
+    uCompactNormalmap: { value: 1.0 },
 };
 
 export class Tile {

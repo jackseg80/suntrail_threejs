@@ -5,7 +5,6 @@ const { mockState, mockActiveTiles } = vi.hoisted(() => {
         RELIEF_EXAGGERATION: 1.0,
         SHOW_SLOPES: false,
         SHOW_HYDROLOGY: false,
-        DEBUG_NORMALMAP_RG_COMPACT: false,
         originTile: { x: 0, y: 0, z: 0 },
         HYBRID_MODE: false,
         HYBRID_SHOW_MID_ZOOM_NAMES: false,

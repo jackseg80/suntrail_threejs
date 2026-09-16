@@ -462,14 +462,6 @@ export function updateElevationProfile(
 }
 
 function updateStatsUI(dist: number, dPlus: number, dMinus: number): void {
-    const dEl = document.getElementById('gpx-dist');
-    const pEl = document.getElementById('gpx-dplus');
-    const mEl = document.getElementById('gpx-dminus');
-
-    if (dEl) dEl.textContent = `${dist.toFixed(2)} km`;
-    if (pEl) pEl.textContent = `${Math.round(dPlus)} m D+`;
-    if (mEl) mEl.textContent = `${Math.round(dMinus)} m D-`;
-
     lastProfileStats = { dist, dPlus, dMinus };
     setSummaryInfo(dist, dPlus, dMinus);
 

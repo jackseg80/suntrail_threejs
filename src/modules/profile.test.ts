@@ -23,16 +23,26 @@ describe("Profil d'altitude (Module Profile)", () => {
                     <button id="close-profile"></button>
                 </div>
             </div>
-            <div id="profile-info"></div>
+            <div id="profile-info">
+                <div class="profile-info-cell">
+                    <span class="profile-info-label"></span>
+                    <span class="profile-info-value"></span>
+                </div>
+                <div class="profile-info-cell">
+                    <span class="profile-info-label"></span>
+                    <span class="profile-info-value"></span>
+                </div>
+                <div class="profile-info-cell">
+                    <span class="profile-info-label"></span>
+                    <span class="profile-info-value"></span>
+                </div>
+            </div>
             <div id="profile-chart-container"></div>
             <svg id="profile-svg"></svg>
             <div id="profile-cursor"></div>
             <div id="profile-legend" hidden></div>
             <button id="profile-expand-btn"></button>
             <button id="profile-close-btn"></button>
-            <div id="gpx-dist"></div>
-            <div id="gpx-dplus"></div>
-            <div id="gpx-dminus"></div>
         `;
         state.scene = new THREE.Scene();
         state.gpxLayers = [];
@@ -377,8 +387,10 @@ describe("Profil d'altitude (Module Profile)", () => {
 
             // On vérifie que les altitudes calculées pour les points ne sont pas 0
             // On peut s'assurer de cela indirectement en vérifiant que dPlus est correct
-            const pEl = document.getElementById('gpx-dplus');
-            expect(pEl?.textContent).toContain('200 m D+');
+            const dPlusValue = document.querySelectorAll(
+                '#profile-info .profile-info-value'
+            )[1];
+            expect(dPlusValue?.textContent).toContain('+200 m');
         });
     });
 
@@ -538,8 +550,10 @@ describe("Profil d'altitude (Module Profile)", () => {
             expect(svg?.innerHTML).toContain('path');
             expect(svg?.innerHTML).toContain('fill-opacity');
 
-            const pEl = document.getElementById('gpx-dplus');
-            expect(pEl?.textContent).toContain('1000 m D+');
+            const dPlusValue = document.querySelectorAll(
+                '#profile-info .profile-info-value'
+            )[1];
+            expect(dPlusValue?.textContent).toContain('+1000 m');
         });
     });
 

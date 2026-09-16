@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { BaseComponent } from '../core/BaseComponent';
 import {
     state,
@@ -145,16 +144,6 @@ export class SettingsSheet extends BaseComponent {
             // setVisible(val) synchronise exactement l'état du toggle avec l'affichage
             state.vramPanel?.setVisible?.(val);
         });
-        this.bindToggle('debug-toggle', 'SHOW_DEBUG', (val: boolean) => {
-            const zoomInd = document.getElementById('zoom-indicator');
-            const compass = document.getElementById('compass-canvas');
-            if (zoomInd) zoomInd.hidden = !val;
-            if (compass) compass.hidden = !val;
-        });
-        this.bindToggle(
-            'debug-normalmap-rg-compact-toggle',
-            'DEBUG_NORMALMAP_RG_COMPACT'
-        );
         this.bindToggle('veg-toggle', 'SHOW_VEGETATION', refreshTerrain);
         this.bindToggle('hydro-toggle', 'SHOW_HYDROLOGY', (val: boolean) =>
             updateHydrologyVisibility(val)
@@ -230,81 +219,24 @@ export class SettingsSheet extends BaseComponent {
             this.updateProButtonState(upgradeBtn);
         }
 
-        // Fog
-        const fogSlider = this.element.querySelector(
-            '#fog-slider'
-        ) as HTMLInputElement;
-        if (fogSlider) {
-            // ARIA: fog slider attributes
-            fogSlider.setAttribute('aria-label', 'FOG_FAR');
-            fogSlider.setAttribute('aria-valuemin', fogSlider.min);
-            fogSlider.setAttribute('aria-valuemax', fogSlider.max);
-            fogSlider.setAttribute('aria-valuenow', fogSlider.value);
-
-            fogSlider.addEventListener('input', (e) => {
-                state.FOG_FAR =
-                    parseFloat((e.target as HTMLInputElement).value) * 1000;
-                // ARIA: sync valuenow
-                fogSlider.setAttribute(
-                    'aria-valuenow',
-                    (e.target as HTMLInputElement).value
-                );
-                if (state.scene?.fog && state.scene.fog instanceof THREE.Fog) {
-                    state.scene.fog.far = state.FOG_FAR;
-                }
-            });
-            fogSlider.addEventListener('change', () => {
-                this.markPerformancePresetCustom('FOG_FAR');
-                saveSettings();
-            });
-        }
-
-        // Trail follow
-        const trailFollowToggle = this.element.querySelector(
-            '#trail-follow-toggle'
-        ) as HTMLInputElement;
-        if (trailFollowToggle) {
-            // ARIA: toggle as switch
-            trailFollowToggle.setAttribute('role', 'switch');
-            trailFollowToggle.setAttribute(
-                'aria-checked',
-                String(trailFollowToggle.checked)
-            );
-
-            trailFollowToggle.addEventListener('change', (e) => {
-                state.isFollowingTrail = (e.target as HTMLInputElement).checked;
-                // ARIA: sync aria-checked
-                trailFollowToggle.setAttribute(
-                    'aria-checked',
-                    String((e.target as HTMLInputElement).checked)
-                );
-            });
-        }
-
         // Subscribe to state changes to update UI
         const keysToSubscribe = [
             'RESOLUTION',
             'RANGE',
             'RELIEF_EXAGGERATION',
             'VEGETATION_DENSITY',
-            'FOG_FAR',
             'SHOW_STATS',
-            'SHOW_DEBUG',
             'SHOW_VEGETATION',
             'SHOW_BUILDINGS',
             'SHOW_HYDROLOGY',
             'SHOW_SIGNPOSTS',
             'SHADOWS',
-            'isFollowingTrail',
-            'SHOW_TRAILS',
-            'SHOW_SLOPES',
             'PERFORMANCE_PRESET',
             'WEATHER_DENSITY',
             'WEATHER_SPEED',
             'WEATHER_RAIN_OPACITY',
             'SHOW_INCLINOMETER',
             'SHOW_WEATHER_PRO',
-            'DEBUG_NORMALMAP_RG_COMPACT',
         ];
 
         keysToSubscribe.forEach((key) => {
@@ -594,21 +526,11 @@ export class SettingsSheet extends BaseComponent {
                     value
                 );
                 break;
-            case 'FOG_FAR': {
-                const fogSlider = this.element.querySelector(
-                    '#fog-slider'
-                ) as HTMLInputElement;
-                if (fogSlider) fogSlider.value = (value / 1000).toString();
-                break;
-            }
             case 'HIDE_UI_ON_MOVE':
                 this.updateToggle('hide-ui-on-move-toggle', value);
                 break;
             case 'SHOW_STATS':
                 this.updateToggle('stats-toggle', value);
-                break;
-            case 'SHOW_DEBUG':
-                this.updateToggle('debug-toggle', value);
                 break;
             case 'SHOW_VEGETATION':
                 this.updateToggle('veg-toggle', value);
@@ -625,23 +547,6 @@ export class SettingsSheet extends BaseComponent {
             case 'SHADOWS':
                 this.updateToggle('shadow-toggle', value);
                 break;
-            case 'isFollowingTrail':
-                this.updateToggle('trail-follow-toggle', value);
-                break;
-            case 'SHOW_TRAILS': {
-                const trailsToggle = document.getElementById(
-                    'trails-toggle'
-                ) as HTMLInputElement;
-                if (trailsToggle) trailsToggle.checked = value;
-                break;
-            }
-            case 'SHOW_SLOPES': {
-                const slopesToggle = document.getElementById(
-                    'slopes-toggle'
-                ) as HTMLInputElement;
-                if (slopesToggle) slopesToggle.checked = value;
-                break;
-            }
             case 'PERFORMANCE_PRESET':
                 this.element.querySelectorAll('.preset-btn').forEach((btn) => {
                     if ((btn as HTMLElement).dataset.preset === value) {
@@ -684,9 +589,6 @@ export class SettingsSheet extends BaseComponent {
             case 'SHOW_WEATHER_PRO':
                 this.updateToggle('weather-pro-toggle', value);
                 break;
-            case 'DEBUG_NORMALMAP_RG_COMPACT':
-                this.updateToggle('debug-normalmap-rg-compact-toggle', value);
-                break;
         }
     }
 
@@ -720,18 +622,13 @@ export class SettingsSheet extends BaseComponent {
             state.RELIEF_EXAGGERATION
         );
         this.updateUIFromState('VEGETATION_DENSITY', state.VEGETATION_DENSITY);
-        this.updateUIFromState('FOG_FAR', state.FOG_FAR);
         this.updateUIFromState('HIDE_UI_ON_MOVE', state.HIDE_UI_ON_MOVE);
         this.updateUIFromState('SHOW_STATS', state.SHOW_STATS);
-        this.updateUIFromState('SHOW_DEBUG', state.SHOW_DEBUG);
         this.updateUIFromState('SHOW_VEGETATION', state.SHOW_VEGETATION);
         this.updateUIFromState('SHOW_BUILDINGS', state.SHOW_BUILDINGS);
         this.updateUIFromState('SHOW_HYDROLOGY', state.SHOW_HYDROLOGY);
         this.updateUIFromState('SHOW_SIGNPOSTS', state.SHOW_SIGNPOSTS);
         this.updateUIFromState('SHADOWS', state.SHADOWS);
-        this.updateUIFromState('isFollowingTrail', state.isFollowingTrail);
-        this.updateUIFromState('SHOW_TRAILS', state.SHOW_TRAILS);
-        this.updateUIFromState('SHOW_SLOPES', state.SHOW_SLOPES);
         this.updateUIFromState('WEATHER_DENSITY', state.WEATHER_DENSITY);
         this.updateUIFromState('WEATHER_SPEED', state.WEATHER_SPEED);
         this.updateUIFromState(
@@ -740,10 +637,6 @@ export class SettingsSheet extends BaseComponent {
         );
         this.updateUIFromState('SHOW_INCLINOMETER', state.SHOW_INCLINOMETER);
         this.updateUIFromState('SHOW_WEATHER_PRO', state.SHOW_WEATHER_PRO);
-        this.updateUIFromState(
-            'DEBUG_NORMALMAP_RG_COMPACT',
-            state.DEBUG_NORMALMAP_RG_COMPACT
-        );
         this.updateUIFromState('PERFORMANCE_PRESET', state.PERFORMANCE_PRESET);
     }
 

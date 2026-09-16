@@ -594,7 +594,6 @@
             "loadSpeed": "Load speed",
             "fogDistance": "Fog distance",
             "stats": "Performance stats (FPS)",
-            "debug": "Debug info",
             "vegetation": "Forests & Vegetation",
             "buildings": "OSM Buildings",
             "hydrology": "Lakes & Rivers",

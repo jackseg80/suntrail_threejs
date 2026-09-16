@@ -450,11 +450,7 @@ describe('Cache partition — offline vs normal (v5.61.4)', () => {
         expect(normalSpy.match).toHaveBeenCalledWith(url);
     });
 
-    // ── P5 : Normal map RG compact (v5.61.4) ──
-    it('DEBUG_NORMALMAP_RG_COMPACT vaut true par défaut (prod)', () => {
-        expect(state.DEBUG_NORMALMAP_RG_COMPACT).toBe(true);
-    });
-
+    // ── P5 : Normal map RG compact (v5.61.4, toujours actif) ──
     it('la reconstruction sqrt(1-x²-y²) avec signe préserve la norme unitaire', () => {
         const reconstruct = (nx: number, ny: number, signB: number) => {
             const mag = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));

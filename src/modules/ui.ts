@@ -1,4 +1,3 @@
-import { updateStorageUI } from './tileLoader';
 import { appInit } from './appInit';
 
 /**
@@ -7,8 +6,6 @@ import { appInit } from './appInit';
 export async function initUI(): Promise<void> {
     // Lancer l'initialisation orchestrée
     await appInit();
-    // Initial paint only. Cache/worker mutations already refresh this UI at source.
-    updateStorageUI();
 }
 
 export function disposeUI(): void {}

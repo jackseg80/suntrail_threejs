@@ -5,12 +5,9 @@ vi.mock('./state', () => ({
         DEBUG_MODE: false,
         USE_WORKERS: true,
         IS_OFFLINE: false,
-        cacheHits: 0,
-        networkRequests: 0,
     },
 }));
 
-vi.mock('./tileLoader', () => ({ updateStorageUI: vi.fn() }));
 vi.mock('./networkMonitor', () => ({
     reportNetworkFailure: vi.fn(),
     reportNetworkSuccess: vi.fn(),
@@ -27,8 +24,6 @@ describe('TileWorkerManager', () => {
         vi.clearAllMocks();
         state.USE_WORKERS = true;
         state.IS_OFFLINE = false;
-        state.cacheHits = 0;
-        state.networkRequests = 0;
 
         vi.stubGlobal(
             'Worker',

@@ -83,7 +83,6 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
                 <input type="range" id="res-slider" min="1" max="100" value="50">
                 <span id="res-disp">50</span>
                 <input type="checkbox" id="hide-ui-on-move-toggle">
-                <input type="checkbox" id="debug-toggle">
                 <input type="checkbox" id="inclinometer-toggle">
                 <div id="row-inclinometer"></div>
                 <p class="settings-pro-description">Débloquez toutes les fonctionnalités premium avec SunTrail Pro</p>
@@ -100,8 +99,6 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
                 <button id="tester-id-copy">Copier</button>
             </div>
             <div id="sheet-container"></div>
-            <div id="zoom-indicator" hidden></div>
-            <canvas id="compass-canvas" hidden></canvas>
         `;
 
         sheet = new SettingsSheet();
@@ -147,24 +144,6 @@ describe('SettingsSheet - UI Logic (v5.29.36)', () => {
         expect(
             document.querySelector('.settings-pro-description')?.textContent
         ).toBe(i18n.t('settings.pro.activeDescription'));
-    });
-
-    it('affiche les outils de diagnostic avec l’attribut hidden commun', () => {
-        const toggle = document.getElementById(
-            'debug-toggle'
-        ) as HTMLInputElement;
-        const zoom = document.getElementById('zoom-indicator')!;
-        const compass = document.getElementById('compass-canvas')!;
-
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change'));
-        expect(zoom.hidden).toBe(false);
-        expect(compass.hidden).toBe(false);
-
-        toggle.checked = false;
-        toggle.dispatchEvent(new Event('change'));
-        expect(zoom.hidden).toBe(true);
-        expect(compass.hidden).toBe(true);
     });
 
     it('ouvre Avancé comme sous-page puis revient aux réglages', () => {

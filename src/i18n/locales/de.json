@@ -594,7 +594,6 @@
             "loadSpeed": "Ladegeschwindigkeit",
             "fogDistance": "Nebeldistanz",
             "stats": "Leistungsstatistiken (FPS)",
-            "debug": "Debug-Infos",
             "vegetation": "Wälder & Vegetation",
             "buildings": "OSM-Gebäude",
             "hydrology": "Seen & Flüsse",

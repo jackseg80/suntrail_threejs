@@ -352,8 +352,8 @@ export async function updateVisibleTiles(
                 ? 1.0
                 : 0.0;
         terrainUniforms.uShowHydrology.value = state.SHOW_HYDROLOGY ? 1.0 : 0.0;
-        terrainUniforms.uCompactNormalmap.value =
-            state.DEBUG_NORMALMAP_RG_COMPACT ? 1.0 : 0.0;
+        // v5.61.4 : normal maps RG compact toujours actif (Z reconstruit GPU).
+        terrainUniforms.uCompactNormalmap.value = 1.0;
         resizeGeometryCache();
 
         if (!state.camera) return Promise.resolve();

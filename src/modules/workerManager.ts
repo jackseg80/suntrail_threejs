@@ -5,7 +5,6 @@
  */
 
 import { state } from './state';
-import { updateStorageUI } from './tileLoader';
 import { reportNetworkFailure, reportNetworkSuccess } from './networkMonitor';
 import { rotateMapTilerKey } from './config';
 import { disposeAllCachedTiles } from './tileCache';
@@ -112,10 +111,6 @@ class TileWorkerManager {
         } else if (networkRequests) {
             reportNetworkSuccess();
         }
-
-        if (cacheHits) state.cacheHits += cacheHits;
-        if (networkRequests) state.networkRequests += networkRequests;
-        if (cacheHits || networkRequests) updateStorageUI();
 
         const task = this.tasks.get(id);
         if (!task) return;
@@ -267,7 +262,7 @@ class TileWorkerManager {
             elevBlob: blobs?.elev,
             colorBlob: blobs?.color,
             overlayBlob: blobs?.overlay,
-            useCompactNormalmap: state.DEBUG_NORMALMAP_RG_COMPACT,
+            useCompactNormalmap: true,
             blobSources,
             diagnostics,
         };

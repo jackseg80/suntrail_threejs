@@ -224,7 +224,7 @@ describe('NavigationBar', () => {
     it('keeps the library destination on the legacy track sheet adapter', async () => {
         document.body.insertAdjacentHTML(
             'beforeend',
-            '<div id="track"><span class="sheet-title"></span><p id="track-library-scope" hidden></p><section id="prepared-routes-section"></section><div id="gpx-layers-list"></div></div>'
+            '<div id="track"><span class="sheet-title"></span><section id="prepared-routes-section"></section><div id="gpx-layers-list"></div></div>'
         );
         const track = document.getElementById('track')!;
         track.scrollTop = 120;
@@ -238,10 +238,6 @@ describe('NavigationBar', () => {
         expect(sheetManager.open).toHaveBeenCalledWith('track');
         expect(document.body.dataset.trackDestination).toBe('library');
         await vi.waitFor(() => {
-            expect(
-                (document.getElementById('track-library-scope') as HTMLElement)
-                    .hidden
-            ).toBe(false);
             expect(track.scrollTop).toBe(0);
         });
     });

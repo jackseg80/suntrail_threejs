@@ -278,16 +278,6 @@ export async function deleteTerrainCache(): Promise<void> {
 }
 
 /**
- * Met à jour les statistiques de stockage dans l'UI.
- */
-export function updateStorageUI() {
-    const netCount = document.getElementById('net-count');
-    const cacheCount = document.getElementById('cache-count');
-    if (netCount) netCount.textContent = state.networkRequests.toString();
-    if (cacheCount) cacheCount.textContent = state.cacheHits.toString();
-}
-
-/**
  * Récupère une ressource via le cache persistant ou le réseau.
  * Priorité de recherche : PMTiles locales > Country Packs > CacheStorage offline > CacheStorage normal > Embedded Overview > Réseau.
  * Si z, x, y sont fournis, les chutes PMTiles, country packs et embedded overview
@@ -356,8 +346,6 @@ export async function fetchWithCache(
                 try {
                     const cachedOffline = await _offlineCache.match(url);
                     if (cachedOffline) {
-                        state.cacheHits++;
-                        updateStorageUI();
                         return await cachedOffline.blob();
                     }
                 } catch {
@@ -367,8 +355,6 @@ export async function fetchWithCache(
             const cache = await caches.open(CACHE_NAME);
             const cached = await cache.match(url);
             if (cached) {
-                state.cacheHits++;
-                updateStorageUI();
                 const blob = await cached.blob();
                 if (storeInOfflineCache) {
                     try {
@@ -427,8 +413,6 @@ export async function fetchWithCache(
 
             if (r.ok) {
                 const blob = await r.blob();
-                state.networkRequests++;
-                updateStorageUI();
                 if (storeInOfflineCache) {
                     try {
                         const oc = await caches.open(OFFLINE_CACHE_NAME);

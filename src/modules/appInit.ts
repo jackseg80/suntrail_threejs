@@ -22,7 +22,6 @@ import { showToast } from './toast';
 import {
     applyPreset,
     detectBestPreset,
-    getGpuInfo,
     applyCustomSettings,
 } from './performance';
 import { runBenchmark } from './benchmark';
@@ -173,22 +172,6 @@ export async function appInit(): Promise<void> {
     }
     i18n.setLocale(state.lang);
     initTheme();
-
-    // Diagnostic matériel
-    const gpuInfo = getGpuInfo();
-    const diagGpu = document.getElementById('diag-gpu');
-    if (diagGpu) diagGpu.textContent = `GPU: ${gpuInfo.renderer}`;
-
-    const diagCpu = document.getElementById('diag-cpu');
-    if (diagCpu)
-        diagCpu.textContent = `CPU: ${navigator.hardwareConcurrency || '--'} cores`;
-
-    const diagPreset = document.getElementById('diag-preset');
-    if (diagPreset)
-        diagPreset.textContent = `PROFIL: ${state.PERFORMANCE_PRESET.toUpperCase()}`;
-
-    const techInfo = document.getElementById('tech-info');
-    if (techInfo) techInfo.hidden = !state.SHOW_DEBUG;
 
     setupOrientationHandler();
 

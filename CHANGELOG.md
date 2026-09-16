@@ -1,4 +1,4 @@
-## [Unreleased]
+## [5.91.4] - 2026-09-17 — Démarrage carte et nettoyage des réglages
 
 ### Corrigé
 
@@ -17,13 +17,27 @@
 - Pack OPFS et mode hors ligne : chemin local-first inchangé (aucun repli redondant).
 - Packs CDN et zones hors ligne : servent de secours uniquement quand le worker ne renvoie pas de
   couleur, au lieu d'être lus systématiquement avant chaque tuile.
+- **Réglages avancés** : retrait de deux réglages historiques. « Infos de debug » (`SHOW_DEBUG`) ne
+  pilotait plus que des éléments supprimés depuis la refonte 5.90 (`#tech-info`, `#diag-*`,
+  `#zoom-indicator`). « Normalmap RG Compact (Debug) » n'était pas un debug mais l'optimisation de
+  production v5.61.4 (normal maps en 2 canaux RG, Z reconstruit côté GPU, ~50 % de VRAM) : le
+  réglage est retiré et l'optimisation reste **toujours active**.
+- Nettoyage de références DOM mortes : compteurs réseau/cache (`#net-count`/`#cache-count`), panneau
+  « pic » `#coords-panel`, ancien résumé profil `#gpx-dist`/`#gpx-dplus`/`#gpx-dminus` et
+  `#track-library-scope` (remplacés par les surfaces 5.90+).
+
+### Connu
+
+- La boussole 3D (`#compass-canvas`) est inerte depuis la refonte 5.90 (canvas absent d'`app.html`).
+  À contrôler : restaurer l'élément ou retirer le sous-système (suivi dans `ROADMAP.md`).
 
 ### Validation
 
-- `npm run check`, 166 fichiers / 1 916 tests, build Web, budget bundle, `cap:sync` et assemblage
-  Android.
-- S23 diagnostic : chemin normal en `worker-cache`, tuile affichée en ~60 ms de `load-started` au
-  mesh, sans lecture CacheStorage ni long task sur le thread principal. Contrôle A53 à venir.
+- `npm run check`, 166 fichiers / 1 914 tests, build Web, budget bundle, audit i18n, `cap:sync` et
+  assemblage Android.
+- S23 et A53 diagnostic : chemin normal en `worker-cache`, tuile affichée en ~60 ms (S23) et ~1,4 s
+  (A53) de `load-started` au mesh, sans lecture CacheStorage ni long task sur le thread principal.
+- AAB signé produit par GitHub Actions ; aucun upload Play revendiqué.
 
 ## [5.91.3] - 2026-09-16 — REC lisible et inclinomètre réservé à la 3D
 

@@ -609,7 +609,6 @@
             "loadSpeed": "Vitesse de chargement",
             "fogDistance": "Distance du brouillard",
             "stats": "Stats de performance (FPS)",
-            "debug": "Infos de debug",
             "vegetation": "Forêts & Végétation",
             "buildings": "Bâtiments OSM",
             "hydrology": "Lacs & Rivières",

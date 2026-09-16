@@ -396,11 +396,6 @@ export function updatePerformanceUI(preset: PresetType): void {
     if (buildingsToggle) buildingsToggle.checked = state.SHOW_BUILDINGS;
     if (hydroToggle) hydroToggle.checked = state.SHOW_HYDROLOGY;
 
-    const slopesToggle = document.getElementById(
-        'slopes-toggle'
-    ) as HTMLInputElement;
-    if (slopesToggle) slopesToggle.checked = state.SHOW_SLOPES;
-
     if (vegDensitySlider)
         vegDensitySlider.value = state.VEGETATION_DENSITY.toString();
     if (vegDensityDisp)
@@ -414,9 +409,6 @@ export function updatePerformanceUI(preset: PresetType): void {
         weatherSpeedSlider.value = state.WEATHER_SPEED.toString();
     if (weatherSpeedDisp)
         weatherSpeedDisp.textContent = state.WEATHER_SPEED.toFixed(1);
-
-    const fogSlider = document.getElementById('fog-slider') as HTMLInputElement;
-    if (fogSlider) fogSlider.value = (state.FOG_FAR / 1000).toString();
 
     const buttons = document.querySelectorAll('.preset-btn');
     buttons.forEach((btn) => {

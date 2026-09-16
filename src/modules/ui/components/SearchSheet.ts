@@ -497,10 +497,6 @@ export class SearchSheet extends BaseComponent {
                 const resultType = el.dataset.resultType || 'poi';
                 const targetZoom = parseInt(el.dataset.zoom || '13');
                 const camDist = parseInt(el.dataset.camDist || '45000');
-                const name =
-                    el.dataset.name ||
-                    el.querySelector('.geo-label')?.textContent ||
-                    '';
                 const ele = parseFloat(el.dataset.ele!) || 0;
 
                 this.handleResultClick(
@@ -509,7 +505,6 @@ export class SearchSheet extends BaseComponent {
                     resultType,
                     targetZoom,
                     camDist,
-                    name,
                     isNaN(ele) ? 0 : ele
                 );
             };
@@ -522,7 +517,6 @@ export class SearchSheet extends BaseComponent {
         resultType: string,
         targetZoom: number,
         camDist: number,
-        name: string = '',
         ele: number = 0
     ) {
         if (!this.geoResults || !this.geoInput) return;
@@ -559,17 +553,6 @@ export class SearchSheet extends BaseComponent {
             // v5.28.25 : Force le LOD immédiatement après l'arrivée
             forceImmediateLODUpdate();
         }, 100);
-
-        if (isPeak && name) {
-            const cp = document.getElementById('coords-panel');
-            if (cp) {
-                cp.style.display = 'block';
-                const clickLatLon = document.getElementById('click-latlon');
-                if (clickLatLon) clickLatLon.textContent = `🏔️ ${name}`;
-                const clickAlt = document.getElementById('click-alt');
-                if (clickAlt) clickAlt.textContent = `${Math.round(ele)} m`;
-            }
-        }
 
         fetchWeather(lat, lon);
     }

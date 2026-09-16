@@ -1,8 +1,8 @@
-# SunTrail — TODO (v5.91.3 ; publication Play séparée)
+# SunTrail — TODO (v5.91.4 ; publication Play séparée)
 
 > Dernière mise à jour : 2026-09-17
 
-## ✅ Correctif démarrage carte (non release)
+## ✅ v5.91.4 — Démarrage carte et nettoyage des réglages
 
 - [x] Sortir la lecture `CacheStorage` du thread principal (`loadTileData`) : résolution
       cache/réseau dans le worker, priorité pack OPFS et hors ligne conservée.
@@ -10,9 +10,15 @@
       des réponses (`tileResponseMerge.ts`) et fermeture des `ImageBitmap` écartés.
 - [x] Différer l'hydratation de l'UI secondaire après la première tuile (plafond 4 s) ; reprise REC
       via `suntrail:secondaryReady`.
-- [x] 166 fichiers/1 916 tests, `npm run check`, build Web, budget bundle, `cap:sync`, assemblage
-      Android et contrôle S23 diagnostic (`worker-cache`, ~60 ms tuile→mesh, aucun long task).
-- [ ] Installer le même APK sur A53 et contrôler l'ouverture à froid.
+- [x] Retirer les deux réglages avancés historiques (« Infos de debug » sans cible depuis 5.90 et
+      « Normalmap RG Compact (Debug) », optimisation de prod désormais toujours active).
+- [x] Nettoyer les références DOM mortes : compteurs net/cache, `#coords-panel`, `#gpx-dist/dplus/dminus`,
+      `#track-library-scope`.
+- [x] Contrôles : 166 fichiers/1 914 tests, `npm run check`, build Web, budget bundle, audit i18n,
+      `cap:sync`, assemblage Android et contrôles S23 + A53 (`worker-cache`, ~60 ms S23 / ~1,4 s A53).
+- [x] Release GitHub `v5.91.4` (code 917) avec AAB signé par GitHub Actions ; aucun upload Play.
+- [ ] **Boussole 3D** : le canvas (`#compass-canvas`) est absent depuis la refonte 5.90 ; décider de
+      restaurer l'élément ou de retirer le sous-système `compass.ts`.
 
 ## ✅ v5.91.3 — REC lisible et inclinomètre réservé à la 3D
 
