@@ -42,8 +42,11 @@ export interface RouteSolarAnalysis {
     shadowKm: number;
     forestKm: number;
     nightKm: number;
+    /** Distance dont l'exposition est indéterminée faute de relief chargé. */
+    unknownKm: number;
     sunPct: number;
     nightPct: number;
+    unknownPct: number;
     totalKm: number;
     shadowSegments: { startKm: number; endKm: number; lengthKm: number }[];
     optimalDepartureMinutes?: number;
@@ -193,9 +196,18 @@ function getActiveSourceMesh(): THREE.Mesh | null {
 
 export function buildRouteHash(points: THREE.Vector3[]): string {
     if (points.length < 2) return '';
-    const f = points[0];
-    const l = points[points.length - 1];
-    return `${f.x.toFixed(0)},${f.z.toFixed(0)},${l.x.toFixed(0)},${l.z.toFixed(0)},${points.length}`;
+    const sampleCount = Math.min(32, points.length);
+    const samples: string[] = [];
+    for (let i = 0; i < sampleCount; i++) {
+        const index = Math.round(
+            (i * (points.length - 1)) / Math.max(1, sampleCount - 1)
+        );
+        const point = points[index];
+        samples.push(
+            `${point.x.toFixed(0)},${point.y.toFixed(0)},${point.z.toFixed(0)}`
+        );
+    }
+    return `${points.length}|${samples.join(';')}`;
 }
 
 export function makeCacheKey(
@@ -374,6 +386,7 @@ export function buildAnalysis(
     let shadowKm = 0;
     let forestKm = 0;
     let nightKm = 0;
+    let unknownKm = 0;
     const shadowSegments: {
         startKm: number;
         endKm: number;
@@ -393,6 +406,8 @@ export function buildAnalysis(
                 shadowKm += segLen;
             } else if (cur.inForest) {
                 forestKm += segLen;
+            } else if (cur.terrainKnown === false) {
+                unknownKm += segLen;
             } else {
                 sunExposedKm += segLen;
             }
@@ -422,6 +437,8 @@ export function buildAnalysis(
     // quand tout le trajet est de nuit sauf 1 km final au soleil.
     const sunPct = totalKm > 0 ? Math.round((sunExposedKm / totalKm) * 100) : 0;
     const nightPct = totalKm > 0 ? Math.round((nightKm / totalKm) * 100) : 0;
+    const unknownPct =
+        totalKm > 0 ? Math.round((unknownKm / totalKm) * 100) : 0;
 
     // Couverture relief : part des points effectivement comparés au relief
     const evaluated = points.filter((p) => p.terrainKnown !== undefined);
@@ -435,8 +452,10 @@ export function buildAnalysis(
         shadowKm,
         forestKm,
         nightKm,
+        unknownKm,
         sunPct,
         nightPct,
+        unknownPct,
         totalKm,
         shadowSegments,
         terrainAvailable: terrainAvailable || known > 0,
@@ -521,7 +540,10 @@ async function runOptimalDeparture(
                 terrainY !== null && terrainY > 0
                     ? terrainY + GPX_SURFACE_OFFSET
                     : pt.y;
-            if (!isAtShadow(pt.x, pt.z, altForShadow, pSunVec, sampleShadow))
+            if (
+                terrainY !== null &&
+                !isAtShadow(pt.x, pt.z, altForShadow, pSunVec, sampleShadow)
+            )
                 sunCount++;
         }
         slotScores.push({
@@ -563,6 +585,7 @@ async function runOptimalDeparture(
                     : pt.y;
             if (
                 pSunPos.altitude > 0 &&
+                terrainY !== null &&
                 !isAtShadow(pt.x, pt.z, altForShadow, pSunVec, sampleShadow)
             )
                 sunCount++;
@@ -616,6 +639,7 @@ const _COL_SUN = [245, 166, 35, 220] as const;
 const _COL_SHADE = [71, 85, 120, 200] as const;
 const _COL_NIGHT = [10, 15, 30, 153] as const; // bleu très sombre, 60% opacité
 const _COL_FOREST = [30, 100, 50, 200] as const; // vert sombre, canopée
+const _COL_UNKNOWN = [110, 120, 135, 190] as const; // gris, relief non chargé
 
 function findClosestPoint(
     points: RouteSolarPoint[],
@@ -644,7 +668,9 @@ function fillTextureData(data: Uint8Array, analysis: RouteSolarAnalysis): void {
               ? _COL_SHADE
               : pt.inForest
                 ? _COL_FOREST
-                : _COL_SUN;
+                : pt.terrainKnown === false
+                  ? _COL_UNKNOWN
+                  : _COL_SUN;
         data[i * 4] = col[0];
         data[i * 4 + 1] = col[1];
         data[i * 4 + 2] = col[2];

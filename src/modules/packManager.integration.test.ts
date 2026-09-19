@@ -2,6 +2,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { packManager } from './packManager';
 import { state } from './state';
 
+const {
+    mockIsNativePlatform,
+    mockWaitForInit,
+    mockCheckAllPackPurchases,
+    mockPmtilesGetHeader,
+    mockRemovePackFile,
+} = vi.hoisted(() => ({
+    mockIsNativePlatform: vi.fn(() => false),
+    mockWaitForInit: vi.fn().mockResolvedValue(false),
+    mockCheckAllPackPurchases: vi.fn().mockResolvedValue([]),
+    mockPmtilesGetHeader: vi.fn().mockResolvedValue({
+        minZoom: 8,
+        maxZoom: 14,
+        numTileEntries: 1000,
+        minLon: 5,
+        maxLon: 11,
+        minLat: 45,
+        maxLat: 48,
+    }),
+    mockRemovePackFile: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@capacitor/core', () => ({
+    Capacitor: { isNativePlatform: mockIsNativePlatform },
+}));
+
 // Mocking Capacitor Filesystem
 vi.mock('@capacitor/filesystem', () => ({
     Filesystem: {
@@ -17,15 +43,7 @@ vi.mock('pmtiles', () => {
     return {
         PMTiles: function () {
             return {
-                getHeader: vi.fn().mockResolvedValue({
-                    minZoom: 8,
-                    maxZoom: 14,
-                    numTileEntries: 1000,
-                    minLon: 5,
-                    maxLon: 11,
-                    minLat: 45,
-                    maxLat: 48,
-                }),
+                getHeader: mockPmtilesGetHeader,
                 getZxy: vi.fn().mockResolvedValue({
                     data: new Uint8Array([1, 2, 3]).buffer,
                 }),
@@ -42,10 +60,26 @@ vi.mock('pmtiles', () => {
 // Mocking iapService to avoid initialization issues
 vi.mock('./iapService', () => ({
     iapService: {
-        waitForInit: vi.fn().mockResolvedValue(true),
-        checkAllPackPurchases: vi.fn().mockResolvedValue([]),
+        waitForInit: mockWaitForInit,
+        checkAllPackPurchases: mockCheckAllPackPurchases,
     },
 }));
+
+beforeEach(() => {
+    mockIsNativePlatform.mockReturnValue(false);
+    mockWaitForInit.mockResolvedValue(false);
+    mockCheckAllPackPurchases.mockResolvedValue([]);
+    mockPmtilesGetHeader.mockResolvedValue({
+        minZoom: 8,
+        maxZoom: 14,
+        numTileEntries: 1000,
+        minLon: 5,
+        maxLon: 11,
+        minLat: 45,
+        maxLat: 48,
+    });
+    mockRemovePackFile.mockResolvedValue(undefined);
+});
 
 describe('PackManager Integration', () => {
     it('findPackContaining returns null when catalog is empty', () => {
@@ -60,12 +94,14 @@ describe('PackManager Integration', () => {
         state.IS_OFFLINE = false;
         state.installedPacks = [];
         state.purchasedPacks = [];
+        mockIsNativePlatform.mockReturnValue(false);
 
         // Mock OPFS - par défaut, le fichier n'existe pas
         const mockDirectoryHandle = {
             getFileHandle: vi
                 .fn()
                 .mockRejectedValue(new Error('File not found')),
+            removeEntry: mockRemovePackFile,
         };
         const mockRoot = {
             getDirectoryHandle: vi.fn().mockResolvedValue(mockDirectoryHandle),
@@ -82,6 +118,44 @@ describe('PackManager Integration', () => {
     it('findPackContaining returns null when catalog is empty', () => {
         const pack = packManager.findPackContaining(46.8, 8.2);
         expect(pack).toBeNull();
+    });
+
+    it('ne traite pas le localhost Capacitor comme un mode développement', async () => {
+        mockIsNativePlatform.mockReturnValue(true);
+
+        await packManager.initialize();
+
+        expect(state.purchasedPacks).toEqual([]);
+        expect([...(packManager as any).mountedArchives.keys()]).toEqual([]);
+    });
+
+    it('nettoie une fois les anciens déblocages localhost natifs', async () => {
+        mockIsNativePlatform.mockReturnValue(true);
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify(
+                Object.fromEntries(
+                    ['switzerland', 'france_alps', 'austria'].map((id) => [
+                        id,
+                        {
+                            id,
+                            status: 'purchased',
+                            installedVersion: 0,
+                            downloadProgress: 0,
+                            filePath: null,
+                            sizeMB: 0,
+                        },
+                    ])
+                )
+            )
+        );
+
+        await packManager.initialize();
+
+        expect(state.purchasedPacks).toEqual([]);
+        expect(
+            localStorage.getItem('suntrail_native_localhost_unlock_cleanup_v1')
+        ).toBe('1');
     });
 
     it('should initialize and load persisted states from localStorage', async () => {
@@ -148,9 +222,44 @@ describe('PackManager Integration', () => {
         expect(state.installedPacks).not.toContain('switzerland');
         expect(
             (packManager as any).mountedArchives.get('switzerland')
-        ).toMatchObject({
-            source: 'cdn',
+        ).toMatchObject({ source: 'cdn' });
+    });
+
+    it('retire une archive OPFS corrompue et demande un nouveau téléchargement', async () => {
+        mockIsNativePlatform.mockReturnValue(true);
+        const root = await (navigator as any).storage.getDirectory();
+        const packsDir = await root.getDirectoryHandle();
+        packsDir.getFileHandle.mockResolvedValue({
+            getFile: vi.fn().mockResolvedValue(new Blob(['corrupt'])),
         });
+        mockPmtilesGetHeader.mockRejectedValueOnce(
+            new RangeError('Offset is outside the bounds of the DataView')
+        );
+        localStorage.setItem(
+            'suntrail_pack_states',
+            JSON.stringify({
+                switzerland: {
+                    id: 'switzerland',
+                    status: 'installed',
+                    installedVersion: 3,
+                    filePath: 'opfs://packs/switzerland.pmtiles',
+                    sizeMB: 664,
+                },
+            })
+        );
+
+        await packManager.initialize();
+
+        expect(packManager.getPackState('switzerland')).toMatchObject({
+            status: 'error',
+            installedVersion: 0,
+            filePath: null,
+            sizeMB: 0,
+        });
+        expect(mockRemovePackFile).toHaveBeenCalledWith('switzerland.pmtiles');
+        expect(
+            (packManager as any).mountedArchives.get('switzerland')
+        ).toBeUndefined();
     });
 
     it('should serve a tile from a mounted pack', async () => {
@@ -349,49 +458,19 @@ describe('PackManager — P0: hasInstalledPackForCountry & getMinPackZoom', () =
     }
 
     it('hasInstalledPackForCountry(CH) → true quand le pack Suisse est monté', async () => {
-        localStorage.setItem(
-            'suntrail_pack_states',
-            JSON.stringify({
-                switzerland: {
-                    id: 'switzerland',
-                    status: 'installed',
-                    installedVersion: 3,
-                    filePath: 'opfs://packs/switzerland.pmtiles',
-                },
-            })
-        );
+        await setupPackWithFilePresent('switzerland', 'installed', 3);
         await packManager.initialize();
         expect(packManager.hasInstalledPackForCountry('CH')).toBe(true);
     });
 
     it('hasInstalledPackForCountry(FR) → true quand le pack France est monté', async () => {
-        localStorage.setItem(
-            'suntrail_pack_states',
-            JSON.stringify({
-                france_alps: {
-                    id: 'france_alps',
-                    status: 'installed',
-                    installedVersion: 1,
-                    filePath: 'opfs://packs/france_alps.pmtiles',
-                },
-            })
-        );
+        await setupPackWithFilePresent('france_alps', 'installed', 1);
         await packManager.initialize();
         expect(packManager.hasInstalledPackForCountry('FR')).toBe(true);
     });
 
     it('hasInstalledPackForCountry(AT) → true quand le pack Autriche est monté', async () => {
-        localStorage.setItem(
-            'suntrail_pack_states',
-            JSON.stringify({
-                austria: {
-                    id: 'austria',
-                    status: 'installed',
-                    installedVersion: 2,
-                    filePath: 'opfs://packs/austria.pmtiles',
-                },
-            })
-        );
+        await setupPackWithFilePresent('austria', 'installed', 2);
         await packManager.initialize();
         expect(packManager.hasInstalledPackForCountry('AT')).toBe(true);
     });
@@ -460,9 +539,13 @@ describe('PackManager — P0: hasInstalledPackForCountry & getMinPackZoom', () =
         (navigator as any).storage.getDirectory = vi
             .fn()
             .mockResolvedValue(noFileRoot);
+        mockWaitForInit.mockResolvedValueOnce(true);
+        mockCheckAllPackPurchases.mockResolvedValueOnce(['switzerland']);
         await packManager.initialize();
 
-        expect(packManager.hasInstalledPackForCountry('CH')).toBe(true);
+        await vi.waitFor(() =>
+            expect(packManager.hasInstalledPackForCountry('CH')).toBe(true)
+        );
         expect(packManager.hasLocalPackForCountry('CH')).toBe(false);
         packManager.unmountPack('switzerland');
     });

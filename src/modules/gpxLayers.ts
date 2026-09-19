@@ -191,9 +191,27 @@ const selfOverlapCache = new Map<string, boolean>();
 
 function routeSignature(points: Array<{ lat: number; lon: number }>): string {
     if (points.length === 0) return '0';
-    const first = points[0];
-    const last = points[points.length - 1];
-    return `${points.length}:${first.lat.toFixed(5)},${first.lon.toFixed(5)}:${last.lat.toFixed(5)},${last.lon.toFixed(5)}`;
+    const sampleCount = Math.min(24, points.length);
+    const samples: string[] = [];
+    for (let i = 0; i < sampleCount; i++) {
+        const index = Math.round(
+            (i * (points.length - 1)) / Math.max(1, sampleCount - 1)
+        );
+        const point = points[index];
+        samples.push(`${point.lat.toFixed(5)},${point.lon.toFixed(5)}`);
+    }
+    return `${points.length}:${samples.join(';')}`;
+}
+
+function setActiveGPXLayer(id: string | null, analysisDelay = 200): void {
+    if (state.activeGPXLayerId === id) return;
+    state.activeGPXLayerId = id;
+    invalidateRouteCache();
+    if (id === null) {
+        clearSolarRouteAnalysis();
+        return;
+    }
+    scheduleRouteSolarAnalysis(analysisDelay);
 }
 
 function hasSelfOverlap(
@@ -467,8 +485,7 @@ export function addGPXLayer(
     // v5.54 : Un calque "verrouillé" ne doit pas devenir le calque actif
     // (sinon il écrase les stats et déclenche l'analyse solaire/pente)
     if (initialVisible) {
-        state.activeGPXLayerId = id;
-        scheduleRouteSolarAnalysis(1500); // Analyse solaire après flyTo
+        setActiveGPXLayer(id, 1500); // Analyse solaire après flyTo
     }
 
     const lats = validPoints.map((p) => p.lat);
@@ -515,9 +532,11 @@ export function removeGPXLayer(id: string): void {
         disposeObject(layer.mesh);
     }
     state.gpxLayers = state.gpxLayers.filter((l) => l.id !== id);
-    if (state.activeGPXLayerId === id)
-        state.activeGPXLayerId =
-            state.gpxLayers.length > 0 ? state.gpxLayers[0].id : null;
+    if (state.activeGPXLayerId === id) {
+        setActiveGPXLayer(
+            state.gpxLayers.length > 0 ? state.gpxLayers[0].id : null
+        );
+    }
     if (state.gpxLayers.length === 0) {
         closeElevationProfile();
     } else updateElevationProfile();
@@ -544,7 +563,7 @@ export function activateGPXLayer(id: string): GPXLayer | null {
         if (layer.mesh) layer.mesh.visible = visible;
         return visible === layer.visible ? layer : { ...layer, visible };
     });
-    state.activeGPXLayerId = id;
+    setActiveGPXLayer(id);
     setOverlayVisible(true);
     return state.gpxLayers.find((layer) => layer.id === id) ?? null;
 }
@@ -575,7 +594,7 @@ export function showOnlyGPXLayer(id: string): GPXLayer | null {
         if (layer.mesh) layer.mesh.visible = visible;
         return visible === layer.visible ? layer : { ...layer, visible };
     });
-    state.activeGPXLayerId = id;
+    setActiveGPXLayer(id);
     setOverlayVisible(true);
     return state.gpxLayers.find((layer) => layer.id === id) ?? null;
 }
@@ -586,7 +605,7 @@ export function hideAllGPXLayers(): void {
         if (layer.mesh) layer.mesh.visible = false;
         return layer.visible ? { ...layer, visible: false } : layer;
     });
-    state.activeGPXLayerId = null;
+    setActiveGPXLayer(null);
     setOverlayVisible(false);
     closeElevationProfile();
 }

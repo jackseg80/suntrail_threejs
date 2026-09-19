@@ -1,5 +1,8 @@
 {
   "appId": "com.suntrail.threejs",
   "appName": "SunTrail 3D",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "appStartPath": "/app.html"
+  }
 }

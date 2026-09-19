@@ -2035,7 +2035,7 @@ export class TrackSheet extends BaseComponent {
                     closeElevationProfile();
                 } else {
                     if (!isProActive()) showOnlyGPXLayer(id);
-                    state.activeGPXLayerId = id;
+                    else activateGPXLayer(id);
                     updateElevationProfile(id);
                 }
                 this.renderUnifiedTrackList();

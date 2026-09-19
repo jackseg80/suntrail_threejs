@@ -1329,6 +1329,7 @@
             "sunKm": "Sonnen-km",
             "shadowKm": "Schatten-km",
             "nightKm": "Nacht-km",
+            "unknownKm": "Unbekannte km",
             "totalKm": "Gesamt"
         },
         "rec": {

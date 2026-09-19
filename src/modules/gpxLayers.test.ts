@@ -161,6 +161,10 @@ describe('Multi-GPX Layers (v5.10)', () => {
     it('showOnlyGPXLayer keeps exactly the selected loaded trace visible', () => {
         const first = addGPXLayer(rawData, 'first', { forceVisible: true });
         const second = addGPXLayer(rawData, 'second', { forceVisible: true });
+        const mockInvalidate = vi.mocked(invalidateRouteCache);
+        const mockSchedule = vi.mocked(scheduleRouteSolarAnalysis);
+        mockInvalidate.mockClear();
+        mockSchedule.mockClear();
 
         const selected = showOnlyGPXLayer(first.id);
 
@@ -173,6 +177,8 @@ describe('Multi-GPX Layers (v5.10)', () => {
         ).toEqual([first.id]);
         expect(first.mesh?.visible).toBe(true);
         expect(second.mesh?.visible).toBe(false);
+        expect(mockInvalidate).toHaveBeenCalledOnce();
+        expect(mockSchedule).toHaveBeenCalledWith(200);
     });
 
     it('hideAllGPXLayers hides loaded traces without deleting them or REC', () => {
@@ -560,6 +566,10 @@ describe('removeGPXLayer', () => {
         const first = addGPXLayer(rawData, 'layer-a');
         const second = addGPXLayer(rawData, 'layer-b');
         expect(second.visible).toBe(false);
+        const mockInvalidate = vi.mocked(invalidateRouteCache);
+        const mockSchedule = vi.mocked(scheduleRouteSolarAnalysis);
+        mockInvalidate.mockClear();
+        mockSchedule.mockClear();
 
         const active = activateGPXLayer(second.id);
 
@@ -569,6 +579,8 @@ describe('removeGPXLayer', () => {
             state.gpxLayers.find((layer) => layer.id === first.id)?.visible
         ).toBe(false);
         expect(second.mesh?.visible).toBe(true);
+        expect(mockInvalidate).toHaveBeenCalledOnce();
+        expect(mockSchedule).toHaveBeenCalledWith(200);
     });
 
     it('met activeGPXLayerId à null quand aucun layer ne reste', () => {

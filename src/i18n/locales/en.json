@@ -1329,6 +1329,7 @@
             "sunKm": "Sun km",
             "shadowKm": "Shade km",
             "nightKm": "Night km",
+            "unknownKm": "Unknown km",
             "totalKm": "Total"
         },
         "rec": {

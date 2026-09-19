@@ -92,9 +92,9 @@ jobs:
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
 
-      - name: Build AAB
+      - name: Validate Android and build AAB
         working-directory: android
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew testDebugUnitTest lintRelease bundleRelease --no-daemon
 
       # ── 8. Upload AAB comme artifact ─────────────────────────────────────────
       - name: Upload AAB artifact

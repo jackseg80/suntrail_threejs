@@ -26,6 +26,7 @@ vi.mock('../i18n/I18nService', () => ({ i18n: { t: mockT } }));
 vi.mock('./state', () => ({ state: { DEBUG_MODE: false } }));
 
 import {
+    enqueueSharedGpxImport,
     initGpxImportIntake,
     openGpxAssociationSettings,
 } from './gpxImportIntake';
@@ -94,6 +95,36 @@ describe('gpxImportIntake', () => {
 
         await vi.waitFor(() =>
             expect(mockShowToast).toHaveBeenCalledWith('gpx.importError')
+        );
+    });
+
+    it('met en file un second partage reçu pendant le premier import', async () => {
+        let releaseFirst!: () => void;
+        mockImportGpxTrack.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    releaseFirst = () =>
+                        resolve({ status: 'imported', opened: true });
+                })
+        );
+
+        const first = enqueueSharedGpxImport({
+            files: [{ name: 'premier.gpx', xml: '<gpx id="1"/>' }],
+        });
+        const second = enqueueSharedGpxImport({
+            files: [{ name: 'second.gpx', xml: '<gpx id="2"/>' }],
+        });
+
+        await vi.waitFor(() =>
+            expect(mockImportGpxTrack).toHaveBeenCalledTimes(1)
+        );
+        releaseFirst();
+        await Promise.all([first, second]);
+
+        expect(mockImportGpxTrack).toHaveBeenNthCalledWith(
+            2,
+            '<gpx id="2"/>',
+            'second.gpx'
         );
     });
 

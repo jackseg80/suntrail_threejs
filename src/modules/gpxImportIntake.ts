@@ -44,34 +44,45 @@ const ERROR_KEYS: Record<SharedGpxError, string> = {
     'read-failed': 'gpx.shareReadFailed',
 };
 
-let processing = false;
+let importQueue: Promise<void> = Promise.resolve();
 
 async function processFiles(payload: SharedGpxPayload): Promise<void> {
     const files = payload?.files ?? [];
-    if (processing || files.length === 0) return;
-    processing = true;
-    try {
-        for (const file of files) {
-            if (!file.xml) {
-                showToast(
-                    i18n.t(
-                        ERROR_KEYS[file.error ?? 'read-failed'] ??
-                            'gpx.importError'
-                    )
-                );
-                continue;
-            }
-            try {
-                await importGpxTrack(file.xml, file.name || 'track.gpx');
-            } catch (error) {
-                if (state.DEBUG_MODE)
-                    console.error('[GPX] Shared import failed', error);
-                showToast(i18n.t('gpx.importError'));
-            }
+    if (files.length === 0) return;
+    for (const file of files) {
+        if (!file.xml) {
+            showToast(
+                i18n.t(
+                    ERROR_KEYS[file.error ?? 'read-failed'] ?? 'gpx.importError'
+                )
+            );
+            continue;
         }
-    } finally {
-        processing = false;
+        try {
+            await importGpxTrack(file.xml, file.name || 'track.gpx');
+        } catch (error) {
+            if (state.DEBUG_MODE)
+                console.error('[GPX] Shared import failed', error);
+            showToast(i18n.t('gpx.importError'));
+        }
     }
+}
+
+/**
+ * Sérialise les événements natifs : Android peut livrer un second partage
+ * pendant que le dialogue du premier import est encore ouvert.
+ */
+export function enqueueSharedGpxImport(
+    payload: SharedGpxPayload
+): Promise<void> {
+    importQueue = importQueue
+        .then(() => processFiles(payload))
+        .catch((error) => {
+            if (state.DEBUG_MODE)
+                console.error('[GPX] Shared import queue failed', error);
+            showToast(i18n.t('gpx.importError'));
+        });
+    return importQueue;
 }
 
 /**
@@ -83,7 +94,7 @@ export async function initGpxImportIntake(): Promise<void> {
     try {
         await gpxImportNative.addListener(
             'gpxImportReceived',
-            (payload) => void processFiles(payload)
+            (payload) => void enqueueSharedGpxImport(payload)
         );
     } catch (error) {
         if (state.DEBUG_MODE) console.error('[GPX] Intake init failed', error);

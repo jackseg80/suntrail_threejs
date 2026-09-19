@@ -229,6 +229,20 @@ describe('buildRouteHash', () => {
         const pts2 = makePoints(15);
         expect(buildRouteHash(pts1)).not.toBe(buildRouteHash(pts2));
     });
+
+    it('distinguishes routes with the same endpoints and point count', () => {
+        const pts1 = [
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(5, 0, 2),
+            new THREE.Vector3(10, 0, 0),
+        ];
+        const pts2 = [
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(5, 0, -2),
+            new THREE.Vector3(10, 0, 0),
+        ];
+        expect(buildRouteHash(pts1)).not.toBe(buildRouteHash(pts2));
+    });
 });
 
 // ── Tests: makeCacheKey ──────────────────────────────────────────────────────
@@ -305,8 +319,10 @@ describe('buildAnalysis', () => {
         expect(result.sunExposedKm).toBe(0);
         expect(result.shadowKm).toBe(0);
         expect(result.nightKm).toBe(0);
+        expect(result.unknownKm).toBe(0);
         expect(result.sunPct).toBe(0);
         expect(result.nightPct).toBe(0);
+        expect(result.unknownPct).toBe(0);
         expect(result.shadowSegments).toEqual([]);
         expect(result.terrainAvailable).toBe(false);
         expect(result.terrainCoverage).toBe(0);
@@ -330,6 +346,9 @@ describe('buildAnalysis', () => {
         );
         expect(result.terrainCoverage).toBeCloseTo(0.5, 5);
         expect(result.terrainAvailable).toBe(true);
+        expect(result.sunExposedKm).toBe(0);
+        expect(result.unknownKm).toBe(1);
+        expect(result.unknownPct).toBe(100);
     });
 
     it('counts sun-exposed km correctly', () => {

@@ -4,7 +4,11 @@
  * v5.6.7 : AbortController par task — fetch annulé dès que la tuile est disposée côté main.
  */
 
-import { isMapTilerUrl, MapTilerBackoff } from './tileWorkerCore';
+import {
+    isMapTilerUrl,
+    MapTilerBackoff,
+    readTileFromWorkerCaches,
+} from './tileWorkerCore';
 import type {
     TileWorkerRequest,
     TileWorkerResourceTiming,
@@ -13,10 +17,18 @@ import type {
 
 // v30 : synchronized avec tileLoader.ts pour support seeding
 const CACHE_NAME = 'suntrail-tiles-v30';
+const OFFLINE_CACHE_NAME = 'suntrail-offline-zones';
 let _cacheStorage: Cache | null = null;
+let _offlineCacheStorage: Cache | null = null;
 async function getCache(): Promise<Cache> {
     if (!_cacheStorage) _cacheStorage = await caches.open(CACHE_NAME);
     return _cacheStorage;
+}
+
+async function getOfflineCache(): Promise<Cache> {
+    if (!_offlineCacheStorage)
+        _offlineCacheStorage = await caches.open(OFFLINE_CACHE_NAME);
+    return _offlineCacheStorage;
 }
 
 /**
@@ -294,7 +306,10 @@ async function fetchTile(
     const startedAt = diagnostics ? performance.now() : 0;
     try {
         const cacheStartedAt = diagnostics ? performance.now() : 0;
-        const cache = await getCache();
+        const [offlineCache, cache] = await Promise.all([
+            getOfflineCache(),
+            getCache(),
+        ]);
         const cacheOpenMs = diagnostics
             ? performance.now() - cacheStartedAt
             : 0;
@@ -302,7 +317,8 @@ async function fetchTile(
         // 1. Priorité au Blob fourni (seeding direct via postMessage)
         if (providedBlob) {
             // v5.29.35 : On l'injecte dans le cache worker pour les futurs accès standards (fetch)
-            cache.put(url, new Response(providedBlob.slice()));
+            if (providedSource !== 'offline-cache')
+                cache.put(url, new Response(providedBlob.slice()));
             const decodeStartedAt = diagnostics ? performance.now() : 0;
             const bitmap = await createImageBitmap(providedBlob, {
                 colorSpaceConversion: 'none',
@@ -323,38 +339,28 @@ async function fetchTile(
         }
 
         const lookupStartedAt = diagnostics ? performance.now() : 0;
-        const cached = await cache.match(url);
+        const cached = await readTileFromWorkerCaches(url, offlineCache, cache);
         const cacheLookupMs = diagnostics
             ? cacheOpenMs + performance.now() - lookupStartedAt
             : 0;
         if (cached) {
-            const readStartedAt = diagnostics ? performance.now() : 0;
-            const blob = await cached.blob();
-            const readMs = diagnostics ? performance.now() - readStartedAt : 0;
-            // Rejeter les entrées cache corrompues (réponses 429 vides, < 100 bytes)
-            if (blob.size < 100) {
-                cache.delete(url);
-                // Fall through au fetch réseau
-            } else {
-                const decodeStartedAt = diagnostics ? performance.now() : 0;
-                const bitmap = await createImageBitmap(blob, {
-                    colorSpaceConversion: 'none',
-                });
-                return {
-                    bitmap,
-                    fromCache: true,
-                    timing: diagnostics
-                        ? {
-                              source: 'worker-cache',
-                              durationMs: performance.now() - startedAt,
-                              sizeBytes: blob.size,
-                              cacheLookupMs,
-                              readMs,
-                              decodeMs: performance.now() - decodeStartedAt,
-                          }
-                        : undefined,
-                };
-            }
+            const decodeStartedAt = diagnostics ? performance.now() : 0;
+            const bitmap = await createImageBitmap(cached.blob, {
+                colorSpaceConversion: 'none',
+            });
+            return {
+                bitmap,
+                fromCache: true,
+                timing: diagnostics
+                    ? {
+                          source: cached.source,
+                          durationMs: performance.now() - startedAt,
+                          sizeBytes: cached.blob.size,
+                          cacheLookupMs,
+                          decodeMs: performance.now() - decodeStartedAt,
+                      }
+                    : undefined,
+            };
         }
         if (isOffline) return null;
         // Backoff MapTiler : skip les requêtes pendant la période de cooldown

@@ -32,6 +32,8 @@ import {
 
 const PACK_STATES_KEY = STORAGE_KEYS.PACK_STATES;
 const PACKS_DIR = 'packs';
+const NATIVE_LOCALHOST_UNLOCK_CLEANUP_KEY =
+    'suntrail_native_localhost_unlock_cleanup_v1';
 
 class PackManager {
     private packStates: Map<string, PackState> = new Map();
@@ -48,12 +50,19 @@ class PackManager {
         await fetchCatalog();
         this.runCheckForUpdates();
         await this.syncDiskStates();
+        this.clearLegacyNativeLocalhostUnlocks();
 
         // Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
         const params = new URLSearchParams(window.location.search);
+        // Le WebView Capacitor utilise lui aussi https://localhost : ce n'est
+        // pas un serveur de développement et il ne doit jamais débloquer les
+        // packs payants automatiquement.
+        const isBrowserDevHost =
+            !Capacitor.isNativePlatform() &&
+            (location.hostname === 'localhost' ||
+                location.hostname === '127.0.0.1');
         const isDev =
-            location.hostname === 'localhost' ||
-            location.hostname === '127.0.0.1' ||
+            isBrowserDevHost ||
             params.get('allpacks') === 'true' ||
             params.get('dev') === 'true';
 
@@ -67,7 +76,8 @@ class PackManager {
             }
         }
 
-        // Mount all installed packs (purchased/installed/update_available)
+        // Monter d'abord les archives locales. Un simple statut `purchased`
+        // persisté doit être confirmé par RevenueCat avant tout streaming CDN.
         await this.mountAllInstalled();
         // Sync pack purchases avec RevenueCat (restaure après clear storage)
         this.syncPackPurchases().catch((e) => {
@@ -77,6 +87,43 @@ class PackManager {
             console.log(
                 `[Packs] Initialisé. ${this.mountedArchives.size} pack(s) monté(s).`
             );
+    }
+
+    /**
+     * Les versions antérieures prenaient le hostname interne `localhost` de
+     * Capacitor pour un serveur de développement et débloquaient tout le
+     * catalogue. Nettoyage ponctuel : les packs installés restent intacts et
+     * RevenueCat restaurera ensuite les achats réels.
+     */
+    private clearLegacyNativeLocalhostUnlocks(): void {
+        if (!Capacitor.isNativePlatform()) return;
+        try {
+            if (localStorage.getItem(NATIVE_LOCALHOST_UNLOCK_CLEANUP_KEY))
+                return;
+
+            const packIds = getAvailablePacks().map((pack) => pack.id);
+            const entireCatalogUnlocked =
+                packIds.length > 0 &&
+                packIds.every((id) => {
+                    const status = this.packStates.get(id)?.status;
+                    return status && status !== 'not_purchased';
+                });
+
+            if (entireCatalogUnlocked) {
+                let changed = false;
+                for (const id of packIds) {
+                    const packState = this.packStates.get(id);
+                    if (packState?.status === 'purchased') {
+                        packState.status = 'not_purchased';
+                        changed = true;
+                    }
+                }
+                if (changed) this.persistStates();
+            }
+            localStorage.setItem(NATIVE_LOCALHOST_UNLOCK_CLEANUP_KEY, '1');
+        } catch {
+            // Stockage indisponible : la réconciliation RevenueCat reste active.
+        }
     }
 
     /**
@@ -146,27 +193,25 @@ class PackManager {
         const ready = await iapService.waitForInit();
         if (!ready) return;
 
-        // Sur web : RevenueCat est la source de vérité — réinitialiser les états
-        // 'purchased' avant de re-vérifier, pour révoquer les anciens auto-unlocks.
-        // Les états 'installed' restent intacts (fichier téléchargé localement).
-        if (!Capacitor.isNativePlatform()) {
-            let changed = false;
-            for (const [, ps] of this.packStates) {
-                if (ps.status === 'purchased') {
-                    ps.status = 'not_purchased';
-                    changed = true;
-                }
-            }
-            if (changed) {
-                this.persistStates();
-                eventBus.emit('packStatusChanged', {
-                    packId: '',
-                    status: 'not_purchased',
-                });
+        const purchased = await iapService.checkAllPackPurchases();
+        // RevenueCat est la source de vérité sur Web comme sur natif. On ne
+        // révoque qu'après une lecture réussie, afin de conserver l'état local
+        // lorsque l'initialisation IAP ou le réseau sont indisponibles.
+        const verified = new Set(purchased);
+        let changed = false;
+        for (const [packId, ps] of this.packStates) {
+            if (ps.status === 'purchased' && !verified.has(packId)) {
+                ps.status = 'not_purchased';
+                changed = true;
             }
         }
-
-        const purchased = await iapService.checkAllPackPurchases();
+        if (changed) {
+            this.persistStates();
+            eventBus.emit('packStatusChanged', {
+                packId: '',
+                status: 'not_purchased',
+            });
+        }
         for (const packId of purchased) {
             this.markPurchased(packId);
         }
@@ -350,9 +395,9 @@ class PackManager {
         )
             return;
 
+        let archiveSource: 'opfs' | 'cdn' | null = null;
         try {
             let archive: pmtiles.PMTiles;
-            let archiveSource: 'opfs' | 'cdn';
 
             // v5.28.2 : On utilise le fichier local si status === 'installed'
             // OU si status === 'update_available' et que le fichier est présent.
@@ -407,6 +452,20 @@ class PackManager {
             });
             eventBus.emit('packMounted', { packId });
         } catch (e) {
+            if (archiveSource === 'opfs') {
+                console.warn(
+                    `[Packs] Archive locale invalide pour ${packId}; nouveau téléchargement requis.`,
+                    e
+                );
+                ps.status = 'error';
+                ps.installedVersion = 0;
+                ps.filePath = null;
+                ps.sizeMB = 0;
+                this.persistStates();
+                this.emitStatus(packId, 'error');
+                await this.deletePackFile(packId);
+                return;
+            }
             console.error(`[Packs] Erreur montage ${packId}:`, e);
         }
     }
@@ -420,11 +479,7 @@ class PackManager {
     async mountAllInstalled(): Promise<void> {
         const promises: Promise<void>[] = [];
         for (const [packId, ps] of this.packStates) {
-            if (
-                ps.status === 'installed' ||
-                ps.status === 'purchased' ||
-                ps.status === 'update_available'
-            ) {
+            if (ps.status === 'installed' || ps.status === 'update_available') {
                 promises.push(this.mountPack(packId));
             }
         }
@@ -622,15 +677,16 @@ class PackManager {
 
     markPurchased(packId: string): void {
         const ps = this.getOrCreateState(packId);
-        if (ps.status === 'not_purchased') {
+        if (ps.status === 'not_purchased' || ps.status === 'error') {
             ps.status = 'purchased';
             this.persistStates();
             this.emitStatus(packId, 'purchased');
-            // Auto-mount via CDN
-            void this.mountPack(packId).catch((e) => {
-                if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e);
-            });
         }
+        // Auto-mount via CDN, y compris après confirmation d'un statut
+        // `purchased` restauré depuis le stockage local.
+        void this.mountPack(packId).catch((e) => {
+            if (state.DEBUG_MODE) console.warn('[Packs] Mount failed', e);
+        });
     }
 
     // ── Updates ── (délégué à packCatalog.ts)

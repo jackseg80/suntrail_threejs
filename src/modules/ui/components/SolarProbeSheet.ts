@@ -1106,6 +1106,12 @@ export class SolarProbeSheet extends BaseComponent {
             i18n.t('solarRoute.stat.nightKm'),
             `${routeData.nightKm.toFixed(1)} km`
         );
+        if ((routeData.unknownKm ?? 0) > 0) {
+            addCard(
+                i18n.t('solarRoute.stat.unknownKm'),
+                `${routeData.unknownKm.toFixed(1)} km`
+            );
+        }
         addCard(
             i18n.t('solarRoute.stat.totalKm'),
             `${routeData.totalKm.toFixed(1)} km`

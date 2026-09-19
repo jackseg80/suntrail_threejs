@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
     isMapTilerUrl,
     MAPTILER_BACKOFF_MAX_MS,
     MapTilerBackoff,
+    readTileFromWorkerCaches,
 } from './tileWorkerCore';
 
 describe('tileWorkerCore', () => {
@@ -32,5 +33,44 @@ describe('tileWorkerCore', () => {
 
         expect(backoff.isActive(2000)).toBe(false);
         expect(backoff.getRetryDelayMs()).toBe(500);
+    });
+});
+
+describe('worker tile cache priority', () => {
+    function cacheWith(blob: Blob | null) {
+        return {
+            match: vi.fn(async () =>
+                blob ? new Response(blob.slice()) : undefined
+            ),
+            delete: vi.fn(async () => true),
+        };
+    }
+
+    it('prioritizes an explicitly downloaded offline tile', async () => {
+        const offline = cacheWith(new Blob(['o'.repeat(150)]));
+        const navigation = cacheWith(new Blob(['n'.repeat(150)]));
+
+        const result = await readTileFromWorkerCaches(
+            'https://tiles.test/1/2/3',
+            offline as any,
+            navigation as any
+        );
+
+        expect(result?.source).toBe('offline-cache');
+        expect(navigation.match).not.toHaveBeenCalled();
+    });
+
+    it('falls back to navigation cache and discards corrupt entries', async () => {
+        const offline = cacheWith(new Blob(['bad']));
+        const navigation = cacheWith(new Blob(['n'.repeat(150)]));
+
+        const result = await readTileFromWorkerCaches(
+            'https://tiles.test/1/2/3',
+            offline as any,
+            navigation as any
+        );
+
+        expect(offline.delete).toHaveBeenCalled();
+        expect(result?.source).toBe('worker-cache');
     });
 });
