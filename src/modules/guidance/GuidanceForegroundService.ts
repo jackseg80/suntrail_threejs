@@ -16,6 +16,7 @@ import { stopRecordingWithFeedback } from '../recordingStopFlow';
 import { buildRecordingSummary } from '../outing/outingDashboard';
 import { STORAGE_KEYS } from '../../constants/storage';
 import { releaseFlags } from '../releaseFlags';
+import { setRoutePlanningMode } from '../routeManager';
 import { state } from '../state';
 import { formatTrackDisplayName } from '../tracks/trackDisplayName';
 import {
@@ -101,6 +102,11 @@ export class GuidanceForegroundService {
         }
         if (!(await this.ensureLocationPermission())) return false;
 
+        // Toute entrée (ou réapplication) en guidage part d'un chrome propre.
+        // L'utilisateur peut ensuite rouvrir explicitement Préparer sans que
+        // l'état de planification précédent fasse apparaître la barre trop tôt.
+        setRoutePlanningMode(false, { announceHint: false });
+
         if (this.nativeActive) {
             await nativeGPSService.stopGuidance();
             this.nativeActive = false;
@@ -134,6 +140,7 @@ export class GuidanceForegroundService {
                     acceptedPosition: false,
                 });
             }
+            eventBus.emit('guidanceStarted');
             return true;
         }
         this.engine = new GuidanceEngine({
@@ -177,6 +184,7 @@ export class GuidanceForegroundService {
                 })
             );
         }
+        eventBus.emit('guidanceStarted');
         return true;
     }
 
@@ -262,6 +270,7 @@ export class GuidanceForegroundService {
                 session.snapshot.status === 'recovered' ? ['recovered'] : [],
             acceptedPosition: false,
         });
+        eventBus.emit('guidanceStarted');
         return true;
     }
 

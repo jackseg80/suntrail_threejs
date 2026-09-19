@@ -65,6 +65,12 @@ export const TRACE_COLORS = [
 
 export const DEFAULT_TRACE_COLOR = TRACE_COLORS[0];
 
+/** Vert fluo réservé au REC en cours. */
+export const ACTIVE_RECORDING_TRACE_COLOR = '#00e676' as const;
+
+/** Bleu vif réservé aux REC terminés, absent de la palette de guidance. */
+export const RECORDED_TRACE_COLOR = '#0066ff' as const;
+
 export interface PerformanceSettings {
     RESOLUTION: number;
     RANGE: number;

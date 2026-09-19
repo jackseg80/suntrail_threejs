@@ -142,6 +142,14 @@ export function rebuildActiveTiles(): void {
     const is2D = state.IS_2D_MODE;
 
     for (const tile of activeTiles.values()) {
+        // Retirer aussi les tuiles 2D encore en vol avant le garde-fou sur les
+        // textures. Sinon leur chargement peut se terminer après le passage en
+        // 3D et produire un trou ou une dalle plate au LOD élevé.
+        if (!is2D && tile.dataMode2D && tile.zoom > 10) {
+            toReload.push(tile.key);
+            continue;
+        }
+
         if (!tile.elevationTex || !tile.colorTex) continue;
 
         // v5.40.18 : Nettoyage forcé des objets 3D lors d'un changement de mode (2D/3D)
@@ -169,11 +177,7 @@ export function rebuildActiveTiles(): void {
             }
         }
 
-        if (!is2D && tile.dataMode2D && tile.zoom > 10) {
-            toReload.push(tile.key);
-        } else {
-            tile.buildMesh(state.RESOLUTION);
-        }
+        tile.buildMesh(state.RESOLUTION);
     }
     for (const key of toReload) {
         const tile = activeTiles.get(key);

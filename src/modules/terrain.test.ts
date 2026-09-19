@@ -135,6 +135,96 @@ describe('terrain.ts', () => {
             expect(dispose).toHaveBeenCalledOnce();
             expect(activeTiles.has(tile.key)).toBe(false);
         });
+
+        it('replaces an in-flight color-only tile before returning to 3D', () => {
+            state.IS_2D_MODE = true;
+            const tile = new Tile(10, 10, 17, '17/10/10');
+            tile.status = 'loading';
+            activeTiles.set(tile.key, tile);
+            const dispose = vi.spyOn(tile, 'dispose');
+
+            state.IS_2D_MODE = false;
+            rebuildActiveTiles();
+
+            expect(dispose).toHaveBeenCalledOnce();
+            expect(activeTiles.has(tile.key)).toBe(false);
+        });
+
+        it('flattens an already loaded 3D tile when returning to 2D', () => {
+            state.IS_2D_MODE = false;
+            const tile = new Tile(10, 10, 17, '17/10/10');
+            tile.status = 'loaded';
+            tile.elevationTex = new THREE.Texture();
+            tile.colorTex = new THREE.Texture();
+            activeTiles.set(tile.key, tile);
+
+            tile.buildMesh(64);
+            expect(tile.currentResolution).toBe(64);
+            expect(tile.mesh?.material).toBeInstanceOf(
+                THREE.MeshStandardMaterial
+            );
+
+            state.IS_2D_MODE = true;
+            rebuildActiveTiles();
+
+            expect(tile.currentResolution).toBe(1);
+            expect(tile.mesh?.material).toBeInstanceOf(THREE.MeshBasicMaterial);
+            expect(tile.mesh?.castShadow).toBe(false);
+            expect(tile.mesh?.receiveShadow).toBe(false);
+        });
+
+        it('keeps pooled shader offsets independent from tile offsets', () => {
+            const tile = new Tile(17069, 11460, 15, '15/17069/11460');
+            tile.status = 'loaded';
+            tile.elevationTex = new THREE.Texture();
+            tile.colorTex = new THREE.Texture();
+            activeTiles.set(tile.key, tile);
+
+            tile.buildMesh(64);
+
+            const material = tile.mesh?.material as THREE.Material;
+            const shader: any = {
+                uniforms: {},
+                vertexShader:
+                    '#include <common>\n#include <uv_vertex>\n#include <beginnormal_vertex>\n#include <begin_vertex>',
+                fragmentShader: '#include <map_fragment>',
+            };
+            material.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+
+            expect(shader.uniforms.uElevOffset.value).toEqual(tile.elevOffset);
+            expect(shader.uniforms.uElevOffset.value).not.toBe(tile.elevOffset);
+            expect(shader.uniforms.uColorOffset.value).toEqual(
+                tile.colorOffset
+            );
+            expect(shader.uniforms.uColorOffset.value).not.toBe(
+                tile.colorOffset
+            );
+
+            const originalElevOffset = tile.elevOffset.clone();
+            const originalColorOffset = tile.colorOffset.clone();
+            shader.uniforms.uElevOffset.value.set(0.5, 0.5);
+            shader.uniforms.uColorOffset.value.set(0.5, 0.5);
+
+            expect(tile.elevOffset).toEqual(originalElevOffset);
+            expect(tile.colorOffset).toEqual(originalColorOffset);
+
+            const depthShader: any = {
+                uniforms: {},
+                vertexShader: '#include <common>\n#include <begin_vertex>',
+                fragmentShader: '',
+            };
+            tile.mesh?.customDepthMaterial?.onBeforeCompile(
+                depthShader,
+                {} as THREE.WebGLRenderer
+            );
+
+            expect(depthShader.uniforms.uElevOffset.value).toEqual(
+                tile.elevOffset
+            );
+            expect(depthShader.uniforms.uElevOffset.value).not.toBe(
+                tile.elevOffset
+            );
+        });
     });
 
     describe('V5 Extensions & Backdrop Stretching', () => {

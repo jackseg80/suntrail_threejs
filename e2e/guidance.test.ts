@@ -175,7 +175,7 @@ test.describe('Foreground Guidance', () => {
         'Foreground guidance acceptance is Chromium-only.'
     );
 
-    test('starts, pauses, resumes, arrives and stops while REC remains independent', async ({
+    test('starts, exposes preparation controls and keeps REC independent', async ({
         page,
         context,
     }) => {
@@ -203,6 +203,16 @@ test.describe('Foreground Guidance', () => {
         );
         await expect(page.locator('#route-bar')).toBeHidden();
         await expect(page.locator('#route-plan-hud')).toBeHidden();
+        const prepareTab = page.locator('.nav-tab[data-tab="prepare"]');
+        await prepareTab.click();
+        await expect(page.locator('#route-bar')).toBeVisible();
+        await expect(page.locator('#rb-guidance-btn')).toHaveText(
+            'Appliquer au guidage'
+        );
+        await prepareTab.click();
+        await expect(page.locator('body')).toHaveClass(
+            /route-planner-chrome-hidden/
+        );
         const mapControls = page.locator('.fab-stack');
         await expect(mapControls).toBeVisible();
         for (const selector of [
@@ -245,15 +255,18 @@ test.describe('Foreground Guidance', () => {
                 )
         );
         await expect(overlay).toHaveAttribute('data-expanded', 'false');
+        await expect(overlay).toHaveAttribute('data-panel-mode', 'compact');
         await expect(page.locator('#guidance-gps')).toBeHidden();
-        await page.locator('[data-guidance-action="expand"]').click();
+        await page.locator('[data-guidance-action="toggle-details"]').click();
         await expect(overlay).toHaveAttribute('data-expanded', 'true');
+        await expect(overlay).toHaveAttribute('data-panel-mode', 'details');
         await expect(page.locator('#guidance-gps')).toBeVisible();
         await expect(page.locator('#gps-main-btn')).not.toHaveClass(
             /following/
         );
-        await page.locator('[data-guidance-action="expand"]').click();
+        await page.locator('[data-guidance-action="toggle-details"]').click();
         await expect(overlay).toHaveAttribute('data-expanded', 'false');
+        await expect(overlay).toHaveAttribute('data-panel-mode', 'compact');
         const profileAction = page.locator('[data-guidance-action="profile"]');
         await profileAction.click();
         const profile = page.locator('#elevation-profile');
@@ -293,46 +306,22 @@ test.describe('Foreground Guidance', () => {
             { timeout: 10_000 }
         );
 
-        await page.locator('[data-guidance-action="pause"]').click();
-        await expect(page.locator('#guidance-status')).toHaveText('En pause');
-        await page.locator('[data-guidance-action="pause"]').click();
-        await expect(page.locator('#guidance-status')).toHaveText('GPS…');
-        await context.setGeolocation({
-            latitude: 46,
-            longitude: 7.001,
-            accuracy: 5,
-        });
-
-        await context.setGeolocation({
-            latitude: 46,
-            longitude: 7.00196,
-            accuracy: 5,
-        });
-        await page.waitForTimeout(10_500);
-        await context.setGeolocation({
-            latitude: 46,
-            longitude: 7.00199,
-            accuracy: 5,
-        });
-        await expect(page.locator('#guidance-status')).toHaveText('Arrivé', {
-            timeout: 10_000,
-        });
-
         await page.locator('[data-guidance-action="record"]').click();
         await expect(
             page.locator('[data-guidance-action="record"]')
         ).toHaveAttribute('data-recording', 'true');
-        await expect(page.locator('#rec-status-widget')).toBeVisible();
+        await expect(page.locator('#guidance-rec-summary')).toBeVisible();
+        await expect(overlay).toBeVisible();
+
+        await page.locator('[data-guidance-action="toggle-details"]').click();
+        await page.locator('[data-guidance-action="stop-rec-only"]').click();
+        await expect(page.locator('#guidance-rec-summary')).toBeHidden();
         await expect(overlay).toBeVisible();
 
         await page.locator('[data-guidance-action="record"]').click();
-        await expect(page.locator('#rec-status-widget')).toBeHidden();
-        await expect(overlay).toBeVisible();
+        await expect(page.locator('#guidance-rec-summary')).toBeVisible();
 
-        await page.locator('[data-guidance-action="record"]').click();
-        await expect(page.locator('#rec-status-widget')).toBeVisible();
-
-        await page.locator('[data-guidance-action="stop"]').click();
+        await page.locator('[data-guidance-action="stop"]:visible').click();
         await expect(overlay).toBeHidden();
         await expect(mapControls).toBeVisible();
         await expect(page.locator('#rec-status-widget')).toBeVisible();
@@ -380,7 +369,7 @@ test.describe('Foreground Guidance', () => {
         await expect(page.locator('#guidance-route-name')).toHaveText(
             'Route approximative'
         );
-        await page.locator('[data-guidance-action="stop"]').click();
+        await page.locator('.guidance-stop').click();
         await expect(page.locator('#guidance-foreground')).toBeHidden();
     });
 });

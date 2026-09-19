@@ -31,6 +31,7 @@ type EventMap = {
     routeWorkBackRequested: void;
     trackDestinationChanged: { destination: 'outing' | 'library' };
     guidanceSnapshot: import('./guidance/guidanceTypes').GuidanceSnapshot;
+    guidanceStarted: void;
     guidanceStopped: void;
     sceneRenderRequested: void;
 };

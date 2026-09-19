@@ -1,10 +1,22 @@
-# AI Performance & Constants Guide (v5.91.4)
+# AI Performance & Constants Guide (v5.91.4 + correctifs non publiés)
 
 Dictionary of "Magic Numbers" and thresholds used in SunTrail.
 
 > La synthèse de clôture ci-dessous décrit l'état actuel. Les sous-sections datées qui suivent
 > conservent la chronologie du diagnostic 5.88 ; leurs mentions « prêt », « non installé » ou
 > « ouvert » étaient vraies au moment de la mesure et ne remplacent pas la synthèse finale.
+
+## Post-v5.91.4 — intégrité des tuiles lors des transitions 2D/3D
+
+Le défaut intermittent de trous ou d'immenses dalles en 3D ne venait ni du pack Suisse ni des
+chevrons de trace. Les matériaux mis en pool conservaient dans leurs uniforms une référence directe
+vers `Tile.elevOffset`/`Tile.colorOffset`. Lorsqu'un shader recyclé copiait les offsets de sa nouvelle
+tuile, il pouvait donc modifier le quadrant lu par une autre tuile encore visible. Chaque shader
+visible et de profondeur reçoit maintenant son propre clone des offsets.
+
+Les transitions appliquent aussi le contrat de données de la tuile : retour 2D = maillage plat,
+retour 3D = suppression préalable des tuiles couleur seules, y compris celles encore en chargement.
+La reproduction puis la correction ont été contrôlées sur Galaxy S23 ; 1 930 tests couvrent le lot.
 
 ## v5.89 — chargement cartographique et mémoire
 

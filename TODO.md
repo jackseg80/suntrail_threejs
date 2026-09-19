@@ -1,6 +1,25 @@
-# SunTrail — TODO (v5.91.4 ; publication Play séparée)
+# SunTrail — TODO (v5.91.4 + correctifs non publiés ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-17
+> Dernière mise à jour : 2026-09-19
+
+## ✅ Correctifs post-v5.91.4 — terrain, parcours et robustesse
+
+- [x] Isoler les offsets de shader par tuile pour supprimer les trous/dalles volantes intermittents
+      lors du recyclage des matériaux 3D ; couvrir aussi le matériau de profondeur.
+- [x] Fiabiliser les passages 2D/3D : tuiles déjà chargées aplaties au retour 2D et tuiles 2D encore
+      en vol retirées avant le retour 3D.
+- [x] Calcul solaire sur l'altitude physique (sans exagération visuelle) et portions sans relief
+      conservées comme inconnues dans l'analyse et le départ optimal.
+- [x] Distinguer REC actif (vert), REC terminé (bleu) et guidage (couleur des réglages) ; ajouter les
+      chevrons de direction à toute trace d'au moins deux points.
+- [x] Rendre Préparer accessible pendant le guidage avec « Appliquer au guidage » ; aligner la liste
+      des points sur les marqueurs `1…n` de la carte.
+- [x] Fiabiliser les packs Capacitor/RevenueCat/OPFS, la file des imports GPX Android et les workflows
+      GitHub (Pages manuel ; tests Android + lint avant AAB).
+- [x] Contrôles : `npm run check`, 166 fichiers/1 930 tests, build/sync Capacitor, assemblage Android
+      et scénario 2D/3D validé sur S23 avec données conservées.
+- [ ] Attribuer une nouvelle version et un `versionCode` uniquement si une release est décidée ;
+      vérifier d'abord le maximum réel dans Play Console.
 
 ## ✅ v5.91.4 — Démarrage carte et nettoyage des réglages
 

@@ -184,6 +184,8 @@ export interface ChevronOptions {
     spacing: number;
     /** Hauteur de pose au-dessus des points. */
     lift: number;
+    /** Distance avant le premier chevron. Par défaut : un espacement complet. */
+    startOffset?: number;
 }
 
 function pushChevron(
@@ -227,7 +229,7 @@ export function buildDirectionChevrons(
     const darkLift = options.lift - options.size * 0.08;
 
     let acc = 0;
-    let next = spacing;
+    let next = Math.max(0, options.startOffset ?? spacing);
     for (let i = 0; i < n - 1; i++) {
         const a = points[i];
         const b = points[i + 1];

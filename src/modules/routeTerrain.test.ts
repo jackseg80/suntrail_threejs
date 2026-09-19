@@ -41,6 +41,8 @@ const mockCancelTileLoad = vi.mocked(cancelTileLoad);
 
 beforeEach(() => {
     clearRouteTerrainCache();
+    (state as any).PERFORMANCE_PRESET = 'balanced';
+    (state as any).RELIEF_EXAGGERATION = 1;
     mockLoadTileData.mockReset();
     mockCancelTileLoad.mockReset();
     mockLoadTileData.mockImplementation(async () => ({
@@ -115,6 +117,18 @@ describe('prefetchRouteTerrain', () => {
         expect(mockLoadTileData).toHaveBeenCalled();
         expect(sampler!.tileCount).toBeGreaterThan(0);
         // Altitude constante de 100 m dans la tuile préchargée
+        expect(sampler!.altitudeAt(0, 0)).toBe(100);
+    });
+
+    it("ignore l'exagération visuelle pour conserver l'altitude physique", async () => {
+        (state as any).RELIEF_EXAGGERATION = 2;
+        const points = [
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(500, 0, 500),
+        ];
+
+        const sampler = await prefetchRouteTerrain(points);
+
         expect(sampler!.altitudeAt(0, 0)).toBe(100);
     });
 

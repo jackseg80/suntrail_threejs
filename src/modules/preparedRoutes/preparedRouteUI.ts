@@ -250,14 +250,21 @@ export function renderPreparedRouteEditor(): void {
     if (barSave) barSave.disabled = !canSave;
     if (barGuidance) {
         const guidanceEnabled = releaseFlags.isEnabled('guidanceForeground');
+        const guidanceActive = guidanceForegroundService.isActive();
         const mustSaveBeforeStart =
             state.routeDraftDirty || !state.activePreparedRouteId;
         const accessibleLabel = i18n.t(
-            mustSaveBeforeStart
-                ? 'guidance.actions.saveAndStart'
+            guidanceActive
+                ? 'guidance.actions.applyChanges'
+                : mustSaveBeforeStart
+                  ? 'guidance.actions.saveAndStart'
+                  : 'guidance.actions.start'
+        );
+        const visibleLabel = i18n.t(
+            guidanceActive
+                ? 'guidance.actions.applyChanges'
                 : 'guidance.actions.start'
         );
-        const visibleLabel = i18n.t('guidance.actions.start');
         barGuidance.hidden = !guidanceEnabled;
         barGuidance.disabled =
             !canSave || state.routeComputation?.guidanceQuality === 'not-ready';
@@ -499,6 +506,13 @@ export function initPreparedRouteUI(): void {
     const onLocaleChanged = () => renderPreparedRouteEditor();
     eventBus.on('localeChanged', onLocaleChanged);
     unsubscribers.push(() => eventBus.off('localeChanged', onLocaleChanged));
+    const onGuidanceStateChanged = () => renderPreparedRouteEditor();
+    eventBus.on('guidanceStarted', onGuidanceStateChanged);
+    eventBus.on('guidanceStopped', onGuidanceStateChanged);
+    unsubscribers.push(() => {
+        eventBus.off('guidanceStarted', onGuidanceStateChanged);
+        eventBus.off('guidanceStopped', onGuidanceStateChanged);
+    });
     renderPreparedRouteEditor();
 }
 

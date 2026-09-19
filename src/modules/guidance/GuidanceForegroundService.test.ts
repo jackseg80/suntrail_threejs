@@ -31,6 +31,9 @@ vi.mock('../profile', () => ({
     closeElevationProfile: vi.fn(),
     updateElevationProfile: vi.fn(),
 }));
+vi.mock('../routeManager', () => ({
+    setRoutePlanningMode: vi.fn(),
+}));
 vi.mock('../preparedRoutes/preparedRouteService', () => ({
     preparedRouteService: {
         getById: mocks.getRouteById,

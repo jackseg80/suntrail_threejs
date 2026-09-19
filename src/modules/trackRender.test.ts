@@ -92,4 +92,16 @@ describe('buildDirectionChevrons', () => {
         expect(light).toEqual([]);
         expect(dark).toEqual([]);
     });
+
+    it('peut centrer un chevron sur une trace courte', () => {
+        const points = straight(2); // longueur 10 m
+        const { light, dark } = buildDirectionChevrons(points, {
+            size: 2,
+            spacing: 80,
+            startOffset: 5,
+            lift: 1,
+        });
+        expect(light.length / 9).toBe(1);
+        expect(dark.length).toBe(light.length);
+    });
 });

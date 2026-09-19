@@ -7527,10 +7527,27 @@ body.guidance-active {
     --ui-bottom-offset: calc(var(--bar-h) + var(--safe-bottom));
 }
 
-body.guidance-active #route-bar,
-body.guidance-active #route-plan-hud,
-body.guidance-active #route-settings {
+body.guidance-active:not(.route-planning-mode) #route-bar,
+body.guidance-active:not(.route-planning-mode) #route-plan-hud,
+body.guidance-active:not(.route-planning-mode) #route-settings {
     display: none !important;
+}
+
+/* Préparer reste accessible pendant le guidage. Le guidage continue en
+   arrière-plan et son panneau remonte au-dessus du bandeau d'édition. */
+body.guidance-active.route-planning-mode:not(.route-planner-chrome-hidden) {
+    --guidance-bottom: calc(
+        var(--bar-h) + var(--safe-bottom) + var(--route-bar-h) +
+            var(--guidance-gap)
+    );
+    --ui-bottom-offset: calc(
+        var(--bar-h) + var(--safe-bottom) + var(--route-bar-h)
+    );
+}
+
+body.guidance-active.route-planning-mode:not(.route-planner-chrome-hidden)
+    .guidance-foreground {
+    bottom: calc(76px + var(--safe-bottom) + var(--route-bar-h));
 }
 
 body.guidance-active:not(.sheet-open):not(.ui-moving) .fab-stack {
@@ -8135,6 +8152,11 @@ body.guidance-profile-open
         left: calc(var(--guidance-gap) + var(--safe-left));
         width: auto;
         transform: none;
+    }
+
+    body.guidance-active.route-planning-mode:not(.route-planner-chrome-hidden)
+        .guidance-foreground {
+        bottom: var(--guidance-bottom);
     }
 }
 

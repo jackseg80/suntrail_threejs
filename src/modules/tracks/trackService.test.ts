@@ -100,3 +100,33 @@ describe('TrackService legacy migration', () => {
         ]);
     });
 });
+
+describe('TrackService recording color', () => {
+    it('archive un REC natif avec la couleur bleue réservée', async () => {
+        const repository = new TrackRepository(
+            new FakeIDBFactory(),
+            'recording-color'
+        );
+        const service = new TrackService(repository);
+        const track = await service.archiveRecording('REC vert', 'course-1', [
+            {
+                id: 1,
+                lat: 46,
+                lon: 7,
+                alt: 1000,
+                timestamp: 1_000,
+                accuracy: 4,
+            },
+            {
+                id: 2,
+                lat: 46.01,
+                lon: 7.01,
+                alt: 1010,
+                timestamp: 2_000,
+                accuracy: 4,
+            },
+        ]);
+
+        expect(track.color).toBe('#0066ff');
+    });
+});

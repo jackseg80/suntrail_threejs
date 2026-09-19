@@ -510,14 +510,14 @@ function renderSettingsWaypoints(): void {
         .map((wp, i) => {
             const label =
                 wp.name || `${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)}`;
-            const marker = i === 0 ? 'A' : i === last ? 'B' : String(i);
+            const marker = String(i + 1);
             const role =
                 i === 0
-                    ? i18n.t('planning.waypoints.start')
+                    ? `${i18n.t('planning.waypoints.start')} ${marker}`
                     : i === last
-                      ? i18n.t('planning.waypoints.finish')
+                      ? `${i18n.t('planning.waypoints.finish')} ${marker}`
                       : i18n.t('planning.waypoints.intermediate', {
-                            number: String(i),
+                            number: marker,
                         });
             return `<div class="rs-wp-item" data-idx="${i}">
             <button class="rs-wp-focus" data-idx="${i}" aria-label="${escapeHTML(i18n.t('planning.waypoints.focus', { point: role }))}">

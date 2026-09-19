@@ -1,3 +1,43 @@
+## [Non publié] - 2026-09-19 — Terrain 3D, parcours et robustesse
+
+### Corrigé
+
+- **Tuiles 3D éclatées de façon intermittente** : isoler les offsets altitude/couleur de chaque
+  shader lors du recyclage des matériaux. Une mise à jour ne peut plus modifier le quadrant
+  d'altitude d'une autre tuile et produire un trou ou une dalle volante.
+- **Transitions 2D/3D** : aplatir immédiatement les tuiles 3D au retour en 2D et retirer les tuiles
+  2D encore en chargement avant leur réutilisation en 3D. Le changement de LOD n'est plus requis
+  pour réparer l'affichage.
+- **Analyse solaire** : utiliser l'altitude physique du terrain, sans le facteur d'exagération du
+  rendu 3D. Les portions sans relief restent explicitement inconnues et ne sont pas comptées comme
+  ensoleillées dans l'analyse ni dans la recherche du meilleur départ.
+- **Points d'itinéraire** : employer la même numérotation `1…n` dans le panneau et sur la carte ;
+  les extrémités sont affichées comme « Départ 1 » et « Arrivée n ».
+- **Packs pays** : ne plus confondre le `localhost` interne de Capacitor avec un serveur de
+  développement, réconcilier les achats avec RevenueCat avant le streaming CDN et invalider une
+  archive OPFS illisible sans toucher aux packs sains.
+- **Imports GPX Android** : sérialiser les partages reçus pendant qu'un import précédent est encore
+  ouvert, au lieu d'ignorer le second événement.
+
+### Amélioré
+
+- Le REC actif reste vert fluo ; une trace REC terminée devient bleu vif, distinct de la couleur de
+  guidage choisie. Un nouveau REC utilise donc à nouveau le vert sans recolorer les archives.
+- Ajouter des chevrons de direction à toute trace d'au moins deux points, avec taille et espacement
+  bornés pour les tracés courts comme longs. La double voie reste réservée aux allers-retours.
+- Permettre de rouvrir **Préparer** pendant le guidage pour réorganiser les points ; l'action devient
+  « Appliquer au guidage » et le panneau de guidage reste accessible au-dessus du bandeau.
+- Le push sur `main` valide désormais le code sans déployer GitHub Pages. Le déploiement Pages est
+  manuel et explicite ; le workflow de release exécute aussi les tests Android et le lint avant l'AAB.
+
+### Validation
+
+- `npm run check` et 166 fichiers / 1 930 tests Web/TypeScript réussis.
+- Build Capacitor et assemblage Android réussis ; APK diagnostic installé sur Galaxy S23 sans
+  effacer les données. Le propriétaire confirme que les transitions 2D/3D et le terrain sont
+  corrects après reproduction du scénario.
+- Aucun nouveau tag, aucune release GitHub, aucun déploiement Pages et aucun upload Play inclus.
+
 ## [5.91.4] - 2026-09-17 — Démarrage carte et nettoyage des réglages
 
 ### Corrigé

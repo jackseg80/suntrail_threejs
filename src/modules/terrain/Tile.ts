@@ -507,7 +507,11 @@ export class Tile {
         const buildStartedAt = performance.now();
         markTileTrace(this.diagnosticTraceId, 'build-started');
 
-        const is2D = this.zoom <= 10 || state.IS_2D_MODE;
+        // Une tuile ne peut être rendue en relief que si elle possède le contrat
+        // de données 3D ET si l'affichage courant est en 3D. Ainsi une tuile
+        // couleur seule ne devient jamais un faux relief après un chargement en
+        // vol, tandis qu'une tuile 3D est bien aplatie au retour en 2D.
+        const is2D = this.zoom <= 10 || this.dataMode2D || state.IS_2D_MODE;
         const isLight = state.PERFORMANCE_PRESET === 'eco';
 
         if (is2D) resolution = 1;
@@ -525,9 +529,12 @@ export class Tile {
             shader.uniforms.uShowHydrology = terrainUniforms.uShowHydrology;
             shader.uniforms.uTime = terrainUniforms.uTime;
             shader.uniforms.uTileSize = { value: this.tileSizeMeters };
-            shader.uniforms.uElevOffset = { value: this.elevOffset };
+            // A pooled material may keep its compiled shader while it is reused
+            // by another tile. Keep the shader offsets independent from the Tile
+            // vectors so updating that pooled shader cannot mutate another tile.
+            shader.uniforms.uElevOffset = { value: this.elevOffset.clone() };
             shader.uniforms.uElevScale = { value: this.elevScale };
-            shader.uniforms.uColorOffset = { value: this.colorOffset };
+            shader.uniforms.uColorOffset = { value: this.colorOffset.clone() };
             shader.uniforms.uColorScale = { value: this.colorScale };
             shader.uniforms.uHasOverlay = { value: !!this.overlayTex };
             shader.uniforms.uHasNormalMap = { value: !!this.normalTex };
@@ -691,7 +698,9 @@ export class Tile {
                 (depth as any).userData.shader = shader;
                 shader.uniforms.uElevationMap = { value: this.elevationTex };
                 shader.uniforms.uExaggeration = terrainUniforms.uExaggeration;
-                shader.uniforms.uElevOffset = { value: this.elevOffset };
+                shader.uniforms.uElevOffset = {
+                    value: this.elevOffset.clone(),
+                };
                 shader.uniforms.uElevScale = { value: this.elevScale };
                 shader.uniforms.uTileSize = { value: this.tileSizeMeters };
                 if (!shader.vertexShader.includes('decodeHeight')) {

@@ -1,7 +1,7 @@
-# SunTrail — Guide IA (version source 5.91.4)
+# SunTrail — Guide IA (version source 5.91.4 + correctifs non publiés)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-17 après le correctif de
-> démarrage carte et le nettoyage des réglages avancés (5.91.4).
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-19 après la validation S23
+> des correctifs terrain, parcours, solaire, packs et import GPX postérieurs à 5.91.4.
 
 ## État vérifié
 
@@ -14,6 +14,10 @@
   l'UI secondaire est différée après la première tuile, et deux réglages avancés historiques sont
   retirés (debug sans cible, normalmap RG désormais toujours actif). La release GitHub `v5.91.4`
   produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
+- La branche contient en plus un lot **non publié et sans nouveau versionCode** : transitions
+  2D/3D fiabilisées, offsets de shader isolés par tuile, calcul solaire sur l'altitude physique,
+  REC actif vert/terminé bleu, chevrons sur toute trace, édition pendant le guidage, points `1…n`,
+  packs/GPX renforcés et publication Pages rendue manuelle. APK diagnostic validé sur S23.
 - Les releases GitHub `v5.91.0` (913), `v5.91.1` (914), `v5.91.2` (915) et `v5.91.3` (916) précèdent
   cette révision ; la qualification S23/A53 reste la référence terrain.
 - Suivi ouvert : la boussole 3D (`#compass-canvas`) est inerte depuis 5.90 ; décider de restaurer
@@ -125,6 +129,20 @@ sur un miss couleur, puis fusionne les réponses (`tileResponseMerge.ts`). L'hyd
 secondaire est différée après la première tuile (plafond 4 s), et la reprise REC attend
 `suntrail:secondaryReady`. Mesures S23/A53 : tuile de `load-started` au mesh en ~60 ms (S23) et
 ~1,4 s (A53), sans long task ni lecture CacheStorage sur le thread principal. Livré en 5.91.4 / 917.
+
+### Correctifs post-5.91.4 validés sur S23
+
+Les matériaux du terrain sont mis en pool. Leurs shaders ne doivent jamais conserver une référence
+directe vers `Tile.elevOffset` ou `Tile.colorOffset` : la réutilisation d'un matériau modifierait
+alors le quadrant d'une autre tuile, avec trous ou dalles volantes intermittents. Les uniforms
+visibles et de profondeur possèdent désormais leurs propres `Vector2`. Au changement de mode, une
+tuile 3D est reconstruite à plat en 2D et toute tuile 2D encore en vol est retirée avant le retour 3D.
+
+L'analyse solaire utilise l'altitude physique ; `RELIEF_EXAGGERATION` reste strictement visuel. Le
+REC actif est vert fluo, l'archive terminée bleue et le guidage conserve la couleur choisie. Toutes
+les traces ont des chevrons de direction, tandis que la double voie reste propre aux allers-retours.
+Préparer peut être rouvert pendant le guidage pour appliquer une route modifiée, et les points sont
+numérotés `1…n` sur la carte comme dans le panneau.
 
 ## Flags et monétisation
 

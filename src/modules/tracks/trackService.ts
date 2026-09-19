@@ -1,7 +1,7 @@
 import { eventBus } from '../eventBus';
 import { loadHistory, type GPXHistoryEntry } from '../gpxHistoryService';
 import type { NativeGPSPoint } from '../nativeGPSService';
-import type { GPXLayer } from '../state';
+import { RECORDED_TRACE_COLOR, type GPXLayer } from '../state';
 import { calculateTrackStats } from '../geoStats';
 import type { LocationPoint } from '../geo';
 import { normalizeTrackName } from '../trackName';
@@ -97,7 +97,7 @@ export class TrackService {
         name: string,
         courseId: string,
         rawPoints: NativeGPSPoint[],
-        color = '#ef4444'
+        color = RECORDED_TRACE_COLOR
     ): Promise<StoredTrackV1> {
         if (!courseId || rawPoints.length < 2) {
             throw new TrackRepositoryError(
@@ -160,7 +160,7 @@ export class TrackService {
         name: string,
         courseId: string,
         points: LocationPoint[],
-        color = '#ef4444'
+        color = RECORDED_TRACE_COLOR
     ): Promise<StoredTrackV1> {
         const geometry = points.map((point) => ({
             lat: point.lat,

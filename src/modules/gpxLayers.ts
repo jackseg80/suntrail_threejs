@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { disposeObject } from './memory';
-import { state, type GPXLayer, GPX_COLORS, isProActive } from './state';
+import {
+    state,
+    type GPXLayer,
+    GPX_COLORS,
+    ACTIVE_RECORDING_TRACE_COLOR,
+    RECORDED_TRACE_COLOR,
+    isProActive,
+} from './state';
 import { simplifyRDP } from './utils';
 import type { GPXRawData } from './gpxTypes';
 import { getElevation, isValidGeoPoint } from './gpxTypes';
@@ -70,14 +77,11 @@ const LANE_OFFSET_FACTOR = 0.6;
 let _recMaterial3D: THREE.MeshStandardMaterial | null = null;
 let _recMaterial2D: THREE.MeshBasicMaterial | null = null;
 
-// Vert fluo : couleur forte d'enregistrement, absente de la palette de trace.
-const RECORD_COLOR = 0x00e676;
-
 function getRecordedMaterial(is2D: boolean): THREE.Material {
     if (is2D) {
         if (!_recMaterial2D) {
             _recMaterial2D = new THREE.MeshBasicMaterial({
-                color: RECORD_COLOR,
+                color: ACTIVE_RECORDING_TRACE_COLOR,
                 transparent: true,
                 opacity: 0.85,
             });
@@ -86,8 +90,8 @@ function getRecordedMaterial(is2D: boolean): THREE.Material {
     }
     if (!_recMaterial3D) {
         _recMaterial3D = new THREE.MeshStandardMaterial({
-            color: RECORD_COLOR,
-            emissive: RECORD_COLOR,
+            color: ACTIVE_RECORDING_TRACE_COLOR,
+            emissive: ACTIVE_RECORDING_TRACE_COLOR,
             emissiveIntensity: 1.2, // v5.53.3 : Increased from 0.8
             transparent: true,
             opacity: 0.9,
@@ -226,18 +230,27 @@ function hasSelfOverlap(
     return result;
 }
 
-/** Chevrons de sens, uniquement sur les traces à auto-recouvrement (aller/retour). */
+/** Chevrons de sens sur toute trace, avec un budget borné sur les longs parcours. */
 function applyDirectionChevrons(
     mesh: THREE.Mesh,
     renderPoints: THREE.Vector3[],
     thickness: number
 ): void {
-    const size = Math.max(4, thickness * 1.3);
-    const spacing = Math.max(80, thickness * 14);
+    let trackLength = 0;
+    for (let i = 1; i < renderPoints.length; i++) {
+        trackLength += renderPoints[i - 1].distanceTo(renderPoints[i]);
+    }
+    if (trackLength < 1e-6) return;
+
+    const baseSize = Math.max(4, thickness * 1.3);
+    const size = Math.min(baseSize, Math.max(0.5, trackLength * 0.25));
+    const spacing = Math.max(80, thickness * 14, trackLength / 160);
     const { light, dark } = buildDirectionChevrons(renderPoints, {
         size,
         spacing,
         lift: thickness * 0.9,
+        // Une trace plus courte que l'espacement garde une flèche centrée.
+        startOffset: Math.min(spacing, trackLength / 2),
     });
     if (light.length === 0) return;
     const build = (
@@ -345,8 +358,11 @@ export function addGPXLayer(
             ? crypto.randomUUID()
             : `gpx-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
     if (GPX_COLORS.length === 0) throw new Error('GPX_COLORS is empty');
+    const isManual = !!opts?.isManualRoute;
+    const source = opts?.source ?? (isManual ? 'manual' : ('import' as const));
     const colorIndex = state.gpxLayers.length % GPX_COLORS.length;
-    const color = GPX_COLORS[colorIndex];
+    const color =
+        source === 'rec' ? RECORDED_TRACE_COLOR : GPX_COLORS[colorIndex];
     const track = rawData.tracks[0];
     const points = track.points;
 
@@ -415,8 +431,12 @@ export function addGPXLayer(
         false
     );
     const is2D = state.IS_2D_MODE;
-    // Couleur unique et contrastée pour toutes les traces (réglable)
-    const material = getGPXMaterial(state.TRACE_COLOR, is2D);
+    // La guidance suit le réglage utilisateur. Le REC actif reste vert fluo,
+    // tandis qu'un REC terminé passe au bleu réservé pour distinguer les trois états.
+    const material =
+        source === 'rec'
+            ? getGPXMaterial(RECORDED_TRACE_COLOR, is2D)
+            : getGPXMaterial(state.TRACE_COLOR, is2D);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.renderOrder = 10;
     mesh.userData = { type: 'gpx-track', layerId: id };
@@ -428,14 +448,12 @@ export function addGPXLayer(
         geometry.parameters.tubularSegments,
         thickness
     );
-    if (selfOverlap) applyDirectionChevrons(mesh, renderPoints, thickness);
+    applyDirectionChevrons(mesh, renderPoints, thickness);
 
     // v5.54 : Logique de visibilité Free (Teasing Multi-GPX)
     // 1. Les itinéraires manuels sont TOUJOURS visibles.
     // 2. Le PREMIER import GPX est TOUJOURS visible.
     // 3. Les imports GPX suivants (Multi-GPX) sont masqués en Free.
-    const isManual = !!opts?.isManualRoute;
-    const source = opts?.source ?? (isManual ? 'manual' : ('import' as const));
     const importedGpxCount = state.gpxLayers.filter(
         (layer) =>
             layer.source === 'import' || (!layer.source && !layer.isManualRoute)
@@ -714,7 +732,10 @@ function _doUpdateAllGPXMeshes(): void {
                 4,
                 false
             );
-            const material = getGPXMaterial(state.TRACE_COLOR, is2D);
+            const material =
+                layer.source === 'rec'
+                    ? getGPXMaterial(RECORDED_TRACE_COLOR, is2D)
+                    : getGPXMaterial(state.TRACE_COLOR, is2D);
             const mesh = new THREE.Mesh(geometry, material);
             mesh.renderOrder = 10;
             mesh.visible = layer.visible;
@@ -727,8 +748,7 @@ function _doUpdateAllGPXMeshes(): void {
                 geometry.parameters.tubularSegments,
                 thickness
             );
-            if (selfOverlap)
-                applyDirectionChevrons(mesh, renderPoints, thickness);
+            applyDirectionChevrons(mesh, renderPoints, thickness);
 
             if (state.scene) state.scene.add(mesh);
 

@@ -142,7 +142,7 @@ export function routeTerrainLodsForPoints(
     return build(coarsest.lod, coarsest.bounds);
 }
 
-function buildGrid(pixelData: ArrayBuffer, exaggeration: number): Int16Array {
+function buildGrid(pixelData: ArrayBuffer): Int16Array {
     const src = new Uint8Array(pixelData);
     const srcRes = Math.max(1, Math.round(Math.sqrt(src.length / 4)));
     const grid = new Int16Array(GRID * GRID);
@@ -152,12 +152,10 @@ function buildGrid(pixelData: ArrayBuffer, exaggeration: number): Int16Array {
             const sx = Math.min(srcRes - 1, Math.floor(gx * factor));
             const sy = Math.min(srcRes - 1, Math.floor(gy * factor));
             const i = (sy * srcRes + sx) * 4;
-            const value = decodeTerrainRGB(
-                src[i],
-                src[i + 1],
-                src[i + 2],
-                exaggeration
-            );
+            // L'analyse solaire travaille sur l'altitude physique. Le facteur
+            // d'exagération ne concerne que le rendu 3D et fausserait ici
+            // l'horizon (notamment lorsque le soleil est bas).
+            const value = decodeTerrainRGB(src[i], src[i + 1], src[i + 2], 1);
             grid[gy * GRID + gx] = Math.max(
                 MIN_INT16,
                 Math.min(MAX_INT16, Math.round(value))
@@ -257,12 +255,7 @@ export async function prefetchRouteTerrain(
                 const response = await promise;
                 if (signal?.aborted) return;
                 if (response?.pixelData) {
-                    cacheSet(key, {
-                        data: buildGrid(
-                            response.pixelData,
-                            state.RELIEF_EXAGGERATION
-                        ),
-                    });
+                    cacheSet(key, { data: buildGrid(response.pixelData) });
                     loaded++;
                 }
             } catch {

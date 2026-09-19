@@ -134,6 +134,18 @@ describe('Multi-GPX Layers (v5.10)', () => {
         state.TRACE_COLOR = previous;
     });
 
+    it('affiche un REC terminé en bleu, distinct de la guidance', () => {
+        const previous = state.TRACE_COLOR;
+        state.TRACE_COLOR = '#ff2d95';
+        const layer = addGPXLayer(rawData, 'rec-termine', { source: 'rec' });
+        const material = layer.mesh!.material as THREE.MeshStandardMaterial;
+
+        expect(layer.color).toBe('#0066ff');
+        expect(`#${material.color.getHexString()}`).toBe('#0066ff');
+        expect(`#${material.color.getHexString()}`).not.toBe(state.TRACE_COLOR);
+        state.TRACE_COLOR = previous;
+    });
+
     it('addGPXLayer: détecte un aller-retour et ajoute des chevrons de sens', () => {
         // Zigzag non colinéaire (survit à RDP), parcouru à l'aller puis au
         // retour jusqu'à V1 (départ ≠ arrivée pour ne pas dégénérer).
@@ -156,6 +168,25 @@ describe('Multi-GPX Layers (v5.10)', () => {
             (c) => c.userData.type === 'gpx-track-chevrons'
         );
         expect(chevrons.length).toBeGreaterThan(0);
+    });
+
+    it('addGPXLayer: ajoute aussi le sens sur une trace simple', () => {
+        const simple = {
+            tracks: [
+                {
+                    points: [
+                        { lat: 46.5, lon: 7.5, ele: 1000 },
+                        { lat: 46.51, lon: 7.52, ele: 1010 },
+                    ],
+                },
+            ],
+        };
+
+        const layer = addGPXLayer(simple, 'simple-direction');
+        const chevrons = layer.mesh!.children.filter(
+            (child) => child.userData.type === 'gpx-track-chevrons'
+        );
+        expect(chevrons).toHaveLength(2);
     });
 
     it('showOnlyGPXLayer keeps exactly the selected loaded trace visible', () => {
@@ -429,6 +460,19 @@ describe('Multi-GPX Layers (v5.10)', () => {
 
         spyRDP.mockRestore();
         warn.mockRestore();
+        vi.useRealTimers();
+    });
+
+    it('updateAllGPXMeshes conserve la couleur bleue des REC terminés', () => {
+        const layer = addGPXLayer(rawData, 'rec-rebuild', { source: 'rec' });
+        vi.useFakeTimers();
+
+        updateAllGPXMeshes();
+        vi.runAllTimers();
+
+        const rebuilt = state.gpxLayers.find((item) => item.id === layer.id)!;
+        const material = rebuilt.mesh!.material as THREE.MeshStandardMaterial;
+        expect(`#${material.color.getHexString()}`).toBe('#0066ff');
         vi.useRealTimers();
     });
 

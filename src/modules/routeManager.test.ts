@@ -449,10 +449,16 @@ describe('routeManager', () => {
             initRouteManager();
 
             expect(document.querySelectorAll('.rs-wp-item')).toHaveLength(3);
-            expect(document.querySelector('.rs-wp-num')?.textContent).toBe('A');
+            expect(document.querySelector('.rs-wp-num')?.textContent).toBe('1');
             expect(
                 document.querySelectorAll('.rs-wp-num')[2]?.textContent
-            ).toBe('B');
+            ).toBe('3');
+            expect(
+                document.querySelectorAll('.rs-wp-copy strong')[0]?.textContent
+            ).toBe('planning.waypoints.start 1');
+            expect(
+                document.querySelectorAll('.rs-wp-copy strong')[2]?.textContent
+            ).toBe('planning.waypoints.finish 3');
 
             document.querySelector<HTMLButtonElement>('.rs-wp-focus')?.click();
             expect(emitSpy).toHaveBeenCalledWith(

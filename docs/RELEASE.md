@@ -4,6 +4,10 @@
 > release GitHub, upload Play et déploiement sont six effets distincts : chacun exige une
 > autorisation explicite, même si les étapes locales précédentes sont vertes.
 
+Le push sur `main` exécute les validations mais **ne déploie plus GitHub Pages**. Pages exige un
+`workflow_dispatch` avec `deploy_pages=true`. Le workflow de tag exécute
+`testDebugUnitTest`, `lintRelease` puis `bundleRelease` avant de publier l'AAB.
+
 ---
 
 ## 🚀 Publication d'une nouvelle version (workflow standard)
