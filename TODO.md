@@ -1,6 +1,6 @@
 # SunTrail — TODO (v5.91.4 + correctifs non publiés ; publication Play séparée)
 
-> Dernière mise à jour : 2026-09-19
+> Dernière mise à jour : 2026-09-20
 
 ## ✅ Correctifs post-v5.91.4 — terrain, parcours et robustesse
 
@@ -16,6 +16,12 @@
       des points sur les marqueurs `1…n` de la carte.
 - [x] Fiabiliser les packs Capacitor/RevenueCat/OPFS, la file des imports GPX Android et les workflows
       GitHub (Pages manuel ; tests Android + lint avant AAB).
+- [x] Démontrer la cause des pics du pack Suisse v4 (Terrain-RGB WebP avec pertes), reconstruire et
+      valider un échantillon lossless Zurich/Matterhorn, puis contrôler son rendu 2D/3D sur S23.
+- [x] Rejeter avant installation les packs OPFS tronqués ou structurellement incohérents ; borner la
+      lecture Range des PMTiles embarqués dans l'APK diagnostic.
+- [ ] Réduire le pack Suisse v5 (1,99 Go, dont 81,85 % d'élévation), valider le repli vers un zoom
+      d'élévation parent et tester le vrai trajet téléchargement/import OPFS avant toute publication.
 - [x] Contrôles : `npm run check`, 166 fichiers/1 930 tests, build/sync Capacitor, assemblage Android
       et scénario 2D/3D validé sur S23 avec données conservées.
 - [ ] Attribuer une nouvelle version et un `versionCode` uniquement si une release est décidée ;

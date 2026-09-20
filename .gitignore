@@ -38,6 +38,9 @@ public/tiles/*.pmtiles
 .cache/
 output/
 
+# Packs injectes uniquement dans les builds APK de diagnostic
+public/diagnostic/*.pmtiles
+
 # Cloudflare Wrangler - etat local (cache, session)
 .wrangler/
 

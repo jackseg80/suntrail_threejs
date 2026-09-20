@@ -21,7 +21,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import sharp from 'sharp';
+import crypto from 'node:crypto';
+import 'dotenv/config';
 import { tileIdToZxy } from 'pmtiles';
 import {
     lonToTileX,
@@ -33,19 +34,35 @@ import {
     HEADER_SIZE,
     deduplicateTiles,
 } from './pmtiles-writer';
+import {
+    assertReadableRaster,
+    encodeColorTile,
+    encodeElevationTile,
+    encodeOverlayTile,
+} from './pack-tile-encoding';
 import { COUNTRIES } from '../src/data/countries';
 
 const OFFSET_ELEV = 100_000_000_000;
 const OFFSET_OVERLAY = 200_000_000_000;
 
+interface PackBounds {
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+}
+
 interface PackDef {
     id: string;
     name: string;
-    bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+    bounds: PackBounds;
+    /** Optional disjoint build areas used by bounded diagnostic packs. */
+    areas?: PackBounds[];
     zooms: number[];
     source: 'swisstopo' | 'ign' | 'basemap_at' | 'opentopomap';
     version: number;
     countryCode?: string; // ISO 3166-1 alpha-2. Absent → région (bbox seule)
+    outputFileName?: string;
     /** Source de tuiles pour les zooms bas (overview), ex: OpenTopoMap */
     overview?: {
         source: 'opentopomap';
@@ -60,8 +77,24 @@ const PACKS: Record<string, PackDef> = {
         bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
         zooms: [8, 9, 10, 11, 12, 13, 14],
         source: 'swisstopo',
-        version: 4,
+        version: 5,
         countryCode: 'CH',
+    },
+    switzerland_test: {
+        id: 'switzerland',
+        name: 'Switzerland Diagnostic Sample',
+        bounds: { minLat: 45.9, maxLat: 47.45, minLon: 7.55, maxLon: 8.65 },
+        areas: [
+            // Alpine terrain around Zermatt/Matterhorn.
+            { minLat: 45.9, maxLat: 46.1, minLon: 7.55, maxLon: 7.8 },
+            // Flatter urban/lake terrain around Zurich.
+            { minLat: 47.3, maxLat: 47.45, minLon: 8.45, maxLon: 8.65 },
+        ],
+        zooms: [12, 13, 14],
+        source: 'swisstopo',
+        version: 1,
+        countryCode: 'CH',
+        outputFileName: 'suntrail-pack-switzerland-sample-v1.pmtiles',
     },
     france_alps: {
         id: 'france_alps',
@@ -86,6 +119,16 @@ const PACKS: Record<string, PackDef> = {
 
 type TileType = 'color' | 'elevation' | 'overlay';
 const RATE_LIMIT_MS = 50;
+
+async function sha256File(filePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+        stream.on('data', (chunk) => hash.update(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(hash.digest('hex')));
+    });
+}
 
 // ── Polygone Natural Earth 1:10m (conservateur, ~50% de filtrage) ──────────
 
@@ -177,10 +220,12 @@ function getTileUrl(
 
 async function main() {
     const packId = process.argv.find((_, i, arr) => arr[i - 1] === '--pack');
-    const maptilerKey = process.argv.find(
-        (_, i, arr) => arr[i - 1] === '--maptiler-key'
-    );
+    const maptilerKey =
+        process.argv.find((_, i, arr) => arr[i - 1] === '--maptiler-key') ??
+        process.env.VITE_MAPTILER_KEY;
     const cleanMode = process.argv.includes('--clean');
+    const overwriteMode = process.argv.includes('--overwrite');
+    const planMode = process.argv.includes('--plan');
 
     if (!packId || !PACKS[packId]) {
         console.error(
@@ -191,16 +236,56 @@ async function main() {
     }
 
     const pack = PACKS[packId];
-    const cacheDir = path.resolve(__dirname, `../.cache/pack-${packId}-v4`);
-    const outputDir = path.resolve(__dirname, '../output');
-    const outputPath = path.join(
-        outputDir,
-        `suntrail-pack-${pack.id}-v${pack.version}.pmtiles`
+    if (!maptilerKey && !planMode) {
+        throw new Error(
+            'Clé MapTiler absente: utiliser --maptiler-key ou VITE_MAPTILER_KEY.'
+        );
+    }
+    const defaultCacheRoot = path.resolve(__dirname, '../.cache');
+    const requestedCacheDir = process.argv.find(
+        (_, i, arr) => arr[i - 1] === '--cache-dir'
     );
+    const cacheDir = path.resolve(
+        requestedCacheDir ??
+            path.join(defaultCacheRoot, `pack-${packId}-v${pack.version}`)
+    );
+    const outputDir = path.resolve(__dirname, '../output');
+    const requestedOutput = process.argv.find(
+        (_, i, arr) => arr[i - 1] === '--output'
+    );
+    const outputPath = path.resolve(
+        requestedOutput ??
+            path.join(
+                outputDir,
+                pack.outputFileName ??
+                    `suntrail-pack-${pack.id}-v${pack.version}.pmtiles`
+            )
+    );
+    const partialOutputPath = `${outputPath}.partial`;
 
-    if (cleanMode && fs.existsSync(cacheDir))
-        fs.rmSync(cacheDir, { recursive: true });
-    fs.mkdirSync(cacheDir, { recursive: true });
+    if (cleanMode && !planMode) {
+        const relativeCache = path.relative(defaultCacheRoot, cacheDir);
+        if (
+            relativeCache.startsWith('..') ||
+            path.isAbsolute(relativeCache) ||
+            !path.basename(cacheDir).startsWith('pack-')
+        ) {
+            throw new Error(
+                `Refus de nettoyer un cache hors de ${defaultCacheRoot}: ${cacheDir}`
+            );
+        }
+    }
+    if (!planMode) {
+        if (cleanMode && fs.existsSync(cacheDir))
+            fs.rmSync(cacheDir, { recursive: true });
+        fs.mkdirSync(cacheDir, { recursive: true });
+        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+        if (fs.existsSync(outputPath) && !overwriteMode) {
+            throw new Error(
+                `Sortie déjà présente: ${outputPath}. Utiliser --overwrite explicitement.`
+            );
+        }
+    }
 
     const mode = pack.countryCode
         ? `Polygone Natural Earth ${pack.countryCode}`
@@ -211,25 +296,36 @@ async function main() {
 
     const types: TileType[] = ['color', 'elevation', 'overlay'];
     const refs: { z: number; x: number; y: number; type: TileType }[] = [];
+    const seenRefs = new Set<string>();
 
     for (const z of pack.zooms) {
-        const xMin = lonToTileX(pack.bounds.minLon, z);
-        const xMax = lonToTileX(pack.bounds.maxLon, z);
-        const yMin = latToTileY(pack.bounds.maxLat, z);
-        const yMax = latToTileY(pack.bounds.minLat, z);
-        for (let x = xMin; x <= xMax; x++) {
-            for (let y = yMin; y <= yMax; y++) {
-                const include = pack.countryCode
-                    ? isTileInCountryPolygon(x, y, z, pack.countryCode)
-                    : true;
-                if (include) {
-                    for (const type of types) refs.push({ z, x, y, type });
+        for (const area of pack.areas ?? [pack.bounds]) {
+            const xMin = lonToTileX(area.minLon, z);
+            const xMax = lonToTileX(area.maxLon, z);
+            const yMin = latToTileY(area.maxLat, z);
+            const yMax = latToTileY(area.minLat, z);
+            for (let x = xMin; x <= xMax; x++) {
+                for (let y = yMin; y <= yMax; y++) {
+                    const include = pack.countryCode
+                        ? isTileInCountryPolygon(x, y, z, pack.countryCode)
+                        : true;
+                    if (!include) continue;
+                    for (const type of types) {
+                        const key = `${type}/${z}/${x}/${y}`;
+                        if (seenRefs.has(key)) continue;
+                        seenRefs.add(key);
+                        refs.push({ z, x, y, type });
+                    }
                 }
             }
         }
     }
 
     console.log(`Tuiles a traiter (apres filtrage) : ${refs.length}`);
+    if (planMode) {
+        console.log(`Mode plan: aucun téléchargement ni fichier écrit.`);
+        return;
+    }
 
     // Cache source : téléchargements bruts (peuvent être ré-encodés sans re-download)
     // Extension .raw quel que soit le format — sharp détecte automatiquement
@@ -241,7 +337,20 @@ async function main() {
             `${ref.type}_${ref.z}_${ref.x}_${ref.y}.raw`
         );
 
-        if (!fs.existsSync(srcPath)) {
+        let sourceIsValid = false;
+        if (fs.existsSync(srcPath)) {
+            try {
+                await assertReadableRaster(
+                    fs.readFileSync(srcPath),
+                    `${ref.type}/${ref.z}/${ref.x}/${ref.y}`
+                );
+                sourceIsValid = true;
+            } catch {
+                // A replacement is downloaded and only written after validation.
+            }
+        }
+
+        if (!sourceIsValid) {
             try {
                 const effectiveSource =
                     pack.overview && ref.z < pack.overview.maxZoom
@@ -258,6 +367,10 @@ async function main() {
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const buf = Buffer.from(await resp.arrayBuffer());
+                await assertReadableRaster(
+                    buf,
+                    `${ref.type}/${ref.z}/${ref.x}/${ref.y}`
+                );
                 fs.writeFileSync(srcPath, buf);
             } catch (e) {
                 downloadFailures.push({
@@ -303,15 +416,13 @@ async function main() {
         );
         if (fs.existsSync(srcPath)) {
             const buf = fs.readFileSync(srcPath);
-            let final = buf;
+            let final: Buffer = buf;
             if (ref.type === 'color') {
-                final = await sharp(buf).webp({ quality: 60 }).toBuffer();
+                final = await encodeColorTile(buf);
             } else if (ref.type === 'elevation') {
-                final = await sharp(buf).webp({ quality: 40 }).toBuffer();
+                final = await encodeElevationTile(buf);
             } else {
-                final = await sharp(buf)
-                    .png({ palette: true, colors: 64 })
-                    .toBuffer();
+                final = await encodeOverlayTile(buf);
             }
 
             let id = zxyToTileId(ref.z, ref.x, ref.y);
@@ -334,9 +445,14 @@ async function main() {
     const metadata = Buffer.from(
         JSON.stringify({
             name: pack.name,
+            packId: pack.id,
+            packVersion: pack.version,
             offsets: { elevation: OFFSET_ELEV, overlay: OFFSET_OVERLAY },
             logicalMinZoom: pack.zooms[0],
             logicalMaxZoom: pack.zooms[pack.zooms.length - 1],
+            elevationEncoding: 'terrain-rgb-v2-lossless-webp',
+            generatedAt: new Date().toISOString(),
+            areas: pack.areas,
         })
     );
 
@@ -356,6 +472,12 @@ async function main() {
             HEADER_SIZE + rootDir.length + metadata.length + leafDirData.length,
         tileDataLength: dataChunks.reduce((sum, c) => sum + c.length, 0),
         numTiles: entries.length,
+        numAddressedTiles: entries.reduce(
+            (sum, entry) => sum + Math.max(1, entry.runLength),
+            0
+        ),
+        numTileEntries: entries.length,
+        numTileContents: dataChunks.length,
         minZoom: pack.zooms[0],
         maxZoom: archiveMaxZoom,
         bounds: {
@@ -372,18 +494,26 @@ async function main() {
     const headerView = new DataView(header);
     headerView.setUint8(99, 0);
 
-    const fd = fs.openSync(outputPath, 'w');
+    const fd = fs.openSync(partialOutputPath, 'w');
     fs.writeSync(fd, new Uint8Array(header));
     fs.writeSync(fd, rootDir);
     fs.writeSync(fd, metadata);
     fs.writeSync(fd, leafDirData);
     for (const chunk of dataChunks) fs.writeSync(fd, chunk);
     fs.closeSync(fd);
+    if (overwriteMode && fs.existsSync(outputPath)) fs.rmSync(outputPath);
+    fs.renameSync(partialOutputPath, outputPath);
+
+    const hash = await sha256File(outputPath);
 
     console.log(`\n✓ TERMINE : ${outputPath}`);
     console.log(
         `Taille finale : ${(fs.statSync(outputPath).size / 1024 / 1024).toFixed(1)} Mo`
     );
+    console.log(`SHA-256 : ${hash}`);
 }
 
-main().catch(console.error);
+main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});

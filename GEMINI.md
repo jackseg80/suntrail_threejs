@@ -1,8 +1,10 @@
 # SunTrail — Guide Développeur (version source 5.91.4 + correctifs non publiés)
 
 > Chaîne YouTube : [@SunTrail3D](https://www.youtube.com/@SunTrail3D)
-> Mis à jour le 2026-09-19 — la documentation active couvre v5.91.4 / Android 917 et les correctifs
-> S23 non publiés du terrain 2D/3D, du solaire, des parcours, des packs et des imports GPX. Aucun
+> Mis à jour le 2026-09-20 — la documentation active couvre v5.91.4 / Android 917 et les correctifs
+> S23 non publiés du terrain 2D/3D, du solaire, des parcours, des packs et des imports GPX. Le
+> diagnostic Suisse démontre la corruption Terrain-RGB avec pertes ; le v5 lossless de 1,99 Go
+> reste NO-GO publication. Aucun
 > nouveau tag, release, déploiement Pages ou téléversement Play n'est revendiqué ; le maximum global
 > Play doit être contrôlé avant tout envoi.
 

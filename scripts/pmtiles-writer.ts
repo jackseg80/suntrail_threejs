@@ -115,6 +115,9 @@ export interface BuildHeaderOpts {
     tileDataOffset: number;
     tileDataLength: number;
     numTiles: number;
+    numAddressedTiles?: number;
+    numTileEntries?: number;
+    numTileContents?: number;
     minZoom: number;
     maxZoom: number;
     bounds: { minLon: number; minLat: number; maxLon: number; maxLat: number };
@@ -167,9 +170,9 @@ export function buildHeader(opts: BuildHeaderOpts): ArrayBuffer {
     setUint64(view, 48, opts.leafDirLength);
     setUint64(view, 56, opts.tileDataOffset);
     setUint64(view, 64, opts.tileDataLength);
-    setUint64(view, 72, opts.numTiles);
-    setUint64(view, 80, opts.numTiles);
-    setUint64(view, 88, opts.numTiles);
+    setUint64(view, 72, opts.numAddressedTiles ?? opts.numTiles);
+    setUint64(view, 80, opts.numTileEntries ?? opts.numTiles);
+    setUint64(view, 88, opts.numTileContents ?? opts.numTiles);
 
     view.setUint8(96, 1); // clustered
     view.setUint8(97, 0); // internal compression = none

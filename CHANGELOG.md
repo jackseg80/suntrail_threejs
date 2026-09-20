@@ -2,6 +2,15 @@
 
 ### Corrigé
 
+- **Pack Suisse et relief 3D** : encoder Terrain-RGB en WebP strictement sans perte. Le WebP
+  qualité 40 du pack v4 modifiait les canaux RGB et créait des altitudes artificielles pouvant
+  dépasser plusieurs centaines de kilomètres avant même le maillage Three.js.
+- **Téléchargement des packs** : ne passer à l'état `installed` qu'après concordance des tailles,
+  lecture du header et des métadonnées PMTiles, contrôle des bornes de toutes les sections et de la
+  plage de zoom. Une archive OPFS tronquée est rejetée puis supprimée.
+- **Assets PMTiles Android** : borner le corps des réponses Range au nombre d'octets demandé. Le
+  serveur d'assets Capacitor pouvait annoncer HTTP 206 tout en diffusant le reste du fichier,
+  provoquant lenteur et pression mémoire dans l'APK diagnostic.
 - **Tuiles 3D éclatées de façon intermittente** : isoler les offsets altitude/couleur de chaque
   shader lors du recyclage des matériaux. Une mise à jour ne peut plus modifier le quadrant
   d'altitude d'une autre tuile et produire un trou ou une dalle volante.
@@ -21,6 +30,10 @@
 
 ### Amélioré
 
+- Ajouter un constructeur de petit pack diagnostic Suisse (Zurich et Matterhorn), un validateur des
+  métadonnées/offsets/altitudes/gradients/raccords/inter-zooms et un audit exact du poids par couche
+  et niveau de zoom. La sortie complète est atomique (`.partial` puis renommage) et fournit son
+  SHA-256.
 - Le REC actif reste vert fluo ; une trace REC terminée devient bleu vif, distinct de la couleur de
   guidage choisie. Un nouveau REC utilise donc à nouveau le vert sans recolorer les archives.
 - Ajouter des chevrons de direction à toute trace d'au moins deux points, avec taille et espacement
@@ -32,6 +45,14 @@
 
 ### Validation
 
+- Pack test Suisse : 33 885 788 octets, SHA-256
+  `5255A713A3F8B714C59A61BD476DB6BB5C09027CC65D7FDD8A44E614C9B222CE`, 327/327
+  tuiles d'élévation vérifiées, aucun pixel impossible, aucune rupture anormale et écart
+  source/archive nul. Contrôle S23 2D/3D positif à Zurich et au Matterhorn.
+- Pack complet v5 : 1 988 524 196 octets, SHA-256
+  `70295A18F9937FDB47ED16091E1EBA886B284532E1D5C63C21CC0D66BA6ABA39`, échantillon de
+  1 006 tuiles d'élévation sans erreur. Publication maintenue en **NO-GO** à cause de la taille et
+  de l'absence de validation du chemin complet CDN vers OPFS sur appareil.
 - `npm run check` et 166 fichiers / 1 930 tests Web/TypeScript réussis.
 - Build Capacitor et assemblage Android réussis ; APK diagnostic installé sur Galaxy S23 sans
   effacer les données. Le propriétaire confirme que les transitions 2D/3D et le terrain sont

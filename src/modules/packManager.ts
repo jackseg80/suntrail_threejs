@@ -22,6 +22,7 @@ import type { PackMeta, PackState, PackStatus } from './packTypes';
 import { iapService } from './iapService';
 import { isPointInCountry, tilePixelToLatLon } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
+import { EmbeddedAssetSource } from './embeddedAssetSource';
 import {
     fetchCatalog,
     getAvailablePacks,
@@ -39,7 +40,7 @@ class PackManager {
     private packStates: Map<string, PackState> = new Map();
     private mountedArchives: Map<
         string,
-        { archive: pmtiles.PMTiles; source: 'opfs' | 'cdn' }
+        { archive: pmtiles.PMTiles; source: 'opfs' | 'cdn' | 'asset' }
     > = new Map();
     private downloadControllers: Map<string, AbortController> = new Map();
 
@@ -74,6 +75,10 @@ class PackManager {
             for (const meta of getAvailablePacks()) {
                 this.markPurchased(meta.id);
             }
+        } else if (import.meta.env.VITE_DIAGNOSTIC_PACK_URL) {
+            // Defined only in the diagnostic APK; it neither unlocks nor
+            // replaces a production pack.
+            this.markPurchased('switzerland_diagnostic');
         }
 
         // Monter d'abord les archives locales. Un simple statut `purchased`
@@ -336,7 +341,70 @@ class PackManager {
             throw e;
         }
 
+        await this.validateDownloadedPack(
+            fileHandle,
+            received,
+            contentLength,
+            meta
+        );
+
         ps.filePath = `opfs://${PACKS_DIR}/${meta.id}.pmtiles`;
+    }
+
+    private async validateDownloadedPack(
+        fileHandle: FileSystemFileHandle,
+        received: number,
+        contentLength: number,
+        meta: PackMeta
+    ): Promise<void> {
+        if (contentLength > 0 && received !== contentLength) {
+            throw new Error(
+                `Téléchargement incomplet: ${received}/${contentLength} octets`
+            );
+        }
+
+        const file = await fileHandle.getFile();
+        if (file.size !== received) {
+            throw new Error(
+                `Écriture OPFS incomplète: ${file.size}/${received} octets`
+            );
+        }
+
+        const archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
+        const header = await archive.getHeader();
+        await archive.getMetadata();
+
+        const sections = [
+            ['root', header.rootDirectoryOffset, header.rootDirectoryLength],
+            ['metadata', header.jsonMetadataOffset, header.jsonMetadataLength],
+            ['leaf', header.leafDirectoryOffset, header.leafDirectoryLength],
+            ['tiles', header.tileDataOffset, header.tileDataLength],
+        ] as const;
+        for (const [name, offset, length] of sections) {
+            const numericOffset = Number(offset);
+            const numericLength = Number(length);
+            const end = numericOffset + numericLength;
+            if (
+                !Number.isSafeInteger(numericOffset) ||
+                !Number.isSafeInteger(numericLength) ||
+                numericOffset < 0 ||
+                numericLength < 0 ||
+                end > file.size
+            ) {
+                throw new Error(
+                    `Archive PMTiles tronquée: section ${name} finit à ${end}/${file.size}`
+                );
+            }
+        }
+
+        if (
+            header.minZoom > meta.lodRange.min ||
+            header.maxZoom < meta.lodRange.max
+        ) {
+            throw new Error(
+                `Zooms PMTiles incohérents: ${header.minZoom}-${header.maxZoom}, attendu ${meta.lodRange.min}-${meta.lodRange.max}`
+            );
+        }
     }
 
     cancelDownload(packId: string): void {
@@ -395,7 +463,7 @@ class PackManager {
         )
             return;
 
-        let archiveSource: 'opfs' | 'cdn' | null = null;
+        let archiveSource: 'opfs' | 'cdn' | 'asset' | null = null;
         try {
             let archive: pmtiles.PMTiles;
 
@@ -435,8 +503,11 @@ class PackManager {
                 // purchased (sans fichier local) → CDN streaming (requiert réseau)
                 const meta = getPackMeta(packId);
                 if (!meta) return;
-                archive = new pmtiles.PMTiles(meta.cdnUrl);
-                archiveSource = 'cdn';
+                const isEmbeddedAsset = meta.cdnUrl.startsWith('./diagnostic/');
+                archive = isEmbeddedAsset
+                    ? new pmtiles.PMTiles(new EmbeddedAssetSource(meta.cdnUrl))
+                    : new pmtiles.PMTiles(meta.cdnUrl);
+                archiveSource = isEmbeddedAsset ? 'asset' : 'cdn';
             }
 
             // Warmup: read header pour vérifier l'archive
@@ -520,14 +591,15 @@ class PackManager {
     }
 
     /**
-     * Vrai si un pack **téléchargé localement (OPFS)** couvre le pays donné.
+     * Vrai si un pack local (OPFS ou asset embarqué) couvre le pays donné.
      * Un pack uniquement CDN ne justifie pas une lecture locale bloquante sur
      * le thread principal : le worker sait lire le cache et le réseau.
      */
     hasLocalPackForCountry(code: string): boolean {
         if (!code || !this.mountedArchives.size) return false;
         for (const [packId, mounted] of this.mountedArchives) {
-            if (mounted.source !== 'opfs') continue;
+            if (mounted.source !== 'opfs' && mounted.source !== 'asset')
+                continue;
             const meta = getPackMeta(packId);
             if (meta?.regionCheck === code) return true;
         }
@@ -548,7 +620,7 @@ class PackManager {
     }
 
     /**
-     * Lit uniquement les archives réellement installées en OPFS. Cette voie
+     * Lit uniquement les archives locales (OPFS ou asset embarqué). Cette voie
      * n'interroge jamais un pack acheté disponible seulement sur le CDN.
      */
     async getOfflineTileFromPacks(
@@ -574,9 +646,9 @@ class PackManager {
     ): Promise<{
         blob: Blob;
         packId: string;
-        source: 'opfs' | 'cdn';
+        source: 'opfs' | 'cdn' | 'asset';
     } | null> {
-        // Deux passes : OPFS (installed) en premier, CDN (purchased) ensuite.
+        // Deux passes : sources locales en premier, CDN ensuite.
         for (const pass of [true, false]) {
             for (const [packId, mounted] of this.mountedArchives) {
                 const meta = getPackMeta(packId);
@@ -584,11 +656,12 @@ class PackManager {
                 if (z < meta.lodRange.min || z > meta.lodRange.max) continue;
                 if (!this.isTileInPackRegion(x, y, z, meta)) continue;
 
-                const isOpfs = mounted.source === 'opfs';
+                const isLocal =
+                    mounted.source === 'opfs' || mounted.source === 'asset';
 
-                if (localOnly && !isOpfs) continue;
-                if (pass !== isOpfs) continue;
-                if (!isOpfs && state.IS_OFFLINE) continue;
+                if (localOnly && !isLocal) continue;
+                if (pass !== isLocal) continue;
+                if (!isLocal && state.IS_OFFLINE) continue;
 
                 try {
                     let tileData;

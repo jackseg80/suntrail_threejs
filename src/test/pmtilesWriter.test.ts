@@ -14,6 +14,7 @@ import {
     zxyToTileId,
     serializeDirectory,
     buildTwoLevelDirectory,
+    buildHeader,
     deduplicateTiles,
     type TileEntry,
     type TileWithData,
@@ -61,6 +62,35 @@ describe('writeVarint', () => {
             expect(() => writeVarint([], value)).toThrow(RangeError);
         }
     );
+});
+
+describe('buildHeader', () => {
+    it('distingue tuiles adressées, entrées et contenus après déduplication', () => {
+        const header = buildHeader({
+            rootDirOffset: 127,
+            rootDirLength: 10,
+            metadataOffset: 137,
+            metadataLength: 10,
+            leafDirOffset: 147,
+            leafDirLength: 10,
+            tileDataOffset: 157,
+            tileDataLength: 100,
+            numTiles: 2,
+            numAddressedTiles: 5,
+            numTileEntries: 2,
+            numTileContents: 2,
+            minZoom: 8,
+            maxZoom: 19,
+            bounds: { minLon: 5.9, minLat: 45.8, maxLon: 10.5, maxLat: 47.8 },
+            centerLon: 8.2,
+            centerLat: 46.8,
+            centerZoom: 8,
+        });
+        const view = new DataView(header);
+        expect(view.getUint32(72, true)).toBe(5);
+        expect(view.getUint32(80, true)).toBe(2);
+        expect(view.getUint32(88, true)).toBe(2);
+    });
 });
 
 // --- zxyToTileId ---

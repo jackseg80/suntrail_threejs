@@ -14,6 +14,20 @@ import type { PackMeta, PackCatalog } from './packTypes';
 const CDN_BASE_URL = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
 const CATALOG_URL = import.meta.env.VITE_PACKS_CATALOG_URL as
     string | undefined;
+const DIAGNOSTIC_PACK_URL = import.meta.env.VITE_DIAGNOSTIC_PACK_URL as
+    string | undefined;
+const DIAGNOSTIC_PACK_VERSION = Number(
+    import.meta.env.VITE_DIAGNOSTIC_PACK_VERSION ?? 1
+);
+const DIAGNOSTIC_PACK_SIZE_MB = Number(
+    import.meta.env.VITE_DIAGNOSTIC_PACK_SIZE_MB ?? 33
+);
+const DIAGNOSTIC_PACK_MIN_LOD = Number(
+    import.meta.env.VITE_DIAGNOSTIC_PACK_MIN_LOD ?? 12
+);
+const DIAGNOSTIC_PACK_MAX_LOD = Number(
+    import.meta.env.VITE_DIAGNOSTIC_PACK_MAX_LOD ?? 14
+);
 const CATALOG_CACHE_KEY = STORAGE_KEYS.PACK_CATALOG;
 
 const EMBEDDED_CATALOG: PackCatalog = {
@@ -67,6 +81,34 @@ const EMBEDDED_CATALOG: PackCatalog = {
             cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-austria-v1.pmtiles`,
             regionCheck: 'AT',
         },
+        ...(DIAGNOSTIC_PACK_URL
+            ? [
+                  {
+                      id: 'switzerland_diagnostic',
+                      productId: 'suntrail_pack_switzerland_diagnostic',
+                      name: {
+                          fr: 'Suisse — échantillon diagnostic',
+                          de: 'Schweiz — Diagnosetest',
+                          it: 'Svizzera — campione diagnostico',
+                          en: 'Switzerland — diagnostic sample',
+                      },
+                      bounds: {
+                          minLat: 45.9,
+                          maxLat: 47.45,
+                          minLon: 7.55,
+                          maxLon: 8.65,
+                      },
+                      lodRange: {
+                          min: DIAGNOSTIC_PACK_MIN_LOD,
+                          max: DIAGNOSTIC_PACK_MAX_LOD,
+                      },
+                      version: DIAGNOSTIC_PACK_VERSION,
+                      sizeMB: DIAGNOSTIC_PACK_SIZE_MB,
+                      cdnUrl: DIAGNOSTIC_PACK_URL,
+                      regionCheck: 'CH',
+                  },
+              ]
+            : []),
     ],
 };
 
@@ -99,6 +141,12 @@ function getCachedCatalog(): PackCatalog | null {
 }
 
 async function _doFetchCatalog(): Promise<PackCatalog> {
+    // An embedded diagnostic sample must not be hidden by an older production
+    // catalog persisted by a previous app installation.
+    if (DIAGNOSTIC_PACK_URL) {
+        _catalog = EMBEDDED_CATALOG;
+        return _catalog;
+    }
     if (CATALOG_URL) {
         try {
             const ctrl = new AbortController();

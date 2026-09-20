@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { packManager } from './packManager';
 import { state } from './state';
 
@@ -7,6 +7,7 @@ const {
     mockWaitForInit,
     mockCheckAllPackPurchases,
     mockPmtilesGetHeader,
+    mockPmtilesGetMetadata,
     mockRemovePackFile,
 } = vi.hoisted(() => ({
     mockIsNativePlatform: vi.fn(() => false),
@@ -21,6 +22,7 @@ const {
         minLat: 45,
         maxLat: 48,
     }),
+    mockPmtilesGetMetadata: vi.fn().mockResolvedValue({}),
     mockRemovePackFile: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -44,6 +46,7 @@ vi.mock('pmtiles', () => {
         PMTiles: function () {
             return {
                 getHeader: mockPmtilesGetHeader,
+                getMetadata: mockPmtilesGetMetadata,
                 getZxy: vi.fn().mockResolvedValue({
                     data: new Uint8Array([1, 2, 3]).buffer,
                 }),
@@ -81,7 +84,41 @@ beforeEach(() => {
     mockRemovePackFile.mockResolvedValue(undefined);
 });
 
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
+
 describe('PackManager Integration', () => {
+    function setupDownloadTarget(fileSize: number) {
+        let exists = false;
+        const writable = {
+            write: vi.fn().mockResolvedValue(undefined),
+            close: vi.fn().mockImplementation(async () => {
+                exists = true;
+            }),
+            abort: vi.fn().mockResolvedValue(undefined),
+        };
+        const fileHandle = {
+            createWritable: vi.fn().mockResolvedValue(writable),
+            getFile: vi.fn().mockResolvedValue({ size: fileSize }),
+        };
+        const directory = {
+            getFileHandle: vi
+                .fn()
+                .mockImplementation(
+                    async (_name: string, options?: { create?: boolean }) => {
+                        if (options?.create || exists) return fileHandle;
+                        throw new Error('File not found');
+                    }
+                ),
+            removeEntry: mockRemovePackFile,
+        };
+        (navigator as any).storage.getDirectory = vi.fn().mockResolvedValue({
+            getDirectoryHandle: vi.fn().mockResolvedValue(directory),
+        });
+        return { writable, fileHandle, directory };
+    }
+
     it('findPackContaining returns null when catalog is empty', () => {
         const pack = packManager.findPackContaining(46.8, 8.2);
         expect(pack).toBeNull();
@@ -118,6 +155,99 @@ describe('PackManager Integration', () => {
     it('findPackContaining returns null when catalog is empty', () => {
         const pack = packManager.findPackContaining(46.8, 8.2);
         expect(pack).toBeNull();
+    });
+
+    it('ne déclare installé qu’un téléchargement OPFS complet et lisible', async () => {
+        const bytes = new Uint8Array(256);
+        const target = setupDownloadTarget(bytes.byteLength);
+        mockPmtilesGetHeader.mockResolvedValue({
+            minZoom: 8,
+            maxZoom: 19,
+            rootDirectoryOffset: 127,
+            rootDirectoryLength: 10,
+            jsonMetadataOffset: 137,
+            jsonMetadataLength: 10,
+            leafDirectoryOffset: 147,
+            leafDirectoryLength: 0,
+            tileDataOffset: 147,
+            tileDataLength: 109,
+            numTileEntries: 1,
+        });
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(
+                new Response(bytes, {
+                    headers: { 'content-length': String(bytes.byteLength) },
+                })
+            )
+        );
+        await packManager.initialize();
+
+        await expect(packManager.downloadPack('switzerland')).resolves.toBe(
+            true
+        );
+
+        expect(target.writable.write).toHaveBeenCalled();
+        expect(mockPmtilesGetMetadata).toHaveBeenCalled();
+        expect(packManager.getPackState('switzerland')).toMatchObject({
+            status: 'installed',
+            filePath: 'opfs://packs/switzerland.pmtiles',
+        });
+    });
+
+    it('rejette et supprime un téléchargement plus court que Content-Length', async () => {
+        const bytes = new Uint8Array(128);
+        setupDownloadTarget(bytes.byteLength);
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(
+                new Response(bytes, {
+                    headers: { 'content-length': '256' },
+                })
+            )
+        );
+        await packManager.initialize();
+
+        await expect(packManager.downloadPack('switzerland')).resolves.toBe(
+            false
+        );
+
+        expect(packManager.getPackState('switzerland')?.status).toBe('error');
+        await vi.waitFor(() => expect(mockRemovePackFile).toHaveBeenCalled());
+    });
+
+    it('rejette une section PMTiles qui dépasse la taille OPFS', async () => {
+        const bytes = new Uint8Array(256);
+        setupDownloadTarget(bytes.byteLength);
+        mockPmtilesGetHeader.mockResolvedValue({
+            minZoom: 8,
+            maxZoom: 19,
+            rootDirectoryOffset: 127,
+            rootDirectoryLength: 10,
+            jsonMetadataOffset: 137,
+            jsonMetadataLength: 10,
+            leafDirectoryOffset: 147,
+            leafDirectoryLength: 0,
+            tileDataOffset: 147,
+            tileDataLength: 200,
+            numTileEntries: 1,
+        });
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(
+                new Response(bytes, {
+                    headers: { 'content-length': String(bytes.byteLength) },
+                })
+            )
+        );
+        await packManager.initialize();
+
+        await expect(packManager.downloadPack('switzerland')).resolves.toBe(
+            false
+        );
+
+        expect(packManager.getPackState('switzerland')?.status).toBe('error');
+        await vi.waitFor(() => expect(mockRemovePackFile).toHaveBeenCalled());
     });
 
     it('ne traite pas le localhost Capacitor comme un mode développement', async () => {
@@ -548,6 +678,40 @@ describe('PackManager — P0: hasInstalledPackForCountry & getMinPackZoom', () =
         );
         expect(packManager.hasLocalPackForCountry('CH')).toBe(false);
         packManager.unmountPack('switzerland');
+    });
+
+    it('considère un asset embarqué comme local et le sert hors ligne', async () => {
+        const archive = {
+            getZxy: vi.fn().mockResolvedValue({
+                data: new Uint8Array([1, 2, 3]).buffer,
+            }),
+        };
+        (packManager as any).mountedArchives.set('switzerland', {
+            archive,
+            source: 'asset',
+        });
+
+        expect(packManager.hasLocalPackForCountry('CH')).toBe(true);
+        expect(packManager.hasLocalPackForCountry('FR')).toBe(false);
+        state.IS_OFFLINE = true;
+        await expect(
+            packManager.getOfflineTileFromPacks(12, 2133, 1450, 'color')
+        ).resolves.toBeInstanceOf(Blob);
+        await expect(
+            packManager.getTileFromPacksDetailed(
+                12,
+                2133,
+                1450,
+                'elevation',
+                false
+            )
+        ).resolves.toMatchObject({
+            packId: 'switzerland',
+            source: 'asset',
+        });
+
+        packManager.unmountPack('switzerland');
+        state.IS_OFFLINE = false;
     });
 
     it('getMinPackZoom → retourne le LOD min du pack monté', async () => {

@@ -150,15 +150,15 @@ Les flags de release et les droits Pro sont séparés.
 
 Valeurs de build dans `releaseFlags.ts` :
 
-| Flag | Défaut |
-| :--- | :---: |
-| `preparedRoutes` | activé |
-| `guidanceForeground` | activé |
-| `routeReadiness` | activé |
-| `routeCorridor` | activé |
-| `nativeGuidance` | activé |
-| `accountSync` | désactivé |
-| `expertWorkbench` | désactivé |
+| Flag                 |  Défaut   |
+| :------------------- | :-------: |
+| `preparedRoutes`     |  activé   |
+| `guidanceForeground` |  activé   |
+| `routeReadiness`     |  activé   |
+| `routeCorridor`      |  activé   |
+| `nativeGuidance`     |  activé   |
+| `accountSync`        | désactivé |
+| `expertWorkbench`    | désactivé |
 
 Contrat Free/Pro actuel :
 
@@ -181,7 +181,7 @@ et Kartverket (NO), avec OpenTopoMap/MapTiler/OSM en repli. L'Italie utilise le 
 
 Le catalogue embarqué `packCatalog.ts` contient trois packs :
 
-- `switzerland`, 664 MB, LOD 8–14 ;
+- `switzerland`, v3, 664 MB, LOD 8–14 ;
 - `france_alps`, 515 MB, LOD 8–14 ;
 - `austria`, 985 MB, LOD 8–14.
 
@@ -191,16 +191,23 @@ présenter un pack comme disponible.
 Pour construire un pack :
 
 1. modifier `PACKS` dans `scripts/build-country-pack.ts` ;
-2. lancer `npx tsx scripts/build-country-pack.ts --pack <id> --maptiler-key <key> --clean` ;
-3. contrôler l'archive ;
-4. demander une autorisation distincte avant tout upload R2 ;
-5. mettre à jour le catalogue et les quatre locales.
+2. contrôler le plan avec `npm run build-pack -- --pack <id> --plan` ;
+3. lancer `npm run build-pack -- --pack <id> --maptiler-key <key>` ;
+4. contrôler l'archive avec `npm run validate:pack -- --archive <pack> --cache-dir <cache>` ;
+5. conserver l'élévation Terrain-RGB strictement sans perte ;
+6. ne jamais confondre un pack construit/validé avec un pack publié dans le catalogue ;
+7. demander une autorisation distincte avant tout upload R2 ;
+8. mettre à jour le catalogue et les quatre locales seulement après validation.
+
+Diagnostic Suisse du 2026-09-20 : le v4 local à élévation WebP avec pertes produisait les pics 3D.
+Le v5 lossless est techniquement sain mais pèse 1,99 Go et reste **NO-GO publication**. Voir
+`docs/research/SWITZERLAND_PACK_DIAGNOSTIC_2026-09-20.md`.
 
 ## Architecture et documentation
 
 Jalon clôturé localement : [v5.89 — évaluation cartographique](docs/plans/V5_89_MAP_ARCHITECTURE_EVALUATION.md).
 La décision est de conserver Three.js/WebGL et de poursuivre les fonctions en 5.90+. La
-reconstruction du pack Suisse v4 reste séparée. Une future 6.0 correspondra à un saut d'expérience
+publication d'un pack Suisse réduit reste séparée. Une future 6.0 correspondra à un saut d'expérience
 démontré, avec ou sans WebGPU.
 
 Ordre de lecture conseillé :

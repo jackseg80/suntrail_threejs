@@ -10,13 +10,13 @@
 partir d'une `PreparedRouteV1`, sans modifier ni republier ce contrat. Le rapport conserve cinq
 sections indépendantes :
 
-| Section | Source du premier lot | Comportement |
-| :--- | :--- | :--- |
-| `route` | `PreparedRouteV1.stats` | Toujours local ; distance, D+/D-, durée, effort, difficulté et qualité de guidage. |
-| `light` | Résumé SunCalc persisté dans la route | Disponible seulement si une heure de départ et les dates calculées existent. |
-| `offline` | plan corridor + cache/packs locaux | Mesure 5→14 pour le corridor Free de 1 km ; `unknown` avant la première mesure. |
-| `conditions` | futur enrichissement réseau | `unknown` sans requête ; n'empêche jamais le rapport ni le guidage. |
-| `device` | futur bridge Android | `unknown` hors preuve explicite fournie par l'appareil. |
+| Section      | Source du premier lot                 | Comportement                                                                       |
+| :----------- | :------------------------------------ | :--------------------------------------------------------------------------------- |
+| `route`      | `PreparedRouteV1.stats`               | Toujours local ; distance, D+/D-, durée, effort, difficulté et qualité de guidage. |
+| `light`      | Résumé SunCalc persisté dans la route | Disponible seulement si une heure de départ et les dates calculées existent.       |
+| `offline`    | plan corridor + cache/packs locaux    | Mesure 5→14 pour le corridor Free de 1 km ; `unknown` avant la première mesure.    |
+| `conditions` | futur enrichissement réseau           | `unknown` sans requête ; n'empêche jamais le rapport ni le guidage.                |
+| `device`     | futur bridge Android                  | `unknown` hors preuve explicite fournie par l'appareil.                            |
 
 Chaque section expose `available`, `stale`, `unknown` ou `error`, une source, une date et des
 signaux `info`, `warning` ou `critical`. Il n'existe pas de score global : une donnée inconnue
@@ -29,13 +29,13 @@ guidage reste indépendant ; les enrichissements absents ne le désactivent pas.
 
 Le corridor doit prolonger les stockages existants, sans cache parallèle :
 
-| Stockage | Responsabilité |
-| :--- | :--- |
-| Service Worker / Workbox | Shell PWA et assets versionnés. |
-| CacheStorage normal | Cache réseau opportuniste. |
-| `suntrail-offline-zones` | Blobs demandés explicitement pour zones et corridors. |
-| OPFS / PMTiles | Packs pays volumineux. |
-| IndexedDB `suntrail-routes` | Contrat et bibliothèque des Prepared Routes, inchangés. |
+| Stockage                             | Responsabilité                                                      |
+| :----------------------------------- | :------------------------------------------------------------------ |
+| Service Worker / Workbox             | Shell PWA et assets versionnés.                                     |
+| CacheStorage normal                  | Cache réseau opportuniste.                                          |
+| `suntrail-offline-zones`             | Blobs demandés explicitement pour zones et corridors.               |
+| OPFS / PMTiles                       | Packs pays volumineux.                                              |
+| IndexedDB `suntrail-routes`          | Contrat et bibliothèque des Prepared Routes, inchangés.             |
 | IndexedDB `suntrail-route-corridors` | Manifestes versionnés, état, propriété et activation des corridors. |
 
 Une bbox de zone ou un simple état `installed` ne suffit pas à annoncer une couverture complète.
@@ -49,6 +49,25 @@ pas une carte utilisable, conformément au comportement du worker hors ligne.
 La recherche des packs reste mondiale et data-driven : le gestionnaire de packs applique le
 catalogue, les LOD et les bornes de chaque archive. La mesure ne contient aucune liste de pays et
 n'utilise pas les polygones embarqués comme prérequis à la lecture d'un pack local.
+
+## Intégrité des packs pays
+
+Un téléchargement n'est déclaré `installed` qu'après fermeture du fichier et validation de
+l'archive réellement écrite en OPFS. Le gestionnaire contrôle la longueur HTTP lorsqu'elle est
+connue, la taille du fichier, la lecture du header et des métadonnées PMTiles, les bornes des
+répertoires et des données de tuiles, ainsi que la couverture de la plage de zoom du catalogue. Une
+archive incomplète ou structurellement tronquée passe en erreur et son fichier est supprimé.
+
+Les tuiles d'élévation Terrain-RGB constituent une donnée numérique, pas une image décorative : les
+canaux RGB doivent être préservés bit à bit. Le constructeur utilise donc du WebP sans perte pour
+l'élévation. `scripts/validate-country-pack.ts` compare l'archive au cache source et signale les
+rasters illisibles, valeurs impossibles, gradients anormaux, ruptures entre voisines et incohérences
+inter-zooms. Le rapport Suisse détaillé est conservé dans
+`docs/research/SWITZERLAND_PACK_DIAGNOSTIC_2026-09-20.md`.
+
+Le pack Suisse v5 validé reste un candidat local : sa taille de 1,99 Go interdit sa publication
+prudente tant qu'une stratégie de réduction et le vrai trajet téléchargement/import OPFS sur
+appareil n'ont pas été validés. Aucun catalogue de production n'est modifié par ce diagnostic.
 
 La mesure est bornée à huit inspections simultanées et les routes sont traitées en série. Son cache
 de cinq minutes est invalidé si la route, la source cartographique, MapTiler, les sentiers ou les
@@ -88,7 +107,8 @@ et annonce un résultat partiel si elles ne suffisent pas.
 
 ## Validation
 
-Les tests couvrent le rapport à horloge fixée, les états `unknown`, l'arrivée après la nuit, les
+Les tests couvrent aussi le rejet des téléchargements OPFS incomplets ou dont une section PMTiles
+dépasse la fin du fichier. Ils couvrent le rapport à horloge fixée, les états `unknown`, l'arrivée après la nuit, les
 rayons 0,5/1/2 km, la déduplication, l'antiméridien, le plafond de volume, les caches corrompus ou
 incomplets, l'exclusion des packs CDN, un pack Suisse sans préfiltre pays, un cache hors catalogue
 européen, l'invalidation de contexte, la progression, les résultats partiels, l'annulation
