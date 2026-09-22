@@ -266,10 +266,12 @@ Android, lint Android et assemblage APK réussis. La suite complète obtient
 168 fichiers et 1 943/1 943 tests réussis. Aucun test Android instrumenté n'a
 été lancé.
 
-Le smoke Playwright n'est pas validé : Chromium n'a pas pu être lancé dans le
-sandbox (`spawn EPERM`) et les tentatives locales hors sandbox sont restées
-bloquées avant l'ouverture du navigateur. Ce résultat est « non vérifié », pas
-un succès ni un échec fonctionnel de l'application.
+Le smoke Playwright n'a pas pu être lancé localement : Chromium échoue dans le
+sandbox (`spawn EPERM`) et les tentatives hors sandbox restent bloquées avant
+l'ouverture du navigateur. La CI GitHub du commit `038bad22` a ensuite exécuté
+le même smoke Chromium avec succès, en plus des contrôles de qualité, tests,
+audit des traductions et build PWA. Le défaut local n'est donc pas retenu comme
+un échec fonctionnel de l'application.
 
 ## Risques restant à fermer
 
@@ -284,8 +286,8 @@ un succès ni un échec fonctionnel de l'application.
 4. La mémoire graphique 3D reste élevée même avec le petit pack.
 5. Aucun test visuel ne remplace une validation sur plusieurs appareils et
    plusieurs GPU.
-6. Le smoke Playwright doit être exécuté avec un navigateur lançable avant une
-   release ; la tentative du 22 septembre est non vérifiée.
+6. Le smoke Chromium de la CI est réussi. Le lanceur Playwright local reste à
+   réparer pour rendre cette validation reproductible hors GitHub Actions.
 
 ## Recommandation finale
 
@@ -294,6 +296,8 @@ cause démontrée des pics. Il n'est pas nécessaire de reconstruire une nouvell
 archive complète uniquement pour corriger les données : le v5 existant est le
 candidat de référence. La prochaine étape utile est un essai OPFS du fichier
 complet, puis une décision de découpage/réduction de taille. Publication :
-**NO-GO** jusqu'à ces deux validations. Release applicative : **NO-GO** tant
-que le smoke navigateur n'est pas réellement exécuté et que le budget mémoire
-3D n'a pas été accepté après un essai prolongé sur appareil.
+**NO-GO** jusqu'à ces deux validations. Une release applicative utilisant
+encore le pack v3 reste techniquement compatible, mais il est recommandé
+d'attendre l'essai prolongé du budget mémoire 3D et la décision sur la taille du
+nouveau pack afin d'éviter une release intermédiaire sans bénéfice utilisateur
+urgent.

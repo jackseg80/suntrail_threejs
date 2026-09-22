@@ -58,9 +58,10 @@
 - Build Capacitor, tests unitaires et lint Android, puis assemblage réussis ; APK diagnostic
   `com.suntrail.threejs.diagnostic` installé sur Galaxy S23 sans effacer les données ni remplacer
   `com.suntrail.threejs`. Les contrôles 2D/3D à Zurich ne montrent ni pic ni écran noir.
-- Le smoke Playwright reste non vérifié : Chromium est bloqué au lancement dans cet environnement.
-  La mémoire 3D reste élevée et WebView a récupéré après un redémarrage de son processus GPU ; ces
-  deux points maintiennent la release applicative en **NO-GO**.
+- Le smoke Playwright est bloqué au lancement dans l'environnement local, mais le même smoke
+  Chromium réussit dans la CI GitHub du commit `038bad22`. La mémoire 3D reste élevée et WebView a
+  récupéré après un redémarrage de son processus GPU ; la publication du nouveau pack reste en
+  **NO-GO**.
 - Aucun nouveau tag, aucune release GitHub, aucun déploiement Pages et aucun upload Play inclus.
 
 ## [5.91.4] - 2026-09-17 — Démarrage carte et nettoyage des réglages
