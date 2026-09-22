@@ -17,10 +17,14 @@ prouver.
 
 ## Protection des travaux
 
-- Dépôt principal laissé intact car il contenait des changements d'une autre
-  tâche.
-- Travail réalisé dans le worktree isolé
-  `C:\Users\jacks\.codex\worktrees\swiss-pack-render-v5\suntrail_threejs`.
+- Diagnostic et correctifs initialement réalisés dans le worktree isolé
+  `C:\Users\jacks\.codex\worktrees\swiss-pack-render-v5\suntrail_threejs` afin
+  de ne pas toucher aux changements d'une autre tâche alors présents dans le
+  dépôt principal.
+- Le 22 septembre 2026, après retour du dépôt principal à un état propre, le
+  commit de diagnostic `a8269459` a été intégré localement à `main` par avance
+  rapide. `main` n'a pas été poussé et reste en avance d'un commit sur
+  `origin/main` dans l'attente d'une autorisation distincte.
 - Aucun tag, release, upload, déploiement ou test Android instrumenté
   destructeur. Le commit et le push de la branche de diagnostic ont été
   explicitement autorisés après les validations.
@@ -192,6 +196,24 @@ normal OPFS n'utilise pas ce serveur d'assets.
   de la petite emprise de test. La capture finale 3D Zurich ne présente pas de
   bande blanche dans la carte.
 
+### Requalification de l'intégration locale — 22 septembre 2026
+
+- APK reconstruit depuis `main` avec le petit pack embarqué : 69 091 249 octets,
+  SHA-256
+  `5804238D2A6430A25DFD4B7A400EDECAFD57E3609994097690366745BD64A388`.
+- Identité contrôlée avant installation :
+  `com.suntrail.threejs.diagnostic`, version `5.91.4-diagnostic`, code 917.
+- Mise à jour ADB réussie avec `-r`. L'application de production
+  `com.suntrail.threejs`, version `5.91.4`, code 917, est restée installée et son
+  chemin APK n'a pas changé.
+- Démarrage 2D à Zurich réussi, carte et commandes visibles. Passage au vrai
+  mode 3D réussi, relief cohérent, sans pic, écran noir ni tuile manquante sur
+  la capture de contrôle.
+- Aucune `FATAL EXCEPTION` ni `OutOfMemoryError`. WebView a toutefois relancé
+  une fois son processus GPU après une sortie inattendue, puis a restauré le
+  rendu. Ce signal est classé comme risque de performance résiduel et non comme
+  validation d'une diffusion large.
+
 ### Mémoire résiduelle
 
 La vue 3D finale reste coûteuse : environ 819 Mo PSS / 914 Mo RSS, dont environ
@@ -199,6 +221,12 @@ La vue 3D finale reste coûteuse : environ 819 Mo PSS / 914 Mo RSS, dont environ
 et 26 Mo. Cela ne ressemble plus à une archive PMTiles matérialisée en mémoire,
 mais le budget GPU/Three.js demeure élevé et doit être surveillé avant toute
 diffusion large.
+
+Lors de la requalification du 22 septembre, la mesure ponctuelle est de 747 Mo
+PSS / 780 Mo RSS, dont 541 Mo de mémoire graphique. L'amélioration ponctuelle
+ne supprime pas le risque : les deux mesures restent élevées pour un appareil
+mobile et le redémarrage du processus GPU confirme qu'un test prolongé est
+nécessaire.
 
 ## Fichiers préparés
 
@@ -232,11 +260,16 @@ Un téléchargement incomplet ou un header pointant après la fin du fichier est
 rejeté, marqué en erreur et supprimé. Tests ciblés finaux : 4 fichiers, 66
 tests réussis. TypeScript : réussi.
 
-Contrôles pré-commit : TypeScript, ESLint, formatage des fichiers modifiés et
-build Vite réussis. La suite complète obtient 1 942/1 943 tests dans le
-worktree ; l'unique échec est le test historique `edgeToEdge.test.ts`, sensible
-aux fins de ligne CRLF de ce checkout Windows. Le même test passe 4/4 dans le
-dépôt principal et ne touche aucun fichier de ce lot.
+Qualification sur `main` le 22 septembre : `npm run check`, build Vite, budget
+bundle, audit i18n, build Capacitor, synchronisation Android, tests unitaires
+Android, lint Android et assemblage APK réussis. La suite complète obtient
+168 fichiers et 1 943/1 943 tests réussis. Aucun test Android instrumenté n'a
+été lancé.
+
+Le smoke Playwright n'est pas validé : Chromium n'a pas pu être lancé dans le
+sandbox (`spawn EPERM`) et les tentatives locales hors sandbox sont restées
+bloquées avant l'ouverture du navigateur. Ce résultat est « non vérifié », pas
+un succès ni un échec fonctionnel de l'application.
 
 ## Risques restant à fermer
 
@@ -251,6 +284,8 @@ dépôt principal et ne touche aucun fichier de ce lot.
 4. La mémoire graphique 3D reste élevée même avec le petit pack.
 5. Aucun test visuel ne remplace une validation sur plusieurs appareils et
    plusieurs GPU.
+6. Le smoke Playwright doit être exécuté avec un navigateur lançable avant une
+   release ; la tentative du 22 septembre est non vérifiée.
 
 ## Recommandation finale
 
@@ -259,4 +294,6 @@ cause démontrée des pics. Il n'est pas nécessaire de reconstruire une nouvell
 archive complète uniquement pour corriger les données : le v5 existant est le
 candidat de référence. La prochaine étape utile est un essai OPFS du fichier
 complet, puis une décision de découpage/réduction de taille. Publication :
-**NO-GO** jusqu'à ces deux validations.
+**NO-GO** jusqu'à ces deux validations. Release applicative : **NO-GO** tant
+que le smoke navigateur n'est pas réellement exécuté et que le budget mémoire
+3D n'a pas été accepté après un essai prolongé sur appareil.

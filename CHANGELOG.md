@@ -53,10 +53,14 @@
   `70295A18F9937FDB47ED16091E1EBA886B284532E1D5C63C21CC0D66BA6ABA39`, échantillon de
   1 006 tuiles d'élévation sans erreur. Publication maintenue en **NO-GO** à cause de la taille et
   de l'absence de validation du chemin complet CDN vers OPFS sur appareil.
-- `npm run check` et 166 fichiers / 1 930 tests Web/TypeScript réussis.
-- Build Capacitor et assemblage Android réussis ; APK diagnostic installé sur Galaxy S23 sans
-  effacer les données. Le propriétaire confirme que les transitions 2D/3D et le terrain sont
-  corrects après reproduction du scénario.
+- `npm run check`, 168 fichiers / 1 943 tests Web/TypeScript, build Vite, budget bundle et audit
+  i18n réussis sur l'intégration locale à `main`.
+- Build Capacitor, tests unitaires et lint Android, puis assemblage réussis ; APK diagnostic
+  `com.suntrail.threejs.diagnostic` installé sur Galaxy S23 sans effacer les données ni remplacer
+  `com.suntrail.threejs`. Les contrôles 2D/3D à Zurich ne montrent ni pic ni écran noir.
+- Le smoke Playwright reste non vérifié : Chromium est bloqué au lancement dans cet environnement.
+  La mémoire 3D reste élevée et WebView a récupéré après un redémarrage de son processus GPU ; ces
+  deux points maintiennent la release applicative en **NO-GO**.
 - Aucun nouveau tag, aucune release GitHub, aucun déploiement Pages et aucun upload Play inclus.
 
 ## [5.91.4] - 2026-09-17 — Démarrage carte et nettoyage des réglages
