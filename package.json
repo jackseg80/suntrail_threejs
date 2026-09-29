@@ -1,6 +1,6 @@
 {
     "name": "suntrail_threejs",
-    "version": "5.91.4",
+    "version": "5.92.0",
     "scripts": {
         "dev": "vite",
         "check": "tsc --noEmit && prettier --check src/ && eslint src/",
@@ -12,6 +12,7 @@
         "build:capacitor": "cross-env CAPACITOR=true npm run build",
         "prepare:diagnostic-pack": "npx tsx scripts/prepare-diagnostic-pack.ts",
         "build:diagnostic": "cross-env CAPACITOR=true VITE_DIAGNOSTIC_PACK_URL=./diagnostic/suntrail-pack-switzerland-sample-v1.pmtiles npm run build",
+        "build:diagnostic:reduced": "cross-env CAPACITOR=true VITE_DIAGNOSTIC_PACK_URL=./diagnostic/suntrail-pack-switzerland-sample-v2-trimmed.pmtiles VITE_DIAGNOSTIC_PACK_VERSION=2 VITE_DIAGNOSTIC_PACK_SIZE_MB=10 npm run build",
         "build:diagnostic:full": "cross-env CAPACITOR=true VITE_DIAGNOSTIC_PACK_URL=./diagnostic/suntrail-pack-switzerland-v5.pmtiles VITE_DIAGNOSTIC_PACK_VERSION=5 VITE_DIAGNOSTIC_PACK_SIZE_MB=1896 VITE_DIAGNOSTIC_PACK_MIN_LOD=8 VITE_DIAGNOSTIC_PACK_MAX_LOD=14 npm run build",
         "test": "vitest run",
         "test:coverage": "vitest run --coverage",
@@ -28,6 +29,7 @@
         "android:update": "npm run deploy",
         "build-overview": "npx tsx scripts/build-overview-tiles.ts",
         "build-pack": "npx tsx scripts/build-country-pack.ts",
+        "reduce:pack": "npx tsx scripts/reduce-country-pack.ts",
         "audit:i18n": "python scripts/audit_i18n.py",
         "validate:pack": "npx tsx scripts/validate-country-pack.ts"
     },

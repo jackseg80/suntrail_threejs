@@ -4,6 +4,19 @@ import { resolve } from 'node:path';
 const distDir = resolve('dist');
 const htmlFiles = readdirSync(distDir).filter((name) => name.endsWith('.html'));
 const failures = [];
+const diagnosticDir = resolve(distDir, 'diagnostic');
+
+// A local diagnostic build may contain entire country packs. Never let those
+// files pass the production release gate unless explicitly opted in.
+if (
+    existsSync(diagnosticDir) &&
+    readdirSync(diagnosticDir).length > 0 &&
+    process.env.SUNTRAIL_ALLOW_DIAGNOSTIC_ASSETS !== '1'
+) {
+    failures.push(
+        'assets diagnostic présents dans dist/diagnostic ; build de production refusé (SUNTRAIL_ALLOW_DIAGNOSTIC_ASSETS=1 uniquement pour un contrôle diagnostic)'
+    );
+}
 
 for (const htmlFile of htmlFiles) {
     const html = readFileSync(resolve(distDir, htmlFile), 'utf8');

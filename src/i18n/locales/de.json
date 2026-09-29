@@ -1262,6 +1262,7 @@
         "error": {
             "storageFull": "Nicht genügend Speicherplatz",
             "downloadFailed": "Download fehlgeschlagen. Tippen zum Wiederholen.",
+            "deleteFailed": "Paket konnte nicht gelöscht werden. Bitte erneut versuchen.",
             "purchaseFailed": "Kauf fehlgeschlagen",
             "catalogFailed": "Katalog konnte nicht geladen werden"
         },

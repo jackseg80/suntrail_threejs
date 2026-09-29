@@ -193,17 +193,25 @@ export class PacksSheet extends BaseComponent {
             });
             actions.appendChild(buyBtn);
         } else if (status === 'purchased') {
-            // Pack acheté = streaming CDN (réseau requis, pas de copie locale)
+            const embeddedAsset = meta.cdnUrl.startsWith('./diagnostic/');
             const badge = document.createElement('span');
-            badge.className = 'pack-status pack-status--online';
-            badge.textContent = i18n.t('packs.status.online');
+            badge.className = embeddedAsset
+                ? 'pack-status pack-status--installed'
+                : 'pack-status pack-status--online';
+            badge.textContent = embeddedAsset
+                ? `\u2713 ${i18n.t('packs.status.installed')}`
+                : i18n.t('packs.status.online');
             actions.appendChild(badge);
 
-            // Bouton download pour mode offline
-            const dlBtn = this.createButton('packs.btn.download');
-            dlBtn.classList.add('pack-action--end');
-            dlBtn.addEventListener('click', () => this.handleDownload(meta.id));
-            actions.appendChild(dlBtn);
+            if (!embeddedAsset) {
+                // A CDN-only purchase still needs an offline download.
+                const dlBtn = this.createButton('packs.btn.download');
+                dlBtn.classList.add('pack-action--end');
+                dlBtn.addEventListener('click', () =>
+                    this.handleDownload(meta.id)
+                );
+                actions.appendChild(dlBtn);
+            }
         } else if (status === 'downloading') {
             // Progress bar
             const progress = ps?.downloadProgress ?? 0;
@@ -369,8 +377,11 @@ export class PacksSheet extends BaseComponent {
             // v5.28.2 : Seuls 'installed' et 'update_available' occupent de l'espace disque.
             // 'purchased' signifie que le pack est disponible en streaming (0 MB local).
             if (
-                ps &&
-                (ps.status === 'installed' || ps.status === 'update_available')
+                (meta.cdnUrl.startsWith('./diagnostic/') &&
+                    ps?.status === 'purchased') ||
+                (ps &&
+                    (ps.status === 'installed' ||
+                        ps.status === 'update_available'))
             ) {
                 installedMB += meta.sizeMB;
             }

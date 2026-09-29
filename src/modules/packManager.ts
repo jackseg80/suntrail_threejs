@@ -23,34 +23,60 @@ import { iapService } from './iapService';
 import { isPointInCountry, tilePixelToLatLon } from './geo';
 import { STORAGE_KEYS } from '../constants/storage';
 import { EmbeddedAssetSource } from './embeddedAssetSource';
+import { elevationParentTile } from './elevationParentTile';
 import {
     fetchCatalog,
     getAvailablePacks,
     getPackMeta,
     findPackContaining as catalogFindPackContaining,
     checkForUpdates,
+    catalogScopedStorageKey,
 } from './packCatalog';
 
-const PACK_STATES_KEY = STORAGE_KEYS.PACK_STATES;
+const PACK_STATES_KEY = catalogScopedStorageKey(
+    STORAGE_KEYS.PACK_STATES,
+    import.meta.env.VITE_PACKS_CATALOG_URL as string | undefined
+);
 const PACKS_DIR = 'packs';
 const NATIVE_LOCALHOST_UNLOCK_CLEANUP_KEY =
     'suntrail_native_localhost_unlock_cleanup_v1';
+
+export function packArchiveFilename(packId: string, version: number): string {
+    // A reduced Swiss pack must not overwrite the legacy filename read by
+    // clients that do not understand elevationMaxZoom.
+    if (packId === 'switzerland' && version >= 6) {
+        return `${packId}-v${version}.pmtiles`;
+    }
+    return `${packId}.pmtiles`;
+}
+
+function storedPackArchiveFilename(packId: string, ps: PackState): string {
+    const versioned = packArchiveFilename(packId, ps.installedVersion);
+    if (ps.filePath === `opfs://${PACKS_DIR}/${versioned}`) return versioned;
+    return `${packId}.pmtiles`;
+}
 
 class PackManager {
     private packStates: Map<string, PackState> = new Map();
     private mountedArchives: Map<
         string,
-        { archive: pmtiles.PMTiles; source: 'opfs' | 'cdn' | 'asset' }
+        {
+            archive: pmtiles.PMTiles;
+            source: 'opfs' | 'cdn' | 'asset';
+            elevationMaxZoom?: number;
+        }
     > = new Map();
     private downloadControllers: Map<string, AbortController> = new Map();
+    private interruptedDownloads: Set<string> = new Set();
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
     async initialize(): Promise<void> {
         this.loadPersistedStates();
         await fetchCatalog();
-        this.runCheckForUpdates();
+        await this.cleanupInterruptedDownloads();
         await this.syncDiskStates();
+        this.runCheckForUpdates();
         this.clearLegacyNativeLocalhostUnlocks();
 
         // Auto-débloquer TOUS les packs sur localhost (Dev mode) ou via paramètre URL
@@ -148,33 +174,49 @@ class PackManager {
 
             for (const meta of getAvailablePacks()) {
                 const ps = this.getOrCreateState(meta.id);
-                let fileExists = false;
+                const legacyFilename = `${meta.id}.pmtiles`;
+                const currentFilename = packArchiveFilename(
+                    meta.id,
+                    meta.version
+                );
+                const filenames = ps.filePath
+                    ? [storedPackArchiveFilename(meta.id, ps)]
+                    : [...new Set([currentFilename, legacyFilename])];
+                let foundFilename: string | null = null;
 
                 if (packsDir) {
-                    try {
-                        await packsDir.getFileHandle(`${meta.id}.pmtiles`);
-                        fileExists = true;
-                    } catch {
-                        // absent
+                    for (const filename of filenames) {
+                        try {
+                            await packsDir.getFileHandle(filename);
+                            foundFilename = filename;
+                            break;
+                        } catch {
+                            // absent
+                        }
                     }
                 }
 
                 // Si l'état dit pas installé, mais que le fichier est là : on resync
                 // On accepte 'purchased' ou 'not_purchased' (si on a un fichier on le prend)
                 if (
-                    fileExists &&
-                    (ps.status === 'purchased' || ps.status === 'not_purchased')
+                    foundFilename &&
+                    (ps.status === 'purchased' ||
+                        ps.status === 'not_purchased' ||
+                        ps.status === 'error')
                 ) {
                     if (state.DEBUG_MODE)
                         console.log(
                             `[Packs] ${meta.id}: fichier trouvé sur disque, restauration de l'état 'installed'.`
                         );
                     ps.status = 'installed';
-                    ps.installedVersion = ps.installedVersion || meta.version;
-                    ps.sizeMB = meta.sizeMB;
-                    ps.filePath = `opfs://${PACKS_DIR}/${meta.id}.pmtiles`;
+                    if (foundFilename === currentFilename) {
+                        ps.installedVersion =
+                            ps.installedVersion || meta.version;
+                    }
+                    ps.sizeMB = ps.sizeMB || meta.sizeMB;
+                    ps.filePath = `opfs://${PACKS_DIR}/${foundFilename}`;
                 } else if (
-                    !fileExists &&
+                    !foundFilename &&
                     (ps.status === 'installed' ||
                         ps.status === 'update_available')
                 ) {
@@ -205,6 +247,13 @@ class PackManager {
         const verified = new Set(purchased);
         let changed = false;
         for (const [packId, ps] of this.packStates) {
+            // The embedded diagnostic archive is deliberately not a store
+            // product. RevenueCat must not revoke its local test entitlement.
+            if (
+                packId === 'switzerland_diagnostic' &&
+                import.meta.env.VITE_DIAGNOSTIC_PACK_URL
+            )
+                continue;
             if (ps.status === 'purchased' && !verified.has(packId)) {
                 ps.status = 'not_purchased';
                 changed = true;
@@ -242,6 +291,19 @@ class PackManager {
         if (!meta) return false;
 
         const ps = this.getOrCreateState(packId);
+        if (this.downloadControllers.has(packId)) return false;
+        const targetFilename = packArchiveFilename(meta.id, meta.version);
+        // Never overwrite a validated installation with the same version.
+        if (
+            ps.status === 'installed' &&
+            ps.installedVersion === meta.version &&
+            ps.filePath === `opfs://${PACKS_DIR}/${targetFilename}`
+        )
+            return true;
+        const previousState = { ...ps };
+        const previousArchiveIsSeparate =
+            !!previousState.filePath &&
+            previousState.filePath !== `opfs://${PACKS_DIR}/${targetFilename}`;
         ps.status = 'downloading';
         ps.downloadProgress = 0;
         this.persistStates();
@@ -263,32 +325,44 @@ class PackManager {
             this.persistStates();
             this.emitStatus(packId, 'installed');
 
-            // Auto-mount
+            // Replace any older local archive already mounted for this pack.
+            this.unmountPack(packId);
             await this.mountPack(packId);
             showToast(i18n.t('packs.toast.installed'));
             return true;
         } catch (e) {
+            // A failed update must not hide or delete the previously installed
+            // archive. The new filename is the only cleanup target.
+            if (
+                previousArchiveIsSeparate ||
+                !previousState.filePath ||
+                (e as Error).name !== 'AbortError'
+            ) {
+                await this.deletePackFile(packId, targetFilename);
+            }
+            if (previousArchiveIsSeparate) Object.assign(ps, previousState);
             if ((e as Error).name === 'AbortError') {
-                ps.status = 'purchased';
+                if (!previousArchiveIsSeparate) ps.status = 'purchased';
                 ps.downloadProgress = 0;
                 this.persistStates();
-                this.emitStatus(packId, 'purchased');
+                this.emitStatus(packId, ps.status);
                 showToast(i18n.t('packs.toast.downloadCancelled'));
             } else {
                 console.error(`[Packs] Download error for ${packId}:`, e);
-                ps.status = 'error';
+                if (!previousArchiveIsSeparate) ps.status = 'error';
                 this.persistStates();
-                this.emitStatus(packId, 'error');
+                this.emitStatus(packId, ps.status);
                 const msg = (e as Error).message ?? '';
-                if (msg.includes('quota') || msg.includes('ENOSPC')) {
+                if (
+                    (e as Error).name === 'QuotaExceededError' ||
+                    /quota|ENOSPC/i.test(msg)
+                ) {
                     showToast(i18n.t('packs.error.storageFull'));
                 } else {
                     showToast(
                         `${i18n.t('packs.error.downloadFailed')} (${msg.slice(0, 60)})`
                     );
                 }
-                // Cleanup partial file
-                this.deletePackFile(packId).catch(() => {});
             }
             return false;
         } finally {
@@ -307,24 +381,26 @@ class PackManager {
         const packsDir = await root.getDirectoryHandle(PACKS_DIR, {
             create: true,
         });
-        const fileHandle = await packsDir.getFileHandle(`${meta.id}.pmtiles`, {
+        const filename = packArchiveFilename(meta.id, meta.version);
+        const fileHandle = await packsDir.getFileHandle(filename, {
             create: true,
         });
         const writable = await fileHandle.createWritable();
 
-        const resp = await fetch(meta.cdnUrl, { signal });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-        const reader = resp.body?.getReader();
-        if (!reader) throw new Error('No response body');
-
-        const contentLength = parseInt(
-            resp.headers.get('content-length') ?? '0',
-            10
-        );
+        let contentLength: number;
         let received = 0;
 
         try {
+            const resp = await fetch(meta.cdnUrl, { signal });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+            const reader = resp.body?.getReader();
+            if (!reader) throw new Error('No response body');
+
+            contentLength = parseInt(
+                resp.headers.get('content-length') ?? '0',
+                10
+            );
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -337,7 +413,11 @@ class PackManager {
             }
             await writable.close();
         } catch (e) {
-            await writable.abort();
+            try {
+                await writable.abort();
+            } catch (abortError) {
+                console.warn('[Packs] OPFS abort failed:', abortError);
+            }
             throw e;
         }
 
@@ -348,7 +428,7 @@ class PackManager {
             meta
         );
 
-        ps.filePath = `opfs://${PACKS_DIR}/${meta.id}.pmtiles`;
+        ps.filePath = `opfs://${PACKS_DIR}/${filename}`;
     }
 
     private async validateDownloadedPack(
@@ -372,7 +452,15 @@ class PackManager {
 
         const archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
         const header = await archive.getHeader();
-        await archive.getMetadata();
+        const metadata = (await archive.getMetadata()) as Record<
+            string,
+            unknown
+        >;
+        this.readElevationMaxZoom(
+            metadata,
+            meta.lodRange.min,
+            meta.lodRange.max
+        );
 
         const sections = [
             ['root', header.rootDirectoryOffset, header.rootDirectoryLength],
@@ -407,15 +495,47 @@ class PackManager {
         }
     }
 
+    private readElevationMaxZoom(
+        metadata: Record<string, unknown>,
+        minZoom: number,
+        maxZoom: number
+    ): number | undefined {
+        const value = metadata.elevationMaxZoom;
+        if (value === undefined) return undefined;
+        if (
+            !Number.isInteger(value) ||
+            (value as number) < minZoom ||
+            (value as number) >= maxZoom ||
+            metadata.elevationEncoding !== 'terrain-rgb-v2-lossless-webp'
+        ) {
+            throw new Error('Métadonnées du relief réduit invalides');
+        }
+        return value as number;
+    }
+
     cancelDownload(packId: string): void {
         const controller = this.downloadControllers.get(packId);
         controller?.abort();
     }
 
     async deletePack(packId: string): Promise<void> {
-        this.unmountPack(packId);
-        await this.deletePackFile(packId);
         const ps = this.packStates.get(packId);
+        const activeFilename = ps
+            ? storedPackArchiveFilename(packId, ps)
+            : `${packId}.pmtiles`;
+        try {
+            // Delete the legacy copy first, so a failure leaves the active v6
+            // installation mounted and its state unchanged.
+            if (activeFilename !== `${packId}.pmtiles`) {
+                await this.deletePackFile(packId, `${packId}.pmtiles`, true);
+            }
+            await this.deletePackFile(packId, activeFilename, true);
+        } catch (e) {
+            console.error(`[Packs] Delete error for ${packId}:`, e);
+            showToast(i18n.t('packs.error.deleteFailed'));
+            return;
+        }
+        this.unmountPack(packId);
         if (ps) {
             ps.status = 'purchased';
             ps.downloadProgress = 0;
@@ -427,17 +547,47 @@ class PackManager {
         showToast(i18n.t('packs.toast.deleted'));
     }
 
-    private async deletePackFile(packId: string): Promise<void> {
+    private async deletePackFile(
+        packId: string,
+        filename = `${packId}.pmtiles`,
+        strict = false
+    ): Promise<void> {
         // OPFS (chemin principal depuis la nouvelle architecture)
+        let packsDir: FileSystemDirectoryHandle | null = null;
         try {
             const root = await navigator.storage.getDirectory();
-            const packsDir = await root.getDirectoryHandle(PACKS_DIR);
-            await packsDir.removeEntry(`${packId}.pmtiles`);
-        } catch {
-            /* may not exist */
+            packsDir = await root.getDirectoryHandle(PACKS_DIR);
+            await packsDir.removeEntry(filename);
+        } catch (e) {
+            if (strict && (e as Error).name !== 'NotFoundError') throw e;
+        }
+        // Chromium can leave a .crswap sibling when a process dies during an
+        // OPFS write. Only the versioned Swiss target is ours to clean here;
+        // never touch legacy .crswap files from an older installation.
+        if (
+            packsDir &&
+            packId === 'switzerland' &&
+            /^switzerland-v\d+\.pmtiles$/.test(filename)
+        ) {
+            try {
+                for await (const [name] of packsDir.entries()) {
+                    const suffix = name.slice(filename.length);
+                    if (
+                        name.startsWith(filename) &&
+                        /^(?:\.\d+)?\.crswap$/.test(suffix)
+                    ) {
+                        await packsDir.removeEntry(name);
+                    }
+                }
+            } catch (e) {
+                console.warn(
+                    `[Packs] OPFS swap cleanup failed for ${filename}:`,
+                    e
+                );
+            }
         }
         // Ancienne installation via Filesystem.External (migration)
-        if (Capacitor.isNativePlatform()) {
+        if (filename === `${packId}.pmtiles` && Capacitor.isNativePlatform()) {
             try {
                 await Filesystem.deleteFile({
                     path: `${packId}.pmtiles`,
@@ -480,7 +630,7 @@ class PackManager {
                     const root = await navigator.storage.getDirectory();
                     const packsDir = await root.getDirectoryHandle(PACKS_DIR);
                     const fileHandle = await packsDir.getFileHandle(
-                        `${packId}.pmtiles`
+                        storedPackArchiveFilename(packId, ps)
                     );
                     const file = await fileHandle.getFile();
                     archive = new pmtiles.PMTiles(new pmtiles.FileSource(file));
@@ -512,6 +662,18 @@ class PackManager {
 
             // Warmup: read header pour vérifier l'archive
             const header = await archive.getHeader();
+            const metadata = (await archive.getMetadata()) as Record<
+                string,
+                unknown
+            >;
+            const packMeta = getPackMeta(packId);
+            const elevationMaxZoom = packMeta
+                ? this.readElevationMaxZoom(
+                      metadata,
+                      packMeta.lodRange.min,
+                      packMeta.lodRange.max
+                  )
+                : undefined;
             if (state.DEBUG_MODE)
                 console.log(
                     `[Packs] ${packId} monté. LOD ${header.minZoom}-${header.maxZoom}, ${header.numTileEntries} tuiles`
@@ -520,10 +682,20 @@ class PackManager {
             this.mountedArchives.set(packId, {
                 archive,
                 source: archiveSource,
+                elevationMaxZoom,
             });
+            if (
+                import.meta.env.VITE_DIAGNOSTIC_PACK_URL &&
+                packId === 'switzerland_diagnostic'
+            ) {
+                console.info(
+                    `[PackDiag] mounted ${packId} source=${archiveSource} elevationMaxZoom=${elevationMaxZoom ?? 'exact'}`
+                );
+            }
             eventBus.emit('packMounted', { packId });
         } catch (e) {
             if (archiveSource === 'opfs') {
+                const filename = storedPackArchiveFilename(packId, ps);
                 console.warn(
                     `[Packs] Archive locale invalide pour ${packId}; nouveau téléchargement requis.`,
                     e
@@ -534,7 +706,7 @@ class PackManager {
                 ps.sizeMB = 0;
                 this.persistStates();
                 this.emitStatus(packId, 'error');
-                await this.deletePackFile(packId);
+                await this.deletePackFile(packId, filename);
                 return;
             }
             console.error(`[Packs] Erreur montage ${packId}:`, e);
@@ -647,6 +819,7 @@ class PackManager {
         blob: Blob;
         packId: string;
         source: 'opfs' | 'cdn' | 'asset';
+        elevationSourceZoom?: number;
     } | null> {
         // Deux passes : sources locales en premier, CDN ensuite.
         for (const pass of [true, false]) {
@@ -665,6 +838,12 @@ class PackManager {
 
                 try {
                     let tileData;
+                    const sourceZoom =
+                        type === 'elevation' &&
+                        mounted.elevationMaxZoom !== undefined
+                            ? Math.min(z, mounted.elevationMaxZoom)
+                            : z;
+                    const sourceTile = elevationParentTile(z, x, y, sourceZoom);
 
                     // v5.28.1 : Support Multi-Layer (Couleur + Élévation + Overlay dans 1 seul PMTiles)
                     if (type === 'color') {
@@ -681,7 +860,11 @@ class PackManager {
                         const offset =
                             type === 'elevation' ? OFFSET_ELEV : OFFSET_OVERLAY;
 
-                        const baseId = pmtiles.zxyToTileId(z, x, y);
+                        const baseId = pmtiles.zxyToTileId(
+                            sourceTile.z,
+                            sourceTile.x,
+                            sourceTile.y
+                        );
                         const [fz, fx, fy] = pmtiles.tileIdToZxy(
                             baseId + offset
                         );
@@ -700,6 +883,9 @@ class PackManager {
                             blob: new Blob([tileData.data], { type: mime }),
                             packId,
                             source: mounted.source,
+                            ...(type === 'elevation'
+                                ? { elevationSourceZoom: sourceZoom }
+                                : {}),
                         };
                     }
                 } catch {
@@ -800,14 +986,25 @@ class PackManager {
             // entre les tests ou lors de re-initialisations manuelles.
             this.packStates.clear();
             this.mountedArchives.clear();
+            this.interruptedDownloads.clear();
 
-            const raw = localStorage.getItem(PACK_STATES_KEY);
+            const raw =
+                localStorage.getItem(PACK_STATES_KEY) ??
+                (PACK_STATES_KEY !== STORAGE_KEYS.PACK_STATES
+                    ? localStorage.getItem(STORAGE_KEYS.PACK_STATES)
+                    : null);
             if (!raw) return;
             const obj = JSON.parse(raw) as Record<string, PackState>;
             for (const [id, ps] of Object.entries(obj)) {
                 // Reset downloading state on restart
                 if (ps.status === 'downloading') {
-                    ps.status = ps.downloadProgress > 0 ? 'error' : 'purchased';
+                    this.interruptedDownloads.add(id);
+                    ps.status =
+                        ps.filePath && ps.installedVersion > 0
+                            ? 'installed'
+                            : ps.downloadProgress > 0
+                              ? 'error'
+                              : 'purchased';
                     ps.downloadProgress = 0;
                 }
                 this.packStates.set(id, ps);
@@ -816,6 +1013,19 @@ class PackManager {
         } catch {
             /* corrupt data */
         }
+    }
+
+    private async cleanupInterruptedDownloads(): Promise<void> {
+        for (const packId of this.interruptedDownloads) {
+            const meta = getPackMeta(packId);
+            const ps = this.packStates.get(packId);
+            if (!meta || !ps) continue;
+            const targetFilename = packArchiveFilename(packId, meta.version);
+            if (ps.filePath !== `opfs://${PACKS_DIR}/${targetFilename}`) {
+                await this.deletePackFile(packId, targetFilename);
+            }
+        }
+        this.interruptedDownloads.clear();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

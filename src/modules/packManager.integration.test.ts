@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { packManager } from './packManager';
+import { packArchiveFilename, packManager } from './packManager';
+import * as pmtiles from 'pmtiles';
 import { state } from './state';
 
 const {
@@ -86,9 +87,34 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
 });
 
 describe('PackManager Integration', () => {
+    it('reserves a separate filename for the reduced Swiss pack', () => {
+        expect(packArchiveFilename('switzerland', 3)).toBe(
+            'switzerland.pmtiles'
+        );
+        expect(packArchiveFilename('switzerland', 6)).toBe(
+            'switzerland-v6.pmtiles'
+        );
+        expect(packArchiveFilename('austria', 1)).toBe('austria.pmtiles');
+    });
+
+    it('ne révoque pas le pack embarqué diagnostic après vérification des achats', async () => {
+        vi.stubEnv(
+            'VITE_DIAGNOSTIC_PACK_URL',
+            './diagnostic/suntrail-pack-switzerland-sample-v2-trimmed.pmtiles'
+        );
+        mockWaitForInit.mockResolvedValue(true);
+        mockCheckAllPackPurchases.mockResolvedValue([]);
+        packManager.markPurchased('switzerland_diagnostic');
+        await (packManager as any).syncPackPurchases();
+        expect(packManager.getPackState('switzerland_diagnostic')?.status).toBe(
+            'purchased'
+        );
+    });
+
     function setupDownloadTarget(fileSize: number) {
         let exists = false;
         const writable = {
@@ -195,6 +221,46 @@ describe('PackManager Integration', () => {
         });
     });
 
+    it('remplace une ancienne archive montée après un téléchargement validé', async () => {
+        const bytes = new Uint8Array(256);
+        setupDownloadTarget(bytes.byteLength);
+        mockPmtilesGetHeader.mockResolvedValue({
+            minZoom: 8,
+            maxZoom: 19,
+            rootDirectoryOffset: 127,
+            rootDirectoryLength: 10,
+            jsonMetadataOffset: 137,
+            jsonMetadataLength: 10,
+            leafDirectoryOffset: 147,
+            leafDirectoryLength: 0,
+            tileDataOffset: 147,
+            tileDataLength: 109,
+            numTileEntries: 1,
+        });
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(
+                new Response(bytes, {
+                    headers: { 'content-length': String(bytes.byteLength) },
+                })
+            )
+        );
+        await packManager.initialize();
+
+        const previousArchive = {};
+        (packManager as any).mountedArchives.set('switzerland', {
+            archive: previousArchive,
+            source: 'opfs',
+        });
+
+        await expect(packManager.downloadPack('switzerland')).resolves.toBe(
+            true
+        );
+        expect(
+            (packManager as any).mountedArchives.get('switzerland')?.archive
+        ).not.toBe(previousArchive);
+    });
+
     it('rejette et supprime un téléchargement plus court que Content-Length', async () => {
         const bytes = new Uint8Array(128);
         setupDownloadTarget(bytes.byteLength);
@@ -214,6 +280,40 @@ describe('PackManager Integration', () => {
 
         expect(packManager.getPackState('switzerland')?.status).toBe('error');
         await vi.waitFor(() => expect(mockRemovePackFile).toHaveBeenCalled());
+    });
+
+    it('signale un quota OPFS épuisé sans déclarer un premier téléchargement installé', async () => {
+        const bytes = new Uint8Array(128);
+        const target = setupDownloadTarget(bytes.byteLength);
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        target.writable.write.mockRejectedValue(
+            new DOMException('Storage full', 'QuotaExceededError')
+        );
+        target.writable.abort.mockRejectedValue(new Error('abort failed'));
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(
+                new Response(bytes, {
+                    headers: { 'content-length': String(bytes.byteLength) },
+                })
+            )
+        );
+        await packManager.initialize();
+
+        await expect(packManager.downloadPack('switzerland')).resolves.toBe(
+            false
+        );
+        expect(target.writable.abort).toHaveBeenCalledTimes(1);
+        expect(mockRemovePackFile).toHaveBeenCalledWith('switzerland.pmtiles');
+        expect(packManager.getPackState('switzerland')).toMatchObject({
+            status: 'error',
+            filePath: null,
+        });
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[Packs] OPFS abort failed:',
+            expect.any(Error)
+        );
+        warnSpy.mockRestore();
     });
 
     it('rejette une section PMTiles qui dépasse la taille OPFS', async () => {
@@ -471,6 +571,46 @@ describe('PackManager Integration', () => {
             'overlay'
         );
         expect(overlayBlob?.type).toBe('image/png');
+    });
+
+    it('uses an explicitly declared lossless elevation parent only for reduced packs', async () => {
+        const archive = {
+            getZxy: vi.fn().mockResolvedValue({
+                data: new Uint8Array([1, 2, 3]).buffer,
+            }),
+        };
+        const mountedArchives = (packManager as any).mountedArchives as Map<
+            string,
+            unknown
+        >;
+        mountedArchives.clear();
+        mountedArchives.set('switzerland', {
+            archive,
+            source: 'opfs',
+            elevationMaxZoom: 12,
+        });
+
+        const parent = await packManager.getTileFromPacksDetailed(
+            14,
+            8535,
+            5802,
+            'elevation',
+            true
+        );
+        expect(parent?.elevationSourceZoom).toBe(12);
+        expect(pmtiles.zxyToTileId).toHaveBeenCalledWith(12, 2133, 1450);
+
+        vi.mocked(pmtiles.zxyToTileId).mockClear();
+        mountedArchives.set('switzerland', { archive, source: 'opfs' });
+        const exact = await packManager.getTileFromPacksDetailed(
+            14,
+            8535,
+            5802,
+            'elevation',
+            true
+        );
+        expect(exact?.elevationSourceZoom).toBe(14);
+        expect(pmtiles.zxyToTileId).toHaveBeenCalledWith(14, 8535, 5802);
     });
 
     it('should not serve a tile if offline and pack is not installed (CDN only)', async () => {
@@ -751,5 +891,321 @@ describe('PackManager — P0: hasInstalledPackForCountry & getMinPackZoom', () =
         await packManager.initialize();
         // Les deux packs ont lodRange.min = 8
         expect(packManager.getMinPackZoom()).toBe(8);
+    });
+
+    it('isole état et archive v6 sans remplacer le pack lu par un ancien client', async () => {
+        const catalogUrl =
+            'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/catalog-v6.json';
+        vi.stubEnv('VITE_PACKS_CATALOG_URL', catalogUrl);
+        vi.resetModules();
+        mockIsNativePlatform.mockReturnValue(true);
+        mockPmtilesGetHeader.mockResolvedValue({
+            minZoom: 8,
+            maxZoom: 19,
+            rootDirectoryOffset: 127,
+            rootDirectoryLength: 10,
+            jsonMetadataOffset: 137,
+            jsonMetadataLength: 10,
+            leafDirectoryOffset: 147,
+            leafDirectoryLength: 0,
+            tileDataOffset: 147,
+            tileDataLength: 109,
+            numTileEntries: 1,
+        });
+        mockPmtilesGetMetadata.mockResolvedValue({
+            elevationMaxZoom: 12,
+            elevationEncoding: 'terrain-rgb-v2-lossless-webp',
+        });
+
+        const legacyState = JSON.stringify({
+            switzerland: {
+                id: 'switzerland',
+                status: 'installed',
+                installedVersion: 3,
+                downloadProgress: 1,
+                filePath: 'opfs://packs/switzerland.pmtiles',
+                sizeMB: 664,
+            },
+        });
+        localStorage.setItem('suntrail_pack_states', legacyState);
+
+        const files = new Set(['switzerland.pmtiles']);
+        const abortWrite = vi.fn().mockResolvedValue(undefined);
+        let failQuotaWrite = false;
+        let failDeleteFilename: string | null = null;
+        mockRemovePackFile.mockImplementation(async (filename: string) => {
+            if (filename === failDeleteFilename) {
+                throw new DOMException('Permission denied', 'NotAllowedError');
+            }
+            files.delete(filename);
+        });
+        const getFileHandle = vi
+            .fn()
+            .mockImplementation(
+                async (filename: string, options?: { create?: boolean }) => {
+                    if (!options?.create && !files.has(filename)) {
+                        throw new Error('File not found');
+                    }
+                    return {
+                        getFile: vi
+                            .fn()
+                            .mockResolvedValue(new Blob([new Uint8Array(256)])),
+                        createWritable: vi.fn().mockResolvedValue({
+                            write: vi.fn().mockImplementation(async () => {
+                                if (failQuotaWrite) {
+                                    throw new DOMException(
+                                        'Storage full',
+                                        'QuotaExceededError'
+                                    );
+                                }
+                            }),
+                            close: vi.fn().mockImplementation(async () => {
+                                files.add(filename);
+                            }),
+                            abort: abortWrite,
+                        }),
+                    };
+                }
+            );
+        const directory = {
+            getFileHandle,
+            removeEntry: mockRemovePackFile,
+            entries: async function* () {
+                for (const name of files) yield [name, { kind: 'file' }];
+            },
+        };
+        (navigator as any).storage.getDirectory = vi.fn().mockResolvedValue({
+            getDirectoryHandle: vi.fn().mockResolvedValue(directory),
+        });
+
+        const archiveBytes = new Uint8Array(256);
+        let failArchiveFetch = false;
+        let waitForArchiveAbort = false;
+        const catalog = {
+            version: 5,
+            packs: [
+                {
+                    id: 'switzerland',
+                    productId: 'suntrail_pack_switzerland',
+                    name: { fr: 'Suisse HD' },
+                    bounds: {
+                        minLat: 45.8,
+                        maxLat: 47.8,
+                        minLon: 5.9,
+                        maxLon: 10.5,
+                    },
+                    lodRange: { min: 8, max: 14 },
+                    version: 6,
+                    sizeMB: 620,
+                    cdnUrl: 'https://example.test/switzerland-v6.pmtiles',
+                    regionCheck: 'CH',
+                },
+            ],
+        };
+        vi.stubGlobal(
+            'fetch',
+            vi
+                .fn()
+                .mockImplementation(
+                    (url: string, options?: { signal?: AbortSignal }) => {
+                        if (url === catalogUrl) {
+                            return Promise.resolve(
+                                new Response(JSON.stringify(catalog), {
+                                    status: 200,
+                                })
+                            );
+                        }
+                        if (waitForArchiveAbort) {
+                            return new Promise((_resolve, reject) => {
+                                const fail = () =>
+                                    reject(
+                                        new DOMException(
+                                            'Aborted',
+                                            'AbortError'
+                                        )
+                                    );
+                                if (options?.signal?.aborted) fail();
+                                else
+                                    options?.signal?.addEventListener(
+                                        'abort',
+                                        fail,
+                                        {
+                                            once: true,
+                                        }
+                                    );
+                            });
+                        }
+                        if (failArchiveFetch) {
+                            return Promise.resolve(
+                                new Response(null, { status: 503 })
+                            );
+                        }
+                        return Promise.resolve(
+                            new Response(archiveBytes, {
+                                status: 200,
+                                headers: {
+                                    'content-length': String(
+                                        archiveBytes.byteLength
+                                    ),
+                                },
+                            })
+                        );
+                    }
+                )
+        );
+
+        const { packManager: versionedManager } = await import('./packManager');
+        await versionedManager.initialize();
+        expect(versionedManager.getPackState('switzerland')).toMatchObject({
+            status: 'update_available',
+            installedVersion: 3,
+            filePath: 'opfs://packs/switzerland.pmtiles',
+        });
+
+        waitForArchiveAbort = true;
+        const cancelledDownload = versionedManager.downloadPack('switzerland');
+        versionedManager.cancelDownload('switzerland');
+        await expect(cancelledDownload).resolves.toBe(false);
+        expect(abortWrite).toHaveBeenCalledTimes(1);
+        expect(files).toEqual(new Set(['switzerland.pmtiles']));
+        expect(versionedManager.getPackState('switzerland')).toMatchObject({
+            status: 'update_available',
+            installedVersion: 3,
+            filePath: 'opfs://packs/switzerland.pmtiles',
+        });
+        expect(localStorage.getItem('suntrail_pack_states')).toBe(legacyState);
+
+        waitForArchiveAbort = false;
+        failArchiveFetch = true;
+        await expect(
+            versionedManager.downloadPack('switzerland')
+        ).resolves.toBe(false);
+        expect(abortWrite).toHaveBeenCalledTimes(2);
+        expect(files).toEqual(new Set(['switzerland.pmtiles']));
+        expect(versionedManager.getPackState('switzerland')).toMatchObject({
+            status: 'update_available',
+            installedVersion: 3,
+            filePath: 'opfs://packs/switzerland.pmtiles',
+        });
+        expect(localStorage.getItem('suntrail_pack_states')).toBe(legacyState);
+        await vi.waitFor(() =>
+            expect(mockRemovePackFile).toHaveBeenCalledWith(
+                'switzerland-v6.pmtiles'
+            )
+        );
+
+        failArchiveFetch = false;
+        failQuotaWrite = true;
+        await expect(
+            versionedManager.downloadPack('switzerland')
+        ).resolves.toBe(false);
+        expect(abortWrite).toHaveBeenCalledTimes(3);
+        expect(files).toEqual(new Set(['switzerland.pmtiles']));
+        expect(versionedManager.getPackState('switzerland')).toMatchObject({
+            status: 'update_available',
+            installedVersion: 3,
+            filePath: 'opfs://packs/switzerland.pmtiles',
+        });
+
+        // A process death leaves a persisted `downloading` status. Recovery
+        // must remount the old file and discard only the interrupted v6 target.
+        const scopedKey = `suntrail_pack_states:${encodeURIComponent(catalogUrl)}`;
+        localStorage.setItem(
+            scopedKey,
+            JSON.stringify({
+                switzerland: {
+                    ...versionedManager.getPackState('switzerland'),
+                    status: 'downloading',
+                    downloadProgress: 0.5,
+                },
+            })
+        );
+        files.add('switzerland-v6.pmtiles');
+        files.add('switzerland-v6.pmtiles.crswap');
+        vi.resetModules();
+        const { packManager: recoveredManager } = await import('./packManager');
+        await recoveredManager.initialize();
+        expect(recoveredManager.getPackState('switzerland')).toMatchObject({
+            status: 'update_available',
+            installedVersion: 3,
+            filePath: 'opfs://packs/switzerland.pmtiles',
+        });
+        expect(files).toEqual(new Set(['switzerland.pmtiles']));
+        expect(localStorage.getItem('suntrail_pack_states')).toBe(legacyState);
+
+        failQuotaWrite = false;
+        await expect(
+            recoveredManager.downloadPack('switzerland')
+        ).resolves.toBe(true);
+        expect(files).toEqual(
+            new Set(['switzerland.pmtiles', 'switzerland-v6.pmtiles'])
+        );
+        expect(recoveredManager.getPackState('switzerland')).toMatchObject({
+            status: 'installed',
+            installedVersion: 6,
+            filePath: 'opfs://packs/switzerland-v6.pmtiles',
+        });
+        expect(localStorage.getItem('suntrail_pack_states')).toBe(legacyState);
+        expect(localStorage.getItem(scopedKey)).toContain(
+            'switzerland-v6.pmtiles'
+        );
+        expect(getFileHandle).toHaveBeenCalledWith('switzerland-v6.pmtiles', {
+            create: true,
+        });
+
+        vi.resetModules();
+        const { packManager: restartedManager } = await import('./packManager');
+        await restartedManager.initialize();
+        expect(restartedManager.getPackState('switzerland')).toMatchObject({
+            status: 'installed',
+            installedVersion: 6,
+            filePath: 'opfs://packs/switzerland-v6.pmtiles',
+        });
+        expect(
+            (restartedManager as any).mountedArchives.get('switzerland')
+        ).toMatchObject({ source: 'opfs', elevationMaxZoom: 12 });
+        expect(localStorage.getItem('suntrail_pack_states')).toBe(legacyState);
+
+        const fetchCount = vi.mocked(fetch).mock.calls.length;
+        await expect(
+            restartedManager.downloadPack('switzerland')
+        ).resolves.toBe(true);
+        expect(vi.mocked(fetch).mock.calls.length).toBe(fetchCount);
+
+        failDeleteFilename = 'switzerland.pmtiles';
+        await restartedManager.deletePack('switzerland');
+        expect(restartedManager.getPackState('switzerland')).toMatchObject({
+            status: 'installed',
+            installedVersion: 6,
+            filePath: 'opfs://packs/switzerland-v6.pmtiles',
+        });
+        expect(files).toEqual(
+            new Set(['switzerland.pmtiles', 'switzerland-v6.pmtiles'])
+        );
+
+        failDeleteFilename = null;
+        await restartedManager.deletePack('switzerland');
+        expect(mockRemovePackFile).toHaveBeenCalledWith(
+            'switzerland-v6.pmtiles'
+        );
+        expect(mockRemovePackFile).toHaveBeenCalledWith('switzerland.pmtiles');
+        expect(files.size).toBe(0);
+        expect(restartedManager.getPackState('switzerland')).toMatchObject({
+            status: 'purchased',
+            filePath: null,
+        });
+
+        // On rollback, the legacy client still has its original localStorage
+        // record, but must reconcile it against the now-empty OPFS directory.
+        expect(localStorage.getItem('suntrail_pack_states')).toBe(legacyState);
+        vi.stubEnv('VITE_PACKS_CATALOG_URL', '');
+        vi.resetModules();
+        const { packManager: legacyManager } = await import('./packManager');
+        await legacyManager.initialize();
+        expect(legacyManager.getPackState('switzerland')).toMatchObject({
+            status: 'purchased',
+            installedVersion: 0,
+            filePath: null,
+        });
     });
 });

@@ -24,6 +24,7 @@ export type TileResourceSource =
     | 'embedded-pmtiles'
     | 'country-pack-opfs'
     | 'country-pack-cdn'
+    | 'country-pack-asset'
     | 'worker-cache'
     | 'network'
     | 'none'

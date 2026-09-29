@@ -15,7 +15,39 @@ import {
     checkForUpdates,
     fetchCatalog,
     resetCatalogState,
+    catalogCacheKeyForUrl,
+    catalogScopedStorageKey,
 } from './packCatalog';
+
+describe('catalogCacheKeyForUrl()', () => {
+    const baseKey = 'suntrail_pack_catalog';
+    const cdnBase = 'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev';
+
+    it('preserves the old cache key for the shared catalog', () => {
+        expect(catalogCacheKeyForUrl(undefined)).toBe(baseKey);
+        expect(catalogCacheKeyForUrl(`${cdnBase}/catalog.json`)).toBe(baseKey);
+    });
+
+    it('isolates a versioned catalog from the key used by older clients', () => {
+        const versionedKey = catalogCacheKeyForUrl(
+            `${cdnBase}/catalog-v6.json`
+        );
+        expect(versionedKey).not.toBe(baseKey);
+        expect(versionedKey).not.toBe(
+            catalogCacheKeyForUrl(`${cdnBase}/catalog-v7.json`)
+        );
+    });
+
+    it('also isolates pack states while retaining the legacy key', () => {
+        const statesKey = 'suntrail_pack_states';
+        expect(
+            catalogScopedStorageKey(statesKey, `${cdnBase}/catalog.json`)
+        ).toBe(statesKey);
+        expect(
+            catalogScopedStorageKey(statesKey, `${cdnBase}/catalog-v6.json`)
+        ).not.toBe(statesKey);
+    });
+});
 
 describe('getEmbeddedCatalog()', () => {
     it('returns a catalog with version and packs array', () => {

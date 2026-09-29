@@ -28,7 +28,26 @@ const DIAGNOSTIC_PACK_MIN_LOD = Number(
 const DIAGNOSTIC_PACK_MAX_LOD = Number(
     import.meta.env.VITE_DIAGNOSTIC_PACK_MAX_LOD ?? 14
 );
-const CATALOG_CACHE_KEY = STORAGE_KEYS.PACK_CATALOG;
+const DIAGNOSTIC_PACK_FULL_COVERAGE =
+    import.meta.env.VITE_DIAGNOSTIC_PACK_FULL_COVERAGE === 'true';
+
+export function catalogScopedStorageKey(
+    baseKey: string,
+    url: string | undefined
+): string {
+    // Keep the existing cache for the shared catalog. A versioned catalog must
+    // not leave v6 data in a key an older app reads after a rollback.
+    if (!url || url === `${CDN_BASE_URL}/catalog.json`) {
+        return baseKey;
+    }
+    return `${baseKey}:${encodeURIComponent(url)}`;
+}
+
+export function catalogCacheKeyForUrl(url: string | undefined): string {
+    return catalogScopedStorageKey(STORAGE_KEYS.PACK_CATALOG, url);
+}
+
+const CATALOG_CACHE_KEY = catalogCacheKeyForUrl(CATALOG_URL);
 
 const EMBEDDED_CATALOG: PackCatalog = {
     version: 3,
@@ -87,17 +106,32 @@ const EMBEDDED_CATALOG: PackCatalog = {
                       id: 'switzerland_diagnostic',
                       productId: 'suntrail_pack_switzerland_diagnostic',
                       name: {
-                          fr: 'Suisse — échantillon diagnostic',
-                          de: 'Schweiz — Diagnosetest',
-                          it: 'Svizzera — campione diagnostico',
-                          en: 'Switzerland — diagnostic sample',
+                          fr: DIAGNOSTIC_PACK_FULL_COVERAGE
+                              ? 'Suisse — diagnostic complet'
+                              : 'Suisse — échantillon diagnostic',
+                          de: DIAGNOSTIC_PACK_FULL_COVERAGE
+                              ? 'Schweiz — vollständiger Diagnosetest'
+                              : 'Schweiz — Diagnosetest',
+                          it: DIAGNOSTIC_PACK_FULL_COVERAGE
+                              ? 'Svizzera — diagnostica completa'
+                              : 'Svizzera — campione diagnostico',
+                          en: DIAGNOSTIC_PACK_FULL_COVERAGE
+                              ? 'Switzerland — full diagnostic'
+                              : 'Switzerland — diagnostic sample',
                       },
-                      bounds: {
-                          minLat: 45.9,
-                          maxLat: 47.45,
-                          minLon: 7.55,
-                          maxLon: 8.65,
-                      },
+                      bounds: DIAGNOSTIC_PACK_FULL_COVERAGE
+                          ? {
+                                minLat: 45.8,
+                                maxLat: 47.8,
+                                minLon: 5.9,
+                                maxLon: 10.5,
+                            }
+                          : {
+                                minLat: 45.9,
+                                maxLat: 47.45,
+                                minLon: 7.55,
+                                maxLon: 8.65,
+                            },
                       lodRange: {
                           min: DIAGNOSTIC_PACK_MIN_LOD,
                           max: DIAGNOSTIC_PACK_MAX_LOD,

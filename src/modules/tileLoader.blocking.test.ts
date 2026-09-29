@@ -41,6 +41,7 @@ vi.mock('./packManager', () => ({
     packManager: {
         hasMountedPacks: vi.fn(),
         getTileFromPacks: vi.fn(),
+        getTileFromPacksDetailed: vi.fn(),
         hasInstalledPackForCountry: vi.fn(),
         hasLocalPackForCountry: vi.fn(),
         getMinPackZoom: vi.fn(),
@@ -58,6 +59,7 @@ describe('TileLoader Blocking Analysis', () => {
         (packManager.getTileFromPacks as any).mockReturnValue(
             Promise.resolve(new Blob(['test-data']))
         );
+        (packManager.getTileFromPacksDetailed as any).mockResolvedValue(null);
         (packManager.hasInstalledPackForCountry as any).mockReturnValue(true);
         (packManager.hasLocalPackForCountry as any).mockReturnValue(true);
         (packManager.getMinPackZoom as any).mockReturnValue(8);
@@ -96,6 +98,7 @@ describe('TileLoader — P0: inPackZone data-driven', () => {
         (packManager.getTileFromPacks as any).mockReturnValue(
             Promise.resolve(new Blob(['test-data']))
         );
+        (packManager.getTileFromPacksDetailed as any).mockResolvedValue(null);
         (packManager.hasLocalPackForCountry as any).mockReturnValue(true);
         (packManager.getMinPackZoom as any).mockReturnValue(8);
     });
@@ -225,6 +228,11 @@ describe('TileLoader — repli local borné', () => {
         (packManager.getTileFromPacks as any).mockResolvedValue(
             new Blob(['pack-color'])
         );
+        (packManager.getTileFromPacksDetailed as any).mockResolvedValue({
+            blob: new Blob(['pack-elevation']),
+            source: 'cdn',
+            elevationSourceZoom: 14,
+        });
     });
 
     it('preferLocal lit le pack même sans pack OPFS', async () => {
@@ -239,6 +247,138 @@ describe('TileLoader — repli local borné', () => {
         expect(result.usedLocalReads).toBe(true);
         expect(result.localSourcesAvailable).toBe(true);
         expect(packManager.getTileFromPacks).toHaveBeenCalled();
+    });
+
+    it('transmet le zoom parent au worker pour un pack à relief réduit', async () => {
+        const { getCountryAtTile } = await import('./geo');
+        (getCountryAtTile as any).mockReturnValue('CH');
+        (packManager.getTileFromPacksDetailed as any).mockResolvedValue({
+            blob: new Blob(['parent-elevation']),
+            source: 'asset',
+            elevationSourceZoom: 12,
+        });
+
+        await loadTileData(8535, 5802, 14, false, null, false, {
+            preferLocal: true,
+            skipNavigationCache: true,
+        });
+
+        expect(packManager.getTileFromPacksDetailed).toHaveBeenCalledWith(
+            14,
+            8535,
+            5802,
+            'elevation',
+            false,
+            undefined
+        );
+        expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
+            8535,
+            5802,
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            14,
+            12,
+            expect.objectContaining({ elev: expect.any(Blob) }),
+            false,
+            undefined,
+            false,
+            12
+        );
+    });
+
+    it('sert le relief du pack hors ligne sans clé MapTiler', async () => {
+        const { getCountryAtTile } = await import('./geo');
+        (getCountryAtTile as any).mockReturnValue('CH');
+        const previousKey = state.MK;
+        state.MK = '';
+        (packManager.getTileFromPacksDetailed as any).mockResolvedValue({
+            blob: new Blob(['parent-elevation']),
+            source: 'opfs',
+            elevationSourceZoom: 12,
+        });
+        try {
+            await loadTileData(8535, 5802, 14, false, null, false, {
+                preferLocal: true,
+                skipNavigationCache: true,
+            });
+            expect(packManager.getTileFromPacksDetailed).toHaveBeenCalledWith(
+                14,
+                8535,
+                5802,
+                'elevation',
+                false,
+                undefined
+            );
+            expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
+                8535,
+                5802,
+                null,
+                expect.any(String),
+                expect.any(String),
+                14,
+                12,
+                expect.objectContaining({ elev: expect.any(Blob) }),
+                false,
+                undefined,
+                false,
+                12
+            );
+        } finally {
+            state.MK = previousKey;
+        }
+    });
+
+    it('sert couleur et relief du pack quand le mode hors ligne manuel est actif', async () => {
+        const { getCountryAtTile } = await import('./geo');
+        (getCountryAtTile as any).mockReturnValue('CH');
+        state.IS_OFFLINE = true;
+        (packManager.getTileFromPacksDetailed as any).mockResolvedValue({
+            blob: new Blob(['parent-elevation']),
+            source: 'asset',
+            elevationSourceZoom: 12,
+        });
+
+        try {
+            await loadTileData(8535, 5802, 14, false, null, false, {
+                skipNavigationCache: true,
+            });
+
+            expect(packManager.getTileFromPacks).toHaveBeenCalledWith(
+                14,
+                8535,
+                5802,
+                'color',
+                undefined
+            );
+            expect(packManager.getTileFromPacksDetailed).toHaveBeenCalledWith(
+                14,
+                8535,
+                5802,
+                'elevation',
+                false,
+                undefined
+            );
+            expect(tileWorkerManager.loadTile).toHaveBeenCalledWith(
+                8535,
+                5802,
+                expect.any(String),
+                expect.any(String),
+                expect.any(String),
+                14,
+                12,
+                expect.objectContaining({
+                    color: expect.any(Blob),
+                    elev: expect.any(Blob),
+                }),
+                false,
+                undefined,
+                false,
+                12
+            );
+        } finally {
+            state.IS_OFFLINE = false;
+        }
     });
 
     it('preferLocal avec signal déjà avorté → aucune task worker', async () => {

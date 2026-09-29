@@ -14,6 +14,7 @@ import type {
     TileWorkerResourceTiming,
     TileWorkerResponse,
 } from '../types/worker';
+import { cropParentElevationPixels } from '../modules/elevationParentTile';
 
 // v30 : synchronized avec tileLoader.ts pour support seeding
 const CACHE_NAME = 'suntrail-tiles-v30';
@@ -49,6 +50,7 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
     const {
         id,
         type,
+        tileX,
         tileY,
         elevUrl,
         colorUrl,
@@ -56,6 +58,7 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
         isOffline,
         zoom,
         elevSourceZoom,
+        elevationParentZoom,
         is2D,
         elevBlob,
         colorBlob,
@@ -89,14 +92,15 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
 
         // --- EXÉCUTION PARALLÈLE ---
         const [elevRes, colorRes, overlayRes] = await Promise.all([
-            elevUrl
+            elevUrl || elevBlob
                 ? fetchTile(
-                      elevUrl,
+                      elevUrl ?? '',
                       isOffline,
                       signal,
                       elevBlob || undefined,
                       blobSources?.elevation,
-                      diagnostics
+                      diagnostics,
+                      Boolean(elevUrl) && elevationParentZoom === undefined
                   )
                 : Promise.resolve(null),
             colorUrl
@@ -141,16 +145,39 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
             if (elevRes.fromCache) results.cacheHits++;
             else results.networkRequests++;
             if (elevRes.bitmap) {
-                results.elevBitmap = elevRes.bitmap;
-                transferables.push(elevRes.bitmap);
-
                 const { width, height } = elevRes.bitmap;
                 const canvas = new OffscreenCanvas(width, height);
                 const ctx = canvas.getContext('2d', { alpha: false });
                 if (ctx) {
                     ctx.drawImage(elevRes.bitmap, 0, 0);
                     const imageData = ctx.getImageData(0, 0, width, height);
-                    const data = imageData.data;
+                    let data = imageData.data;
+                    if (elevationParentZoom !== undefined) {
+                        const targetZoom = Math.min(zoom, 14);
+                        const ratio = 2 ** (zoom - targetZoom);
+                        data = cropParentElevationPixels(
+                            data,
+                            width,
+                            height,
+                            targetZoom,
+                            Math.floor((tileX ?? 0) / ratio),
+                            Math.floor((tileY ?? 0) / ratio),
+                            elevationParentZoom
+                        );
+                        ctx.putImageData(
+                            new ImageData(
+                                new Uint8ClampedArray(data),
+                                width,
+                                height
+                            ),
+                            0,
+                            0
+                        );
+                        results.elevBitmap = canvas.transferToImageBitmap();
+                        elevRes.bitmap.close();
+                    } else {
+                        results.elevBitmap = elevRes.bitmap;
+                    }
                     results.pixelData = data.buffer;
                     transferables.push(results.pixelData);
 
@@ -159,7 +186,10 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                         const normalData = new Uint8ClampedArray(
                             width * height * 4
                         );
-                        const sourceZ = elevSourceZoom || zoom || 14;
+                        const sourceZ =
+                            elevationParentZoom === undefined
+                                ? elevSourceZoom || zoom || 14
+                                : Math.min(zoom, 14);
 
                         // v5.40.18 : Optimisation mathématique — EARTH_CIRCUMFERENCE / 2^z
                         // v5.40.30 : Correction latitude pour précision des pentes hors équateur
@@ -248,7 +278,10 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                             transferables.push(normalBitmap);
                         }
                     }
+                } else if (elevationParentZoom !== undefined) {
+                    throw new Error('Canvas unavailable for parent elevation');
                 }
+                if (results.elevBitmap) transferables.push(results.elevBitmap);
             }
         }
 
@@ -294,7 +327,8 @@ async function fetchTile(
     signal?: AbortSignal,
     providedBlob?: Blob,
     providedSource?: TileWorkerResourceTiming['source'],
-    diagnostics: boolean = false
+    diagnostics: boolean = false,
+    cacheProvidedBlob: boolean = true
 ): Promise<{
     bitmap: ImageBitmap | null;
     fromCache: boolean;
@@ -317,7 +351,7 @@ async function fetchTile(
         // 1. Priorité au Blob fourni (seeding direct via postMessage)
         if (providedBlob) {
             // v5.29.35 : On l'injecte dans le cache worker pour les futurs accès standards (fetch)
-            if (providedSource !== 'offline-cache')
+            if (cacheProvidedBlob && providedSource !== 'offline-cache')
                 cache.put(url, new Response(providedBlob.slice()));
             const decodeStartedAt = diagnostics ? performance.now() : 0;
             const bitmap = await createImageBitmap(providedBlob, {

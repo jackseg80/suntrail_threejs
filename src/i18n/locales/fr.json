@@ -1293,6 +1293,7 @@
         "error": {
             "storageFull": "Espace de stockage insuffisant",
             "downloadFailed": "Échec du téléchargement. Appuyez pour réessayer.",
+            "deleteFailed": "Suppression du pack impossible. Réessayez.",
             "purchaseFailed": "Échec de l'achat",
             "catalogFailed": "Impossible de charger le catalogue"
         },

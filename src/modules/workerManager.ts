@@ -234,12 +234,13 @@ class TileWorkerManager {
         },
         is2D: boolean = false,
         blobSources?: TileWorkerRequest['blobSources'],
-        diagnostics: boolean = false
+        diagnostics: boolean = false,
+        elevationParentZoom?: number
     ): { promise: Promise<TileWorkerResponse | null>; taskId: number } {
         if (this.workers.length === 0 || !state.USE_WORKERS)
             return { promise: Promise.resolve(null), taskId: -1 };
 
-        const dedupeKey = `${tileX}|${tileY}|${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}|${is2D}`;
+        const dedupeKey = `${tileX}|${tileY}|${elevUrl}|${colorUrl}|${overlayUrl}|${zoom}|${elevSourceZoom}|${is2D}|${elevationParentZoom ?? ''}`;
         const existing = this.inFlight.get(dedupeKey);
         if (existing) {
             existing.refCount++;
@@ -258,6 +259,7 @@ class TileWorkerManager {
             isOffline: state.IS_OFFLINE,
             zoom,
             elevSourceZoom,
+            elevationParentZoom,
             is2D,
             elevBlob: blobs?.elev,
             colorBlob: blobs?.color,

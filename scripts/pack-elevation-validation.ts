@@ -18,6 +18,17 @@ export interface ElevationScan {
     abnormalGradients: number;
 }
 
+/** Une exception bas zoom reste comptée, mais ne bloque pas un rendu 3D absent. */
+export function classifyGradientCount(
+    count: number,
+    zoom: number,
+    errorMinZoom: number
+): { blocking: number; nonBlocking: number } {
+    return zoom < errorMinZoom
+        ? { blocking: 0, nonBlocking: count }
+        : { blocking: count, nonBlocking: 0 };
+}
+
 export function decodeTerrainRgb(r: number, g: number, b: number): number {
     return (
         TERRAIN_RGB_BASE_METERS +

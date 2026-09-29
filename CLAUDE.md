@@ -1,23 +1,25 @@
-# SunTrail — Guide IA (version source 5.91.4 + correctifs non publiés)
+# SunTrail — Guide IA (source 5.92.0)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-19 après la validation S23
-> des correctifs terrain, parcours, solaire, packs et import GPX postérieurs à 5.91.4.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-29 après la validation du
+> pack Suisse v6 et la préparation de l'application compatible pour les tests ouverts Play.
 
 ## État vérifié
 
-- Version npm : `5.91.4`.
-- Android : `versionName 5.91.4`, `versionCode 917`, minSdk 24, compile/target SDK 36. Le code 917
-  est supérieur au dernier code local connu ; le maximum effectif dans Play Console reste à vérifier
-  avant tout upload.
+- Version npm : `5.92.0`.
+- Android : `versionName 5.92.0`, `versionCode 918`, minSdk 24, compile/target SDK 36. Le
+  propriétaire a indiqué 917 comme maximum déjà enregistré dans Play Console ; vérifier de nouveau
+  avant l'envoi effectif de l'AAB.
 - Révision courante `5.91.4` (code 917) : la lecture `CacheStorage` par tuile sort du thread
   principal (résolution dans le worker) avec un repli local borné sur miss couleur, l'hydratation de
   l'UI secondaire est différée après la première tuile, et deux réglages avancés historiques sont
   retirés (debug sans cible, normalmap RG désormais toujours actif). La release GitHub `v5.91.4`
   produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
-- La branche contient en plus un lot **non publié et sans nouveau versionCode** : transitions
+- La source 5.92.0 regroupe le lot post-5.91.4 : transitions
   2D/3D fiabilisées, offsets de shader isolés par tuile, calcul solaire sur l'altitude physique,
   REC actif vert/terminé bleu, chevrons sur toute trace, édition pendant le guidage, points `1…n`,
-  packs/GPX renforcés et publication Pages rendue manuelle. APK diagnostic validé sur S23.
+  packs/GPX renforcés et publication Pages rendue manuelle. Elle sait lire les élévations parentes
+  du pack Suisse v6 (`elevationMaxZoom: 12`) sans changer la lecture des packs sans ce champ.
+  APK diagnostic validé sur S23 ; l'envoi Play et le catalogue public restent deux étapes distinctes.
 - Les releases GitHub `v5.91.0` (913), `v5.91.1` (914), `v5.91.2` (915) et `v5.91.3` (916) précèdent
   cette révision ; la qualification S23/A53 reste la référence terrain.
 - Suivi ouvert : la boussole 3D (`#compass-canvas`) est inerte depuis 5.90 ; décider de restaurer
@@ -199,9 +201,12 @@ Pour construire un pack :
 7. demander une autorisation distincte avant tout upload R2 ;
 8. mettre à jour le catalogue et les quatre locales seulement après validation.
 
-Diagnostic Suisse du 2026-09-20 : le v4 local à élévation WebP avec pertes produisait les pics 3D.
-Le v5 lossless est techniquement sain mais pèse 1,99 Go et reste **NO-GO publication**. Voir
-`docs/research/SWITZERLAND_PACK_DIAGNOSTIC_2026-09-20.md`.
+Diagnostic Suisse : le v4 local à élévation WebP avec pertes produisait les pics 3D. Le v5 lossless
+de 1,99 Go sert de référence ; le v6 réduit pèse 620 200 343 octets et son objet R2 a été vérifié
+octet pour octet. Le catalogue public annonce encore le v3 : ne le basculer vers v6 qu'après la
+distribution d'une application compatible et une autorisation distincte. Les archives de diagnostic
+locales sous `public/diagnostic/` ne doivent jamais entrer dans un build de production ;
+`check:capacitor-assets` le refuse par défaut. Voir `docs/SWITZERLAND_PACK_REDUCTION.md`.
 
 ## Architecture et documentation
 

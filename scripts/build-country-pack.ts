@@ -220,12 +220,19 @@ function getTileUrl(
 
 async function main() {
     const packId = process.argv.find((_, i, arr) => arr[i - 1] === '--pack');
+    const elevationMaxZoomRaw = process.argv.find(
+        (_, i, arr) => arr[i - 1] === '--elevation-max-zoom'
+    );
+    const packVersionRaw = process.argv.find(
+        (_, i, arr) => arr[i - 1] === '--pack-version'
+    );
     const maptilerKey =
         process.argv.find((_, i, arr) => arr[i - 1] === '--maptiler-key') ??
         process.env.VITE_MAPTILER_KEY;
     const cleanMode = process.argv.includes('--clean');
     const overwriteMode = process.argv.includes('--overwrite');
     const planMode = process.argv.includes('--plan');
+    const cacheOnlyMode = process.argv.includes('--cache-only');
 
     if (!packId || !PACKS[packId]) {
         console.error(
@@ -236,7 +243,31 @@ async function main() {
     }
 
     const pack = PACKS[packId];
-    if (!maptilerKey && !planMode) {
+    const elevationMaxZoom =
+        elevationMaxZoomRaw === undefined
+            ? pack.zooms[pack.zooms.length - 1]
+            : Number(elevationMaxZoomRaw);
+    const packVersion =
+        packVersionRaw === undefined ? pack.version : Number(packVersionRaw);
+    if (
+        !Number.isInteger(elevationMaxZoom) ||
+        elevationMaxZoom < pack.zooms[0] ||
+        elevationMaxZoom > pack.zooms[pack.zooms.length - 1]
+    ) {
+        throw new Error('Zoom maximal d’élévation invalide.');
+    }
+    if (!Number.isSafeInteger(packVersion) || packVersion < 1) {
+        throw new Error('Version de pack invalide.');
+    }
+    if (
+        elevationMaxZoom < pack.zooms[pack.zooms.length - 1] &&
+        (!packVersionRaw || !process.argv.includes('--output'))
+    ) {
+        throw new Error(
+            'Un pack réduit exige --pack-version et --output explicites.'
+        );
+    }
+    if (!maptilerKey && !planMode && !cacheOnlyMode) {
         throw new Error(
             'Clé MapTiler absente: utiliser --maptiler-key ou VITE_MAPTILER_KEY.'
         );
@@ -311,6 +342,8 @@ async function main() {
                         : true;
                     if (!include) continue;
                     for (const type of types) {
+                        if (type === 'elevation' && z > elevationMaxZoom)
+                            continue;
                         const key = `${type}/${z}/${x}/${y}`;
                         if (seenRefs.has(key)) continue;
                         seenRefs.add(key);
@@ -318,6 +351,21 @@ async function main() {
                     }
                 }
             }
+        }
+    }
+
+    // A parent centred just outside the polygon can still cover a selected
+    // child colour tile. Include it so every child has offline elevation.
+    if (elevationMaxZoom < pack.zooms[pack.zooms.length - 1]) {
+        for (const ref of [...refs]) {
+            if (ref.type !== 'color' || ref.z <= elevationMaxZoom) continue;
+            const ratio = 2 ** (ref.z - elevationMaxZoom);
+            const x = Math.floor(ref.x / ratio);
+            const y = Math.floor(ref.y / ratio);
+            const key = `elevation/${elevationMaxZoom}/${x}/${y}`;
+            if (seenRefs.has(key)) continue;
+            seenRefs.add(key);
+            refs.push({ z: elevationMaxZoom, x, y, type: 'elevation' });
         }
     }
 
@@ -351,6 +399,14 @@ async function main() {
         }
 
         if (!sourceIsValid) {
+            if (cacheOnlyMode) {
+                downloadFailures.push({
+                    tile: `${ref.type}/${ref.z}/${ref.x}/${ref.y}`,
+                    reason: 'Absent ou illisible du cache (--cache-only)',
+                });
+                dlDone++;
+                continue;
+            }
             try {
                 const effectiveSource =
                     pack.overview && ref.z < pack.overview.maxZoom
@@ -446,11 +502,14 @@ async function main() {
         JSON.stringify({
             name: pack.name,
             packId: pack.id,
-            packVersion: pack.version,
+            packVersion,
             offsets: { elevation: OFFSET_ELEV, overlay: OFFSET_OVERLAY },
             logicalMinZoom: pack.zooms[0],
             logicalMaxZoom: pack.zooms[pack.zooms.length - 1],
             elevationEncoding: 'terrain-rgb-v2-lossless-webp',
+            ...(elevationMaxZoom < pack.zooms[pack.zooms.length - 1]
+                ? { elevationMaxZoom }
+                : {}),
             generatedAt: new Date().toISOString(),
             areas: pack.areas,
         })

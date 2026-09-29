@@ -1,6 +1,21 @@
-# SunTrail — TODO (v5.91.4 + correctifs non publiés ; publication Play séparée)
+# SunTrail — TODO (source 5.92.0 ; envoi Play séparé)
 
-> Dernière mise à jour : 2026-09-20
+> Dernière mise à jour : 2026-09-29
+
+## Pack Suisse v6 et distribution
+
+- [x] Réduire le v5 de 1,99 Go à un v6 de 620 200 343 octets avec élévation parent au zoom 12,
+      contrôler l'archive, le hash R2, la coexistence OPFS v5/v6 et le relief 2D/3D sur S23.
+- [x] Protéger les téléchargements interrompus et les suppressions OPFS ; refuser les assets
+      diagnostic dans un build de production. `npm run check`, 1 960 tests, build Capacitor propre,
+      budget bundle, chemins d'assets et audit i18n passent localement.
+- [ ] Faire produire l'AAB signé 5.92.0 / 918 par la CI, puis le propriétaire l'enverra sur le canal
+      Play « tests ouverts ». Ne pas confondre release GitHub, envoi Play et installation effective.
+- [ ] Après disponibilité de l'application compatible, demander une autorisation distincte pour
+      remplacer uniquement l'entrée Suisse du catalogue public v3 par v6 ; vérifier ensuite l'UI du
+      téléchargement CDN complet. Garder l'ancien objet v3 à son URL actuelle.
+- [ ] Contrôler la non-persistance du mode hors ligne manuel après redémarrage et mesurer l'espace
+      occupé sur S23 avant tout nettoyage de fichiers ou données.
 
 ## ✅ Correctifs post-v5.91.4 — terrain, parcours et robustesse
 
@@ -20,12 +35,8 @@
       valider un échantillon lossless Zurich/Matterhorn, puis contrôler son rendu 2D/3D sur S23.
 - [x] Rejeter avant installation les packs OPFS tronqués ou structurellement incohérents ; borner la
       lecture Range des PMTiles embarqués dans l'APK diagnostic.
-- [ ] Réduire le pack Suisse v5 (1,99 Go, dont 81,85 % d'élévation), valider le repli vers un zoom
-      d'élévation parent et tester le vrai trajet téléchargement/import OPFS avant toute publication.
-- [x] Contrôles : `npm run check`, 166 fichiers/1 930 tests, build/sync Capacitor, assemblage Android
-      et scénario 2D/3D validé sur S23 avec données conservées.
-- [ ] Attribuer une nouvelle version et un `versionCode` uniquement si une release est décidée ;
-      vérifier d'abord le maximum réel dans Play Console.
+- [x] Le propriétaire a confirmé 917 comme maximum Play ; version 5.92.0 / code 918 préparés pour
+      la nouvelle release, sans prétendre que l'AAB est déjà enregistré sur Play.
 
 ## ✅ v5.91.4 — Démarrage carte et nettoyage des réglages
 

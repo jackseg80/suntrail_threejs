@@ -1287,6 +1287,7 @@
         "error": {
             "storageFull": "Spazio di archiviazione insufficiente",
             "downloadFailed": "Download fallito. Tocca per riprovare.",
+            "deleteFailed": "Impossibile eliminare il pacchetto. Riprova.",
             "purchaseFailed": "Acquisto fallito",
             "catalogFailed": "Impossibile caricare il catalogo"
         },

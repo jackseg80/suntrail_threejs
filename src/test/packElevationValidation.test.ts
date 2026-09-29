@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import { encodeElevationTile } from '../../scripts/pack-tile-encoding';
 import {
+    classifyGradientCount,
     decodeTerrainRgb,
     maxVerticalSeamDifference,
     scanElevationRgba,
@@ -20,6 +21,21 @@ function encodeHeight(heightMeters: number): [number, number, number, number] {
 }
 
 describe('Terrain-RGB pack validation', () => {
+    it('conserve les gradients bas zoom comme avertissements sans affaiblir le zoom 3D', () => {
+        expect(classifyGradientCount(25, 9, 11)).toEqual({
+            blocking: 0,
+            nonBlocking: 25,
+        });
+        expect(classifyGradientCount(1, 11, 11)).toEqual({
+            blocking: 1,
+            nonBlocking: 0,
+        });
+        expect(classifyGradientCount(25, 9, 8)).toEqual({
+            blocking: 25,
+            nonBlocking: 0,
+        });
+    });
+
     it('decode l’altitude Terrain-RGB attendue', () => {
         const [r, g, b] = encodeHeight(4_478);
         expect(decodeTerrainRgb(r, g, b)).toBeCloseTo(4_478, 5);

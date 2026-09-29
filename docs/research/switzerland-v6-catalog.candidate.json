@@ -1,0 +1,77 @@
+{
+  "version": 5,
+  "packs": [
+    {
+      "id": "switzerland",
+      "productId": "suntrail_pack_switzerland",
+      "name": {
+        "fr": "Suisse HD",
+        "de": "Schweiz HD",
+        "it": "Svizzera HD",
+        "en": "Switzerland HD"
+      },
+      "bounds": {
+        "minLat": 45.8,
+        "maxLat": 47.8,
+        "minLon": 5.9,
+        "maxLon": 10.5
+      },
+      "lodRange": {
+        "min": 8,
+        "max": 14
+      },
+      "version": 6,
+      "sizeMB": 620,
+      "cdnUrl": "https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-switzerland-v6.pmtiles",
+      "regionCheck": "CH"
+    },
+    {
+      "id": "france_alps",
+      "productId": "suntrail_pack_france_alps",
+      "name": {
+        "fr": "France Alpes HD",
+        "de": "Französische Alpen HD",
+        "it": "Alpi Francesi HD",
+        "en": "French Alps HD"
+      },
+      "bounds": {
+        "minLat": 43.5,
+        "maxLat": 46.5,
+        "minLon": 4.5,
+        "maxLon": 7.8
+      },
+      "lodRange": {
+        "min": 8,
+        "max": 14
+      },
+      "version": 2,
+      "sizeMB": 515,
+      "cdnUrl": "https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-france_alps-v2.pmtiles",
+      "regionCheck": "FR"
+    },
+    {
+      "id": "austria",
+      "productId": "suntrail_pack_austria",
+      "name": {
+        "fr": "Autriche HD",
+        "de": "Österreich HD",
+        "it": "Austria HD",
+        "en": "Austria HD"
+      },
+      "bounds": {
+        "minLat": 46.3,
+        "maxLat": 49.1,
+        "minLon": 9.4,
+        "maxLon": 17.3
+      },
+      "lodRange": {
+        "min": 8,
+        "max": 14
+      },
+      "version": 1,
+      "sizeMB": 980,
+      "cdnUrl": "https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-austria-v1.pmtiles",
+      "regionCheck": "AT"
+    }
+  ]
+}

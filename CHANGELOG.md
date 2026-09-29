@@ -1,4 +1,4 @@
-## [Non publié] - 2026-09-19 — Terrain 3D, parcours et robustesse
+## [5.92.0] - 2026-09-29 — Terrain 3D et pack Suisse v6
 
 ### Corrigé
 
@@ -25,6 +25,9 @@
 - **Packs pays** : ne plus confondre le `localhost` interne de Capacitor avec un serveur de
   développement, réconcilier les achats avec RevenueCat avant le streaming CDN et invalider une
   archive OPFS illisible sans toucher aux packs sains.
+- **Mises à jour de packs** : conserver l'ancienne archive installée si le téléchargement v6 est
+  annulé, interrompu ou refuse l'écriture ; nettoyer le temporaire versionné à la reprise. Une
+  suppression ne doit pas afficher « supprimé » si OPFS a refusé l'opération.
 - **Imports GPX Android** : sérialiser les partages reçus pendant qu'un import précédent est encore
   ouvert, au lieu d'ignorer le second événement.
 
@@ -34,6 +37,10 @@
   métadonnées/offsets/altitudes/gradients/raccords/inter-zooms et un audit exact du poids par couche
   et niveau de zoom. La sortie complète est atomique (`.partial` puis renommage) et fournit son
   SHA-256.
+- Lire les élévations d'un zoom parent quand le pack annonce `elevationMaxZoom` ; les anciens packs
+  sans ce champ gardent leur lecture à zoom exact. Le v6 suisse limite l'élévation au zoom 12 tout
+  en conservant les couleurs et overlays aux zooms prévus. Les archives de diagnostic ne passent
+  plus le contrôle d'un build de production par inadvertance.
 - Le REC actif reste vert fluo ; une trace REC terminée devient bleu vif, distinct de la couleur de
   guidage choisie. Un nouveau REC utilise donc à nouveau le vert sans recolorer les archives.
 - Ajouter des chevrons de direction à toute trace d'au moins deux points, avec taille et espacement
@@ -49,20 +56,24 @@
   `5255A713A3F8B714C59A61BD476DB6BB5C09027CC65D7FDD8A44E614C9B222CE`, 327/327
   tuiles d'élévation vérifiées, aucun pixel impossible, aucune rupture anormale et écart
   source/archive nul. Contrôle S23 2D/3D positif à Zurich et au Matterhorn.
-- Pack complet v5 : 1 988 524 196 octets, SHA-256
-  `70295A18F9937FDB47ED16091E1EBA886B284532E1D5C63C21CC0D66BA6ABA39`, échantillon de
-  1 006 tuiles d'élévation sans erreur. Publication maintenue en **NO-GO** à cause de la taille et
-  de l'absence de validation du chemin complet CDN vers OPFS sur appareil.
-- `npm run check`, 168 fichiers / 1 943 tests Web/TypeScript, build Vite, budget bundle et audit
-  i18n réussis sur l'intégration locale à `main`.
+- Pack complet v5 de référence : 1 988 524 196 octets, SHA-256
+  `70295A18F9937FDB47ED16091E1EBA886B284532E1D5C63C21CC0D66BA6ABA39`.
+- Pack complet v6 : 620 200 343 octets, SHA-256
+  `AE8AA8C3DA5F7B1CBC34A294D27CB7478BA3E290DE8E469AC9E618BA7617912B` ; validation
+  automatique et tests OPFS/2D/3D sur S23 documentés dans `docs/SWITZERLAND_PACK_REDUCTION.md`.
+  L'objet R2 a le même hash après relecture intégrale, mais le catalogue public reste sur v3 jusqu'à
+  la distribution d'une application compatible.
+- `npm run check`, 169 fichiers / 1 960 tests Web/TypeScript, build Capacitor propre, budget bundle,
+  contrôle des assets et audit i18n réussis localement.
 - Build Capacitor, tests unitaires et lint Android, puis assemblage réussis ; APK diagnostic
   `com.suntrail.threejs.diagnostic` installé sur Galaxy S23 sans effacer les données ni remplacer
   `com.suntrail.threejs`. Les contrôles 2D/3D à Zurich ne montrent ni pic ni écran noir.
-- Le smoke Playwright est bloqué au lancement dans l'environnement local, mais le même smoke
-  Chromium réussit dans la CI GitHub du commit `038bad22`. La mémoire 3D reste élevée et WebView a
-  récupéré après un redémarrage de son processus GPU ; la publication du nouveau pack reste en
-  **NO-GO**.
-- Aucun nouveau tag, aucune release GitHub, aucun déploiement Pages et aucun upload Play inclus.
+- Le smoke Playwright est resté bloqué localement, y compris avec un serveur Vite déjà actif ; la
+  CI avait exécuté le smoke Chromium sur `038bad22` et devra le revérifier pour cette révision.
+  Le mode hors ligne manuel n'est pas persistant au redémarrage et
+  le téléchargement v6 complet depuis l'interface CDN n'a pas été rejoué sur S23.
+- L'envoi sur Play (tests ouverts) et le basculement du catalogue public sont deux étapes séparées
+  de cette version du code ; aucun déploiement Pages n'est inclus.
 
 ## [5.91.4] - 2026-09-17 — Démarrage carte et nettoyage des réglages
 

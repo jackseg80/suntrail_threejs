@@ -3,18 +3,21 @@ import path from 'node:path';
 import sharp from 'sharp';
 import {
     PMTiles,
+    readVarint,
     tileIdToZxy,
     zxyToTileId,
     type RangeResponse,
     type Source,
 } from 'pmtiles';
 import {
+    classifyGradientCount,
     decodeTerrainRgb,
     maxHorizontalSeamDifference,
     maxVerticalSeamDifference,
     scanElevationRgba,
     type ElevationLimits,
 } from './pack-elevation-validation';
+import { elevationParentTile } from '../src/modules/elevationParentTile';
 
 const DEFAULT_ELEVATION_OFFSET = 100_000_000_000;
 const DEFAULT_OVERLAY_OFFSET = 200_000_000_000;
@@ -32,6 +35,73 @@ interface DecodedRaster {
     width: number;
     height: number;
     format: string;
+}
+
+interface ArchiveEntry {
+    tileId: number;
+    offset: number;
+    length: number;
+    runLength: number;
+}
+
+function readArchiveEntries(
+    archivePath: string,
+    header: Awaited<ReturnType<PMTiles['getHeader']>>
+): ArchiveEntry[] {
+    const fd = fs.openSync(archivePath, 'r');
+    const readSection = (offset: number, length: number): Uint8Array => {
+        const buffer = Buffer.alloc(length);
+        let read = 0;
+        while (read < length) {
+            const count = fs.readSync(
+                fd,
+                buffer,
+                read,
+                length - read,
+                offset + read
+            );
+            if (count === 0) throw new Error('Répertoire PMTiles tronqué');
+            read += count;
+        }
+        return buffer;
+    };
+    const decode = (buffer: Uint8Array): ArchiveEntry[] => {
+        const cursor = { buf: buffer, pos: 0 };
+        const count = readVarint(cursor);
+        const entries: ArchiveEntry[] = [];
+        let tileId = 0;
+        for (let index = 0; index < count; index++) {
+            tileId += readVarint(cursor);
+            entries.push({ tileId, offset: 0, length: 0, runLength: 0 });
+        }
+        for (const entry of entries) entry.runLength = readVarint(cursor);
+        for (const entry of entries) entry.length = readVarint(cursor);
+        for (let index = 0; index < count; index++) {
+            const offset = readVarint(cursor);
+            entries[index].offset =
+                offset === 0 && index > 0
+                    ? entries[index - 1].offset + entries[index - 1].length
+                    : offset - 1;
+        }
+        return entries;
+    };
+    try {
+        const root = decode(
+            readSection(header.rootDirectoryOffset, header.rootDirectoryLength)
+        );
+        return root.flatMap((entry) =>
+            entry.runLength > 0
+                ? [entry]
+                : decode(
+                      readSection(
+                          header.leafDirectoryOffset + entry.offset,
+                          entry.length
+                      )
+                  )
+        );
+    } finally {
+        fs.closeSync(fd);
+    }
 }
 
 class LocalFileSource implements Source {
@@ -247,6 +317,31 @@ async function main(): Promise<void> {
 
     const logicalMinZoom = Number(metadata.logicalMinZoom ?? header.minZoom);
     const logicalMaxZoom = Number(metadata.logicalMaxZoom ?? header.maxZoom);
+    const elevationMaxZoom = Number(
+        metadata.elevationMaxZoom ?? logicalMaxZoom
+    );
+    const gradientErrorMinZoom = numericArgument(
+        '--gradient-error-min-zoom',
+        logicalMinZoom
+    );
+    if (
+        !Number.isInteger(gradientErrorMinZoom) ||
+        gradientErrorMinZoom < logicalMinZoom ||
+        gradientErrorMinZoom > elevationMaxZoom
+    ) {
+        throw new Error(
+            `--gradient-error-min-zoom doit être un entier entre ${logicalMinZoom} et ${elevationMaxZoom}`
+        );
+    }
+    if (
+        !Number.isInteger(elevationMaxZoom) ||
+        elevationMaxZoom < logicalMinZoom ||
+        elevationMaxZoom > logicalMaxZoom ||
+        (elevationMaxZoom < logicalMaxZoom &&
+            metadata.elevationEncoding !== 'terrain-rgb-v2-lossless-webp')
+    ) {
+        errors.push('elevationMaxZoom ou encodage du relief réduit invalide');
+    }
     const hasLayerOffsets =
         typeof metadata.offsets === 'object' && metadata.offsets !== null;
     const offsets = (metadata.offsets ?? {}) as Record<string, unknown>;
@@ -298,6 +393,7 @@ async function main(): Promise<void> {
         header,
         metadata,
         logicalZoomRange: { min: logicalMinZoom, max: logicalMaxZoom },
+        elevationMaxZoom,
         layerIdRanges: hasLayerOffsets
             ? {
                   color: colorRange,
@@ -305,7 +401,7 @@ async function main(): Promise<void> {
                   overlay: overlayRange,
               }
             : { color: colorRange },
-        limits: { ...limits, maxCrossZoomMeters },
+        limits: { ...limits, maxCrossZoomMeters, gradientErrorMinZoom },
         errors,
         warnings,
     };
@@ -320,16 +416,28 @@ async function main(): Promise<void> {
         const elevationKeys = new Set(elevationTiles.map((tile) => tile.key));
         const overlayKeys = new Set(overlayTiles.map((tile) => tile.key));
         const commonKeys = new Set(
-            [...colorKeys].filter(
-                (key) => elevationKeys.has(key) && overlayKeys.has(key)
-            )
+            [...colorKeys].filter((key) => overlayKeys.has(key))
         );
-        const expectedAddressedTiles = commonKeys.size * 3;
-        if (elevationTiles.length !== commonKeys.size) {
-            warnings.push(
-                `${elevationTiles.length - commonKeys.size} source(s) élévation orpheline(s) dans le cache`
+        const wantedElevationKeys = new Set<string>();
+        for (const color of colorTiles) {
+            if (!commonKeys.has(color.key)) continue;
+            const source = elevationParentTile(
+                color.z,
+                color.x,
+                color.y,
+                Math.min(color.z, elevationMaxZoom)
             );
+            wantedElevationKeys.add(tileKey(source.z, source.x, source.y));
         }
+        const expectedAddressedTiles =
+            commonKeys.size * 2 + wantedElevationKeys.size;
+        const missingSources = [...wantedElevationKeys].filter(
+            (key) => !elevationKeys.has(key)
+        );
+        if (missingSources.length > 0)
+            errors.push(
+                `${missingSources.length} source(s) de relief parent absente(s) du cache`
+            );
         if (header.numAddressedTiles !== expectedAddressedTiles) {
             errors.push(
                 `numAddressedTiles=${header.numAddressedTiles}, attendu ${expectedAddressedTiles} d’après le cache commun`
@@ -337,8 +445,23 @@ async function main(): Promise<void> {
         }
 
         const candidates = elevationTiles.filter((tile) =>
-            commonKeys.has(tile.key)
+            wantedElevationKeys.has(tile.key)
         );
+        let missingParentTiles = 0;
+        if (elevationMaxZoom < logicalMaxZoom) {
+            for (const coordinate of candidates) {
+                const found = await readArchiveLayer(
+                    archive,
+                    coordinate,
+                    elevationOffset
+                );
+                if (!found) missingParentTiles++;
+            }
+            if (missingParentTiles > 0)
+                errors.push(
+                    `${missingParentTiles} tuile(s) parent de relief absente(s) de l’archive`
+                );
+        }
         if (!hasLayerOffsets) {
             errors.push('impossible de valider l’élévation: offsets absents');
         }
@@ -349,6 +472,8 @@ async function main(): Promise<void> {
         let unreadableArchiveTiles = 0;
         let impossiblePixels = 0;
         let abnormalGradients = 0;
+        let blockingGradients = 0;
+        let nonBlockingGradients = 0;
         let noDataPixels = 0;
         let maximumGradientMeters = 0;
         let sourceImpossiblePixels = 0;
@@ -422,6 +547,13 @@ async function main(): Promise<void> {
             );
             impossiblePixels += scan.impossiblePixels;
             abnormalGradients += scan.abnormalGradients;
+            const gradientSeverity = classifyGradientCount(
+                scan.abnormalGradients,
+                coordinate.z,
+                gradientErrorMinZoom
+            );
+            blockingGradients += gradientSeverity.blocking;
+            nonBlockingGradients += gradientSeverity.nonBlocking;
             noDataPixels += scan.noDataPixels;
             maximumGradientMeters = Math.max(
                 maximumGradientMeters,
@@ -576,8 +708,12 @@ async function main(): Promise<void> {
             errors.push(
                 `${impossiblePixels} pixel(s) d’altitude impossible(s)`
             );
-        if (abnormalGradients > 0)
-            errors.push(`${abnormalGradients} gradient(s) anormal(aux)`);
+        if (blockingGradients > 0)
+            errors.push(`${blockingGradients} gradient(s) anormal(aux)`);
+        if (nonBlockingGradients > 0)
+            warnings.push(
+                `${nonBlockingGradients} gradient(s) sous le zoom ${gradientErrorMinZoom} : hors du rendu 3D déclaré, seuil dépassé`
+            );
         if (maximumSourceArchiveDeltaMeters > 0.11)
             errors.push(
                 `écart source/archive jusqu’à ${maximumSourceArchiveDeltaMeters.toFixed(1)} m (encodage non fidèle)`
@@ -610,8 +746,10 @@ async function main(): Promise<void> {
                 elevation: elevationTiles.length,
                 overlay: overlayTiles.length,
                 common: commonKeys.size,
+                requiredElevation: wantedElevationKeys.size,
             },
             expectedAddressedTiles,
+            missingParentTiles,
         };
         report.elevationSample = {
             requested: sampleCount,
@@ -626,6 +764,8 @@ async function main(): Promise<void> {
             unreadableArchiveTiles,
             impossiblePixels,
             abnormalGradients,
+            blockingGradients,
+            nonBlockingGradients,
             noDataPixels,
             maximumGradientMeters,
             sourceImpossiblePixels,
@@ -639,6 +779,180 @@ async function main(): Promise<void> {
             crossZoomPairs,
             maximumSourceCrossZoomMeters,
             maximumArchiveCrossZoomMeters,
+        };
+    } else if (hasLayerOffsets) {
+        const entries = readArchiveEntries(archivePath, header);
+        const color = new Set<number>();
+        const elevation = new Set<number>();
+        const overlay = new Set<number>();
+        for (const entry of entries) {
+            if (
+                entry.length <= 0 ||
+                entry.offset < 0 ||
+                entry.offset + entry.length > header.tileDataLength
+            ) {
+                errors.push(`entrée PMTiles hors plage: ${entry.tileId}`);
+                continue;
+            }
+            for (let index = 0; index < entry.runLength; index++) {
+                const id = entry.tileId + index;
+                if (id < elevationOffset) color.add(id);
+                else if (id < overlayOffset)
+                    elevation.add(id - elevationOffset);
+                else overlay.add(id - overlayOffset);
+            }
+        }
+        const addressed = color.size + elevation.size + overlay.size;
+        if (addressed !== header.numAddressedTiles)
+            errors.push(
+                `numAddressedTiles=${header.numAddressedTiles}, répertoire=${addressed}`
+            );
+        let missingParents = 0;
+        for (const id of color) {
+            const [z, x, y] = tileIdToZxy(id);
+            const parent = elevationParentTile(
+                z,
+                x,
+                y,
+                Math.min(z, elevationMaxZoom)
+            );
+            if (!elevation.has(zxyToTileId(parent.z, parent.x, parent.y)))
+                missingParents++;
+        }
+        if (missingParents)
+            errors.push(
+                `${missingParents} tuile(s) couleur sans relief parent`
+            );
+        const elevationCoordinates = [...elevation]
+            .map((id) => {
+                const [z, x, y] = tileIdToZxy(id);
+                return { z, x, y, key: tileKey(z, x, y), sourcePath: '' };
+            })
+            .sort((a, b) => a.z - b.z || a.x - b.x || a.y - b.y);
+        const sampled = sampleCoordinates(elevationCoordinates, sampleCount);
+        let decoded = 0;
+        let impossiblePixels = 0;
+        let abnormalGradients = 0;
+        let blockingGradients = 0;
+        let nonBlockingGradients = 0;
+        let noDataPixels = 0;
+        let maximumGradientMeters = 0;
+        let unreadableArchiveTiles = 0;
+        const decodedRasters = new Map<string, DecodedRaster>();
+        for (const coordinate of sampled) {
+            try {
+                const bytes = await readArchiveLayer(
+                    archive,
+                    coordinate,
+                    elevationOffset
+                );
+                if (!bytes) throw new Error('tuile absente');
+                const raster = await decodeRaster(bytes);
+                decodedRasters.set(coordinate.key, raster);
+                const scan = scanElevationRgba(
+                    raster.rgba,
+                    raster.width,
+                    raster.height,
+                    limits
+                );
+                decoded++;
+                impossiblePixels += scan.impossiblePixels;
+                abnormalGradients += scan.abnormalGradients;
+                const gradientSeverity = classifyGradientCount(
+                    scan.abnormalGradients,
+                    coordinate.z,
+                    gradientErrorMinZoom
+                );
+                blockingGradients += gradientSeverity.blocking;
+                nonBlockingGradients += gradientSeverity.nonBlocking;
+                noDataPixels += scan.noDataPixels;
+                maximumGradientMeters = Math.max(
+                    maximumGradientMeters,
+                    scan.maxGradientMeters
+                );
+            } catch (error) {
+                unreadableArchiveTiles++;
+                errors.push(
+                    `${coordinate.key}: relief illisible (${String(error)})`
+                );
+            }
+        }
+        let seamPairs = 0;
+        let maximumArchiveSeamMeters = 0;
+        for (const coordinate of sampled) {
+            const raster = decodedRasters.get(coordinate.key);
+            if (!raster) continue;
+            for (const [dx, dy] of [
+                [1, 0],
+                [0, 1],
+            ] as const) {
+                const neighbour = decodedRasters.get(
+                    tileKey(coordinate.z, coordinate.x + dx, coordinate.y + dy)
+                );
+                if (
+                    !neighbour ||
+                    raster.width !== neighbour.width ||
+                    raster.height !== neighbour.height
+                )
+                    continue;
+                seamPairs++;
+                maximumArchiveSeamMeters = Math.max(
+                    maximumArchiveSeamMeters,
+                    dx
+                        ? maxVerticalSeamDifference(
+                              raster.rgba,
+                              neighbour.rgba,
+                              raster.width,
+                              raster.height
+                          )
+                        : maxHorizontalSeamDifference(
+                              raster.rgba,
+                              neighbour.rgba,
+                              raster.width,
+                              raster.height
+                          )
+                );
+            }
+        }
+        if (impossiblePixels)
+            errors.push(
+                `${impossiblePixels} pixel(s) d'altitude impossible(s)`
+            );
+        if (blockingGradients)
+            errors.push(`${blockingGradients} gradient(s) anormal(aux)`);
+        if (nonBlockingGradients)
+            warnings.push(
+                `${nonBlockingGradients} gradient(s) sous le zoom ${gradientErrorMinZoom} : hors du rendu 3D déclaré, seuil dépassé`
+            );
+        if (maximumArchiveSeamMeters > limits.maxSeamMeters)
+            errors.push(
+                `discontinuité inter-tuile jusqu'à ${maximumArchiveSeamMeters.toFixed(1)} m`
+            );
+        if (metadata.diagnosticTrimmedColorTiles)
+            warnings.push(
+                `${metadata.diagnosticTrimmedColorTiles} tuile(s) couleur de bordure exclue(s) pour ce diagnostic`
+            );
+        warnings.push(
+            'comparaison source/archive non effectuée sans --cache-dir'
+        );
+        report.archiveInventory = {
+            color: color.size,
+            elevation: elevation.size,
+            overlay: overlay.size,
+            missingParents,
+        };
+        report.elevationSample = {
+            requested: sampleCount,
+            decoded,
+            unreadableArchiveTiles,
+            impossiblePixels,
+            abnormalGradients,
+            blockingGradients,
+            nonBlockingGradients,
+            noDataPixels,
+            maximumGradientMeters,
+            seamPairs,
+            maximumArchiveSeamMeters,
         };
     }
 

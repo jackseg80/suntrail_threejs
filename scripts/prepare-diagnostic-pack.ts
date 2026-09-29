@@ -6,11 +6,9 @@ const source = path.resolve(
     process.argv[2] ??
         path.join('output', 'suntrail-pack-switzerland-sample-v1.pmtiles')
 );
-const target = path.resolve(
-    'public',
-    'diagnostic',
-    'suntrail-pack-switzerland-sample-v1.pmtiles'
-);
+if (path.extname(source) !== '.pmtiles')
+    throw new Error('Le pack diagnostic doit être une archive .pmtiles');
+const target = path.resolve('public', 'diagnostic', path.basename(source));
 
 if (!fs.existsSync(source)) {
     throw new Error(`Pack diagnostic introuvable: ${source}`);

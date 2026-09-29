@@ -13,6 +13,8 @@ export interface TileWorkerRequest {
     isOffline: boolean;
     zoom: number;
     elevSourceZoom: number;
+    /** Explicit reduced-pack ancestor; the worker expands its correct quadrant. */
+    elevationParentZoom?: number;
     is2D: boolean;
     elevBlob?: Blob | null;
     colorBlob?: Blob | null;
@@ -27,6 +29,7 @@ export interface TileWorkerRequest {
             | 'embedded-pmtiles'
             | 'country-pack-opfs'
             | 'country-pack-cdn'
+            | 'country-pack-asset'
         >
     >;
 }
@@ -38,6 +41,7 @@ export interface TileWorkerResourceTiming {
         | 'embedded-pmtiles'
         | 'country-pack-opfs'
         | 'country-pack-cdn'
+        | 'country-pack-asset'
         | 'worker-cache'
         | 'network'
         | 'none'

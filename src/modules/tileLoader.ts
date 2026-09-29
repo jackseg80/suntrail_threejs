@@ -803,6 +803,7 @@ export async function loadTileData(
 ): Promise<LoadTileDataResult> {
     const diagnostics = isTileDiagnosticsEnabled();
     const { url: elevUrl, sourceZoom } = getElevationUrl(tx, ty, zoom, is2D);
+    let elevationParentZoom: number | undefined;
 
     const nativeMax = 18;
     const cz = Math.min(zoom, nativeMax);
@@ -994,7 +995,10 @@ export async function loadTileData(
                 const packResult = await timedResourceRead(
                     'color',
                     async () => {
-                        if (diagnostics) {
+                        if (
+                            diagnostics ||
+                            !!import.meta.env.VITE_DIAGNOSTIC_PACK_URL
+                        ) {
                             const result =
                                 await packManager.getTileFromPacksDetailed(
                                     cz,
@@ -1026,6 +1030,11 @@ export async function loadTileData(
                 if (packResult) {
                     blobs.color = packResult.blob;
                     blobSources.color = packResult.source;
+                    if (import.meta.env.VITE_DIAGNOSTIC_PACK_URL) {
+                        console.info(
+                            `[PackDiag] color ${cz}/${cx}/${cy} source=${packResult.source}`
+                        );
+                    }
                 }
                 if (state.DEBUG_MODE) {
                     if (blobs.color) {
@@ -1050,42 +1059,49 @@ export async function loadTileData(
     if (useMainThreadLocal && packManager.hasMountedPacks() && zoom >= 12) {
         const readPackResource = async (
             resource: 'elevation' | 'overlay'
-        ): Promise<{ blob: Blob; source: WorkerBlobSource } | null> => {
-            if (diagnostics) {
-                const result = await packManager.getTileFromPacksDetailed(
-                    zoom,
-                    tx,
-                    ty,
-                    resource,
-                    false,
-                    options.signal
-                );
-                return result
-                    ? {
-                          blob: result.blob,
-                          source: `country-pack-${result.source}` as WorkerBlobSource,
-                      }
-                    : null;
-            }
-            const blob = await packManager.getTileFromPacks(
-                zoom,
-                tx,
-                ty,
+        ): Promise<{
+            blob: Blob;
+            source: WorkerBlobSource;
+            elevationSourceZoom?: number;
+        } | null> => {
+            const requestedZoom =
+                resource === 'elevation' ? Math.min(zoom, 14) : zoom;
+            const ratio = 2 ** (zoom - requestedZoom);
+            const result = await packManager.getTileFromPacksDetailed(
+                requestedZoom,
+                Math.floor(tx / ratio),
+                Math.floor(ty / ratio),
                 resource,
+                false,
                 options.signal
             );
-            return blob
-                ? ({ blob, source: 'country-pack-cdn' } as const)
+            return result
+                ? {
+                      blob: result.blob,
+                      source: `country-pack-${result.source}` as WorkerBlobSource,
+                      elevationSourceZoom: result.elevationSourceZoom,
+                  }
                 : null;
         };
 
-        if (!blobs.elev && elevUrl && zoom <= 14) {
+        if (!is2D && !blobs.elev) {
             const result = await timedResourceRead('elevation', () =>
                 readPackResource('elevation')
             );
             if (result) {
                 blobs.elev = result.blob;
                 blobSources.elevation = result.source;
+                if (import.meta.env.VITE_DIAGNOSTIC_PACK_URL) {
+                    console.info(
+                        `[PackDiag] elevation ${zoom}/${tx}/${ty} source=${result.source} elevationSourceZoom=${result.elevationSourceZoom ?? 'exact'}`
+                    );
+                }
+                if (
+                    result.elevationSourceZoom !== undefined &&
+                    result.elevationSourceZoom < sourceZoom
+                ) {
+                    elevationParentZoom = result.elevationSourceZoom;
+                }
             }
         }
         if (!blobs.overlay && overlayUrl) {
@@ -1107,23 +1123,39 @@ export async function loadTileData(
               colorUrl,
               overlayUrl,
               zoom,
-              sourceZoom,
+              elevationParentZoom ?? sourceZoom,
               blobs,
               is2D,
               blobSources,
-              true
+              true,
+              elevationParentZoom
           )
-        : tileWorkerManager.loadTile(
-              tx,
-              ty,
-              elevUrl,
-              colorUrl,
-              overlayUrl,
-              zoom,
-              sourceZoom,
-              blobs,
-              is2D
-          );
+        : elevationParentZoom === undefined
+          ? tileWorkerManager.loadTile(
+                tx,
+                ty,
+                elevUrl,
+                colorUrl,
+                overlayUrl,
+                zoom,
+                sourceZoom,
+                blobs,
+                is2D
+            )
+          : tileWorkerManager.loadTile(
+                tx,
+                ty,
+                elevUrl,
+                colorUrl,
+                overlayUrl,
+                zoom,
+                elevationParentZoom,
+                blobs,
+                is2D,
+                undefined,
+                false,
+                elevationParentZoom
+            );
     if (!diagnostics) {
         return {
             ...task,

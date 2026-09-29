@@ -394,7 +394,11 @@ export class Tile {
                 this.elevationTex = new THREE.Texture(data.elevBitmap);
                 this.elevationTex.flipY = false;
                 this.elevationTex.generateMipmaps = false;
-                this.elevationTex.minFilter = THREE.LinearFilter;
+                // Terrain-RGB stores an integer across three channels. Linear
+                // interpolation of the channels can invent huge altitudes at
+                // carry boundaries, especially with a coarser parent tile.
+                this.elevationTex.minFilter = THREE.NearestFilter;
+                this.elevationTex.magFilter = THREE.NearestFilter;
                 this.elevationTex.wrapS = this.elevationTex.wrapT =
                     THREE.ClampToEdgeWrapping;
                 this.elevationTex.needsUpdate = true;

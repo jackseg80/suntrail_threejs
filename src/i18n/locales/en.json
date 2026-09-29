@@ -1293,6 +1293,7 @@
         "error": {
             "storageFull": "Not enough storage space",
             "downloadFailed": "Download failed. Tap to retry.",
+            "deleteFailed": "Could not delete the pack. Please try again.",
             "purchaseFailed": "Purchase failed",
             "catalogFailed": "Could not load pack catalog"
         },

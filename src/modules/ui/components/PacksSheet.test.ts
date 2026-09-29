@@ -54,6 +54,8 @@ vi.mock('../../packManager', () => ({
 
 import { PacksSheet } from './PacksSheet';
 import { sheetManager } from '../core/SheetManager';
+import { getAvailablePacks } from '../../packCatalog';
+import { packManager } from '../../packManager';
 
 describe('PacksSheet', () => {
     beforeEach(() => {
@@ -78,6 +80,42 @@ describe('PacksSheet', () => {
         const sheet = new PacksSheet();
         (sheet as any).element = document.getElementById('template-packs');
         sheet.render();
+        sheet.dispose();
+    });
+
+    it('montre le pack diagnostic embarqué comme local sans bouton acheter', () => {
+        vi.mocked(getAvailablePacks).mockReturnValueOnce([
+            {
+                id: 'switzerland_diagnostic',
+                name: {
+                    fr: 'Suisse — échantillon diagnostic',
+                    en: 'Switzerland diagnostic sample',
+                    de: 'Schweiz Diagnosetest',
+                    it: 'Svizzera campione diagnostico',
+                },
+                bounds: {
+                    minLat: 45.9,
+                    maxLat: 47.45,
+                    minLon: 7.55,
+                    maxLon: 8.65,
+                },
+                lodRange: { min: 12, max: 14 },
+                version: 2,
+                sizeMB: 10,
+                cdnUrl: './diagnostic/suntrail-pack-switzerland-sample-v2-trimmed.pmtiles',
+                regionCheck: 'CH',
+            } as any,
+        ]);
+        vi.mocked(packManager.getPackState).mockReturnValueOnce({
+            id: 'switzerland_diagnostic',
+            status: 'purchased',
+        } as any);
+        const sheet = new PacksSheet();
+        (sheet as any).element = document.getElementById('template-packs');
+        (sheet as any).renderPackList();
+        const list = document.getElementById('packs-list')!;
+        expect(list.querySelector('.pack-status--installed')).not.toBeNull();
+        expect(list.querySelector('.pack-action')).toBeNull();
         sheet.dispose();
     });
 
