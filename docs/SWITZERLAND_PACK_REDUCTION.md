@@ -152,6 +152,16 @@ Après cet envoi, le `catalog.json` public annonce **toujours** la Suisse v3 ; a
 - Le build ordinaire réalisé avec ces assets locaux les avait copiés dans `dist`, pour un total de 700 573 386 octets. `check:capacitor-assets` refuse désormais un `dist/diagnostic` non vide, sauf dérogation explicite `SUNTRAIL_ALLOW_DIAGNOSTIC_ASSETS=1` réservée au contrôle diagnostic. Le dossier entier `public/diagnostic/` est ignoré par Git ; une release CI issue des fichiers suivis n'embarque pas ces archives.
 - L'AAB destiné aux tests ouverts doit être produit et contrôlé par la CI. Le propriétaire effectuera lui-même l'envoi Play. La release GitHub ne change ni le catalogue public, encore en v3, ni le site Pages. L'essai UI du téléchargement depuis le CDN complet reste à faire avant basculement du catalogue.
 
+## Release GitHub de l'application, 29 septembre 2026
+
+Le commit `b588a514` a été poussé sur `main`. La CI `36620093337` est verte, y compris le smoke Chromium. Le tag `v5.92.0` a déclenché la CI release `36620532163`, également verte (qualité Web, tests unitaires/lint Android, AAB signé). La release GitHub contient `app-release.aab` de **28 808 592 octets**, SHA-256 publié `6e09f03a1bafa21b35bcccefbc818bc2edaf4e220a188543165fe4b750e1d22c`. Aucun upload Play, déploiement Pages ou basculement du catalogue public n'a été réalisé. L'envoi de l'AAB sur le canal Play « tests ouverts » incombe au propriétaire.
+
+## Nettoyage ciblé du S23 diagnostic, 29 septembre 2026
+
+Après accord explicite du propriétaire, seul le stockage de `com.suntrail.threejs.diagnostic` a été nettoyé. Avant suppression, l'application occupait **3 053 646 KiB** dans ses données privées, dont `CacheStorage` **2 576 423 KiB** et cache HTTP WebView **166 757 KiB**. L'inventaire par l'API CacheStorage comptait notamment 8 143 entrées `suntrail-tiles-v30`, 1 000 `swisstopo-cache-v5.11` et **0** dans `suntrail-offline-zones`. Les caches ne sont pas des packs OPFS ; les tuiles consultées devront être téléchargées à nouveau.
+
+Le processus diagnostic a été arrêté, puis **uniquement** `app_webview/Default/Service Worker/CacheStorage` et `cache/WebView/Default/HTTP Cache` ont été supprimés sous l'identité de ce paquet. L'OPFS historique est resté à **281 601 KiB** et le Local Storage à **71 KiB** avant/après. Après un redémarrage rapide de l'application diagnostic (`LaunchState: COLD`, activité Android 814 ms ; temps de carte non mesuré), les données privées totalisent **316 215 KiB** et le S23 indique **71 Go libres** contre 68 Go avant. Le pont de diagnostic a été refermé. L'application de production reste installée en **5.91.4 / code 917** ; aucune donnée de production n'a été effacée. Les deux anciens temporaires OPFS, d'environ 282 Mo au total, sont volontairement conservés pour décision séparée.
+
 ## Compatibilité
 
 - Les anciens packs sans `elevationMaxZoom` conservent une demande d'élévation à leur zoom exact dans la nouvelle application, **si l'archive contient une tuile adressable à cet identifiant**. Cette règle fonctionne avec le v5 testé, mais ne répare ni les identifiants tronqués ni le `maxZoom` incohérent du v3 public.

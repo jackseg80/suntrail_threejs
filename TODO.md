@@ -9,13 +9,16 @@
 - [x] Protéger les téléchargements interrompus et les suppressions OPFS ; refuser les assets
       diagnostic dans un build de production. `npm run check`, 1 960 tests, build Capacitor propre,
       budget bundle, chemins d'assets et audit i18n passent localement.
-- [ ] Faire produire l'AAB signé 5.92.0 / 918 par la CI, puis le propriétaire l'enverra sur le canal
-      Play « tests ouverts ». Ne pas confondre release GitHub, envoi Play et installation effective.
+- [x] Faire produire l'AAB signé 5.92.0 / 918 par la CI et publier la release GitHub `v5.92.0`.
+- [ ] Le propriétaire enverra l'AAB sur le canal Play « tests ouverts ». Ne pas confondre release
+      GitHub, envoi Play et installation effective.
 - [ ] Après disponibilité de l'application compatible, demander une autorisation distincte pour
       remplacer uniquement l'entrée Suisse du catalogue public v3 par v6 ; vérifier ensuite l'UI du
       téléchargement CDN complet. Garder l'ancien objet v3 à son URL actuelle.
-- [ ] Contrôler la non-persistance du mode hors ligne manuel après redémarrage et mesurer l'espace
-      occupé sur S23 avant tout nettoyage de fichiers ou données.
+- [x] Inventorier puis vider, avec accord explicite du propriétaire, les caches cartographiques et
+      HTTP de l'application diagnostic sur S23 : environ 2,7 Go récupérés, OPFS et réglages préservés.
+- [ ] Corriger ou expliciter la non-persistance du mode hors ligne manuel après redémarrage ; décider
+      séparément du sort des deux anciens temporaires OPFS `.crswap` (environ 282 Mo), conservés.
 
 ## ✅ Correctifs post-v5.91.4 — terrain, parcours et robustesse
 

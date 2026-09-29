@@ -74,6 +74,10 @@
   le téléchargement v6 complet depuis l'interface CDN n'a pas été rejoué sur S23.
 - L'envoi sur Play (tests ouverts) et le basculement du catalogue public sont deux étapes séparées
   de cette version du code ; aucun déploiement Pages n'est inclus.
+- La CI du commit `b588a514` est verte, smoke Chromium compris. Le workflow de tag `v5.92.0` a
+  produit l'AAB signé de 28 808 592 octets (SHA-256
+  `6E09F03A1BAFA21B35BCCCEFBC818BC2EDAF4E220A188543165FE4B750E1D22C`) et la release
+  GitHub. L'envoi Play reste à faire par le propriétaire.
 
 ## [5.91.4] - 2026-09-17 — Démarrage carte et nettoyage des réglages
 

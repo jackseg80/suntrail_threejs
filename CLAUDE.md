@@ -14,6 +14,8 @@
   l'UI secondaire est différée après la première tuile, et deux réglages avancés historiques sont
   retirés (debug sans cible, normalmap RG désormais toujours actif). La release GitHub `v5.91.4`
   produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
+- La release GitHub `v5.92.0` a produit l'AAB signé de 28 808 592 octets le 2026-09-29 ; la CI
+  du commit `b588a514` est verte, smoke Chromium compris. Aucun envoi Play n'est revendiqué.
 - La source 5.92.0 regroupe le lot post-5.91.4 : transitions
   2D/3D fiabilisées, offsets de shader isolés par tuile, calcul solaire sur l'altitude physique,
   REC actif vert/terminé bleu, chevrons sur toute trace, édition pendant le guidage, points `1…n`,
