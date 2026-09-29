@@ -15,13 +15,15 @@
   retirés (debug sans cible, normalmap RG désormais toujours actif). La release GitHub `v5.91.4`
   produit l'AAB signé par la CI ; aucun upload Play n'est revendiqué.
 - La release GitHub `v5.92.0` a produit l'AAB signé de 28 808 592 octets le 2026-09-29 ; la CI
-  du commit `b588a514` est verte, smoke Chromium compris. Aucun envoi Play n'est revendiqué.
+  du commit `b588a514` est verte, smoke Chromium compris. Le propriétaire indique que l'application
+  est maintenant publiée en tests ouverts.
 - La source 5.92.0 regroupe le lot post-5.91.4 : transitions
   2D/3D fiabilisées, offsets de shader isolés par tuile, calcul solaire sur l'altitude physique,
   REC actif vert/terminé bleu, chevrons sur toute trace, édition pendant le guidage, points `1…n`,
   packs/GPX renforcés et publication Pages rendue manuelle. Elle sait lire les élévations parentes
   du pack Suisse v6 (`elevationMaxZoom: 12`) sans changer la lecture des packs sans ce champ.
-  APK diagnostic validé sur S23 ; l'envoi Play et le catalogue public restent deux étapes distinctes.
+  APK diagnostic validé sur S23. Le catalogue public commun annonce maintenant la Suisse v6 ; les
+  anciens clients qui ignorent `elevationMaxZoom` peuvent ne pas afficher le relief v6 hors ligne.
 - Les releases GitHub `v5.91.0` (913), `v5.91.1` (914), `v5.91.2` (915) et `v5.91.3` (916) précèdent
   cette révision ; la qualification S23/A53 reste la référence terrain.
 - Suivi ouvert : la boussole 3D (`#compass-canvas`) est inerte depuis 5.90 ; décider de restaurer
@@ -205,9 +207,10 @@ Pour construire un pack :
 
 Diagnostic Suisse : le v4 local à élévation WebP avec pertes produisait les pics 3D. Le v5 lossless
 de 1,99 Go sert de référence ; le v6 réduit pèse 620 200 343 octets et son objet R2 a été vérifié
-octet pour octet. Le catalogue public annonce encore le v3 : ne le basculer vers v6 qu'après la
-distribution d'une application compatible et une autorisation distincte. Les archives de diagnostic
-locales sous `public/diagnostic/` ne doivent jamais entrer dans un build de production ;
+octet pour octet. Après publication de 5.92.0 en tests ouverts, le catalogue commun a été basculé
+vers le v6 le 2026-09-29 ; le v3 reste à son ancienne URL. Le test UI d'un téléchargement CDN complet
+reste à faire. Les archives de diagnostic locales sous `public/diagnostic/` ne doivent jamais entrer
+dans un build de production ;
 `check:capacitor-assets` le refuse par défaut. Voir `docs/SWITZERLAND_PACK_REDUCTION.md`.
 
 ## Architecture et documentation

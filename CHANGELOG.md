@@ -61,8 +61,8 @@
 - Pack complet v6 : 620 200 343 octets, SHA-256
   `AE8AA8C3DA5F7B1CBC34A294D27CB7478BA3E290DE8E469AC9E618BA7617912B` ; validation
   automatique et tests OPFS/2D/3D sur S23 documentés dans `docs/SWITZERLAND_PACK_REDUCTION.md`.
-  L'objet R2 a le même hash après relecture intégrale, mais le catalogue public reste sur v3 jusqu'à
-  la distribution d'une application compatible.
+  L'objet R2 a le même hash après relecture intégrale. Après disponibilité de l'application 5.92.0
+  en test ouvert, le catalogue commun a été basculé vers v6 ; l'objet v3 garde son ancienne URL.
 - `npm run check`, 169 fichiers / 1 960 tests Web/TypeScript, build Capacitor propre, budget bundle,
   contrôle des assets et audit i18n réussis localement.
 - Build Capacitor, tests unitaires et lint Android, puis assemblage réussis ; APK diagnostic

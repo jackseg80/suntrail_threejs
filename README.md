@@ -99,8 +99,9 @@ La précision, le niveau de détail et la disponibilité des bâtiments, sentier
 satellite varient donc selon le pays, la source, la connexion et les données téléchargées.
 
 Le catalogue embarqué contient actuellement les packs Suisse HD, Alpes françaises HD et
-Autriche HD. Le catalogue public annonce encore la Suisse v3 ; il ne doit passer au v6 qu'après
-distribution de l'application compatible. Un catalogue distant peut compléter ou remplacer la liste.
+Autriche HD. Depuis le 2026-09-29, le catalogue public annonce la Suisse v6 (592 MB) à sa nouvelle
+URL ; l'ancien objet v3 reste disponible à son URL. Le client 5.92.0 lit l'élévation à un zoom
+parent. Un catalogue distant peut compléter ou remplacer la liste.
 
 ## Architecture
 

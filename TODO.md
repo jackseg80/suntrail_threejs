@@ -12,9 +12,10 @@
 - [x] Faire produire l'AAB signé 5.92.0 / 918 par la CI et publier la release GitHub `v5.92.0`.
 - [ ] Le propriétaire enverra l'AAB sur le canal Play « tests ouverts ». Ne pas confondre release
       GitHub, envoi Play et installation effective.
-- [ ] Après disponibilité de l'application compatible, demander une autorisation distincte pour
-      remplacer uniquement l'entrée Suisse du catalogue public v3 par v6 ; vérifier ensuite l'UI du
-      téléchargement CDN complet. Garder l'ancien objet v3 à son URL actuelle.
+- [x] Après publication de 5.92.0 en test ouvert, remplacer l'entrée Suisse du catalogue public
+      commun par v6, sous sa nouvelle URL. L'objet v3 reste à son ancienne URL.
+- [ ] Vérifier dans l'application 5.92.0 le téléchargement du pack v6 depuis le catalogue CDN ;
+      surveiller les clients 5.91.4 qui ne lisent pas `elevationMaxZoom`.
 - [x] Inventorier puis vider, avec accord explicite du propriétaire, les caches cartographiques et
       HTTP de l'application diagnostic sur S23 : environ 2,7 Go récupérés, OPFS et réglages préservés.
 - [ ] Corriger ou expliciter la non-persistance du mode hors ligne manuel après redémarrage ; décider

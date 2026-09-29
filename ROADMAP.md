@@ -12,9 +12,9 @@
 > retirer proprement le sous-système. Le bouton « nord » de la carte reste fonctionnel et indépendant.
 >
 > **À contrôler — pack Suisse** : le v6 réduit (620 200 343 octets) a été validé automatiquement,
-> sur S23 et octet pour octet sur R2. Le catalogue public reste sur v3. Après diffusion de
-> l'application compatible, vérifier le téléchargement v6 par l'interface CDN avant d'autoriser le
-> basculement du catalogue commun ; le mode hors ligne manuel n'est pas persistant au redémarrage.
+> sur S23 et octet pour octet sur R2. Après publication de 5.92.0 en tests ouverts, le catalogue
+> commun a été basculé vers le v6. Vérifier le téléchargement dans l'interface de l'application ;
+> le mode hors ligne manuel n'est pas persistant au redémarrage.
 
 > Inventaire des fonctions réellement actives : [docs/FEATURES.md](docs/FEATURES.md).
 
@@ -153,7 +153,7 @@ sans ajout implicite à la 5.90.
 | **v5.91.2 — clôturée**               | Voir clairement la trace et choisir sa couleur                             | Trace à couleur unique réglable (magenta par défaut) avec casing deux tons, coloration solaire de la trace optionnelle, double voie + chevrons pour les allers-retours, profil en une ligne et réglages compacts. Release GitHub `v5.91.2` avec AAB signé ; aucun upload Play.                                          |
 | **v5.91.3 — clôturée**               | Reconnaître la trace REC et cadrer l'inclinomètre                          | REC en vert fluo au-dessus de son casing, inclinomètre réservé au 3D (masqué en 2D, mention « (3D) » dans les réglages) et repli de pente basé sur le tracé retiré. Release GitHub `v5.91.3` avec AAB signé ; aucun upload Play.                                                                                        |
 | **v5.91.4 — clôturée**               | Ouvrir la carte rapidement et nettoyer les réglages                        | Lecture `CacheStorage` déplacée dans le worker (repli local borné sur miss), hydratation UI différée après la première tuile, retrait des réglages debug/normalmap RG et de références DOM mortes. Release GitHub `v5.91.4` avec AAB signé ; aucun upload Play.                                                         |
-| **v5.92.0 — release GitHub**          | Stabiliser terrain, parcours et pack Suisse v6                             | Isolation des offsets shader, transitions 2D/3D sûres, solaire physique, REC actif/terminé distinct, chevrons généralisés, édition pendant guidance, points `1…n`, packs/GPX renforcés et élévation parent. AAB signé publié sur GitHub ; envoi Play et catalogue encore séparés.                           |
+| **v5.92.0 — release GitHub**          | Stabiliser terrain, parcours et pack Suisse v6                             | Isolation des offsets shader, transitions 2D/3D sûres, solaire physique, REC actif/terminé distinct, chevrons généralisés, édition pendant guidance, points `1…n`, packs/GPX renforcés et élévation parent. AAB signé sur GitHub, application en tests ouverts et catalogue commun Suisse v6.               |
 | **Boussole 3D — à contrôler**        | Décider du devenir de la boussole 3D                                       | Le canvas `#compass-canvas` a disparu en 5.90 ; le rendu `compass.ts` est inerte. Restaurer l'élément ou retirer le sous-système proprement. Le bouton « nord » reste fonctionnel.                                                                                                                                      |
 | **Pente de chemin — candidat**       | Afficher une pente de chemin crédible malgré l'imprécision GPS             | Distinguer pente terrain au viseur et pente longitudinale suivie ; rattachement à la trace en Guidance, fenêtre de calcul lissée, confiance liée à la précision GPS/DEM, valeur inconnue plutôt qu'un pic de talus. Discussion et protocole terrain séparés avant implémentation.                                       |
 | **5.90+ — lot expert, ex-v6.0**      | Accélérer les usages experts sans compliquer le débutant                   | Variantes, comparaison de routes, couches/presets, organisation locale, exports et finition                                                                                                                                                                                                                             |
