@@ -1,10 +1,14 @@
 # Fonctionnalités actuelles de SunTrail 3D
 
-> Référence canonique de la source 5.92.0, mise à jour le 2026-09-29.
+> Référence canonique de la source 5.92.2, mise à jour le 2026-09-30.
 > Ce document décrit le code activé par défaut. Les plans futurs et anciens documents archivés ne
 > constituent pas des fonctionnalités livrées.
 
 ## Parcours utilisateur
+
+Le rendu 3D interpole les hauteurs des élévations parentes et conserve la précision des faibles
+pentes dans les normales compactes. Ce correctif ne change ni le format ni la compatibilité des
+packs ; voir [la qualification terrain](TERRAIN_MOIRE_DIAGNOSTIC_2026-09-30.md).
 
 La navigation visible comporte cinq destinations :
 

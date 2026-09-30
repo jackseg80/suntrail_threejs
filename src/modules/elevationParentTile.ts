@@ -34,8 +34,14 @@ export function elevationParentTile(
     };
 }
 
-/** Expand the matching quadrant with nearest-neighbour RGB copies, never RGB interpolation. */
-export function cropParentElevationPixels(
+export interface ParentElevationRaster {
+    pixels: Uint8ClampedArray<ArrayBuffer>;
+    /** Unquantized heights, including a one-pixel halo for continuous edge normals. */
+    sampleHeight: (x: number, y: number) => number;
+}
+
+/** Interpolate decoded heights, never individual Terrain-RGB channels. */
+export function resampleParentElevation(
     source: Uint8ClampedArray,
     width: number,
     height: number,
@@ -43,7 +49,7 @@ export function cropParentElevationPixels(
     x: number,
     y: number,
     parentZoom: number
-): Uint8ClampedArray<ArrayBuffer> {
+): ParentElevationRaster {
     const parent = elevationParentTile(z, x, y, parentZoom);
     if (
         width <= 0 ||
@@ -57,17 +63,84 @@ export function cropParentElevationPixels(
     const output = new Uint8ClampedArray(new ArrayBuffer(source.length));
     const sourceX = (parent.childX * width) / parent.ratio;
     const sourceY = (parent.childY * height) / parent.ratio;
-    for (let py = 0; py < height; py++) {
-        const sy = sourceY + Math.floor(py / parent.ratio);
-        for (let px = 0; px < width; px++) {
-            const sx = sourceX + Math.floor(px / parent.ratio);
-            const from = (sy * width + sx) * 4;
+
+    const decode = (index: number): number =>
+        ((source[index] << 16) | (source[index + 1] << 8) | source[index + 2]) *
+            0.1 -
+        10000;
+    const valid = (index: number, value: number): boolean =>
+        source[index + 3] !== 0 && value >= -1000 && value <= 9000;
+    const stride = width + 2;
+    const heights = new Float64Array(stride * (height + 2));
+    for (let py = -1; py <= height; py++) {
+        // Align texel centres across zoom levels, rather than their top-left corners.
+        const sy = Math.max(
+            0,
+            Math.min(height - 1, sourceY + (py + 0.5) / parent.ratio - 0.5)
+        );
+        const y0 = Math.floor(sy);
+        const y1 = Math.min(y0 + 1, height - 1);
+        const fy = sy - y0;
+        for (let px = -1; px <= width; px++) {
+            const sx = Math.max(
+                0,
+                Math.min(width - 1, sourceX + (px + 0.5) / parent.ratio - 0.5)
+            );
+            const x0 = Math.floor(sx);
+            const x1 = Math.min(x0 + 1, width - 1);
+            const fx = sx - x0;
+            const i00 = (y0 * width + x0) * 4;
+            const i10 = (y0 * width + x1) * 4;
+            const i01 = (y1 * width + x0) * 4;
+            const i11 = (y1 * width + x1) * 4;
+            const h00 = decode(i00);
+            const h10 = decode(i10);
+            const h01 = decode(i01);
+            const h11 = decode(i11);
+            const nearest = (Math.round(sy) * width + Math.round(sx)) * 4;
+            // Never turn a void/invalid height into plausible terrain by averaging it.
+            let altitude = decode(nearest);
+            if (
+                valid(i00, h00) &&
+                valid(i10, h10) &&
+                valid(i01, h01) &&
+                valid(i11, h11)
+            ) {
+                const top = h00 + (h10 - h00) * fx;
+                const bottom = h01 + (h11 - h01) * fx;
+                altitude = top + (bottom - top) * fy;
+            }
+            heights[(py + 1) * stride + px + 1] = altitude;
+            if (px < 0 || px >= width || py < 0 || py >= height) continue;
+            const encoded = Math.round((altitude + 10000) * 10);
             const to = (py * width + px) * 4;
-            output[to] = source[from];
-            output[to + 1] = source[from + 1];
-            output[to + 2] = source[from + 2];
-            output[to + 3] = source[from + 3];
+            output[to] = encoded >> 16;
+            output[to + 1] = (encoded >> 8) & 255;
+            output[to + 2] = encoded & 255;
+            output[to + 3] = source[nearest + 3];
         }
     }
-    return output;
+    return {
+        pixels: output,
+        sampleHeight: (x, y) =>
+            heights[
+                (Math.max(-1, Math.min(height, y)) + 1) * stride +
+                    Math.max(-1, Math.min(width, x)) +
+                    1
+            ],
+    };
+}
+
+/** Height interpolation is rounded once to Terrain-RGB's original 0.1 m precision. */
+export function cropParentElevationPixels(
+    source: Uint8ClampedArray,
+    width: number,
+    height: number,
+    z: number,
+    x: number,
+    y: number,
+    parentZoom: number
+): Uint8ClampedArray<ArrayBuffer> {
+    return resampleParentElevation(source, width, height, z, x, y, parentZoom)
+        .pixels;
 }

@@ -1,4 +1,19 @@
-## [5.92.1] - 2026-09-30 — Catalogue Suisse v6 (préparation locale)
+## [5.92.2] - 2026-09-30 — Terrain 3D sans quadrillage ni plaques artificielles
+
+### Corrigé
+
+- Interpoler les altitudes décodées des tuiles parentes du pack Suisse v6, au lieu de répéter les pixels en blocs. Les normales utilisent les hauteurs non quantifiées et un halo pour les raccords entre enfants du même parent.
+- Stocker les deux composantes horizontales X/Z des normales compactes et reconstruire la verticale Y dans les shaders. L'ancien contrat quantifiait mal les faibles pentes et pouvait créer des plaques artificielles, même sans pack.
+- Conserver le format PMTiles, le décodage physique du DEM natif et la lecture des anciens packs : aucune reconstruction ni aucun nouveau téléchargement du pack Suisse n'est requis pour ce correctif.
+
+### Validation
+
+- Suite Web : 1 979/1 979 ; régressions ciblées altitude/normales/Tile/validation pack : 50/50. Banc GLSL réel et contrôle local 2D/3D avec sources figées réussis.
+- Petits packs Yverdon/Davos lossless : 8/8 et 56/56 DEM validés, écart source/archive 0 m, aucune erreur ni avertissement. Sur S23, les altitudes LOD14 proviennent de l'archive diagnostic avec le mode hors connexion interne actif ; les bords hors échantillon restent incomplets.
+- S23 diagnostic : champ de La Beuchille/La Metz repositionné par le propriétaire, LOD17/18, midi/soir sans ombres, relief visuel ×1/×2 et transitions 2D/3D. Les plaques de l'ancienne capture ne sont plus observées ; le propriétaire confirme un rendu satisfaisant. Ce n'est pas un A/B binaire à caméra/heure strictement identiques ni une validation altimétrique indépendante.
+- Rapport, hashes, captures et limites : `docs/TERRAIN_MOIRE_DIAGNOSTIC_2026-09-30.md`. Production et données du téléphone préservées ; aucun test Android instrumenté ni nouveau pack CDN.
+
+## [5.92.1] - 2026-09-30 — Catalogue Suisse v6
 
 ### Corrigé
 
@@ -7,7 +22,7 @@
 ### Validation
 
 - Tests ciblés 58/58, suite Web 1 964/1 964, `npm run check`, build Capacitor et contrôle des actifs réussis avant la préparation de cette version. L'APK diagnostic de 35 374 468 octets a été installé sur S23 : requête de `catalog.json` observée, fiche « Suisse HD — 592 MB » visible et relief 3D stable à Davos après chargement.
-- La fiche diagnostic indique « Aucun pack installé » : ce rendu 3D ne prouve pas l'usage hors ligne du fichier v6. `testDebugUnitTest` (10 tests), `lintRelease` et `bundleRelease` passent ; l'AAB local signé mesure 28 806 974 octets et n'embarque que le PMTiles d'aperçu Europe. L'application 5.92.1 et son AAB ne sont pas publiés ; l'application 5.92.0 en tests ouverts affiche toujours 664 MB.
+- La fiche diagnostic indique « Aucun pack installé » : ce rendu 3D ne prouve pas l'usage hors ligne du fichier v6. `testDebugUnitTest` (10 tests), `lintRelease` et `bundleRelease` passent ; l'AAB local signé mesure 28 806 974 octets et n'embarque que le PMTiles d'aperçu Europe. La release GitHub `v5.92.1` a ensuite fourni l'AAB signé de 28 809 071 octets ; le propriétaire a installé 5.92.1/code 919 sur le S23.
 
 ## [5.92.0] - 2026-09-29 — Terrain 3D et pack Suisse v6
 

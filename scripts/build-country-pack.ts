@@ -96,6 +96,22 @@ const PACKS: Record<string, PackDef> = {
         countryCode: 'CH',
         outputFileName: 'suntrail-pack-switzerland-sample-v1.pmtiles',
     },
+    switzerland_moire_test: {
+        id: 'switzerland',
+        name: 'Switzerland 3D Moire Diagnostic',
+        bounds: { minLat: 46.72, maxLat: 46.82, minLon: 6.64, maxLon: 9.86 },
+        areas: [
+            // Plateau with pale fields near Yverdon; well inside Switzerland.
+            { minLat: 46.72, maxLat: 46.77, minLon: 6.64, maxLon: 6.72 },
+            // Alpine terrain around Davos, away from national boundaries.
+            { minLat: 46.77, maxLat: 46.82, minLon: 9.78, maxLon: 9.86 },
+        ],
+        zooms: [12, 13, 14],
+        source: 'swisstopo',
+        version: 6,
+        countryCode: 'CH',
+        outputFileName: 'suntrail-pack-switzerland-moire-z12.pmtiles',
+    },
     france_alps: {
         id: 'france_alps',
         name: 'France Alpes HD',

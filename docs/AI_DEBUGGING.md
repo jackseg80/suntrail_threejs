@@ -44,6 +44,25 @@ lire le JSON de `#suntrail-tile-diagnostics-data`.
 
 ---
 
+## Taches et quadrillage 3D — diagnostic local du 30 septembre 2026
+
+Voir [le rapport et ses limites](TERRAIN_MOIRE_DIAGNOSTIC_2026-09-30.md). Deux chemins doivent
+être distingués : les escaliers créés par l'expansion nearest-neighbour d'un DEM réduit et la
+perte de précision des normales compactes historiques RG=(X,Y), Y étant la verticale.
+Le correctif local utilise l'interpolation des **altitudes décodées**, jamais des canaux RGB,
+et des normales compactes RG=(X,Z), avec reconstruction de Y positif. Aucun nouveau format
+PMTiles n'est introduit. Le S23 diagnostic a été contrôlé aux LOD17/18 sur le champ repositionné
+par le propriétaire, puis aux LOD14 sur les petits packs Yverdon/Davos en hors connexion interne.
+Le retour du propriétaire est positif ; cette qualification ne couvre pas tous les DEM/appareils.
+
+Pour les normales, conserver le zoom de la source si le raster est intact ; utiliser le zoom
+du raster cible après rééchantillonnage d'un parent. Changer seulement `sourceZ` en z12 après
+avoir agrandi le raster à z14 fausserait les pentes d'un facteur quatre.
+
+Une carte correcte en 2D ne valide pas son altitude. Contrôler séparément DEM physique,
+exagération visuelle, normales et ombres portées. Une capture WebView CDP blanche n'est pas
+une preuve d'écran blanc : vérifier les pixels du compositeur Android via `adb screencap`.
+
 ## Historique des incidents corrigés
 
 Le tableau suivant documente des causes déjà rencontrées. Il sert à reconnaître une régression,

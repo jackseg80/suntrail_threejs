@@ -1,6 +1,6 @@
 # SunTrail 3D
 
-**Version source 5.92.1 préparée localement · Android 919 · MIT avec Commons Clause**
+**Version source 5.92.2 · Android 920 · MIT avec Commons Clause**
 
 SunTrail est une application de randonnée mobile-first qui combine cartographie 2D/3D,
 relief, lumière solaire, préparation d'itinéraires et suivi GPS. Android est la plateforme
@@ -36,6 +36,11 @@ rend possible le pack Suisse v6 réduit. Ce lot a été validé en diagnostic su
 de l'application, l'envoi Play et le basculement du catalogue restent des étapes distinctes.
 
 ## Ce que fait l'application aujourd'hui
+
+La 5.92.2 corrige le quadrillage des élévations parentes du pack Suisse v6 et les plaques
+artificielles dues à l'encodage des normales 3D. Les packs existants restent compatibles,
+sans reconstruction du fichier Suisse. Les contrôles S23 et leurs limites sont documentés dans
+[le rapport terrain](docs/TERRAIN_MOIRE_DIAGNOSTIC_2026-09-30.md).
 
 - **Explorer le terrain** : carte 2D ou relief 3D, gestes tactiles, recherche de lieux et de
   sommets, points d'intérêt, sentiers, pentes, bâtiments, végétation et hydrologie selon les
@@ -99,11 +104,10 @@ La précision, le niveau de détail et la disponibilité des bâtiments, sentier
 satellite varient donc selon le pays, la source, la connexion et les données téléchargées.
 
 Le catalogue public annonce la Suisse v6 (592 Mio) depuis le 2026-09-29 ; l'objet v3 reste conservé
-à son ancienne URL. Attention : l'AAB 5.92.0 actuellement en tests ouverts affiche encore son
-fallback embarqué v3/664 Mio, car sa build ne charge pas l'URL distante. La source 5.92.1 prépare
-un fallback v6, le chargement du catalogue R2 et la migration d'un ancien cache. Son APK diagnostic
-affiche 592 MB sur S23, mais cette correction n'est pas encore publiée. L'application 5.92.0 sait
-décoder l'élévation parente, mais ne proposera la v6 qu'après distribution d'une build corrigée.
+à son ancienne URL. La 5.92.1 charge le catalogue R2, aligne le fallback sur v6 et migre les caches
+anciens ; sa release GitHub et son AAB signé sont disponibles. La 5.92.0 affichait encore le
+fallback v3/664 Mio. La 5.92.2 conserve cette correction et améliore le rendu des élévations
+parentes, sans modifier l'objet v6 publié.
 
 ## Architecture
 

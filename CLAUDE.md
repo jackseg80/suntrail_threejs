@@ -1,15 +1,16 @@
-# SunTrail — Guide IA (source 5.92.1 préparée localement)
+# SunTrail — Guide IA (source 5.92.2 / Android 920)
 
 > Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-30 après le contrôle du
-> correctif de catalogue Suisse sur l'application diagnostic du S23.
+> catalogue Suisse et du correctif des normales/élévations parentes sur le S23 diagnostic.
 
 ## État vérifié
 
-- Version npm préparée localement : `5.92.1`.
-- Android préparé localement : `versionName 5.92.1`, `versionCode 919`, minSdk 24, compile/target
-  SDK 36. Le propriétaire indique que 5.92.0/code 918 est en tests ouverts ; vérifier le maximum
-  effectivement enregistré dans Play Console avant l'envoi d'un nouvel AAB.
-- Révision courante `5.91.4` (code 917) : la lecture `CacheStorage` par tuile sort du thread
+- Version source : `5.92.2`, Android `versionName 5.92.2`, `versionCode 920`, minSdk 24,
+  compile/target SDK 36. Le propriétaire confirme 919 comme maximum Play et autorise commit,
+  push, tag `v5.92.2` et release GitHub. L'envoi Play sera réalisé par le propriétaire.
+- La release GitHub `v5.92.1` fournit l'AAB signé de 28 809 071 octets ; 5.92.1/code 919 est
+  installé sur le S23 de production. Cette application n'a pas été remplacée pendant le diagnostic.
+- Révision historique `5.91.4` (code 917) : la lecture `CacheStorage` par tuile sort du thread
   principal (résolution dans le worker) avec un repli local borné sur miss couleur, l'hydratation de
   l'UI secondaire est différée après la première tuile, et deux réglages avancés historiques sont
   retirés (debug sans cible, normalmap RG désormais toujours actif). La release GitHub `v5.91.4`
@@ -21,7 +22,7 @@
   son catalogue embarqué annonçait encore la Suisse v3/664 MB. Le catalogue R2 v5/Suisse v6 est
   correct, mais cette version ne le charge pas. Le correctif local (fallback v6, fetch distant dans
   les builds, migration/rejet des caches plus anciens) a été vérifié sur S23 : l'APK diagnostic
-  charge `catalog.json` et affiche 592 MB. Il n'est ni committé ni publié ; cette application
+  charge `catalog.json` et affiche 592 MB. Ce correctif est livré dans la release 5.92.1 ; cette application
   diagnostic n'a pas de pack installé, donc sa vue 3D ne prouve pas le v6 hors ligne.
 - La source 5.92.0 regroupe le lot post-5.91.4 : transitions
   2D/3D fiabilisées, offsets de shader isolés par tuile, calcul solaire sur l'altitude physique,
@@ -221,6 +222,19 @@ vers le v6 le 2026-09-29 ; le v3 reste à son ancienne URL. Le test UI d'un tél
 reste à faire. Les archives de diagnostic locales sous `public/diagnostic/` ne doivent jamais entrer
 dans un build de production ;
 `check:capacitor-assets` le refuse par défaut. Voir `docs/SWITZERLAND_PACK_REDUCTION.md`.
+
+### Correctif terrain 3D 5.92.2 — qualification du 30 septembre 2026
+
+Le quadrillage du v6 et les taches sans pack sont analysés séparément. Deux défauts numériques
+ont été reproduits : expansion d'altitude au plus proche avant différentiation, et quantification
+de la verticale dans les normales compactes. Correctifs en worktree isolé, suite complète
+1 979/1 979 et contrôle GLSL verts. L'APK diagnostic configuré a été installé sans effacer de
+données ; La Beuchille/La Metz est contrôlé aux LOD17/18, midi/soir sans ombres et relief ×1/×2.
+Le propriétaire confirme un rendu satisfaisant. Yverdon/Davos LOD14 lit l'élévation du petit pack
+en mode hors connexion interne ; les bords hors échantillon restent incomplets.
+Le format PMTiles et les hauteurs natives sont conservés. Aucun nouveau pack Suisse ni upload R2
+n'est requis. Publication GitHub autorisée ; état de l'AAB à vérifier dans la CI. Voir
+[le rapport avec preuves et risques](docs/TERRAIN_MOIRE_DIAGNOSTIC_2026-09-30.md).
 
 ## Architecture et documentation
 

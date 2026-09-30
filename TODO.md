@@ -1,4 +1,4 @@
-# SunTrail — TODO (source 5.92.1 préparée localement ; envoi Play séparé)
+# SunTrail — TODO (source 5.92.2 / 920 ; envoi Play séparé)
 
 > Dernière mise à jour : 2026-09-30
 
@@ -23,12 +23,28 @@
       Aucun pack n'étant installé dans cette application, ce contrôle ne valide pas le v6 hors ligne.
 - [x] Préparer localement 5.92.1/code 919 : contrôles Web, tests unitaires Android (10/10), lint et
       AAB signé de contrôle réussis ; aucun pack diagnostic volumineux n'est embarqué.
-- [ ] Vérifier le maximum Play Console avant l'envoi d'un AAB issu de la CI. Le catalogue Cloudflare
-      est déjà en v6 ; aucun nouvel upload de pack ou de catalogue n'est prévu.
+- [x] Le propriétaire confirme 919 comme maximum Play pour préparer l'AAB 5.92.2/code 920.
+      Le catalogue Cloudflare est déjà en v6 ; aucun nouvel upload de pack/catalogue n'est prévu.
 - [x] Inventorier puis vider, avec accord explicite du propriétaire, les caches cartographiques et
       HTTP de l'application diagnostic sur S23 : environ 2,7 Go récupérés, OPFS et réglages préservés.
 - [ ] Corriger ou expliciter la non-persistance du mode hors ligne manuel après redémarrage ; décider
       séparément du sort des deux anciens temporaires OPFS `.crswap` (environ 282 Mo), conservés.
+
+## ✅ 5.92.2 — Quadrillage et plaques de terrain 3D
+
+- [x] Reproduire les deux défauts numériques : expansion nearest du parent z12 et quantification
+      de la verticale des normales compactes ; corriger interpolation d'altitude et contrat X/Z.
+- [x] Couvrir les plans inclinés, retenues Terrain-RGB, no-data et raccords entre enfants ;
+      1 979 tests, banc GLSL réel et petits packs Yverdon/Davos validés.
+- [x] Installer uniquement le diagnostic sur S23 et contrôler la lecture du petit pack hors
+      connexion interne ; aucune lecture d'élévation réseau dans les traces pack LOD14.
+- [x] Vérifier La Beuchille/La Metz aux LOD17/18, midi/soir sans ombres, relief ×1/×2 et 2D/3D.
+      Le propriétaire accepte le rendu. Production et données locales conservées.
+- [x] Le propriétaire confirme 919 comme maximum Play et autorise commit, push, tag et release
+      5.92.2/code 920 ; la publication Play restera manuelle par le propriétaire.
+- [ ] Suivis non inclus dans cette clôture : raccords entre parents distincts sans halo voisin,
+      coût sur appareils modestes, éventuel décalage de bâtiments lors d'un changement de relief.
+      Voir `docs/TERRAIN_MOIRE_DIAGNOSTIC_2026-09-30.md` ; aucun nouveau build Suisse requis.
 
 ## ✅ Correctifs post-v5.91.4 — terrain, parcours et robustesse
 

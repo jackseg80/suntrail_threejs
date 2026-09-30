@@ -26,6 +26,7 @@ import { getPlaneGeometry } from '../geometryCache';
 import { loadTileData, cancelTileLoad } from '../tileLoader';
 import { mergeWorkerResponses } from '../tileResponseMerge';
 import { materialPool } from '../materialPool';
+import { terrainNormalShaderChunk } from './normalEncoding';
 import { activeTiles } from '../terrain';
 import { removeFromLoadQueue, queueBuildMesh } from './tileQueue';
 import {
@@ -552,6 +553,7 @@ export class Tile {
                     uniform sampler2D uElevationMap; uniform float uExaggeration; uniform float uTileSize;
                     uniform vec2 uElevOffset; uniform float uElevScale;
                     uniform float uCompactNormalmap;
+                    ${terrainNormalShaderChunk}
                     float decodeHeight(vec4 rgba) { return -10000.0 + ((rgba.r * 255.0 * 65536.0 + rgba.g * 255.0 * 256.0 + rgba.b * 255.0) * 0.1); }
                     float getTerrainHeight(vec2 uv) {
                         const float HT = 0.5 / 256.0;
@@ -591,15 +593,7 @@ export class Tile {
                         `#include <beginnormal_vertex>\n
                         const float HT_N = 0.5 / 256.0;
                         vec2 elevUv = clamp(uElevOffset + (uv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
-                        vec3 ts = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
-                        float nz;
-                        if (uCompactNormalmap > 0.5) {
-                            float zmag = sqrt(max(0.0, 1.0 - ts.x * ts.x - ts.y * ts.y));
-                            nz = ts.z > 0.0 ? zmag : -zmag;
-                        } else {
-                            nz = ts.z;
-                        }
-                        vec3 normalSample = vec3(ts.x, ts.y, nz);
+                        vec3 normalSample = decodeTerrainNormal(texture2D(uNormalMap, elevUv).rgb, uCompactNormalmap);
                         vTrueNormal = normalize(normalSample);
                         objectNormal = normalize(vec3(normalSample.x * uExaggeration * uTileSize, normalSample.y, normalSample.z * uExaggeration * uTileSize));
                     `
@@ -625,6 +619,7 @@ export class Tile {
                     varying vec3 vTrueNormal; varying vec2 vWorldXZ;
                     uniform sampler2D uNormalMap; uniform vec2 uElevOffset; uniform float uElevScale; uniform bool uHasNormalMap; uniform float uCompactNormalmap;
                     uniform sampler2D uWaterMask; uniform bool uHasWaterMask;
+                    ${terrainNormalShaderChunk}
                     ${shader.fragmentShader}
                 `.replace(
                     '#include <map_fragment>',
@@ -652,15 +647,7 @@ export class Tile {
                         #if IS_2D == 1
                             const float HT_N = 0.5 / 256.0;
                             vec2 elevUv = clamp(uElevOffset + (vLocalUv * uElevScale), vec2(HT_N), vec2(1.0 - HT_N));
-                            vec3 ts = texture2D(uNormalMap, elevUv).rgb * 2.0 - 1.0;
-                            float nzf;
-                            if (uCompactNormalmap > 0.5) {
-                                float zmag = sqrt(max(0.0, 1.0 - ts.x * ts.x - ts.y * ts.y));
-                                nzf = ts.z > 0.0 ? zmag : -zmag;
-                            } else {
-                                nzf = ts.z;
-                            }
-                            vec3 nMerc = vec3(ts.x, ts.y, nzf);
+                            vec3 nMerc = decodeTerrainNormal(texture2D(uNormalMap, elevUv).rgb, uCompactNormalmap);
                             normal = normalize(nMerc);
                         #else
                             normal = vTrueNormal;

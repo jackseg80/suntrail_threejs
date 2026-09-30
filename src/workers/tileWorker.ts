@@ -14,7 +14,8 @@ import type {
     TileWorkerResourceTiming,
     TileWorkerResponse,
 } from '../types/worker';
-import { cropParentElevationPixels } from '../modules/elevationParentTile';
+import { resampleParentElevation } from '../modules/elevationParentTile';
+import { terrainNormalPixels } from './terrainNormals';
 
 // v30 : synchronized avec tileLoader.ts pour support seeding
 const CACHE_NAME = 'suntrail-tiles-v30';
@@ -152,10 +153,12 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                     ctx.drawImage(elevRes.bitmap, 0, 0);
                     const imageData = ctx.getImageData(0, 0, width, height);
                     let data = imageData.data;
+                    let sampleParentHeight:
+                        ((x: number, y: number) => number) | undefined;
                     if (elevationParentZoom !== undefined) {
                         const targetZoom = Math.min(zoom, 14);
                         const ratio = 2 ** (zoom - targetZoom);
-                        data = cropParentElevationPixels(
+                        const parentRaster = resampleParentElevation(
                             data,
                             width,
                             height,
@@ -164,6 +167,8 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                             Math.floor((tileY ?? 0) / ratio),
                             elevationParentZoom
                         );
+                        data = parentRaster.pixels;
+                        sampleParentHeight = parentRaster.sampleHeight;
                         ctx.putImageData(
                             new ImageData(
                                 new Uint8ClampedArray(data),
@@ -183,9 +188,6 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
 
                     // --- GÉNÉRATION NORMAL MAP (Sautée en 2D pour économiser ~15% CPU) ---
                     if (!is2D) {
-                        const normalData = new Uint8ClampedArray(
-                            width * height * 4
-                        );
                         const sourceZ =
                             elevationParentZoom === undefined
                                 ? elevSourceZoom || zoom || 14
@@ -206,64 +208,14 @@ self.onmessage = async (e: MessageEvent<TileWorkerRequest>) => {
                         }
                         const tileSizeMeters = equatorTileSize * latFactor;
                         const pixelSize = tileSizeMeters / width;
-                        const invPixelSize = 1.0 / pixelSize;
-
-                        for (let py = 0; py < height; py++) {
-                            const py_width = py * width;
-                            for (let px = 0; px < width; px++) {
-                                const idx = (py_width + px) * 4;
-
-                                // v5.40.18 : Inline decoding with bitwise operators for maximum speed in nested loop
-                                const getH = (x: number, y: number) => {
-                                    const ix =
-                                        x < 0 ? 0 : x >= width ? width - 1 : x;
-                                    const iy =
-                                        y < 0
-                                            ? 0
-                                            : y >= height
-                                              ? height - 1
-                                              : y;
-                                    const i = (iy * width + ix) * 4;
-                                    // RGB to Altitude conversion (-10000 + (R*65536 + G*256 + B) * 0.1)
-                                    return (
-                                        ((data[i] << 16) |
-                                            (data[i + 1] << 8) |
-                                            data[i + 2]) *
-                                            0.1 -
-                                        10000.0
-                                    );
-                                };
-
-                                const hL = getH(px - 1, py),
-                                    hR = getH(px + 1, py),
-                                    hD = getH(px, py - 1),
-                                    hU = getH(px, py + 1);
-
-                                // v5.32.22 : Calcul de la normale local (1x1 unit space)
-                                const vx = (hL - hR) * invPixelSize;
-                                const vy = 2.0;
-                                const vz = (hD - hU) * invPixelSize;
-
-                                // Normalization
-                                const invLen =
-                                    1.0 /
-                                    Math.sqrt(vx * vx + vy * vy + vz * vz);
-                                normalData[idx] =
-                                    (vx * invLen * 0.5 + 0.5) * 255;
-                                normalData[idx + 1] =
-                                    (vy * invLen * 0.5 + 0.5) * 255;
-                                // v5.61.4 : Mode compact RG — Z reconstruit côté GPU
-                                if (useCompactNormalmap) {
-                                    // Encode seulement le signe de Z dans B (B=255 si Z≥0, B=0 si Z<0)
-                                    normalData[idx + 2] =
-                                        vz * invLen >= 0 ? 255 : 0;
-                                } else {
-                                    normalData[idx + 2] =
-                                        (vz * invLen * 0.5 + 0.5) * 255;
-                                }
-                                normalData[idx + 3] = 255;
-                            }
-                        }
+                        const normalData = terrainNormalPixels(
+                            data,
+                            width,
+                            height,
+                            pixelSize,
+                            Boolean(useCompactNormalmap),
+                            sampleParentHeight
+                        );
                         const nCanvas = new OffscreenCanvas(width, height);
                         const nCtx = nCanvas.getContext('2d');
                         if (nCtx) {
