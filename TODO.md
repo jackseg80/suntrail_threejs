@@ -42,6 +42,9 @@
       Le propriétaire accepte le rendu. Production et données locales conservées.
 - [x] Le propriétaire confirme 919 comme maximum Play et autorise commit, push, tag et release
       5.92.2/code 920 ; la publication Play restera manuelle par le propriétaire.
+- [x] Publier `v5.92.2` depuis `986886f1` : CI qualité/six smoke et CI AAB vertes ; AAB signé
+      de 28 809 410 octets vérifié (manifeste 920, certificat identique à 5.92.1, aucun diagnostic).
+- [ ] Le propriétaire envoie l'AAB 5.92.2/code 920 dans Play Console ; aucun upload réalisé ici.
 - [ ] Suivis non inclus dans cette clôture : raccords entre parents distincts sans halo voisin,
       coût sur appareils modestes, éventuel décalage de bâtiments lors d'un changement de relief.
       Voir `docs/TERRAIN_MOIRE_DIAGNOSTIC_2026-09-30.md` ; aucun nouveau build Suisse requis.

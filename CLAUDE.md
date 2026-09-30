@@ -8,6 +8,11 @@
 - Version source : `5.92.2`, Android `versionName 5.92.2`, `versionCode 920`, minSdk 24,
   compile/target SDK 36. Le propriétaire confirme 919 comme maximum Play et autorise commit,
   push, tag `v5.92.2` et release GitHub. L'envoi Play sera réalisé par le propriétaire.
+- Release `v5.92.2` publiée depuis `986886f1` : CI qualité/1 979 tests et six smoke Chromium
+  verte (run 36771706121), CI Android/signature verte (36772207657). AAB de 28 809 410 octets,
+  SHA-256 `7189f9cf2b4d36aedd9395102475c5a679343fc862872dd2dd083dea1a8a7f57`,
+  manifeste production 5.92.2/920 et certificat identique à 5.92.1 vérifiés. Aucun pack diagnostic,
+  upload Play ou déploiement Pages. Rapport terrain et limites conservés ; lot applicatif clôturé.
 - La release GitHub `v5.92.1` fournit l'AAB signé de 28 809 071 octets ; 5.92.1/code 919 est
   installé sur le S23 de production. Cette application n'a pas été remplacée pendant le diagnostic.
 - Révision historique `5.91.4` (code 917) : la lecture `CacheStorage` par tuile sort du thread

@@ -231,6 +231,19 @@ de production remplacée et aucun test Android instrumenté lancé.
 
 ## Reproduire les contrôles locaux (PowerShell)
 
+### Clôture de release vérifiée
+
+- Commit applicatif `986886f16102a85b1f8bd923c89499a931c4f709`, tag et release `v5.92.2` publiés.
+- CI [qualité et six smoke Chromium](https://github.com/jackseg80/suntrail_threejs/actions/runs/36771706121)
+  et [Android/AAB signé](https://github.com/jackseg80/suntrail_threejs/actions/runs/36772207657) vertes.
+- AAB : **28 809 410 octets**, manifeste `com.suntrail.threejs`, version **5.92.2 / 920**.
+  SHA-256 `7189f9cf2b4d36aedd9395102475c5a679343fc862872dd2dd083dea1a8a7f57` identique à l'asset GitHub.
+  Bundletool valide le bundle ; Jarsigner vérifie la signature et le certificat correspond à 5.92.1.
+  Les avertissements de certificat auto-signé/non horodaté sont ceux de cette clé Android historique.
+- Seul `base/assets/public/tiles/europe-overview.pmtiles` est embarqué ; aucun asset diagnostic.
+- **GO remise pour Play**, upload manuel par le propriétaire. Aucun pack CDN ni Pages modifié.
+  Les limites ci-dessus restent ouvertes, sans nouvelle construction de pack requise.
+
 Depuis ce worktree, avec les dépendances déjà présentes :
 
 ```powershell

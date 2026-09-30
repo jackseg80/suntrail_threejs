@@ -8,6 +8,8 @@
 > accepté par le propriétaire. La compatibilité des packs existants est conservée ; aucun nouveau
 > build Suisse ni upload R2 n'est nécessaire. Commit, push, tag et release autorisés ; l'envoi
 > Play reste manuel par le propriétaire. Les limites sont dans le rapport terrain du 30 septembre.
+> Release GitHub `v5.92.2` publiée : CI verte, six smoke Chromium ; AAB signé de 28 809 410 octets,
+> manifeste 5.92.2/920 et continuité du certificat vérifiés. Aucun pack diagnostic embarqué.
 
 > La base de connaissance technique est maintenue dans **`CLAUDE.md`**.
 > Ce fichier sert de point d'entrée pour Gemini CLI.
