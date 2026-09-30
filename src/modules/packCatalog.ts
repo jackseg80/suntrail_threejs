@@ -50,7 +50,9 @@ export function catalogCacheKeyForUrl(url: string | undefined): string {
 const CATALOG_CACHE_KEY = catalogCacheKeyForUrl(CATALOG_URL);
 
 const EMBEDDED_CATALOG: PackCatalog = {
-    version: 3,
+    // Keep this fallback aligned with the public catalog. It is used on a
+    // fresh offline install and when the CDN cannot be reached.
+    version: 5,
     packs: [
         {
             id: 'switzerland',
@@ -63,9 +65,9 @@ const EMBEDDED_CATALOG: PackCatalog = {
             },
             bounds: { minLat: 45.8, maxLat: 47.8, minLon: 5.9, maxLon: 10.5 },
             lodRange: { min: 8, max: 14 },
-            version: 3,
-            sizeMB: 664,
-            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-switzerland-v3.pmtiles`,
+            version: 6,
+            sizeMB: 592,
+            cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-switzerland-v6.pmtiles`,
             regionCheck: 'CH',
         },
         {
@@ -77,7 +79,7 @@ const EMBEDDED_CATALOG: PackCatalog = {
                 it: 'Alpi Francesi HD',
                 en: 'France Alps HD',
             },
-            bounds: { minLat: 43.5, maxLat: 46.4, minLon: 4.7, maxLon: 8.2 },
+            bounds: { minLat: 43.5, maxLat: 46.5, minLon: 4.5, maxLon: 7.8 },
             lodRange: { min: 8, max: 14 },
             version: 2,
             sizeMB: 515,
@@ -95,8 +97,8 @@ const EMBEDDED_CATALOG: PackCatalog = {
             },
             bounds: { minLat: 46.3, maxLat: 49.1, minLon: 9.4, maxLon: 17.3 },
             lodRange: { min: 8, max: 14 },
-            version: 2,
-            sizeMB: 985,
+            version: 1,
+            sizeMB: 980,
             cdnUrl: `${CDN_BASE_URL}/packs/suntrail-pack-austria-v1.pmtiles`,
             regionCheck: 'AT',
         },
@@ -168,10 +170,78 @@ export function getPackMeta(packId: string): PackMeta | undefined {
 function getCachedCatalog(): PackCatalog | null {
     try {
         const raw = localStorage.getItem(CATALOG_CACHE_KEY);
-        return raw ? (JSON.parse(raw) as PackCatalog) : null;
+        if (!raw) return null;
+        const value: unknown = JSON.parse(raw);
+        return isPackCatalog(value) ? value : null;
     } catch {
         return null;
     }
+}
+
+function isPackCatalog(value: unknown): value is PackCatalog {
+    if (!value || typeof value !== 'object') return false;
+    const catalog = value as Partial<PackCatalog>;
+    return (
+        Number.isSafeInteger(catalog.version) &&
+        (catalog.version ?? 0) > 0 &&
+        Array.isArray(catalog.packs) &&
+        catalog.packs.length > 0 &&
+        catalog.packs.every((value: unknown) => {
+            if (!value || typeof value !== 'object') return false;
+            const pack = value as Partial<PackMeta>;
+            return (
+                typeof pack.id === 'string' &&
+                typeof pack.productId === 'string' &&
+                typeof pack.cdnUrl === 'string' &&
+                Number.isSafeInteger(pack.version) &&
+                (pack.version ?? 0) > 0 &&
+                typeof pack.sizeMB === 'number' &&
+                Number.isFinite(pack.sizeMB) &&
+                pack.sizeMB > 0 &&
+                typeof pack.bounds === 'object' &&
+                pack.bounds !== null &&
+                Number.isFinite(pack.bounds.minLat) &&
+                Number.isFinite(pack.bounds.maxLat) &&
+                Number.isFinite(pack.bounds.minLon) &&
+                Number.isFinite(pack.bounds.maxLon) &&
+                typeof pack.lodRange === 'object' &&
+                pack.lodRange !== null &&
+                Number.isFinite(pack.lodRange.min) &&
+                Number.isFinite(pack.lodRange.max)
+            );
+        })
+    );
+}
+
+function isNotOlderThan(
+    candidate: PackCatalog,
+    reference: PackCatalog
+): boolean {
+    if (candidate.version < reference.version) return false;
+    const candidateById = new Map(
+        candidate.packs.map((pack) => [pack.id, pack])
+    );
+    return reference.packs.every((referencePack) => {
+        const candidatePack = candidateById.get(referencePack.id);
+        return !candidatePack || candidatePack.version >= referencePack.version;
+    });
+}
+
+function getOfflineCatalog(): PackCatalog {
+    const cached = getCachedCatalog();
+    const catalog =
+        cached && isNotOlderThan(cached, EMBEDDED_CATALOG)
+            ? cached
+            : EMBEDDED_CATALOG;
+
+    // Replace a legacy v3 cache with the embedded v5/v6 catalog. This makes
+    // the migration durable even if the next launch is offline.
+    try {
+        localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(catalog));
+    } catch {
+        // The in-memory fallback remains usable if storage is unavailable.
+    }
+    return catalog;
 }
 
 async function _doFetchCatalog(): Promise<PackCatalog> {
@@ -185,26 +255,30 @@ async function _doFetchCatalog(): Promise<PackCatalog> {
         try {
             const ctrl = new AbortController();
             const tid = setTimeout(() => ctrl.abort(), 3000);
-            const resp = await fetch(CATALOG_URL, {
-                cache: 'no-cache',
-                signal: ctrl.signal,
-            });
-            clearTimeout(tid);
+            let resp: Response;
+            try {
+                resp = await fetch(CATALOG_URL, {
+                    cache: 'no-cache',
+                    signal: ctrl.signal,
+                });
+            } finally {
+                clearTimeout(tid);
+            }
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = (await resp.json()) as PackCatalog;
-            if (data && Array.isArray(data.packs)) {
+            if (isPackCatalog(data) && isNotOlderThan(data, EMBEDDED_CATALOG)) {
                 _catalog = data;
                 localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(data));
                 return data;
             }
-            throw new Error('Invalid catalog format');
+            throw new Error('Invalid or older catalog');
         } catch {
             console.warn(
                 '[Packs] Catalog réseau indisponible, fallback cache/embarqué.'
             );
         }
     }
-    _catalog = getCachedCatalog() ?? EMBEDDED_CATALOG;
+    _catalog = getOfflineCatalog();
     return _catalog;
 }
 

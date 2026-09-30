@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../constants/storage', () => ({
     STORAGE_KEYS: {
@@ -18,6 +18,19 @@ import {
     catalogCacheKeyForUrl,
     catalogScopedStorageKey,
 } from './packCatalog';
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.resetModules();
+});
+
+beforeEach(() => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('network unavailable'))
+    );
+});
 
 describe('catalogCacheKeyForUrl()', () => {
     const baseKey = 'suntrail_pack_catalog';
@@ -74,9 +87,15 @@ describe('getEmbeddedCatalog()', () => {
         const catalog = getEmbeddedCatalog();
         const ch = catalog.packs.find((p) => p.id === 'switzerland');
         expect(ch).toBeDefined();
+        expect(catalog.version).toBe(5);
         expect(ch!.regionCheck).toBe('CH');
         expect(ch!.bounds.minLat).toBe(45.8);
         expect(ch!.bounds.maxLat).toBe(47.8);
+        expect(ch!.version).toBe(6);
+        expect(ch!.sizeMB).toBe(592);
+        expect(ch!.cdnUrl).toBe(
+            'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-switzerland-v6.pmtiles'
+        );
     });
 
     it('contains france_alps pack', () => {
@@ -209,13 +228,121 @@ describe('fetchCatalog()', () => {
     beforeEach(() => {
         resetCatalogState();
         vi.clearAllMocks();
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockRejectedValue(new Error('network unavailable'))
+        );
         localStorage.clear();
     });
 
-    it('loads embedded catalog when no CDN URL', async () => {
+    it('falls back to the current embedded catalog when the CDN is unavailable', async () => {
         const catalog = await fetchCatalog();
-        expect(catalog.version).toBeGreaterThan(0);
+        expect(catalog.version).toBe(5);
         expect(Array.isArray(catalog.packs)).toBe(true);
+    });
+
+    it('replaces a cached v3 catalog with the newer embedded v6 catalog offline', async () => {
+        const oldCatalog = JSON.parse(JSON.stringify(getEmbeddedCatalog()));
+        oldCatalog.version = 3;
+        const oldSwiss = oldCatalog.packs.find(
+            (pack: { id: string }) => pack.id === 'switzerland'
+        );
+        oldSwiss.version = 3;
+        oldSwiss.sizeMB = 664;
+        oldSwiss.cdnUrl =
+            'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-switzerland-v3.pmtiles';
+        localStorage.setItem(
+            'suntrail_pack_catalog',
+            JSON.stringify(oldCatalog)
+        );
+
+        const catalog = await fetchCatalog();
+        const swiss = catalog.packs.find((pack) => pack.id === 'switzerland');
+
+        expect(catalog.version).toBe(5);
+        expect(swiss).toMatchObject({ version: 6, sizeMB: 592 });
+        expect(swiss?.cdnUrl).toContain('switzerland-v6.pmtiles');
+        expect(
+            JSON.parse(localStorage.getItem('suntrail_pack_catalog')!).version
+        ).toBe(5);
+    });
+
+    it('rejects a stale cached catalog even when its top-level version is current', async () => {
+        const oldCatalog = JSON.parse(JSON.stringify(getEmbeddedCatalog()));
+        oldCatalog.version = 5;
+        const oldSwiss = oldCatalog.packs.find(
+            (pack: { id: string }) => pack.id === 'switzerland'
+        );
+        oldSwiss.version = 3;
+        oldSwiss.sizeMB = 664;
+        oldSwiss.cdnUrl =
+            'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/packs/suntrail-pack-switzerland-v3.pmtiles';
+        localStorage.setItem(
+            'suntrail_pack_catalog',
+            JSON.stringify(oldCatalog)
+        );
+
+        const catalog = await fetchCatalog();
+
+        expect(
+            catalog.packs.find((pack) => pack.id === 'switzerland')
+        ).toMatchObject({
+            version: 6,
+            sizeMB: 592,
+        });
+    });
+
+    it('preserves a newer cached catalog when the CDN is unavailable', async () => {
+        const newerCatalog = JSON.parse(JSON.stringify(getEmbeddedCatalog()));
+        newerCatalog.version = 6;
+        const swiss = newerCatalog.packs.find(
+            (pack: { id: string }) => pack.id === 'switzerland'
+        );
+        swiss.version = 7;
+        localStorage.setItem(
+            'suntrail_pack_catalog',
+            JSON.stringify(newerCatalog)
+        );
+
+        const catalog = await fetchCatalog();
+
+        expect(catalog.version).toBe(6);
+        expect(
+            catalog.packs.find((pack) => pack.id === 'switzerland')?.version
+        ).toBe(7);
+    });
+
+    it('rejects a stale remote catalog and falls back to the embedded v6 pack', async () => {
+        const oldCatalog = JSON.parse(JSON.stringify(getEmbeddedCatalog()));
+        oldCatalog.version = 4;
+        const oldSwiss = oldCatalog.packs.find(
+            (pack: { id: string }) => pack.id === 'switzerland'
+        );
+        oldSwiss.version = 3;
+        oldSwiss.sizeMB = 664;
+
+        vi.stubEnv(
+            'VITE_PACKS_CATALOG_URL',
+            'https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/catalog.json'
+        );
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => oldCatalog,
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.resetModules();
+
+        const remoteCatalog = await import('./packCatalog');
+        const catalog = await remoteCatalog.fetchCatalog();
+
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(catalog.version).toBe(5);
+        expect(
+            catalog.packs.find((pack) => pack.id === 'switzerland')
+        ).toMatchObject({
+            version: 6,
+            sizeMB: 592,
+        });
     });
 
     it('caches the result and returns same promise for concurrent calls', async () => {

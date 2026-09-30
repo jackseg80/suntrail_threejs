@@ -1,3 +1,14 @@
+## [5.92.1] - 2026-09-30 — Catalogue Suisse v6 (préparation locale)
+
+### Corrigé
+
+- L'écran « Packs Pays » lit le catalogue public R2 dans les builds Android et affiche « Suisse HD — 592 MB » avec l'URL v6. Le fallback embarqué est aligné sur ce catalogue ; un cache v3 obsolète, même marqué globalement version 5, est remplacé et une réponse réseau plus ancienne est refusée.
+
+### Validation
+
+- Tests ciblés 58/58, suite Web 1 964/1 964, `npm run check`, build Capacitor et contrôle des actifs réussis avant la préparation de cette version. L'APK diagnostic de 35 374 468 octets a été installé sur S23 : requête de `catalog.json` observée, fiche « Suisse HD — 592 MB » visible et relief 3D stable à Davos après chargement.
+- La fiche diagnostic indique « Aucun pack installé » : ce rendu 3D ne prouve pas l'usage hors ligne du fichier v6. `testDebugUnitTest` (10 tests), `lintRelease` et `bundleRelease` passent ; l'AAB local signé mesure 28 806 974 octets et n'embarque que le PMTiles d'aperçu Europe. L'application 5.92.1 et son AAB ne sont pas publiés ; l'application 5.92.0 en tests ouverts affiche toujours 664 MB.
+
 ## [5.92.0] - 2026-09-29 — Terrain 3D et pack Suisse v6
 
 ### Corrigé

@@ -1,6 +1,6 @@
-# SunTrail — TODO (source 5.92.0 ; envoi Play séparé)
+# SunTrail — TODO (source 5.92.1 préparée localement ; envoi Play séparé)
 
-> Dernière mise à jour : 2026-09-29
+> Dernière mise à jour : 2026-09-30
 
 ## Pack Suisse v6 et distribution
 
@@ -10,12 +10,21 @@
       diagnostic dans un build de production. `npm run check`, 1 960 tests, build Capacitor propre,
       budget bundle, chemins d'assets et audit i18n passent localement.
 - [x] Faire produire l'AAB signé 5.92.0 / 918 par la CI et publier la release GitHub `v5.92.0`.
-- [ ] Le propriétaire enverra l'AAB sur le canal Play « tests ouverts ». Ne pas confondre release
-      GitHub, envoi Play et installation effective.
+- [x] Le propriétaire a publié l'AAB 5.92.0 / 918 sur le canal Play « tests ouverts » et l'a
+      installé sur le S23.
 - [x] Après publication de 5.92.0 en test ouvert, remplacer l'entrée Suisse du catalogue public
       commun par v6, sous sa nouvelle URL. L'objet v3 reste à son ancienne URL.
-- [ ] Vérifier dans l'application 5.92.0 le téléchargement du pack v6 depuis le catalogue CDN ;
-      surveiller les clients 5.91.4 qui ne lisent pas `elevationMaxZoom`.
+- [x] Diagnostiquer pourquoi l'écran de 5.92.0 affiche encore 664 Mio : fallback embarqué v3 et
+      `VITE_PACKS_CATALOG_URL` absent du workflow release.
+- [x] Corriger localement le fallback, activer le fetch CDN pour les builds, et migrer/refuser les
+      caches/catalogues plus anciens ; 169 fichiers / 1 964 tests et build Capacitor vérifiés.
+- [x] Vérifier sur le S23 avec l'APK diagnostic léger : requête du catalogue public, Suisse v6/592 MB
+      dans le WebView et à l'écran ; relief 3D visible à Davos sans pics évidents après chargement.
+      Aucun pack n'étant installé dans cette application, ce contrôle ne valide pas le v6 hors ligne.
+- [x] Préparer localement 5.92.1/code 919 : contrôles Web, tests unitaires Android (10/10), lint et
+      AAB signé de contrôle réussis ; aucun pack diagnostic volumineux n'est embarqué.
+- [ ] Vérifier le maximum Play Console avant l'envoi d'un AAB issu de la CI. Le catalogue Cloudflare
+      est déjà en v6 ; aucun nouvel upload de pack ou de catalogue n'est prévu.
 - [x] Inventorier puis vider, avec accord explicite du propriétaire, les caches cartographiques et
       HTTP de l'application diagnostic sur S23 : environ 2,7 Go récupérés, OPFS et réglages préservés.
 - [ ] Corriger ou expliciter la non-persistance du mode hors ligne manuel après redémarrage ; décider

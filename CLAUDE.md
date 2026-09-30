@@ -1,14 +1,14 @@
-# SunTrail — Guide IA (source 5.92.0)
+# SunTrail — Guide IA (source 5.92.1 préparée localement)
 
-> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-29 après la validation du
-> pack Suisse v6 et la préparation de l'application compatible pour les tests ouverts Play.
+> Point d'entrée obligatoire pour les agents IA. Mis à jour le 2026-09-30 après le contrôle du
+> correctif de catalogue Suisse sur l'application diagnostic du S23.
 
 ## État vérifié
 
-- Version npm : `5.92.0`.
-- Android : `versionName 5.92.0`, `versionCode 918`, minSdk 24, compile/target SDK 36. Le
-  propriétaire a indiqué 917 comme maximum déjà enregistré dans Play Console ; vérifier de nouveau
-  avant l'envoi effectif de l'AAB.
+- Version npm préparée localement : `5.92.1`.
+- Android préparé localement : `versionName 5.92.1`, `versionCode 919`, minSdk 24, compile/target
+  SDK 36. Le propriétaire indique que 5.92.0/code 918 est en tests ouverts ; vérifier le maximum
+  effectivement enregistré dans Play Console avant l'envoi d'un nouvel AAB.
 - Révision courante `5.91.4` (code 917) : la lecture `CacheStorage` par tuile sort du thread
   principal (résolution dans le worker) avec un repli local borné sur miss couleur, l'hydratation de
   l'UI secondaire est différée après la première tuile, et deux réglages avancés historiques sont
@@ -17,6 +17,12 @@
 - La release GitHub `v5.92.0` a produit l'AAB signé de 28 808 592 octets le 2026-09-29 ; la CI
   du commit `b588a514` est verte, smoke Chromium compris. Le propriétaire indique que l'application
   est maintenant publiée en tests ouverts.
+- Défaut découvert après publication : l'AAB 5.92.0 n'injectait pas `VITE_PACKS_CATALOG_URL` et
+  son catalogue embarqué annonçait encore la Suisse v3/664 MB. Le catalogue R2 v5/Suisse v6 est
+  correct, mais cette version ne le charge pas. Le correctif local (fallback v6, fetch distant dans
+  les builds, migration/rejet des caches plus anciens) a été vérifié sur S23 : l'APK diagnostic
+  charge `catalog.json` et affiche 592 MB. Il n'est ni committé ni publié ; cette application
+  diagnostic n'a pas de pack installé, donc sa vue 3D ne prouve pas le v6 hors ligne.
 - La source 5.92.0 regroupe le lot post-5.91.4 : transitions
   2D/3D fiabilisées, offsets de shader isolés par tuile, calcul solaire sur l'altitude physique,
   REC actif vert/terminé bleu, chevrons sur toute trace, édition pendant le guidage, points `1…n`,
@@ -185,14 +191,17 @@ courant, même si des pages ou dépendances de préparation existent. La replani
 `tileSources.ts` configure swisstopo (CH), IGN (FR), basemap.at (AT), BKG (DE), IGN España (ES)
 et Kartverket (NO), avec OpenTopoMap/MapTiler/OSM en repli. L'Italie utilise le repli mondial.
 
-Le catalogue embarqué `packCatalog.ts` contient trois packs :
+Le catalogue embarqué `packCatalog.ts` de la source contient trois packs :
 
-- `switzerland`, v3, 664 MB, LOD 8–14 ;
+- `switzerland`, v6, 592 MB, LOD 8–14 ;
 - `france_alps`, 515 MB, LOD 8–14 ;
-- `austria`, 985 MB, LOD 8–14.
+- `austria`, 980 MB, LOD 8–14.
 
-Un catalogue distant peut remplacer cette liste. Toujours lire les métadonnées runtime avant de
-présenter un pack comme disponible.
+Les builds de publication chargent également `https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/catalog.json`.
+Le catalogue distant est comparé au fallback embarqué et un cache plus ancien ne peut pas le faire
+reculer. La release 5.92.0 déjà distribuée ne contient pas encore cette configuration et reste à
+vérifier/remplacer par une version corrigée. Toujours lire les métadonnées runtime avant de présenter
+un pack comme disponible.
 
 Pour construire un pack :
 

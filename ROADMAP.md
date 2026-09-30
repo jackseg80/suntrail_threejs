@@ -1,9 +1,10 @@
-# SunTrail — Roadmap produit révisée (source 5.92.0)
+# SunTrail — Roadmap produit révisée (source 5.92.1 préparée localement)
 
-> Révision produit : 2026-09-29. La source `5.92.0` / Android `918` regroupe le terrain 2D/3D
+> Révision produit : 2026-09-30. La version publiée `5.92.0` / Android `918` regroupe le terrain 2D/3D
 > stabilisé, le solaire sans exagération visuelle, les états REC lisibles, les chevrons sur toute
 > trace, l'édition pendant le guidage, les points `1…n` et les packs/GPX renforcés. La distribution
-> de l'AAB sur Play et le basculement du catalogue Suisse restent séparés.
+> de l'AAB sur Play et le basculement du catalogue Suisse ont eu lieu. La source `5.92.1` / Android
+> `919` prépare le correctif du catalogue affiché dans l'application.
 > Cette section fait foi. Le plan du 2026-08-03 est conservé plus bas uniquement comme
 > archive ; ses versions, statuts et séquences ne doivent plus être utilisés.
 >
@@ -13,8 +14,11 @@
 >
 > **À contrôler — pack Suisse** : le v6 réduit (620 200 343 octets) a été validé automatiquement,
 > sur S23 et octet pour octet sur R2. Après publication de 5.92.0 en tests ouverts, le catalogue
-> commun a été basculé vers le v6. Vérifier le téléchargement dans l'interface de l'application ;
-> le mode hors ligne manuel n'est pas persistant au redémarrage.
+> commun a été basculé vers le v6. Défaut découvert : l'AAB 5.92.0 affiche encore le fallback v3
+> (664 Mio), faute d'URL catalogue dans sa build. Le worktree corrige le fallback, le fetch R2 et la
+> migration des vieux caches ; l'APK diagnostic affiche 592 MB sur S23, sans pack installé. Il faut
+> encore publier une nouvelle build avant de vérifier le téléchargement v6 dans l'interface. Le mode hors ligne manuel n'est pas persistant au
+> redémarrage.
 
 > Inventaire des fonctions réellement actives : [docs/FEATURES.md](docs/FEATURES.md).
 

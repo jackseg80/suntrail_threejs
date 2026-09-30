@@ -117,6 +117,7 @@ jobs:
 
       - name: Build
         env:
+          VITE_PACKS_CATALOG_URL: https://pub-80e58a345eb447ce9b918f2ad4348458.r2.dev/catalog.json
           VITE_MAPTILER_KEY: ${{ secrets.VITE_MAPTILER_KEY }}
           VITE_REVENUECAT_KEY: ${{ secrets.VITE_REVENUECAT_KEY }}
           VITE_REVENUECAT_WEB_KEY: ${{ secrets.VITE_REVENUECAT_WEB_KEY }}

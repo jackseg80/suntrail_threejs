@@ -217,7 +217,8 @@ describe('PackManager Integration', () => {
         expect(mockPmtilesGetMetadata).toHaveBeenCalled();
         expect(packManager.getPackState('switzerland')).toMatchObject({
             status: 'installed',
-            filePath: 'opfs://packs/switzerland.pmtiles',
+            installedVersion: 6,
+            filePath: 'opfs://packs/switzerland-v6.pmtiles',
         });
     });
 
@@ -304,7 +305,9 @@ describe('PackManager Integration', () => {
             false
         );
         expect(target.writable.abort).toHaveBeenCalledTimes(1);
-        expect(mockRemovePackFile).toHaveBeenCalledWith('switzerland.pmtiles');
+        expect(mockRemovePackFile).toHaveBeenCalledWith(
+            'switzerland-v6.pmtiles'
+        );
         expect(packManager.getPackState('switzerland')).toMatchObject({
             status: 'error',
             filePath: null,
@@ -996,7 +999,7 @@ describe('PackManager — P0: hasInstalledPackForCountry & getMinPackZoom', () =
                     },
                     lodRange: { min: 8, max: 14 },
                     version: 6,
-                    sizeMB: 620,
+                    sizeMB: 592,
                     cdnUrl: 'https://example.test/switzerland-v6.pmtiles',
                     regionCheck: 'CH',
                 },

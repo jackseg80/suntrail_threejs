@@ -1,6 +1,6 @@
 # SunTrail 3D
 
-**Version source 5.92.0 · Android 918 · MIT avec Commons Clause**
+**Version source 5.92.1 préparée localement · Android 919 · MIT avec Commons Clause**
 
 SunTrail est une application de randonnée mobile-first qui combine cartographie 2D/3D,
 relief, lumière solaire, préparation d'itinéraires et suivi GPS. Android est la plateforme
@@ -98,10 +98,12 @@ SunTrail sélectionne ses sources selon la position : swisstopo (CH), IGN (FR), 
 La précision, le niveau de détail et la disponibilité des bâtiments, sentiers ou données
 satellite varient donc selon le pays, la source, la connexion et les données téléchargées.
 
-Le catalogue embarqué contient actuellement les packs Suisse HD, Alpes françaises HD et
-Autriche HD. Depuis le 2026-09-29, le catalogue public annonce la Suisse v6 (592 MB) à sa nouvelle
-URL ; l'ancien objet v3 reste disponible à son URL. Le client 5.92.0 lit l'élévation à un zoom
-parent. Un catalogue distant peut compléter ou remplacer la liste.
+Le catalogue public annonce la Suisse v6 (592 Mio) depuis le 2026-09-29 ; l'objet v3 reste conservé
+à son ancienne URL. Attention : l'AAB 5.92.0 actuellement en tests ouverts affiche encore son
+fallback embarqué v3/664 Mio, car sa build ne charge pas l'URL distante. La source 5.92.1 prépare
+un fallback v6, le chargement du catalogue R2 et la migration d'un ancien cache. Son APK diagnostic
+affiche 592 MB sur S23, mais cette correction n'est pas encore publiée. L'application 5.92.0 sait
+décoder l'élévation parente, mais ne proposera la v6 qu'après distribution d'une build corrigée.
 
 ## Architecture
 
